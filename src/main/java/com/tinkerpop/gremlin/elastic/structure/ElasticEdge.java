@@ -66,7 +66,7 @@ public class ElasticEdge extends ElasticElement implements Edge, Edge.Iterators 
     @Override
     public Iterator<Vertex> vertexIterator(final Direction direction) {
         checkRemoved();
-        return graph.vertexIterator(getVertexId(direction));
+        return graph.vertexIterator(getVertexId(direction).toArray());
     }
 
     public List getVertexId(Direction direction) {
