@@ -16,10 +16,12 @@ public abstract class ElasticElement implements Element, Element.Iterators {
     protected final ElasticGraph graph;
     protected boolean removed = false;
 
-    public ElasticElement(final Object id, final String label, ElasticGraph graph) {
+    public ElasticElement(final Object id, final String label, ElasticGraph graph, Object[] keyValues) {
         this.graph = graph;
         this.id = id;
         this.label = label;
+        if(keyValues != null)
+            addPropertiesLocal(keyValues);
     }
 
     @Override
@@ -74,7 +76,7 @@ public abstract class ElasticElement implements Element, Element.Iterators {
         graph.elasticService.removeProperty(this, property.key());
     }
 
-    public void addPropertiesLocal(Object[] keyValues) {
+    private void addPropertiesLocal(Object[] keyValues) {
         for (int i = 0; i < keyValues.length; i = i + 2) {
             String key = keyValues[i].toString();
             Object value = keyValues[i + 1];

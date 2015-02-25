@@ -12,8 +12,7 @@ import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.configuration.Configuration;
 import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.index.query.FilterBuilder;
-import org.elasticsearch.index.query.FilterBuilders;
+import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -90,22 +89,12 @@ public class ElasticGraph implements Graph, Graph.Iterators {
 
     @Override
     public Iterator<Vertex> vertexIterator(final Object... vertexIds) {
-        return elasticService.searchVertices(getIdFilter(vertexIds));
+        return elasticService.getVertices(vertexIds);
     }
 
     @Override
     public Iterator<Edge> edgeIterator(final Object... edgeIds) {
-        return elasticService.searchEdges(getIdFilter(edgeIds));
-    }
-
-    private FilterBuilder getIdFilter(Object[] ids) {
-        if (ids.length == 0) return null;
-
-        String[] stringIds = new String[ids.length];
-        for(int i = 0; i < ids.length; i++)
-            stringIds[i] = ids[i].toString();
-
-        return FilterBuilders.idsFilter().addIds(stringIds);
+        return elasticService.getEdges(edgeIds);
     }
 
     @Override
@@ -113,9 +102,12 @@ public class ElasticGraph implements Graph, Graph.Iterators {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
-        IndexResponse response = elasticService.addElement(label, idValue, ElasticElement.Type.vertex, keyValues);
-        final ElasticVertex vertex = new ElasticVertex(response.getId(), label, this);
-        vertex.addPropertiesLocal(keyValues);
-        return vertex;
+        try {
+            IndexResponse response = elasticService.addElement(label, idValue, ElasticElement.Type.vertex, keyValues);
+            return new ElasticVertex(response.getId(), label, keyValues, this);
+        }
+        catch(DocumentAlreadyExistsException ex) {
+            throw Graph.Exceptions.vertexWithIdAlreadyExists(idValue);
+        }
     }
 }

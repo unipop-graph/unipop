@@ -35,10 +35,55 @@ public class ElasticFeatures implements Graph.Features {
     }
 
     @Override
+    public EdgeFeatures edge() {
+        return new EdgeFeatures() {
+            @Override
+            public boolean supportsNumericIds() {
+                return false;
+            }
+
+            @Override
+            public boolean supportsAnyIds() {
+                return false;
+            }
+
+            @Override
+            public boolean supportsUuidIds() {
+                return false;
+            }
+
+            @Override
+            public boolean supportsCustomIds() {
+                return false;
+            }
+        };
+    }
+
+    @Override
     public VertexFeatures vertex() {
         return new VertexFeatures() {
             @Override
             public boolean supportsMultiProperties() {
+                return false;
+            }
+
+            @Override
+            public boolean supportsNumericIds() {
+                return false;
+            }
+
+            @Override
+            public boolean supportsUuidIds() {
+                return false;
+            }
+
+            @Override
+            public boolean supportsCustomIds() {
+                return false;
+            }
+
+            @Override
+            public boolean supportsAnyIds() {
                 return false;
             }
 

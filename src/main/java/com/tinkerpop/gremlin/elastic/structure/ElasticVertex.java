@@ -6,6 +6,7 @@ import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.lang3.ArrayUtils;
 import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.index.query.FilterBuilders;
 
@@ -15,8 +16,8 @@ import java.util.Iterator;
 public class ElasticVertex extends ElasticElement implements Vertex, Vertex.Iterators {
     private ElasticService elasticService;
 
-    public ElasticVertex(final Object id, final String label, ElasticGraph graph) {
-        super(id, label, graph);
+    public ElasticVertex(final Object id, final String label, Object[] keyValues, ElasticGraph graph) {
+        super(id, label, graph, keyValues);
         elasticService = graph.elasticService;
     }
 
@@ -61,10 +62,14 @@ public class ElasticVertex extends ElasticElement implements Vertex, Vertex.Iter
         ElementHelper.legalPropertyKeyValueArray(keyValues);
 
         Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
-        IndexResponse response = elasticService.addElement(label, idValue, Type.edge, ArrayUtils.addAll(keyValues, ElasticEdge.InId, vertex.id(), ElasticEdge.OutId, this.id()));
-        final ElasticEdge edge = new ElasticEdge(response.getId(), label, vertex.id(), this.id(), graph);
-        edge.addPropertiesLocal(keyValues);
-        return edge;
+
+        try {
+            IndexResponse response = elasticService.addElement(label, idValue, Type.edge, ArrayUtils.addAll(keyValues, ElasticEdge.InId, vertex.id(), ElasticEdge.OutId, this.id()));
+            return new ElasticEdge(response.getId(), label, this.id(), vertex.id(), keyValues, graph);
+        }
+        catch(DocumentAlreadyExistsException ex) {
+            throw Graph.Exceptions.edgeWithIdAlreadyExists(idValue);
+        }
     }
 
     @Override

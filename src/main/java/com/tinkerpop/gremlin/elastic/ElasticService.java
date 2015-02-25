@@ -6,7 +6,9 @@ import com.tinkerpop.gremlin.elastic.structure.ElasticGraph;
 import com.tinkerpop.gremlin.elastic.structure.ElasticVertex;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Element;
+import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import jline.internal.Nullable;
 import org.apache.commons.lang3.ArrayUtils;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
@@ -15,6 +17,10 @@ import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRequest;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
+import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.action.get.MultiGetItemResponse;
+import org.elasticsearch.action.get.MultiGetRequest;
+import org.elasticsearch.action.get.MultiGetResponse;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
@@ -31,7 +37,9 @@ import org.elasticsearch.node.NodeBuilder;
 import org.elasticsearch.script.ScriptService;
 import org.elasticsearch.search.SearchHit;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -83,11 +91,17 @@ public class ElasticService {
     }
 
     public IndexResponse addElement(String label, @Nullable Object idValue, ElasticElement.Type type, Object... keyValues) {
+        for (int i = 0; i < keyValues.length; i = i + 2) {
+            String key = keyValues[i].toString();
+            Object value = keyValues[i + 1];
+            ElementHelper.validateProperty(key, value);
+        }
+
         IndexRequestBuilder indexRequestBuilder;
-        if (idValue == null) indexRequestBuilder = client.prepareIndex(indexName, label).setRefresh(refresh);
-        else indexRequestBuilder = client.prepareIndex(indexName, label, idValue.toString()).setRefresh(refresh);
+        if (idValue == null) indexRequestBuilder = client.prepareIndex(indexName, label);
+        else indexRequestBuilder = client.prepareIndex(indexName, label, idValue.toString());
         Object[] all = ArrayUtils.addAll(keyValues, TYPE, type.toString());
-        return indexRequestBuilder.setSource(all).execute().actionGet();
+        return indexRequestBuilder.setCreate(true).setRefresh(refresh).setSource(all).execute().actionGet();
     }
 
     public void deleteElement(Element element) {
@@ -106,30 +120,51 @@ public class ElasticService {
         client.prepareUpdate(indexName, element.label(), element.id().toString()).setRefresh(refresh).setScript("ctx._source.remove(\"" + key + "\")", ScriptService.ScriptType.INLINE).get();
     }
 
-    public void clearAllData() {
-        client.prepareDeleteByQuery(indexName).setQuery(QueryBuilders.matchAllQuery()).execute().actionGet();
+    public Iterator<Vertex> getVertices(Object... ids){
+        if(ids == null || ids.length == 0)
+            return searchVertices(null);
+
+        MultiGetResponse responses = get(ids);
+        ArrayList<Vertex> vertices = new ArrayList<>(ids.length);
+        for(MultiGetItemResponse getResponse : responses){
+            GetResponse response = getResponse.getResponse();
+            if(!response.isExists())
+                throw Graph.Exceptions.elementNotFound(Vertex.class, response.getId());
+            vertices.add(createVertex(response.getId(), response.getType(), response.getSource()));
+        }
+        return vertices.iterator();
+    }
+
+    public Iterator<Edge> getEdges(Object... ids){
+        if(ids == null || ids.length == 0)
+            return searchEdges(null);
+
+        MultiGetResponse responses = get(ids);
+        ArrayList<Edge> edges = new ArrayList<>(ids.length);
+        for(MultiGetItemResponse getResponse : responses){
+            GetResponse response = getResponse.getResponse();
+            if(!response.isExists())
+                throw Graph.Exceptions.elementNotFound(Edge.class, response.getId());
+            edges.add(createEdge(response.getId(), response.getType(), response.getSource()));
+        }
+        return edges.iterator();
     }
 
     public Iterator<Vertex> searchVertices(FilterBuilder filter, String... labels) {
         Stream<SearchHit> hits = search(filter, ElasticElement.Type.vertex, labels);
-        return hits.map((hit) -> createVertex(hit)).iterator();
-    }
-
-    private Vertex createVertex(SearchHit hit) {
-        ElasticVertex vertex = new ElasticVertex(hit.getId(), hit.getType(), graph);
-        hit.getSource().entrySet().forEach((field) -> vertex.addPropertyLocal(field.getKey(), field.getValue()));
-        return vertex;
+        return hits.map((hit) -> createVertex(hit.getId(), hit.getType(), hit.getSource())).iterator();
     }
 
     public Iterator<Edge> searchEdges(FilterBuilder filter, String... labels) {
         Stream<SearchHit> hits = search(filter, ElasticElement.Type.edge, labels);
-        return hits.map((hit) -> createEdge(hit)).iterator();
+        return hits.map((hit) -> createEdge(hit.getId(), hit.getType(), hit.getSource())).iterator();
     }
 
-    private Edge createEdge(SearchHit hit) {
-        ElasticEdge edge = new ElasticEdge(hit.getId(), hit.getType(), hit.getSource().get(ElasticEdge.InId), hit.getSource().get(ElasticEdge.OutId), graph);
-        hit.getSource().entrySet().forEach((field) -> edge.addPropertyLocal(field.getKey(), field.getValue()));
-        return edge;
+    private MultiGetResponse get(Object... ids){
+        MultiGetRequest request = new MultiGetRequest();
+        for(int i =0; i < ids.length; i++)
+            request.add(indexName, null,ids[i].toString());
+        return client.multiGet(request).actionGet();
     }
 
     private Stream<SearchHit> search(FilterBuilder filter, ElasticElement.Type type, String... labels) {
@@ -143,5 +178,21 @@ public class ElasticService {
         Iterable<SearchHit> hitsIterable = () -> searchResponse.getHits().iterator();
         Stream<SearchHit> hitStream = StreamSupport.stream(hitsIterable.spliterator(), false);
         return hitStream;
+    }
+
+    public void clearAllData() {
+        client.prepareDeleteByQuery(indexName).setQuery(QueryBuilders.matchAllQuery()).execute().actionGet();
+    }
+
+    private Vertex createVertex(Object id, String label, Map<String, Object> fields) {
+        ElasticVertex vertex = new ElasticVertex(id, label, null , graph);
+        fields.entrySet().forEach((field) -> vertex.addPropertyLocal(field.getKey(), field.getValue()));
+        return vertex;
+    }
+
+    private Edge createEdge(Object id, String label, Map<String, Object> fields) {
+        ElasticEdge edge = new ElasticEdge(id, label, fields.get(ElasticEdge.OutId), fields.get(ElasticEdge.InId), null, graph);
+        fields.entrySet().forEach((field) -> edge.addPropertyLocal(field.getKey(), field.getValue()));
+        return edge;
     }
 }

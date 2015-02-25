@@ -18,8 +18,8 @@ public class ElasticEdge extends ElasticElement implements Edge, Edge.Iterators 
     private String outId;
     private ElasticService elasticService;
 
-    public ElasticEdge(final Object id, final String label, Object inId, Object outId, final ElasticGraph graph) {
-        super(id, label, graph);
+    public ElasticEdge(final Object id, final String label, Object outId, Object inId, Object[] keyValues, final ElasticGraph graph) {
+        super(id, label, graph, keyValues);
         this.inId = inId.toString();
         this.outId = outId.toString();
         elasticService = graph.elasticService;
@@ -78,7 +78,7 @@ public class ElasticEdge extends ElasticElement implements Edge, Edge.Iterators 
             case IN:
                 return Arrays.asList(inId);
             default:
-                return Arrays.asList(inId, outId);
+                return Arrays.asList(outId, inId);
         }
     }
 
