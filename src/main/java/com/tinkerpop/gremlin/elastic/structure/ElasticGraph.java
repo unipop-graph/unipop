@@ -89,11 +89,15 @@ public class ElasticGraph implements Graph, Graph.Iterators {
 
     @Override
     public Iterator<Vertex> vertexIterator(final Object... vertexIds) {
+        if(vertexIds == null || vertexIds.length == 0)
+            return  elasticService.searchVertices(null);
         return elasticService.getVertices(vertexIds);
     }
 
     @Override
     public Iterator<Edge> edgeIterator(final Object... edgeIds) {
+        if(edgeIds == null || edgeIds.length == 0)
+            return elasticService.searchEdges(null);
         return elasticService.getEdges(edgeIds);
     }
 

@@ -38,6 +38,7 @@ import org.elasticsearch.script.ScriptService;
 import org.elasticsearch.search.SearchHit;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -113,16 +114,18 @@ public class ElasticService {
     }
 
     public <V> void addProperty(Element element, String key, V value) {
-        client.prepareUpdate(indexName, element.label(), element.id().toString()).setRefresh(refresh).setScript("ctx._source." + key + " = \"" + value + "\"", ScriptService.ScriptType.INLINE).get();
+        client.prepareUpdate(indexName, element.label(), element.id().toString()).setRefresh(refresh)
+                .setScript("ctx._source." + key + " = \"" + value + "\"", ScriptService.ScriptType.INLINE).get();
     }
 
     public void removeProperty(Element element, String key) {
-        client.prepareUpdate(indexName, element.label(), element.id().toString()).setRefresh(refresh).setScript("ctx._source.remove(\"" + key + "\")", ScriptService.ScriptType.INLINE).get();
+        client.prepareUpdate(indexName, element.label(), element.id().toString()).setRefresh(refresh)
+                .setScript("ctx._source.remove(\"" + key + "\")", ScriptService.ScriptType.INLINE).get();
     }
 
     public Iterator<Vertex> getVertices(Object... ids){
         if(ids == null || ids.length == 0)
-            return searchVertices(null);
+            return Collections.emptyIterator();
 
         MultiGetResponse responses = get(ids);
         ArrayList<Vertex> vertices = new ArrayList<>(ids.length);
@@ -137,7 +140,7 @@ public class ElasticService {
 
     public Iterator<Edge> getEdges(Object... ids){
         if(ids == null || ids.length == 0)
-            return searchEdges(null);
+            return Collections.emptyIterator();
 
         MultiGetResponse responses = get(ids);
         ArrayList<Edge> edges = new ArrayList<>(ids.length);

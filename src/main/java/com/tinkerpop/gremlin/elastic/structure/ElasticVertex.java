@@ -116,7 +116,7 @@ public class ElasticVertex extends ElasticElement implements Vertex, Vertex.Iter
         Iterator<Edge> edgeIterator = edgeIterator(direction, edgeLabels);
         ArrayList<Object> ids = new ArrayList<>();
         edgeIterator.forEachRemaining((edge) -> ((ElasticEdge) edge).getVertexId(direction).forEach((id)->ids.add(id)));
-        return graph.vertexIterator(ids.toArray());
+        return elasticService.getVertices(ids.toArray());
     }
 
     @Override
