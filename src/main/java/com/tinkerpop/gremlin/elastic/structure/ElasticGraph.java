@@ -16,7 +16,6 @@ import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.index.query.FilterBuilders;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Iterator;
 
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_STANDARD)
@@ -101,7 +100,12 @@ public class ElasticGraph implements Graph, Graph.Iterators {
 
     private FilterBuilder getIdFilter(Object[] ids) {
         if (ids.length == 0) return null;
-        return FilterBuilders.idsFilter().addIds(Arrays.asList(ids).toArray(new String[ids.length]));
+
+        String[] stringIds = new String[ids.length];
+        for(int i = 0; i < ids.length; i++)
+            stringIds[i] = ids[i].toString();
+
+        return FilterBuilders.idsFilter().addIds(stringIds);
     }
 
     @Override

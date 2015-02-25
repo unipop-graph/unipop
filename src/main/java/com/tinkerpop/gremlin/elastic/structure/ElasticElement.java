@@ -7,11 +7,10 @@ import com.tinkerpop.gremlin.structure.util.ElementHelper;
 
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Set;
 
 public abstract class ElasticElement implements Element, Element.Iterators {
-    protected Map<String, Property> properties = new HashMap();
+    protected HashMap<String, Property> properties = new HashMap();
     protected final Object id;
     protected final String label;
     protected final ElasticGraph graph;
@@ -61,10 +60,12 @@ public abstract class ElasticElement implements Element, Element.Iterators {
     }
 
     protected Iterator innerPropertyIterator(String[] propertyKeys) {
-        if (propertyKeys.length > 0)
-            return this.properties.entrySet().stream().filter(entry -> ElementHelper.keyExists(entry.getKey(), propertyKeys)).map(x -> x.getValue()).iterator();
+        HashMap<String, Property> properties = (HashMap<String, Property>) this.properties.clone();
 
-        return (Iterator) this.properties.values().iterator();
+        if (propertyKeys.length > 0)
+            return properties.entrySet().stream().filter(entry -> ElementHelper.keyExists(entry.getKey(), propertyKeys)).map(x -> x.getValue()).iterator();
+
+        return (Iterator) properties.values().iterator();
     }
 
 
@@ -72,8 +73,6 @@ public abstract class ElasticElement implements Element, Element.Iterators {
         properties.remove(property.key());
         graph.elasticService.removeProperty(this, property.key());
     }
-
-
 
     public void addPropertiesLocal(Object[] keyValues) {
         for (int i = 0; i < keyValues.length; i = i + 2) {

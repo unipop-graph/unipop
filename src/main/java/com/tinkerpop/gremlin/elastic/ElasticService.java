@@ -57,7 +57,8 @@ public class ElasticService {
         IndicesExistsRequest request = new IndicesExistsRequest(indexName);
         IndicesExistsResponse response = client.admin().indices().exists(request).actionGet();
         if (!response.isExists()) {
-            CreateIndexRequestBuilder createIndexRequestBuilder = client.admin().indices().prepareCreate(indexName);
+            settings = ImmutableSettings.settingsBuilder().put("index.analysis.analyzer.default.type", "keyword").build();
+            CreateIndexRequestBuilder createIndexRequestBuilder = client.admin().indices().prepareCreate(indexName).setSettings(settings);
             CreateIndexResponse createResponse = client.admin().indices().create(createIndexRequestBuilder.request()).actionGet();
         }
 
@@ -135,7 +136,7 @@ public class ElasticService {
         FilterBuilder finalFilter = FilterBuilders.termFilter(TYPE, type.toString());
         if(filter != null)
             finalFilter = FilterBuilders.andFilter(finalFilter, filter);
-        SearchRequestBuilder searchRequestBuilder = client.prepareSearch(indexName).setPostFilter(finalFilter);
+        SearchRequestBuilder searchRequestBuilder = client.prepareSearch(indexName).setPostFilter(finalFilter).setFrom(0).setSize(100000); //TODO: retrive with scroll for efficiency
         if (labels != null && labels.length > 0 && labels[0] != null) searchRequestBuilder = searchRequestBuilder.setTypes(labels);
 
         SearchResponse searchResponse = searchRequestBuilder.execute().actionGet();

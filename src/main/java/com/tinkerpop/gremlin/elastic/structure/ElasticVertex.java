@@ -55,10 +55,11 @@ public class ElasticVertex extends ElasticElement implements Vertex, Vertex.Iter
 
     @Override
     public Edge addEdge(final String label, final Vertex vertex, final Object... keyValues) {
+        if (null == vertex) throw Graph.Exceptions.argumentCanNotBeNull("vertex");
         checkRemoved();
         ElementHelper.validateLabel(label);
-        if (null == vertex) throw Graph.Exceptions.argumentCanNotBeNull("vertex");
         ElementHelper.legalPropertyKeyValueArray(keyValues);
+
         Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
         IndexResponse response = elasticService.addElement(label, idValue, Type.edge, ArrayUtils.addAll(keyValues, ElasticEdge.InId, vertex.id(), ElasticEdge.OutId, this.id()));
         final ElasticEdge edge = new ElasticEdge(response.getId(), label, vertex.id(), this.id(), graph);
@@ -92,7 +93,6 @@ public class ElasticVertex extends ElasticElement implements Vertex, Vertex.Iter
 
     @Override
     public Iterator<Edge> edgeIterator(final Direction direction, final String... edgeLabels) {
-        checkRemoved();
         FilterBuilder filter;
         if (direction == Direction.IN) filter = getFilter(ElasticEdge.InId);
         else if (direction == Direction.OUT) filter = getFilter(ElasticEdge.OutId);
