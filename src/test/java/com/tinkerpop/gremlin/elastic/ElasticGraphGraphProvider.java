@@ -28,10 +28,13 @@ public class ElasticGraphGraphProvider extends AbstractGraphProvider {
     public Map<String, Object> getBaseConfiguration(final String graphName, final Class<?> test, final String testMethodName) {
         return new HashMap<String, Object>() {{
             put(Graph.GRAPH, ElasticGraph.class.getName());
-            put("elasticsearch.cluster.name", "test");
-            put("elasticsearch.index.name", "graph");
+            put("elasticsearch.cluster.name", "elasticsearch");
+            String indexName = test.getName() + "." + testMethodName;
+            //String indexName = "graph";
+            put("elasticsearch.index.name", indexName.toLowerCase());
             put("elasticsearch.local", true);
             put("elasticsearch.refresh", true);
+            put("elasticsearch.client", false);
         }};
     }
 

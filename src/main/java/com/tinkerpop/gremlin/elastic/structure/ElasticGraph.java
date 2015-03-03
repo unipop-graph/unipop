@@ -43,7 +43,8 @@ public class ElasticGraph implements Graph, Graph.Iterators {
                 configuration.getString("elasticsearch.cluster.name"),
                 configuration.getString("elasticsearch.index.name"),
                 configuration.getBoolean("elasticsearch.local"),
-                configuration.getBoolean("elasticsearch.refresh"));
+                configuration.getBoolean("elasticsearch.refresh"),
+                configuration.getBoolean("elasticsearch.client"));
 
     }
 

@@ -17,6 +17,7 @@ import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRequest;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
+import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.get.MultiGetItemResponse;
 import org.elasticsearch.action.get.MultiGetRequest;
@@ -53,13 +54,13 @@ public class ElasticService {
 
     private static String TYPE = "ty";
 
-    public ElasticService(ElasticGraph graph, String clusterName, String indexName, boolean isLocal, boolean refresh) {
+    public ElasticService(ElasticGraph graph, String clusterName, String indexName, boolean isLocalJvm, boolean refreshBeforeSearch, boolean isOnlyClient) {
         this.graph = graph;
         this.indexName = indexName;
-        this.refresh = refresh;
+        this.refresh = refreshBeforeSearch;
 
         Settings settings = ImmutableSettings.settingsBuilder().put("cluster.name", clusterName).build();
-        node = NodeBuilder.nodeBuilder().local(isLocal).client(!isLocal).settings(settings).build();
+        node = NodeBuilder.nodeBuilder().local(isLocalJvm).client(isOnlyClient).settings(settings).build();
         client = node.client();
         node.start();
 
@@ -102,11 +103,11 @@ public class ElasticService {
         if (idValue == null) indexRequestBuilder = client.prepareIndex(indexName, label);
         else indexRequestBuilder = client.prepareIndex(indexName, label, idValue.toString());
         Object[] all = ArrayUtils.addAll(keyValues, TYPE, type.toString());
-        return indexRequestBuilder.setCreate(true).setRefresh(refresh).setSource(all).execute().actionGet();
+        return indexRequestBuilder.setCreate(true).setSource(all).execute().actionGet();
     }
 
     public void deleteElement(Element element) {
-        client.prepareDelete(indexName, element.label(), element.id().toString()).setRefresh(refresh).execute().actionGet();
+        client.prepareDelete(indexName, element.label(), element.id().toString()).execute().actionGet();
     }
 
     public void deleteElements(Iterator<Element> elements) {
@@ -114,12 +115,12 @@ public class ElasticService {
     }
 
     public <V> void addProperty(Element element, String key, V value) {
-        client.prepareUpdate(indexName, element.label(), element.id().toString()).setRefresh(refresh)
+        client.prepareUpdate(indexName, element.label(), element.id().toString())
                 .setScript("ctx._source." + key + " = \"" + value + "\"", ScriptService.ScriptType.INLINE).get();
     }
 
     public void removeProperty(Element element, String key) {
-        client.prepareUpdate(indexName, element.label(), element.id().toString()).setRefresh(refresh)
+        client.prepareUpdate(indexName, element.label(), element.id().toString())
                 .setScript("ctx._source.remove(\"" + key + "\")", ScriptService.ScriptType.INLINE).get();
     }
 
@@ -171,6 +172,8 @@ public class ElasticService {
     }
 
     private Stream<SearchHit> search(FilterBuilder filter, ElasticElement.Type type, String... labels) {
+        if(refresh)
+            client.admin().indices().prepareRefresh(indexName).setForce(false).execute().actionGet();
         FilterBuilder finalFilter = FilterBuilders.termFilter(TYPE, type.toString());
         if(filter != null)
             finalFilter = FilterBuilders.andFilter(finalFilter, filter);
