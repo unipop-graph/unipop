@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_STANDARD)
+@Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_PERFORMANCE)
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
 public class ElasticGraph implements Graph, Graph.Iterators {
     static {

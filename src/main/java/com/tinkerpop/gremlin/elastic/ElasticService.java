@@ -115,6 +115,7 @@ public class ElasticService {
 
     public <V> void addProperty(Element element, String key, V value) {
         client.prepareUpdate(indexName, element.label(), element.id().toString()).setRefresh(refresh)
+               //.setDoc(key, value).execute().actionGet();
                 .setScript("ctx._source." + key + " = \"" + value + "\"", ScriptService.ScriptType.INLINE).get();
     }
 
