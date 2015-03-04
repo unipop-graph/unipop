@@ -25,15 +25,18 @@ public class ElasticGraphGraphProvider extends AbstractGraphProvider {
         add(ElasticVertexProperty.class);
     }};
 
-    static Node  node = ElasticService.createNode("test", "graph", true, false);
-
+    Map<String, Node> nodes = new HashMap<>();
 
     @Override
     public Map<String, Object> getBaseConfiguration(final String graphName, final Class<?> test, final String testMethodName) {
+        if(!nodes.containsKey(graphName))
+            nodes.put(graphName, ElasticService.createNode("test", graphName, true, false));
+
+        System.out.println("graphName: " + graphName);
         return new HashMap<String, Object>() {{
             put(Graph.GRAPH, ElasticGraph.class.getName());
             put("elasticsearch.cluster.name", "test");
-            put("elasticsearch.index.name", "graph");
+            put("elasticsearch.index.name", graphName);
             put("elasticsearch.local", true);
             put("elasticsearch.refresh", true);
             put("elasticsearch.client", true);
