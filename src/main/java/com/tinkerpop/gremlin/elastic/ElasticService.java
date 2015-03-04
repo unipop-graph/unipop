@@ -10,7 +10,9 @@ import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import jline.internal.Nullable;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
@@ -52,22 +54,42 @@ public class ElasticService {
     public Client client;
     Node node;
 
-    private static String TYPE = "ty";
 
-    public ElasticService(ElasticGraph graph, String clusterName, String indexName, boolean isLocalJvm, boolean refreshBeforeSearch, boolean isOnlyClient) {
+
+    public static String TYPE = "ty";
+
+    public ElasticService(ElasticGraph graph, String clusterName, String indexName, boolean isLocal, boolean refresh, boolean isClient) {
+
         this.graph = graph;
         this.indexName = indexName;
-        this.refresh = refreshBeforeSearch;
+        this.refresh = refresh;
 
-        Settings settings = ImmutableSettings.settingsBuilder().put("cluster.name", clusterName).build();
-        node = NodeBuilder.nodeBuilder().local(isLocalJvm).client(isOnlyClient).settings(settings).build();
-        client = node.client();
+
+        this.node = createNode(clusterName, indexName, isLocal, isClient);
+        this.client = node.client();
+    }
+
+    public static ElasticService create(ElasticGraph graph, Configuration configuration) {
+        return new ElasticService(graph,
+                configuration.getString("elasticsearch.cluster.name", "elasticsearch"),
+                configuration.getString("elasticsearch.index.name", "graph"),
+                configuration.getBoolean("elasticsearch.local", true),
+                configuration.getBoolean("elasticsearch.refresh", true),
+                configuration.getBoolean("elasticsearch.client", true));
+    }
+
+    public static Node createNode(String clusterName, String indexName, boolean isLocal, boolean isClient) {
+        StopWatch initializationSW = new StopWatch();
+        initializationSW.start();
+
+        Node node = NodeBuilder.nodeBuilder().local(isLocal).client(isClient).clusterName(clusterName).build();
+        Client client = node.client();
         node.start();
 
         IndicesExistsRequest request = new IndicesExistsRequest(indexName);
         IndicesExistsResponse response = client.admin().indices().exists(request).actionGet();
         if (!response.isExists()) {
-            settings = ImmutableSettings.settingsBuilder().put("index.analysis.analyzer.default.type", "keyword").build();
+            Settings settings = ImmutableSettings.settingsBuilder().put("index.analysis.analyzer.default.type", "keyword").build();
             CreateIndexRequestBuilder createIndexRequestBuilder = client.admin().indices().prepareCreate(indexName).setSettings(settings);
             CreateIndexResponse createResponse = client.admin().indices().create(createIndexRequestBuilder.request()).actionGet();
         }
@@ -77,6 +99,10 @@ public class ElasticService {
         if (clusterHealth.isTimedOut()) {
             System.out.print(clusterHealth.getStatus());
         }
+
+        initializationSW.stop();
+        System.out.println("graph initiazlied in " + initializationSW.getTime()/1000f);
+        return node;
     }
 
     @Override
@@ -115,8 +141,13 @@ public class ElasticService {
     }
 
     public <V> void addProperty(Element element, String key, V value) {
+        String stringValue = value.toString();
+        if(value instanceof String)
+            stringValue = "\"" + value + "\"";
+
         client.prepareUpdate(indexName, element.label(), element.id().toString())
-                .setScript("ctx._source." + key + " = \"" + value + "\"", ScriptService.ScriptType.INLINE).get();
+            .setScript("ctx._source." + key + " = " + stringValue, ScriptService.ScriptType.INLINE).get();
+           //.setDoc(key, value).execute().actionGet();
     }
 
     public void removeProperty(Element element, String key) {
@@ -173,7 +204,8 @@ public class ElasticService {
 
     private Stream<SearchHit> search(FilterBuilder filter, ElasticElement.Type type, String... labels) {
         if(refresh)
-            client.admin().indices().prepareRefresh(indexName).setForce(false).execute().actionGet();
+            client.admin().indices().prepareRefresh(indexName).execute().actionGet();
+
         FilterBuilder finalFilter = FilterBuilders.termFilter(TYPE, type.toString());
         if(filter != null)
             finalFilter = FilterBuilders.andFilter(finalFilter, filter);
@@ -187,7 +219,11 @@ public class ElasticService {
     }
 
     public void clearAllData() {
+        StopWatch sw = new StopWatch();
+        sw.start();
         client.prepareDeleteByQuery(indexName).setQuery(QueryBuilders.matchAllQuery()).execute().actionGet();
+        sw.stop();
+        System.out.println("clearGraph: " + sw.getTime() / 1000f);
     }
 
     private Vertex createVertex(Object id, String label, Map<String, Object> fields) {

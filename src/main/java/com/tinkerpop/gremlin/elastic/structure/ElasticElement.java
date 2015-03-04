@@ -1,5 +1,6 @@
 package com.tinkerpop.gremlin.elastic.structure;
 
+import com.tinkerpop.gremlin.elastic.ElasticService;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Property;
@@ -87,7 +88,7 @@ public abstract class ElasticElement implements Element, Element.Iterators {
     public abstract Property addPropertyLocal(String key, Object value);
 
     protected boolean shouldAddProperty(String key){
-        return key != "label" && key != "id" && key != "type";
+        return key != "label" && key != "id" && key != ElasticService.TYPE;
     }
 
     protected abstract void checkRemoved();
