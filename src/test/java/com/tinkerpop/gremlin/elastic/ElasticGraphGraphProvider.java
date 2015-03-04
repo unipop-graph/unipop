@@ -4,6 +4,7 @@ import com.tinkerpop.gremlin.AbstractGraphProvider;
 import com.tinkerpop.gremlin.elastic.structure.*;
 import com.tinkerpop.gremlin.structure.Graph;
 import org.apache.commons.configuration.Configuration;
+import org.elasticsearch.node.Node;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,6 +25,9 @@ public class ElasticGraphGraphProvider extends AbstractGraphProvider {
         add(ElasticVertexProperty.class);
     }};
 
+    static Node  node = ElasticService.createNode("test", "graph", true, false);
+
+
     @Override
     public Map<String, Object> getBaseConfiguration(final String graphName, final Class<?> test, final String testMethodName) {
         return new HashMap<String, Object>() {{
@@ -32,6 +36,7 @@ public class ElasticGraphGraphProvider extends AbstractGraphProvider {
             put("elasticsearch.index.name", "graph");
             put("elasticsearch.local", true);
             put("elasticsearch.refresh", true);
+            put("elasticsearch.client", true);
         }};
     }
 

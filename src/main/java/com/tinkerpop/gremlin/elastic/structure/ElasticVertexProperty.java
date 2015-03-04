@@ -15,7 +15,7 @@ public class ElasticVertexProperty<V> implements VertexProperty<V>, VertexProper
     private final String key;
     private final V value;
 
-    public ElasticVertexProperty(final ElasticVertex vertex, final String key, final V value, final Object... propertyKeyValues) {
+    public ElasticVertexProperty(final ElasticVertex vertex, final String key, final V value) {
         this.vertex = vertex;
         this.key = key;
         this.value = value;
