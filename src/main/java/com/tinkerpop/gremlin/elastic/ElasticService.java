@@ -33,11 +33,13 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.index.query.FilterBuilders;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
 import org.elasticsearch.script.ScriptService;
 import org.elasticsearch.search.SearchHit;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -46,15 +48,25 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public class ElasticService {
+    public static String TYPE = "ty";
+
     private ElasticGraph graph;
     private String indexName;
     private boolean refresh;
     public Client client;
     Node node;
 
-    public static String TYPE = "ty";
+    Timer loadTimer = new Timer("initialization");
+    Timer clearTimer = new Timer("clear graph");
+    Timer addElementTimer = new Timer("add element");
+    Timer removeElementTimer = new Timer("remove element");
+    Timer removePropertyTimer = new Timer("remove property");
+    Timer updatePropertyTimer = new Timer("update property");
+    Timer searchTimer = new Timer("search");
+    Timer getTimer = new Timer("get");
 
     public ElasticService(ElasticGraph graph, String clusterName, String indexName, boolean isLocal, boolean refresh, boolean isClient) {
+        loadTimer.start();
 
         this.graph = graph;
         this.indexName = indexName;
@@ -63,21 +75,20 @@ public class ElasticService {
 
         this.node = createNode(clusterName, indexName, isLocal, isClient);
         this.client = node.client();
+
+        loadTimer.stop();
     }
 
     public static ElasticService create(ElasticGraph graph, Configuration configuration) {
         return new ElasticService(graph,
                 configuration.getString("elasticsearch.cluster.name", "elasticsearch"),
                 configuration.getString("elasticsearch.index.name", "graph"),
-                configuration.getBoolean("elasticsearch.local", true),
+                configuration.getBoolean("elasticsearch.local", false),
                 configuration.getBoolean("elasticsearch.refresh", true),
                 configuration.getBoolean("elasticsearch.client", true));
     }
 
     public static Node createNode(String clusterName, String indexName, boolean isLocal, boolean isClient) {
-        StopWatch initializationSW = new StopWatch();
-        initializationSW.start();
-
         Node node = NodeBuilder.nodeBuilder().local(isLocal).client(isClient).clusterName(clusterName).build();
         Client client = node.client();
         node.start();
@@ -96,8 +107,6 @@ public class ElasticService {
             System.out.print(clusterHealth.getStatus());
         }
 
-        initializationSW.stop();
-        System.out.println("graph initiazlied in " + initializationSW.getTime()/1000f);
         return node;
     }
 
@@ -111,10 +120,11 @@ public class ElasticService {
     }
 
     public void close() {
-        node.close();
+        client.close();
     }
 
     public IndexResponse addElement(String label, @Nullable Object idValue, ElasticElement.Type type, Object... keyValues) {
+        addElementTimer.start();
         for (int i = 0; i < keyValues.length; i = i + 2) {
             String key = keyValues[i].toString();
             Object value = keyValues[i + 1];
@@ -125,11 +135,15 @@ public class ElasticService {
         if (idValue == null) indexRequestBuilder = client.prepareIndex(indexName, label);
         else indexRequestBuilder = client.prepareIndex(indexName, label, idValue.toString());
         Object[] all = ArrayUtils.addAll(keyValues, TYPE, type.toString());
-        return indexRequestBuilder.setCreate(true).setSource(all).execute().actionGet();
+        IndexResponse indexResponse = indexRequestBuilder.setCreate(true).setSource(all).execute().actionGet();
+        addElementTimer.stop();
+        return indexResponse;
     }
 
     public void deleteElement(Element element) {
+        removeElementTimer.start();
         client.prepareDelete(indexName, element.label(), element.id().toString()).execute().actionGet();
+        removeElementTimer.stop();
     }
 
     public void deleteElements(Iterator<Element> elements) {
@@ -137,6 +151,7 @@ public class ElasticService {
     }
 
     public <V> void addProperty(Element element, String key, V value) {
+        updatePropertyTimer.start();
         String stringValue = value.toString();
         if(value instanceof String)
             stringValue = "\"" + value + "\"";
@@ -144,11 +159,14 @@ public class ElasticService {
         client.prepareUpdate(indexName, element.label(), element.id().toString())
             .setScript("ctx._source." + key + " = " + stringValue, ScriptService.ScriptType.INLINE).get();
            //.setDoc(key, value).execute().actionGet();
+        updatePropertyTimer.stop();
     }
 
     public void removeProperty(Element element, String key) {
+        removePropertyTimer.start();
         client.prepareUpdate(indexName, element.label(), element.id().toString())
                 .setScript("ctx._source.remove(\"" + key + "\")", ScriptService.ScriptType.INLINE).get();
+        removePropertyTimer.stop();
     }
 
     public Iterator<Vertex> getVertices(Object... ids){
@@ -192,13 +210,18 @@ public class ElasticService {
     }
 
     private MultiGetResponse get(Object... ids){
+        getTimer.start();
         MultiGetRequest request = new MultiGetRequest();
         for(int i =0; i < ids.length; i++)
             request.add(indexName, null,ids[i].toString());
-        return client.multiGet(request).actionGet();
+        MultiGetResponse multiGetItemResponses = client.multiGet(request).actionGet();
+        getTimer.stop();
+        return multiGetItemResponses;
     }
 
     private Stream<SearchHit> search(FilterBuilder filter, ElasticElement.Type type, String... labels) {
+        searchTimer.start();
+
         if(refresh)
             client.admin().indices().prepareRefresh(indexName).execute().actionGet();
 
@@ -211,16 +234,15 @@ public class ElasticService {
         SearchResponse searchResponse = searchRequestBuilder.execute().actionGet();
         Iterable<SearchHit> hitsIterable = () -> searchResponse.getHits().iterator();
         Stream<SearchHit> hitStream = StreamSupport.stream(hitsIterable.spliterator(), false);
+        searchTimer.stop();
         return hitStream;
     }
 
     public void clearAllData() {
-        StopWatch sw = new StopWatch();
-        sw.start();
-        client.admin().indices().prepareDelete(indexName).execute().actionGet();
-        close();
-        sw.stop();
-        System.out.println("clearGraph: " + sw.getTime() / 1000f);
+        clearTimer.start();
+        //client.admin().indices().prepareDelete(indexName).execute().actionGet();
+        client.prepareDeleteByQuery(indexName).setQuery(QueryBuilders.matchAllQuery()).execute().actionGet();
+        clearTimer.stop();
     }
 
     private Vertex createVertex(Object id, String label, Map<String, Object> fields) {
@@ -234,4 +256,55 @@ public class ElasticService {
         fields.entrySet().forEach((field) -> edge.addPropertyLocal(field.getKey(), field.getValue()));
         return edge;
     }
+
+    public void collectData() {
+        loadTimer.PrintStats();
+        clearTimer.PrintStats();
+        addElementTimer.PrintStats();
+        removeElementTimer.PrintStats();
+        removePropertyTimer.PrintStats();
+        updatePropertyTimer.PrintStats();
+        searchTimer.PrintStats();
+        getTimer.PrintStats();
+    }
+
+    private class Timer {
+
+        private String name;
+        StopWatch sw = new StopWatch();
+        float numOfRuns = 0;
+        float longestRun = 0;
+        private long lastRun = 0;
+
+        public Timer(String name) {
+            this.name = name;
+            sw.reset();
+        }
+
+        public void start() {
+            if(sw.isSuspended())
+                sw.resume();
+            else sw.start();
+            numOfRuns++;
+        }
+
+        public void stop() {
+            sw.suspend();
+            long time = sw.getTime() - lastRun;
+            if(time > longestRun)
+                longestRun = time;
+            lastRun = time;
+        }
+
+        public void PrintStats() {
+            if(numOfRuns > 0) {
+                float time = sw.getTime() / 1000f;
+
+                System.out.println(name + ": " + twoDForm.format(time) + " total secs, "  + twoDForm.format(time / numOfRuns) + " secs per run, " + numOfRuns + " runs, " + longestRun / 1000f + " sec for longest run")
+                ;
+            }
+        }
+
+    }
+    static DecimalFormat twoDForm = new DecimalFormat("#.##");
 }

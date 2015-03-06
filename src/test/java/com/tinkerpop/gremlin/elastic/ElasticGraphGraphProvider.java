@@ -28,14 +28,10 @@ public class ElasticGraphGraphProvider extends AbstractGraphProvider {
         add(ElasticVertexProperty.class);
     }};
 
-    public ElasticGraphGraphProvider() {
-        try {
-            String path = new java.io.File( "." ).getCanonicalPath() + "\\data";
-            File file = new File(path);
-            FileUtils.deleteDirectory(file);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public ElasticGraphGraphProvider() throws IOException {
+        String path = new java.io.File( "." ).getCanonicalPath() + "\\data";
+        File file = new File(path);
+        FileUtils.deleteQuietly(file);
 
         node = ElasticService.createNode("test", "foo", true, false);
     }
@@ -45,12 +41,11 @@ public class ElasticGraphGraphProvider extends AbstractGraphProvider {
     @Override
     public Map<String, Object> getBaseConfiguration(final String graphName, final Class<?> test, final String testMethodName) {
 
-
         System.out.println("graphName: " + graphName);
         return new HashMap<String, Object>() {{
             put(Graph.GRAPH, ElasticGraph.class.getName());
             put("elasticsearch.cluster.name", "test");
-            put("elasticsearch.index.name",graphName+testMethodName.toLowerCase());
+            put("elasticsearch.index.name",graphName);
             put("elasticsearch.local", true);
             put("elasticsearch.refresh", true);
             put("elasticsearch.client", true);
@@ -60,7 +55,11 @@ public class ElasticGraphGraphProvider extends AbstractGraphProvider {
     @Override
     public void clear(final Graph g, final Configuration configuration) throws Exception {
         if (g != null) {
-            if (g instanceof ElasticGraph) ((ElasticGraph) g).elasticService.clearAllData();
+            if (g instanceof ElasticGraph) {
+                ElasticGraph elasticGraph = (ElasticGraph) g;
+                elasticGraph.elasticService.clearAllData();
+                elasticGraph.elasticService.collectData();
+            }
             g.close();
         }
     }
