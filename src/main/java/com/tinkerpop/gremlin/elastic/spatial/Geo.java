@@ -25,7 +25,7 @@ public enum Geo implements BiPredicate {
             Preconditions.checkArgument(o2 instanceof Geometry);
             if (o == null) return false;
             Preconditions.checkArgument(o instanceof Geometry);
-            return ((Geometry) o).crosses((Geometry) o2);
+            return ((Geometry) o).intersects((Geometry) o2);
 
         }
     },
