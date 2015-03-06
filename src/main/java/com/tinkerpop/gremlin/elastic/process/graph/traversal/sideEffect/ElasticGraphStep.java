@@ -47,6 +47,8 @@ public class ElasticGraphStep<E extends Element> extends GraphStep<E> {
         for (HasContainer has : this.hasContainers) {
             if (has.predicate.toString() == "eq")
                 boolFilterBuilder = boolFilterBuilder.must(FilterBuilders.termFilter(has.key, has.value));
+            else if(has.predicate.toString() == "without")
+                boolFilterBuilder = boolFilterBuilder.mustNot(FilterBuilders.existsFilter(has.key));
             else if(has.predicate instanceof Geo)
                 boolFilterBuilder = boolFilterBuilder.must(new GeoShapeFilterBuilder(has.key, GetShapeBuilder(has.value), ((Geo)has.predicate).getRelation()));
             else throw new NotImplementedException();
