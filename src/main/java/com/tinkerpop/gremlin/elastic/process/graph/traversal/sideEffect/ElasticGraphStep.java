@@ -1,6 +1,7 @@
 package com.tinkerpop.gremlin.elastic.process.graph.traversal.sideEffect;
 
 import com.tinkerpop.gremlin.elastic.ElasticService;
+import com.tinkerpop.gremlin.elastic.structure.Geo;
 import com.tinkerpop.gremlin.elastic.structure.ElasticGraph;
 import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.GraphStep;
@@ -8,7 +9,6 @@ import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Vertex;
-import org.elasticsearch.common.geo.ShapeRelation;
 import org.elasticsearch.common.geo.builders.ShapeBuilder;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
@@ -46,22 +46,11 @@ public class ElasticGraphStep<E extends Element> extends GraphStep<E> {
 
         BoolFilterBuilder boolFilterBuilder = FilterBuilders.boolFilter();
         for (HasContainer has : this.hasContainers) {
-            switch (has.predicate.toString()) {
-                case ("eq"):
-                    boolFilterBuilder = boolFilterBuilder.must(FilterBuilders.termFilter(has.key, has.value));
-                    break;
-                case("Geo.INTERSECTS"):
-                    boolFilterBuilder = boolFilterBuilder.must(new GeoShapeFilterBuilder(has.key,GetShapeBuilder(has.value), ShapeRelation.INTERSECTS));
-                    break;
-                case("Geo.DISJOINT"):
-                    boolFilterBuilder = boolFilterBuilder.must(new GeoShapeFilterBuilder(has.key,GetShapeBuilder(has.value), ShapeRelation.DISJOINT));
-                    break;
-                case("Geo.WITHIN"):
-                    boolFilterBuilder = boolFilterBuilder.must(new GeoShapeFilterBuilder(has.key,GetShapeBuilder(has.value), ShapeRelation.WITHIN));
-                    break;
-                default:
-                    throw new NotImplementedException();
-            }
+            if (has.predicate.toString() == "eq")
+                boolFilterBuilder = boolFilterBuilder.must(FilterBuilders.termFilter(has.key, has.value));
+            else if(has.predicate instanceof Geo)
+                boolFilterBuilder = boolFilterBuilder.must(new GeoShapeFilterBuilder(has.key, GetShapeBuilder(has.value), ((Geo)has.predicate).getRelation()));
+            else throw new NotImplementedException();
         }
 
         if (this.getIds().length > 0)

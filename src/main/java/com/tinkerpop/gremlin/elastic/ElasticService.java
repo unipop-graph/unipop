@@ -53,8 +53,6 @@ public class ElasticService {
     public Client client;
     Node node;
 
-
-
     public static String TYPE = "ty";
 
     public ElasticService(ElasticGraph graph, String clusterName, String indexName, boolean isLocal, boolean refresh, boolean isClient) {
