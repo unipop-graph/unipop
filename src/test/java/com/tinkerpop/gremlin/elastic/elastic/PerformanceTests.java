@@ -1,4 +1,4 @@
-package com.tinkerpop.gremlin.elastic;
+package com.tinkerpop.gremlin.elastic.elastic;
 
 
 import com.tinkerpop.gremlin.elastic.structure.ElasticGraph;
@@ -10,10 +10,9 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Iterator;
 
-public class GeneralElasticTests {
+public class PerformanceTests {
 
     StopWatch sw = new StopWatch();
 
@@ -53,7 +52,7 @@ public class GeneralElasticTests {
 
     private void stopWatch(String s) {
         sw.stop();
-        System.out.println(s + ": " + sw.getNanoTime()/1000000000);
+        System.out.println(s + ": " + sw.getTime()/1000f);
     }
 
     private void startWatch() {
