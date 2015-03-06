@@ -1,4 +1,4 @@
-package com.tinkerpop.gremlin.elastic.structure;
+package com.tinkerpop.gremlin.elastic.process.graph.traversal.sideEffect;
 
 import com.vividsolutions.jts.geom.Geometry;
 import org.elasticsearch.common.Preconditions;

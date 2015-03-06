@@ -14,7 +14,7 @@ hs_err_pid*
 # Custom
 .idea/
 data/
-elastic-gremlin.iml
+*.iml
 out/
 target/
 *.tmp
