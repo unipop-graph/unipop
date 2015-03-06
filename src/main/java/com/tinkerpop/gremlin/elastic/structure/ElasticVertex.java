@@ -115,7 +115,7 @@ public class ElasticVertex extends ElasticElement implements Vertex, Vertex.Iter
         checkRemoved();
         Iterator<Edge> edgeIterator = edgeIterator(direction, edgeLabels);
         ArrayList<Object> ids = new ArrayList<>();
-        edgeIterator.forEachRemaining((edge) -> ((ElasticEdge) edge).getVertexId(direction).forEach((id)->ids.add(id)));
+        edgeIterator.forEachRemaining((edge) -> ((ElasticEdge) edge).getVertexId(direction.opposite()).forEach((id)->ids.add(id)));
         return elasticService.getVertices(ids.toArray());
     }
 
