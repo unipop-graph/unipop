@@ -33,7 +33,6 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.index.query.FilterBuilders;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
 import org.elasticsearch.script.ScriptService;
@@ -218,7 +217,8 @@ public class ElasticService {
     public void clearAllData() {
         StopWatch sw = new StopWatch();
         sw.start();
-        client.prepareDeleteByQuery(indexName).setQuery(QueryBuilders.matchAllQuery()).execute().actionGet();
+        client.admin().indices().prepareDelete(indexName).execute().actionGet();
+        close();
         sw.stop();
         System.out.println("clearGraph: " + sw.getTime() / 1000f);
     }

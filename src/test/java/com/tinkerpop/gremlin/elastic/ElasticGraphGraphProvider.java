@@ -4,8 +4,11 @@ import com.tinkerpop.gremlin.AbstractGraphProvider;
 import com.tinkerpop.gremlin.elastic.structure.*;
 import com.tinkerpop.gremlin.structure.Graph;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.io.FileUtils;
 import org.elasticsearch.node.Node;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -25,18 +28,29 @@ public class ElasticGraphGraphProvider extends AbstractGraphProvider {
         add(ElasticVertexProperty.class);
     }};
 
-    Map<String, Node> nodes = new HashMap<>();
+    public ElasticGraphGraphProvider() {
+        try {
+            String path = new java.io.File( "." ).getCanonicalPath() + "\\data";
+            File file = new File(path);
+            FileUtils.deleteDirectory(file);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        node = ElasticService.createNode("test", "foo", true, false);
+    }
+
+    Node node;
 
     @Override
     public Map<String, Object> getBaseConfiguration(final String graphName, final Class<?> test, final String testMethodName) {
-        if(!nodes.containsKey(graphName))
-            nodes.put(graphName, ElasticService.createNode("test", graphName, true, false));
+
 
         System.out.println("graphName: " + graphName);
         return new HashMap<String, Object>() {{
             put(Graph.GRAPH, ElasticGraph.class.getName());
             put("elasticsearch.cluster.name", "test");
-            put("elasticsearch.index.name", graphName);
+            put("elasticsearch.index.name",graphName+testMethodName.toLowerCase());
             put("elasticsearch.local", true);
             put("elasticsearch.refresh", true);
             put("elasticsearch.client", true);
