@@ -16,7 +16,6 @@ public class GeneralElasticTests {
 
     StopWatch sw = new StopWatch();
 
-
     @Test
     public void profile() throws IOException {
         BaseConfiguration config = new BaseConfiguration();
