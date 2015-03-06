@@ -45,8 +45,12 @@ public class ElasticGraphStep<E extends Element> extends GraphStep<E> {
 
         BoolFilterBuilder boolFilterBuilder = FilterBuilders.boolFilter();
         for (HasContainer has : this.hasContainers) {
-            if (has.predicate.toString() == "eq")
-                boolFilterBuilder = boolFilterBuilder.must(FilterBuilders.termFilter(has.key, has.value));
+            if (has.predicate.toString().equals("eq")) {
+                if(has.key.equals("~label"))
+                    this.setLabel(has.value.toString());
+                else
+                    boolFilterBuilder = boolFilterBuilder.must(FilterBuilders.termFilter(has.key, has.value));
+            }
             else if(has.predicate.toString() == "without")
                 boolFilterBuilder = boolFilterBuilder.mustNot(FilterBuilders.existsFilter(has.key));
             else if(has.predicate instanceof Geo)
