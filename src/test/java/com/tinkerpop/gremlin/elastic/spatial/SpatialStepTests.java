@@ -46,12 +46,7 @@ public class SpatialStepTests {
         config.addProperty("elasticsearch.client", false);
 
         graph = new ElasticGraph(config);
-
-        //clear the documents
-        graph.elasticService.client.prepareDeleteByQuery(INDEX_NAME).
-                setQuery(QueryBuilders.matchAllQuery()).
-                setTypes(DOCUMENT_TYPE).
-                execute().actionGet();
+        graph.elasticService.clearAllData();
         createGeoShapeMapping(graph.elasticService.client,DOCUMENT_TYPE);
     }
 
