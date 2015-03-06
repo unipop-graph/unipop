@@ -12,7 +12,7 @@ public enum Geo implements BiPredicate {
      * Whether the intersection between two geographic regions is non-empty
      */
 
-    INTERSECT(ShapeRelation.INTERSECTS,(geometry1, geometry2)-> geometry1.crosses(geometry2)) ,
+    INTERSECT(ShapeRelation.INTERSECTS,(geometry1, geometry2)-> geometry1.intersects(geometry2)) ,
 
     /**
      * Whether the intersection between two geographic regions is empty
