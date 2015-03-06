@@ -10,12 +10,12 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Iterator;
 
 public class GeneralElasticTests {
 
     StopWatch sw = new StopWatch();
+
 
     @Test
     public void profile() throws IOException {

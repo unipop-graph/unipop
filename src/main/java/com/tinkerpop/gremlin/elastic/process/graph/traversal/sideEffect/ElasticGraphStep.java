@@ -8,15 +8,26 @@ import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Vertex;
+import com.vividsolutions.jts.awt.PointShapeFactory;
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.io.ParseException;
+import com.vividsolutions.jts.io.WKTReader;
+import org.elasticsearch.common.geo.ShapeRelation;
+import org.elasticsearch.common.geo.builders.CircleBuilder;
+import org.elasticsearch.common.geo.builders.ShapeBuilder;
+import org.elasticsearch.common.xcontent.XContentParser;
+import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.index.query.BoolFilterBuilder;
 import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.index.query.FilterBuilders;
+import org.elasticsearch.index.query.GeoShapeFilterBuilder;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+import java.io.IOException;
 import java.util.*;
 
 public class ElasticGraphStep<E extends Element> extends GraphStep<E> {
-    public final List<HasContainer> hasContainers = new ArrayList<>();
+    public final List<HasContainer> hasContainers = new ArrayList<HasContainer>();
     ElasticService elasticService;
 
 
@@ -45,6 +56,15 @@ public class ElasticGraphStep<E extends Element> extends GraphStep<E> {
                 case ("eq"):
                     boolFilterBuilder = boolFilterBuilder.must(FilterBuilders.termFilter(has.key, has.value));
                     break;
+                case("Geo.INTERSECTS"):
+                    boolFilterBuilder = boolFilterBuilder.must(new GeoShapeFilterBuilder(has.key,GetShapeBuilder(has.value), ShapeRelation.INTERSECTS));
+                    break;
+                case("Geo.DISJOINT"):
+                    boolFilterBuilder = boolFilterBuilder.must(new GeoShapeFilterBuilder(has.key,GetShapeBuilder(has.value), ShapeRelation.DISJOINT));
+                    break;
+                case("Geo.WITHIN"):
+                    boolFilterBuilder = boolFilterBuilder.must(new GeoShapeFilterBuilder(has.key,GetShapeBuilder(has.value), ShapeRelation.WITHIN));
+                    break;
                 default:
                     throw new NotImplementedException();
             }
@@ -54,6 +74,19 @@ public class ElasticGraphStep<E extends Element> extends GraphStep<E> {
             boolFilterBuilder = boolFilterBuilder.must(FilterBuilders.idsFilter().addIds(Arrays.toString(this.getIds())));
 
         return boolFilterBuilder;
+    }
+
+    private ShapeBuilder GetShapeBuilder(Object object)  {
+        try {
+            String geoJson = (String) object;
+            XContentParser parser = JsonXContent.jsonXContent.createParser(geoJson);
+            parser.nextToken();
+
+            return ShapeBuilder.parse(parser);
+        }
+        catch (Exception e){
+            return null;
+        }
     }
 
     private String label(){
