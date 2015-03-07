@@ -77,7 +77,7 @@ public class ElasticGraphStep<E extends Element> extends GraphStep<E> {
             String[] stringIds = Arrays.copyOf(getIds(), getIds().length, String[].class);
             boolFilterBuilder = boolFilterBuilder.must(FilterBuilders.idsFilter().addIds(stringIds));
         }
-
+        if(!boolFilterBuilder.hasClauses()) return null;
         return boolFilterBuilder;
     }
 
