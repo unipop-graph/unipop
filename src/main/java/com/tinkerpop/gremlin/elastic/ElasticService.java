@@ -49,7 +49,6 @@ import java.util.stream.StreamSupport;
 public class ElasticService {
     public static String TYPE = "ty";
 
-
     public enum ClientType {
         TRANSPORT_CLIENT,
         NODE_CLIENT,
@@ -250,7 +249,6 @@ public class ElasticService {
 
     public void clearAllData() {
         timer("clear graph").start();
-        //client.admin().indices().prepareDelete(indexName).execute().actionGet();
         client.prepareDeleteByQuery(indexName).setQuery(QueryBuilders.matchAllQuery()).execute().actionGet();
         timer("clear graph").stop();
     }

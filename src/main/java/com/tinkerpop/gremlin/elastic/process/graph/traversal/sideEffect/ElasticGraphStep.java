@@ -61,7 +61,7 @@ public class ElasticGraphStep<E extends Element> extends GraphStep<E> {
                 else if (predicateString.equals("lte"))
                     boolFilterBuilder.must(FilterBuilders.rangeFilter(has.key).lte(has.value));
                 else
-                    throw new NotImplementedException();
+                    throw new IllegalArgumentException("predicate not supported in has step: " + has.predicate.toString());
             }
             else if(has.predicate instanceof Contains){
                 if(has.predicate == Contains.without)
