@@ -1,6 +1,7 @@
 package com.tinkerpop.gremlin.elastic.elastic;
 
 
+import com.tinkerpop.gremlin.elastic.ElasticService;
 import com.tinkerpop.gremlin.elastic.structure.ElasticGraph;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Graph;
@@ -23,9 +24,8 @@ public class PerformanceTests {
         config.addProperty("elasticsearch.cluster.name", "test");
         String indexName = "graph";
         config.addProperty("elasticsearch.index.name", indexName.toLowerCase());
-        config.addProperty("elasticsearch.local", true);
         config.addProperty("elasticsearch.refresh", true);
-        config.addProperty("elasticsearch.client", false);
+        config.addProperty("elasticsearch.client", ElasticService.ClientType.NODE.toString());
 
         startWatch();
         ElasticGraph graph = new ElasticGraph(config);

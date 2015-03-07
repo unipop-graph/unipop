@@ -3,6 +3,7 @@ package com.tinkerpop.gremlin.elastic.elastic;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.impl.PointImpl;
+import com.tinkerpop.gremlin.elastic.ElasticService;
 import com.tinkerpop.gremlin.elastic.structure.ElasticGraph;
 import com.tinkerpop.gremlin.elastic.process.graph.traversal.sideEffect.Geo;
 import com.tinkerpop.gremlin.process.T;
@@ -37,9 +38,8 @@ public class SpatialStepTests {
         BaseConfiguration config = new BaseConfiguration();
         config.addProperty("elasticsearch.cluster.name", CLUSTER_NAME);
         config.addProperty("elasticsearch.index.name", INDEX_NAME);
-        config.addProperty("elasticsearch.local", true);
         config.addProperty("elasticsearch.refresh", true);
-        config.addProperty("elasticsearch.client", false);
+        config.addProperty("elasticsearch.client", ElasticService.ClientType.NODE.toString());
 
         graph = new ElasticGraph(config);
 

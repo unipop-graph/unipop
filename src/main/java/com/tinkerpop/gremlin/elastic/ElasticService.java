@@ -61,16 +61,7 @@ public class ElasticService {
     private boolean refresh;
     public Client client;
     private Node node;
-
-    HashMap<String, Timer> timers = new HashMap<>();
-
-    private Timer timer(String name){
-        if(timers.containsKey(name))
-            return timers.get(name);
-        Timer timer = new Timer(name);
-        timers.put(name, timer);
-        return timer;
-    }
+    private HashMap<String, Timer> timers = new HashMap<>();
 
     public static ElasticService create(ElasticGraph graph, Configuration configuration) {
         return new ElasticService(graph,
@@ -280,6 +271,14 @@ public class ElasticService {
         timers.values().forEach((timer)->timer.PrintStats());
     }
 
+    private Timer timer(String name){
+        if(timers.containsKey(name))
+            return timers.get(name);
+        Timer timer = new Timer(name);
+        timers.put(name, timer);
+        return timer;
+    }
+
     private class Timer {
 
         private String name;
@@ -312,11 +311,12 @@ public class ElasticService {
             if(numOfRuns > 0) {
                 float time = sw.getTime() / 1000f;
 
-                System.out.println(name + ": " + twoDForm.format(time) + " total secs, "  + twoDForm.format(time / numOfRuns) + " secs per run, " + numOfRuns + " runs, " + longestRun / 1000f + " sec for longest run")
+                System.out.println(name + ": " + twoDForm.format(time) + " total secs, "  + twoDForm.format(time / numOfRuns) + " secs per run, " + numOfRuns + " runs, " + twoDForm.format(longestRun / 1000f) + " sec for longest run")
                 ;
             }
         }
 
     }
+
     static DecimalFormat twoDForm = new DecimalFormat("#.##");
 }
