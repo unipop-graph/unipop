@@ -7,7 +7,7 @@ Doesn't work completely yet.
 * Make all tests pass
 * Optimize Queries with Scroll API
 * Optimize inserts with batch API
-* Support multiple partitions in ES, with some kind of configurable partitioning strategy.
+* Support multiple indices in ES, with some kind of configurable partitioning strategy.
 * Optimize aggregation steps with elasticsearch aggregations. (BarrierSteps - GraphTraversal.barrier())
 * Add multi-properties & meta-properties support.
 * Add graph variables support
