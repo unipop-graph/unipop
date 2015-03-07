@@ -5,9 +5,7 @@ import com.tinkerpop.gremlin.elastic.structure.ElasticGraph;
 import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.GraphStep;
 import com.tinkerpop.gremlin.process.graph.util.HasContainer;
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Element;
-import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.structure.*;
 import org.elasticsearch.common.geo.builders.ShapeBuilder;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
@@ -45,16 +43,34 @@ public class ElasticGraphStep<E extends Element> extends GraphStep<E> {
 
         BoolFilterBuilder boolFilterBuilder = FilterBuilders.boolFilter();
         for (HasContainer has : this.hasContainers) {
-            if (has.predicate.toString().equals("eq")) {
-                if(has.key.equals("~label"))
-                    this.setLabel(has.value.toString());
+            if(has.predicate instanceof Compare) {
+                String predicateString = has.predicate.toString();
+                if (predicateString.equals("eq")) {
+                    if (has.key.equals("~label"))
+                        this.setLabel(has.value.toString());
+                    else
+                        boolFilterBuilder = boolFilterBuilder.must(FilterBuilders.termFilter(has.key, has.value));
+                } else if (predicateString.equals("neq"))
+                    boolFilterBuilder = boolFilterBuilder.mustNot(FilterBuilders.termFilter(has.key, has.value));
+                else if (predicateString.equals("gt"))
+                    boolFilterBuilder.must(FilterBuilders.rangeFilter(has.key).gt(has.value));
+                else if (predicateString.equals("gte"))
+                    boolFilterBuilder.must(FilterBuilders.rangeFilter(has.key).gte(has.value));
+                else if (predicateString.equals("lt"))
+                    boolFilterBuilder.must(FilterBuilders.rangeFilter(has.key).lt(has.value));
+                else if (predicateString.equals("lte"))
+                    boolFilterBuilder.must(FilterBuilders.rangeFilter(has.key).lte(has.value));
                 else
-                    boolFilterBuilder = boolFilterBuilder.must(FilterBuilders.termFilter(has.key, has.value));
+                    throw new NotImplementedException();
             }
-            else if(has.predicate.toString().equals("without"))
-                boolFilterBuilder = boolFilterBuilder.mustNot(FilterBuilders.existsFilter(has.key));
+            else if(has.predicate instanceof Contains){
+                if(has.predicate == Contains.without)
+                    boolFilterBuilder = boolFilterBuilder.mustNot(FilterBuilders.existsFilter(has.key));
+                else if(has.predicate == Contains.within)
+                    boolFilterBuilder = boolFilterBuilder.must(FilterBuilders.existsFilter(has.key));
+            }
             else if(has.predicate instanceof Geo)
-                boolFilterBuilder = boolFilterBuilder.must(new GeoShapeFilterBuilder(has.key, GetShapeBuilder(has.value), ((Geo)has.predicate).getRelation()));
+                boolFilterBuilder = boolFilterBuilder.must(new GeoShapeFilterBuilder(has.key, GetShapeBuilder(has.value), ((Geo) has.predicate).getRelation()));
             else throw new NotImplementedException();
         }
         if (this.getIds().length > 0) {
