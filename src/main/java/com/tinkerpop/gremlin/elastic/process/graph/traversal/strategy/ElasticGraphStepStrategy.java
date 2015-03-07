@@ -2,12 +2,9 @@ package com.tinkerpop.gremlin.elastic.process.graph.traversal.strategy;
 
 import com.tinkerpop.gremlin.elastic.process.graph.traversal.sideEffect.ElasticGraphStep;
 import com.tinkerpop.gremlin.elastic.structure.ElasticGraph;
-import com.tinkerpop.gremlin.process.Step;
-import com.tinkerpop.gremlin.process.Traversal;
-import com.tinkerpop.gremlin.process.TraversalEngine;
+import com.tinkerpop.gremlin.process.*;
 import com.tinkerpop.gremlin.process.graph.marker.HasContainerHolder;
-import com.tinkerpop.gremlin.process.graph.step.sideEffect.GraphStep;
-import com.tinkerpop.gremlin.process.graph.step.sideEffect.IdentityStep;
+import com.tinkerpop.gremlin.process.graph.step.sideEffect.*;
 import com.tinkerpop.gremlin.process.graph.strategy.AbstractTraversalStrategy;
 import com.tinkerpop.gremlin.process.util.TraversalHelper;
 

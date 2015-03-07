@@ -9,10 +9,7 @@ import com.tinkerpop.gremlin.structure.*;
 import org.elasticsearch.common.geo.builders.ShapeBuilder;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
-import org.elasticsearch.index.query.BoolFilterBuilder;
-import org.elasticsearch.index.query.FilterBuilder;
-import org.elasticsearch.index.query.FilterBuilders;
-import org.elasticsearch.index.query.GeoShapeFilterBuilder;
+import org.elasticsearch.index.query.*;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.*;
@@ -38,18 +35,15 @@ public class ElasticGraphStep<E extends Element> extends GraphStep<E> {
     }
 
     private FilterBuilder getFilter() {
-        if (this.hasContainers.size() == 0 && this.getIds().length == 0)
-            return null;
+        if (this.hasContainers.size() == 0 && this.getIds().length == 0) return null;
 
         BoolFilterBuilder boolFilterBuilder = FilterBuilders.boolFilter();
         for (HasContainer has : this.hasContainers) {
-            if(has.predicate instanceof Compare) {
+            if (has.predicate instanceof Compare) {
                 String predicateString = has.predicate.toString();
                 if (predicateString.equals("eq")) {
-                    if (has.key.equals("~label"))
-                        this.setLabel(has.value.toString());
-                    else
-                        boolFilterBuilder = boolFilterBuilder.must(FilterBuilders.termFilter(has.key, has.value));
+                    if (has.key.equals("~label")) this.setLabel(has.value.toString());
+                    else boolFilterBuilder = boolFilterBuilder.must(FilterBuilders.termFilter(has.key, has.value));
                 } else if (predicateString.equals("neq"))
                     boolFilterBuilder = boolFilterBuilder.mustNot(FilterBuilders.termFilter(has.key, has.value));
                 else if (predicateString.equals("gt"))
@@ -62,14 +56,12 @@ public class ElasticGraphStep<E extends Element> extends GraphStep<E> {
                     boolFilterBuilder.must(FilterBuilders.rangeFilter(has.key).lte(has.value));
                 else
                     throw new IllegalArgumentException("predicate not supported in has step: " + has.predicate.toString());
-            }
-            else if(has.predicate instanceof Contains){
-                if(has.predicate == Contains.without)
+            } else if (has.predicate instanceof Contains) {
+                if (has.predicate == Contains.without)
                     boolFilterBuilder = boolFilterBuilder.mustNot(FilterBuilders.existsFilter(has.key));
-                else if(has.predicate == Contains.within)
+                else if (has.predicate == Contains.within)
                     boolFilterBuilder = boolFilterBuilder.must(FilterBuilders.existsFilter(has.key));
-            }
-            else if(has.predicate instanceof Geo)
+            } else if (has.predicate instanceof Geo)
                 boolFilterBuilder = boolFilterBuilder.must(new GeoShapeFilterBuilder(has.key, GetShapeBuilder(has.value), ((Geo) has.predicate).getRelation()));
             else throw new NotImplementedException();
         }
@@ -77,24 +69,23 @@ public class ElasticGraphStep<E extends Element> extends GraphStep<E> {
             String[] stringIds = Arrays.copyOf(getIds(), getIds().length, String[].class);
             boolFilterBuilder = boolFilterBuilder.must(FilterBuilders.idsFilter().addIds(stringIds));
         }
-        if(!boolFilterBuilder.hasClauses()) return null;
+        if (!boolFilterBuilder.hasClauses()) return null;
         return boolFilterBuilder;
     }
 
-    private ShapeBuilder GetShapeBuilder(Object object)  {
+    private ShapeBuilder GetShapeBuilder(Object object) {
         try {
             String geoJson = (String) object;
             XContentParser parser = JsonXContent.jsonXContent.createParser(geoJson);
             parser.nextToken();
 
             return ShapeBuilder.parse(parser);
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             return null;
         }
     }
 
-    private String label(){
+    private String label() {
         return this.getLabel().isPresent() ? this.getLabel().get() : null;
     }
 }

@@ -4,12 +4,8 @@ import com.tinkerpop.gremlin.elastic.ElasticService;
 import com.tinkerpop.gremlin.elastic.process.graph.traversal.strategy.ElasticGraphStepStrategy;
 import com.tinkerpop.gremlin.process.TraversalStrategies;
 import com.tinkerpop.gremlin.process.computer.GraphComputer;
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Graph;
-import com.tinkerpop.gremlin.structure.Transaction;
-import com.tinkerpop.gremlin.structure.Vertex;
-import com.tinkerpop.gremlin.structure.util.ElementHelper;
-import com.tinkerpop.gremlin.structure.util.StringFactory;
+import com.tinkerpop.gremlin.structure.*;
+import com.tinkerpop.gremlin.structure.util.*;
 import org.apache.commons.configuration.Configuration;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
@@ -21,7 +17,7 @@ import java.util.Iterator;
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_PERFORMANCE)
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
 public class ElasticGraph implements Graph, Graph.Iterators {
-   static {
+    static {
         try {
             TraversalStrategies.GlobalCache.registerStrategies(ElasticGraph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(ElasticGraphStepStrategy.instance()));
         } catch (final CloneNotSupportedException e) {
@@ -85,15 +81,13 @@ public class ElasticGraph implements Graph, Graph.Iterators {
 
     @Override
     public Iterator<Vertex> vertexIterator(final Object... vertexIds) {
-        if(vertexIds == null || vertexIds.length == 0)
-            return  elasticService.searchVertices(null);
+        if (vertexIds == null || vertexIds.length == 0) return elasticService.searchVertices(null);
         return elasticService.getVertices(vertexIds);
     }
 
     @Override
     public Iterator<Edge> edgeIterator(final Object... edgeIds) {
-        if(edgeIds == null || edgeIds.length == 0)
-            return elasticService.searchEdges(null);
+        if (edgeIds == null || edgeIds.length == 0) return elasticService.searchEdges(null);
         return elasticService.getEdges(edgeIds);
     }
 
@@ -105,8 +99,7 @@ public class ElasticGraph implements Graph, Graph.Iterators {
         try {
             IndexResponse response = elasticService.addElement(label, idValue, ElasticElement.Type.vertex, keyValues);
             return new ElasticVertex(response.getId(), label, keyValues, this);
-        }
-        catch(DocumentAlreadyExistsException ex) {
+        } catch (DocumentAlreadyExistsException ex) {
             throw Graph.Exceptions.vertexWithIdAlreadyExists(idValue);
         }
     }

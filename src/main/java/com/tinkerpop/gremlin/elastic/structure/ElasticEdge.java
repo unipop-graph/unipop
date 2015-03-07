@@ -2,12 +2,9 @@ package com.tinkerpop.gremlin.elastic.structure;
 
 import com.tinkerpop.gremlin.elastic.ElasticService;
 import com.tinkerpop.gremlin.structure.*;
-import com.tinkerpop.gremlin.structure.util.ElementHelper;
-import com.tinkerpop.gremlin.structure.util.StringFactory;
+import com.tinkerpop.gremlin.structure.util.*;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public class ElasticEdge extends ElasticElement implements Edge, Edge.Iterators {
 
@@ -27,7 +24,7 @@ public class ElasticEdge extends ElasticElement implements Edge, Edge.Iterators 
 
     @Override
     public Property addPropertyLocal(String key, Object value) {
-        if(!shouldAddProperty(key)) return Property.empty();
+        if (!shouldAddProperty(key)) return Property.empty();
         ElasticProperty vertexProperty = new ElasticProperty(this, key, value);
         properties.put(key, vertexProperty);
         return vertexProperty;

@@ -1,11 +1,7 @@
 package com.tinkerpop.gremlin.elastic.structure;
 
-import com.tinkerpop.gremlin.structure.Element;
-import com.tinkerpop.gremlin.structure.Property;
-import com.tinkerpop.gremlin.structure.Vertex;
-import com.tinkerpop.gremlin.structure.VertexProperty;
-import com.tinkerpop.gremlin.structure.util.ElementHelper;
-import com.tinkerpop.gremlin.structure.util.StringFactory;
+import com.tinkerpop.gremlin.structure.*;
+import com.tinkerpop.gremlin.structure.util.*;
 
 import java.util.Iterator;
 

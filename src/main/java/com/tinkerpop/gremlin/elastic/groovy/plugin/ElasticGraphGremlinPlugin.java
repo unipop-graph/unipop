@@ -1,13 +1,9 @@
 package com.tinkerpop.gremlin.elastic.groovy.plugin;
 
 import com.tinkerpop.gremlin.elastic.structure.ElasticGraph;
-import com.tinkerpop.gremlin.groovy.plugin.AbstractGremlinPlugin;
-import com.tinkerpop.gremlin.groovy.plugin.IllegalEnvironmentException;
-import com.tinkerpop.gremlin.groovy.plugin.PluginAcceptor;
-import com.tinkerpop.gremlin.groovy.plugin.PluginInitializationException;
+import com.tinkerpop.gremlin.groovy.plugin.*;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author Stephen Mallette (http://stephen.genoprime.com)

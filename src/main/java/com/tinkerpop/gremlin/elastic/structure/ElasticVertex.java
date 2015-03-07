@@ -2,16 +2,13 @@ package com.tinkerpop.gremlin.elastic.structure;
 
 import com.tinkerpop.gremlin.elastic.ElasticService;
 import com.tinkerpop.gremlin.structure.*;
-import com.tinkerpop.gremlin.structure.util.ElementHelper;
-import com.tinkerpop.gremlin.structure.util.StringFactory;
+import com.tinkerpop.gremlin.structure.util.*;
 import org.apache.commons.lang3.ArrayUtils;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
-import org.elasticsearch.index.query.FilterBuilder;
-import org.elasticsearch.index.query.FilterBuilders;
+import org.elasticsearch.index.query.*;
 
-import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.*;
 
 public class ElasticVertex extends ElasticElement implements Vertex, Vertex.Iterators {
     private ElasticService elasticService;
@@ -24,7 +21,7 @@ public class ElasticVertex extends ElasticElement implements Vertex, Vertex.Iter
     @Override
     public Property addPropertyLocal(String key, Object value) {
         checkRemoved();
-        if(!shouldAddProperty(key)) return Property.empty();
+        if (!shouldAddProperty(key)) return Property.empty();
         ElasticVertexProperty vertexProperty = new ElasticVertexProperty(this, key, value);
         properties.put(key, vertexProperty);
         return vertexProperty;
@@ -66,8 +63,7 @@ public class ElasticVertex extends ElasticElement implements Vertex, Vertex.Iter
         try {
             IndexResponse response = elasticService.addElement(label, idValue, Type.edge, ArrayUtils.addAll(keyValues, ElasticEdge.InId, vertex.id(), ElasticEdge.OutId, this.id()));
             return new ElasticEdge(response.getId(), label, this.id(), vertex.id(), keyValues, graph);
-        }
-        catch(DocumentAlreadyExistsException ex) {
+        } catch (DocumentAlreadyExistsException ex) {
             throw Graph.Exceptions.edgeWithIdAlreadyExists(idValue);
         }
     }
@@ -115,7 +111,7 @@ public class ElasticVertex extends ElasticElement implements Vertex, Vertex.Iter
         checkRemoved();
         Iterator<Edge> edgeIterator = edgeIterator(direction, edgeLabels);
         ArrayList<Object> ids = new ArrayList<>();
-        edgeIterator.forEachRemaining((edge) -> ((ElasticEdge) edge).getVertexId(direction.opposite()).forEach((id)->ids.add(id)));
+        edgeIterator.forEachRemaining((edge) -> ((ElasticEdge) edge).getVertexId(direction.opposite()).forEach((id) -> ids.add(id)));
         return elasticService.getVertices(ids.toArray());
     }
 

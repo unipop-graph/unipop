@@ -3,11 +3,9 @@ package com.tinkerpop.gremlin.elastic.elastic;
 
 import com.tinkerpop.gremlin.elastic.ElasticService;
 import com.tinkerpop.gremlin.elastic.structure.ElasticGraph;
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Graph;
-import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.elastic.tools.TimingAccessor;
+import com.tinkerpop.gremlin.structure.*;
 import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.lang3.time.StopWatch;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -15,48 +13,50 @@ import java.util.Iterator;
 
 public class PerformanceTests {
 
-    StopWatch sw = new StopWatch();
+    TimingAccessor sw = new TimingAccessor();
 
     @Test
     public void profile() throws IOException {
         BaseConfiguration config = new BaseConfiguration();
         config.addProperty(Graph.GRAPH, ElasticGraph.class.getName());
         config.addProperty("elasticsearch.cluster.name", "test");
-        String indexName = "graph";
-        config.addProperty("elasticsearch.index.name", indexName.toLowerCase());
+        config.addProperty("elasticsearch.index.name", "graph");
         config.addProperty("elasticsearch.refresh", true);
         config.addProperty("elasticsearch.client", ElasticService.ClientType.NODE.toString());
 
-        startWatch();
+        startWatch("graph initalization");
         ElasticGraph graph = new ElasticGraph(config);
         stopWatch("graph initalization");
 
-        startWatch();
-        int count = 1000;
+        startWatch("add vertices");
+        int count = 10000;
         for(int i = 0; i < count; i++)
             graph.addVertex();
         stopWatch("add vertices");
 
-        startWatch();
+        startWatch("vertex iterator");
         Iterator<Vertex> vertexIterator = graph.iterators().vertexIterator();
         stopWatch("vertex iterator");
 
-        startWatch();
+        startWatch("add edges");
         vertexIterator.forEachRemaining(v -> v.addEdge("bla", v));
         stopWatch("add edges");
 
-        startWatch();
+        startWatch("edge iterator");
         Iterator<Edge> edgeIterator = graph.iterators().edgeIterator();
         stopWatch("edge iterator");
+
+        sw.print();
+        System.out.println("-----");
+        graph.elasticService.collectData();
+        graph.close();
     }
 
     private void stopWatch(String s) {
-        sw.stop();
-        System.out.println(s + ": " + sw.getTime()/1000f);
+        sw.timer(s).stop();
     }
 
-    private void startWatch() {
-        sw.reset();
-        sw.start();
+    private void startWatch(String s) {
+        sw.timer(s).start();
     }
 }
