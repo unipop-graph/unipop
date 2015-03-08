@@ -35,6 +35,7 @@ public class ElasticService {
 
     public static String TYPE = "ty";
 
+
     public static class ClientType {
         public static String TRANSPORT_CLIENT = "TRANSPORT_CLIENT";
         public static String NODE_CLIENT = "NODE_CLIENT";
@@ -48,6 +49,9 @@ public class ElasticService {
     private ElasticGraph graph;
     private String indexName;
     private boolean refresh;
+    private final String clusterName;
+    private final String clientType;
+    private final String addresses;
     public Client client;
     private Node node;
     TimingAccessor timingAccessor = new TimingAccessor();
@@ -61,18 +65,23 @@ public class ElasticService {
                 configuration.getString("elasticsearch.cluster.name", "elasticsearch"),
                 configuration.getString("elasticsearch.index.name", "graph"),
                 configuration.getBoolean("elasticsearch.refresh", true),
-                configuration.getString("elasticsearch.client", ClientType.NODE));
+                configuration.getString("elasticsearch.client", ClientType.NODE),
+                configuration.getString("elasticsearch.cluster.address", "127.0.0.1"));
     }
 
-    public ElasticService(ElasticGraph graph, String clusterName, String indexName, boolean refresh, String clientType) throws IOException {
+    public ElasticService(ElasticGraph graph, String clusterName, String indexName, boolean refresh, String clientType, String addresses) throws IOException {
         timer("initialization").start();
 
         this.graph = graph;
         this.indexName = indexName;
         this.refresh = refresh;
-        if (clientType.equals(ClientType.TRANSPORT_CLIENT)) createTransportClient(clusterName);
-        else if (clientType.equals(ClientType.NODE_CLIENT)) createNode(clusterName, true);
-        else if (clientType.equals(ClientType.NODE)) createNode(clusterName, false);
+        this.clusterName = clusterName;
+        this.clientType = clientType;
+        this.addresses = addresses;
+
+        if (clientType.equals(ClientType.TRANSPORT_CLIENT)) createTransportClient();
+        else if (clientType.equals(ClientType.NODE_CLIENT)) createNode(true);
+        else if (clientType.equals(ClientType.NODE)) createNode(false);
         else throw new IllegalArgumentException("clientType unknown:" + clientType);
 
         createIndex(indexName, client);
@@ -80,14 +89,15 @@ public class ElasticService {
         timer("initialization").stop();
     }
 
-    private void createTransportClient(String clusterName) {
+    private void createTransportClient() {
         Settings settings = ImmutableSettings.settingsBuilder().put("cluster.name", clusterName).build();
         TransportClient transportClient = new TransportClient(settings);
-        transportClient.addTransportAddress(new InetSocketTransportAddress("127.0.0.1", 9300));
+        for(String address : addresses.split(","))
+            transportClient.addTransportAddress(new InetSocketTransportAddress(address, 9300));
         this.client = transportClient;
     }
 
-    private void createNode(String clusterName, boolean client) {
+    private void createNode(boolean client) {
         this.node = NodeBuilder.nodeBuilder().client(client).clusterName(clusterName).build();
         node.start();
         this.client = node.client();
