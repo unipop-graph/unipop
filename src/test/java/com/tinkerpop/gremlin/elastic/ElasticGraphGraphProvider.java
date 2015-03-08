@@ -5,19 +5,14 @@ import com.tinkerpop.gremlin.elastic.structure.*;
 import com.tinkerpop.gremlin.structure.Graph;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.FileUtils;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
+import org.elasticsearch.action.admin.cluster.health.*;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.node.Node;
-import org.elasticsearch.node.NodeBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.node.*;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.io.*;
+import java.util.*;
 
 /**
  * @author Stephen Mallette (http://stephen.genoprime.com)
@@ -35,14 +30,17 @@ public class ElasticGraphGraphProvider extends AbstractGraphProvider {
         add(ElasticVertexProperty.class);
     }};
 
+    Node node;
+    Client client;
+
     public ElasticGraphGraphProvider() throws IOException {
         String path = new java.io.File( "." ).getCanonicalPath() + "\\data";
         File file = new File(path);
         FileUtils.deleteQuietly(file);
 
-        Node node = NodeBuilder.nodeBuilder().client(false).clusterName(CLUSTER_NAME).build();
+        node = NodeBuilder.nodeBuilder().client(false).clusterName(CLUSTER_NAME).build();
         node.start();
-        Client client = node.client();
+        client = node.client();
         final ClusterHealthRequest clusterHealthRequest = new ClusterHealthRequest().timeout(TimeValue.timeValueSeconds(10)).waitForYellowStatus();
         final ClusterHealthResponse clusterHealth = client.admin().cluster().health(clusterHealthRequest).actionGet();
         if (clusterHealth.isTimedOut()) {
@@ -66,10 +64,13 @@ public class ElasticGraphGraphProvider extends AbstractGraphProvider {
     @Override
     public void clear(final Graph g, final Configuration configuration) throws Exception {
         if (g != null) {
+            String indexName = configuration.getString("elasticsearch.index.name");
+            //don't use elasticGraph.elasticService.clearAllData(), because sometimes the graph is closed before clear
+            client.prepareDeleteByQuery(indexName).setQuery(QueryBuilders.matchAllQuery()).execute().actionGet();
+            g.close();
             if (g instanceof ElasticGraph) {
                 ElasticGraph elasticGraph = (ElasticGraph) g;
-                elasticGraph.elasticService.clearAllData();
-                elasticGraph.elasticService.collectData();
+                //elasticGraph.elasticService.collectData();
             }
             g.close();
         }

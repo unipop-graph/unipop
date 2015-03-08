@@ -9,7 +9,7 @@ import jline.internal.Nullable;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.ArrayUtils;
 import org.elasticsearch.action.admin.cluster.health.*;
-import org.elasticsearch.action.admin.indices.create.*;
+import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.exists.indices.*;
 import org.elasticsearch.action.get.*;
 import org.elasticsearch.action.index.*;
@@ -25,6 +25,7 @@ import org.elasticsearch.node.*;
 import org.elasticsearch.script.ScriptService;
 import org.elasticsearch.search.SearchHit;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.*;
 
@@ -55,7 +56,7 @@ public class ElasticService {
 
     //region initialization
 
-    public static ElasticService create(ElasticGraph graph, Configuration configuration) {
+    public static ElasticService create(ElasticGraph graph, Configuration configuration) throws IOException {
         return new ElasticService(graph,
                 configuration.getString("elasticsearch.cluster.name", "elasticsearch"),
                 configuration.getString("elasticsearch.index.name", "graph"),
@@ -63,7 +64,7 @@ public class ElasticService {
                 configuration.getString("elasticsearch.client", ClientType.NODE));
     }
 
-    public ElasticService(ElasticGraph graph, String clusterName, String indexName, boolean refresh, String clientType) {
+    public ElasticService(ElasticGraph graph, String clusterName, String indexName, boolean refresh, String clientType) throws IOException {
         timer("initialization").start();
 
         this.graph = graph;
@@ -92,7 +93,7 @@ public class ElasticService {
         this.client = node.client();
     }
 
-    private static void createIndex(String indexName, Client client) {
+    private static void createIndex(String indexName, Client client) throws IOException {
         IndicesExistsRequest request = new IndicesExistsRequest(indexName);
         IndicesExistsResponse response = client.admin().indices().exists(request).actionGet();
         if (!response.isExists()) {
@@ -104,13 +105,17 @@ public class ElasticService {
         final ClusterHealthRequest clusterHealthRequest = new ClusterHealthRequest(indexName).timeout(TimeValue.timeValueSeconds(10)).waitForYellowStatus();
         final ClusterHealthResponse clusterHealth = client.admin().cluster().health(clusterHealthRequest).actionGet();
         if (clusterHealth.isTimedOut()) {
-            System.out.print(clusterHealth.getStatus());
+            throw new IOException(clusterHealth.getStatus() +
+                    " status returned from cluster '" + client.admin().cluster().toString() +
+                    "', index '" + indexName + "'");
+
         }
     }
 
     public void close() {
         client.close();
         if (node != null) node.close();
+        timingAccessor.print();
     }
 
     //endregion
