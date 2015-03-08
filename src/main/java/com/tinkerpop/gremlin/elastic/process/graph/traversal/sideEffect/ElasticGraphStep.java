@@ -35,10 +35,12 @@ public class ElasticGraphStep<E extends Element> extends GraphStep<E> {
     }
 
     private FilterBuilder getFilter() {
-        if (this.hasContainers.size() == 0 && this.getIds().length == 0) return null;
+        Object[] ids = this.getIds();
+        List<HasContainer> hasContainers = this.hasContainers;
+        if (hasContainers.size() == 0 && ids.length == 0) return null;
 
         BoolFilterBuilder boolFilterBuilder = FilterBuilders.boolFilter();
-        for (HasContainer has : this.hasContainers) {
+        for (HasContainer has : hasContainers) {
             if (has.predicate instanceof Compare) {
                 String predicateString = has.predicate.toString();
                 if (predicateString.equals("eq")) {
@@ -65,8 +67,10 @@ public class ElasticGraphStep<E extends Element> extends GraphStep<E> {
                 boolFilterBuilder = boolFilterBuilder.must(new GeoShapeFilterBuilder(has.key, GetShapeBuilder(has.value), ((Geo) has.predicate).getRelation()));
             else throw new NotImplementedException();
         }
-        if (this.getIds().length > 0) {
-            String[] stringIds = Arrays.copyOf(getIds(), getIds().length, String[].class);
+        if (ids.length > 0) {
+            String[] stringIds = new String[ids.length];
+            for(int i = 0; i<ids.length; i++)
+                stringIds[i] = ids[i].toString();
             boolFilterBuilder = boolFilterBuilder.must(FilterBuilders.idsFilter().addIds(stringIds));
         }
         if (!boolFilterBuilder.hasClauses()) return null;
