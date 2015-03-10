@@ -1,9 +1,9 @@
 package com.tinkerpop.gremlin.elastic.elastic;
 
 
-import com.tinkerpop.gremlin.elastic.ElasticService;
+import com.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
 import com.tinkerpop.gremlin.elastic.structure.ElasticGraph;
-import com.tinkerpop.gremlin.elastic.tools.TimingAccessor;
+import com.tinkerpop.gremlin.elastic.elasticservice.TimingAccessor;
 import com.tinkerpop.gremlin.structure.*;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.junit.Test;

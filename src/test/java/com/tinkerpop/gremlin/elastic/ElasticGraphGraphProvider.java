@@ -1,6 +1,7 @@
 package com.tinkerpop.gremlin.elastic;
 
 import com.tinkerpop.gremlin.AbstractGraphProvider;
+import com.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
 import com.tinkerpop.gremlin.elastic.structure.*;
 import com.tinkerpop.gremlin.structure.Graph;
 import org.apache.commons.configuration.Configuration;

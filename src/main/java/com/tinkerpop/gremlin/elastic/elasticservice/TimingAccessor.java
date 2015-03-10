@@ -1,4 +1,4 @@
-package com.tinkerpop.gremlin.elastic.tools;
+package com.tinkerpop.gremlin.elastic.elasticservice;
 
 import org.apache.commons.lang3.time.StopWatch;
 

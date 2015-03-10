@@ -1,16 +1,10 @@
-package com.tinkerpop.gremlin.elastic;
+package com.tinkerpop.gremlin.elastic.elasticservice;
 
+import com.tinkerpop.gremlin.elastic.elasticservice.TimingAccessor.Timer;
 import com.tinkerpop.gremlin.elastic.structure.*;
-import com.tinkerpop.gremlin.elastic.tools.TimingAccessor;
-import com.tinkerpop.gremlin.elastic.tools.TimingAccessor.Timer;
 import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
-import jline.internal.Nullable;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang3.ArrayUtils;
-import org.elasticsearch.action.admin.cluster.health.*;
-import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
-import org.elasticsearch.action.admin.indices.exists.indices.*;
 import org.elasticsearch.action.get.*;
 import org.elasticsearch.action.index.*;
 import org.elasticsearch.action.search.*;
@@ -18,8 +12,7 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.*;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
-import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.index.query.*;
+import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.*;
 import org.elasticsearch.script.ScriptService;
@@ -31,10 +24,7 @@ import java.util.stream.*;
 
 public class ElasticService {
 
-    //region static
-
-    public static String TYPE = "ty";
-
+    //region members
 
     public static class ClientType {
         public static String TRANSPORT_CLIENT = "TRANSPORT_CLIENT";
@@ -42,15 +32,10 @@ public class ElasticService {
         public static String NODE = "NODE";
     }
 
-    //endregion
-
-    //region members
-
     private ElasticGraph graph;
-    private String indexName;
+    public SchemaProvider schemaProvider;
     private boolean refresh;
     private final String clusterName;
-    private final String clientType;
     private final String addresses;
     public Client client;
     private Node node;
@@ -61,22 +46,20 @@ public class ElasticService {
     //region initialization
 
     public static ElasticService create(ElasticGraph graph, Configuration configuration) throws IOException {
-        return new ElasticService(graph,
+        return new ElasticService(graph, configuration,
                 configuration.getString("elasticsearch.cluster.name", "elasticsearch"),
-                configuration.getString("elasticsearch.index.name", "graph"),
+                configuration.getString("elasticsearch.schemaProvider", DefaultSchemaProvider.class.getCanonicalName()),
                 configuration.getBoolean("elasticsearch.refresh", true),
                 configuration.getString("elasticsearch.client", ClientType.NODE),
                 configuration.getString("elasticsearch.cluster.address", "127.0.0.1"));
     }
 
-    public ElasticService(ElasticGraph graph, String clusterName, String indexName, boolean refresh, String clientType, String addresses) throws IOException {
+    public ElasticService(ElasticGraph graph, Configuration configuration, String clusterName, String schemaProvider, boolean refresh, String clientType, String addresses) throws IOException {
         timer("initialization").start();
 
         this.graph = graph;
-        this.indexName = indexName;
         this.refresh = refresh;
         this.clusterName = clusterName;
-        this.clientType = clientType;
         this.addresses = addresses;
 
         if (clientType.equals(ClientType.TRANSPORT_CLIENT)) createTransportClient();
@@ -84,7 +67,13 @@ public class ElasticService {
         else if (clientType.equals(ClientType.NODE)) createNode(false);
         else throw new IllegalArgumentException("clientType unknown:" + clientType);
 
-        createIndex(indexName, client);
+        try {
+            Class c = Class.forName(schemaProvider);
+            this.schemaProvider = (SchemaProvider) c.newInstance();
+            this.schemaProvider.init(this.client, configuration);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("failed to load SchemaProvider:" + schemaProvider, e);
+        }
 
         timer("initialization").stop();
     }
@@ -103,27 +92,9 @@ public class ElasticService {
         this.client = node.client();
     }
 
-    private static void createIndex(String indexName, Client client) throws IOException {
-        IndicesExistsRequest request = new IndicesExistsRequest(indexName);
-        IndicesExistsResponse response = client.admin().indices().exists(request).actionGet();
-        if (!response.isExists()) {
-            Settings settings = ImmutableSettings.settingsBuilder().put("index.analysis.analyzer.default.type", "keyword").build();
-            CreateIndexRequestBuilder createIndexRequestBuilder = client.admin().indices().prepareCreate(indexName).setSettings(settings);
-            client.admin().indices().create(createIndexRequestBuilder.request()).actionGet();
-        }
-
-        final ClusterHealthRequest clusterHealthRequest = new ClusterHealthRequest(indexName).timeout(TimeValue.timeValueSeconds(10)).waitForYellowStatus();
-        final ClusterHealthResponse clusterHealth = client.admin().cluster().health(clusterHealthRequest).actionGet();
-        if (clusterHealth.isTimedOut()) {
-            throw new IOException(clusterHealth.getStatus() +
-                    " status returned from cluster '" + client.admin().cluster().toString() +
-                    "', index '" + indexName + "'");
-
-        }
-    }
-
     public void close() {
         client.close();
+        schemaProvider.close();
         if (node != null) node.close();
         timingAccessor.print();
     }
@@ -132,13 +103,7 @@ public class ElasticService {
 
     //region queries
 
-    public void clearAllData() {
-        timer("clear graph").start();
-        client.prepareDeleteByQuery(indexName).setQuery(QueryBuilders.matchAllQuery()).execute().actionGet();
-        timer("clear graph").stop();
-    }
-
-    public IndexResponse addElement(String label, @Nullable Object idValue, ElasticElement.Type type, Object... keyValues) {
+    public IndexResponse addElement(String label, Object idValue, ElasticElement.Type type, Object... keyValues) {
         timer("add element").start();
         for (int i = 0; i < keyValues.length; i = i + 2) {
             String key = keyValues[i].toString();
@@ -146,18 +111,20 @@ public class ElasticService {
             ElementHelper.validateProperty(key, value);
         }
 
+        SchemaProvider.AddElementResult addElementResult = schemaProvider.addElement(label, idValue, type, keyValues);
+
         IndexRequestBuilder indexRequestBuilder;
-        if (idValue == null) indexRequestBuilder = client.prepareIndex(indexName, label);
-        else indexRequestBuilder = client.prepareIndex(indexName, label, idValue.toString());
-        Object[] all = ArrayUtils.addAll(keyValues, TYPE, type.toString());
-        IndexResponse indexResponse = indexRequestBuilder.setCreate(true).setSource(all).execute().actionGet();
+        if (idValue == null) indexRequestBuilder = client.prepareIndex(addElementResult.getIndex(), label);
+        else indexRequestBuilder = client.prepareIndex(addElementResult.getIndex(), label, idValue.toString());
+
+        IndexResponse indexResponse = indexRequestBuilder.setCreate(true).setSource(addElementResult.getKeyValues()).execute().actionGet();
         timer("add element").stop();
         return indexResponse;
     }
 
     public void deleteElement(Element element) {
         timer("remove element").start();
-        client.prepareDelete(indexName, element.label(), element.id().toString()).execute().actionGet();
+        client.prepareDelete(schemaProvider.getIndex(element), element.label(), element.id().toString()).execute().actionGet();
         timer("remove element").stop();
     }
 
@@ -167,14 +134,14 @@ public class ElasticService {
 
     public <V> void addProperty(Element element, String key, V value) {
         timer("update property").start();
-        client.prepareUpdate(indexName, element.label(), element.id().toString())
+        client.prepareUpdate(schemaProvider.getIndex(element), element.label(), element.id().toString())
                 .setDoc(key, value).execute().actionGet();
         timer("update property").stop();
     }
 
     public void removeProperty(Element element, String key) {
         timer("remove property").start();
-        client.prepareUpdate(indexName, element.label(), element.id().toString()).setScript("ctx._source.remove(\"" + key + "\")", ScriptService.ScriptType.INLINE).get();
+        client.prepareUpdate(schemaProvider.getIndex(element), element.label(), element.id().toString()).setScript("ctx._source.remove(\"" + key + "\")", ScriptService.ScriptType.INLINE).get();
         timer("remove property").stop();
     }
 
@@ -214,11 +181,11 @@ public class ElasticService {
         return hits.map((hit) -> createEdge(hit.getId(), hit.getType(), hit.getSource())).iterator();
     }
 
-    private MultiGetResponse get(Object... ids) {
+    private MultiGetResponse get(Object[] ids) {
         timer("get").start();
         MultiGetRequest request = new MultiGetRequest();
         for (Object id : ids)
-            request.add(indexName, null, id.toString());
+            request.add(schemaProvider.getIndex(id), null, id.toString());
         MultiGetResponse multiGetItemResponses = client.multiGet(request).actionGet();
         timer("get").stop();
         return multiGetItemResponses;
@@ -227,11 +194,12 @@ public class ElasticService {
     private Stream<SearchHit> search(FilterBuilder filter, ElasticElement.Type type, String... labels) {
         timer("search").start();
 
-        if (refresh) client.admin().indices().prepareRefresh(indexName).execute().actionGet();
+        SchemaProvider.SearchResult result = schemaProvider.search(filter, type, labels);
 
-        FilterBuilder finalFilter = FilterBuilders.termFilter(TYPE, type.toString());
-        if (filter != null) finalFilter = FilterBuilders.andFilter(finalFilter, filter);
-        SearchRequestBuilder searchRequestBuilder = client.prepareSearch(indexName).setPostFilter(finalFilter).setFrom(0).setSize(100000); //TODO: retrive with scroll for efficiency
+        if (refresh) client.admin().indices().prepareRefresh(result.getIndices()).execute().actionGet();
+
+
+        SearchRequestBuilder searchRequestBuilder = client.prepareSearch(result.getIndices()).setPostFilter(result.getFilter()).setFrom(0).setSize(100000); //TODO: retrive with scroll for efficiency
         if (labels != null && labels.length > 0 && labels[0] != null)
             searchRequestBuilder = searchRequestBuilder.setTypes(labels);
 
@@ -270,7 +238,7 @@ public class ElasticService {
     @Override
     public String toString() {
         return "ElasticService{" +
-                "indexName='" + indexName + '\'' +
+                "schema='" + schemaProvider + '\'' +
                 ", client=" + client +
                 '}';
     }

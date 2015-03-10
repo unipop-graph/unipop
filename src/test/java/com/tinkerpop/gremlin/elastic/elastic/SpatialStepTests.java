@@ -3,7 +3,7 @@ package com.tinkerpop.gremlin.elastic.elastic;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.impl.PointImpl;
-import com.tinkerpop.gremlin.elastic.ElasticService;
+import com.tinkerpop.gremlin.elastic.elasticservice.*;
 import com.tinkerpop.gremlin.elastic.structure.ElasticGraph;
 import com.tinkerpop.gremlin.elastic.process.graph.traversal.sideEffect.Geo;
 import com.tinkerpop.gremlin.process.T;
@@ -43,8 +43,7 @@ public class SpatialStepTests {
 
         graph = new ElasticGraph(config);
 
-        //clear the documents
-        graph.elasticService.clearAllData();
+        ((DefaultSchemaProvider)graph.elasticService.schemaProvider).clearAllData();
         createGeoShapeMapping(graph.elasticService.client,DOCUMENT_TYPE);
     }
 
