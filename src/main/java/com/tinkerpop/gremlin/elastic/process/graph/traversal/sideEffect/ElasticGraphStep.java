@@ -121,35 +121,43 @@ public class ElasticGraphStep<E extends Element> extends GraphStep<E> {
         for (HasContainer has : hasContainers) {
             if (has.predicate instanceof Compare) {
                 String predicateString = has.predicate.toString();
-                if (predicateString.equals("eq")) {
-                    if (has.key.equals("~label")) this.setLabel(has.value.toString());
-                    else boolFilterBuilder = boolFilterBuilder.must(FilterBuilders.termFilter(has.key, has.value));
-                } else if (predicateString.equals("neq"))
-                    boolFilterBuilder = boolFilterBuilder.mustNot(FilterBuilders.termFilter(has.key, has.value));
-                else if (predicateString.equals("gt"))
-                    boolFilterBuilder.must(FilterBuilders.rangeFilter(has.key).gt(has.value));
-                else if (predicateString.equals("gte"))
-                    boolFilterBuilder.must(FilterBuilders.rangeFilter(has.key).gte(has.value));
-                else if (predicateString.equals("lt"))
-                    boolFilterBuilder.must(FilterBuilders.rangeFilter(has.key).lt(has.value));
-                else if (predicateString.equals("lte"))
-                    boolFilterBuilder.must(FilterBuilders.rangeFilter(has.key).lte(has.value));
-                else
-                    throw new IllegalArgumentException("predicate not supported in has step: " + has.predicate.toString());
+                switch(predicateString) {
+                    case ("eq"):
+                        if (has.key.equals("~label")) this.setLabel(has.value.toString());
+                        else boolFilterBuilder.must(FilterBuilders.termFilter(has.key, has.value));
+                        break;
+                    case ("neq"):
+                        boolFilterBuilder.mustNot(FilterBuilders.termFilter(has.key, has.value));
+                        break;
+                    case ("gt"):
+                        boolFilterBuilder.must(FilterBuilders.rangeFilter(has.key).gt(has.value));
+                        break;
+                    case ("gte"):
+                        boolFilterBuilder.must(FilterBuilders.rangeFilter(has.key).gte(has.value));
+                        break;
+                    case ("lt"):
+                        boolFilterBuilder.must(FilterBuilders.rangeFilter(has.key).lt(has.value));
+                        break;
+                    case ("lte"):
+                        boolFilterBuilder.must(FilterBuilders.rangeFilter(has.key).lte(has.value));
+                        break;
+                    default:
+                        throw new IllegalArgumentException("predicate not supported in has step: " + has.predicate.toString());
+                }
             } else if (has.predicate instanceof Contains) {
                 if (has.predicate == Contains.without)
-                    boolFilterBuilder = boolFilterBuilder.mustNot(FilterBuilders.existsFilter(has.key));
+                    boolFilterBuilder.mustNot(FilterBuilders.existsFilter(has.key));
                 else if (has.predicate == Contains.within)
-                    boolFilterBuilder = boolFilterBuilder.must(FilterBuilders.existsFilter(has.key));
+                    boolFilterBuilder.must(FilterBuilders.existsFilter(has.key));
             } else if (has.predicate instanceof Geo)
-                boolFilterBuilder = boolFilterBuilder.must(new GeoShapeFilterBuilder(has.key, GetShapeBuilder(has.value), ((Geo) has.predicate).getRelation()));
+                boolFilterBuilder.must(new GeoShapeFilterBuilder(has.key, GetShapeBuilder(has.value), ((Geo) has.predicate).getRelation()));
             else throw new NotImplementedException();
         }
         if (ids.length > 0) {
             String[] stringIds = new String[ids.length];
             for(int i = 0; i<ids.length; i++)
                 stringIds[i] = ids[i].toString();
-            boolFilterBuilder = boolFilterBuilder.must(FilterBuilders.idsFilter().addIds(stringIds));
+            boolFilterBuilder.must(FilterBuilders.idsFilter().addIds(stringIds));
         }
         if (!boolFilterBuilder.hasClauses()) return null;
         return boolFilterBuilder;

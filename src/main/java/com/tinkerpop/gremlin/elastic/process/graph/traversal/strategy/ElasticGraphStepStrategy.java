@@ -12,6 +12,7 @@ import com.tinkerpop.gremlin.process.graph.strategy.AbstractTraversalStrategy;
 import com.tinkerpop.gremlin.process.util.EmptyStep;
 import com.tinkerpop.gremlin.process.util.TraversalHelper;
 import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.Vertex;
 
 public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
     private static final ElasticGraphStepStrategy INSTANCE = new ElasticGraphStepStrategy();
@@ -54,7 +55,7 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
                 else if (currentStep instanceof EdgeVertexStep){
 
                     EdgeVertexStep originalEdgeStep = (EdgeVertexStep) currentStep;
-                    ElasticGraphStep<?> graphStep = new ElasticGraphStep<>(originalEdgeStep.getDirection(),originalEdgeStep.getTraversal(), graph, ElasticVertex.class, originalEdgeStep.getLabel(),new Object[0]);
+                    ElasticGraphStep<?> graphStep = new ElasticGraphStep<>(originalEdgeStep.getDirection(),originalEdgeStep.getTraversal(), graph, Vertex.class, originalEdgeStep.getLabel(),new Object[0]);
                     lastElasticGraphStep = graphStep;
                     TraversalHelper.replaceStep(currentStep, (Step) graphStep, traversal);
                 }
