@@ -35,9 +35,7 @@ public class VertexSearchStep<E extends Element> extends ElasticSearchFlatMap<E,
     }
 
     private Iterator<Vertex> geVertexIterator(Iterator<E> elementIterator) {
-        //if vertices
-       //doing 2 queries
-        if(Vertex.class.isAssignableFrom(stepClass)){
+        if(stepClass.isAssignableFrom(Vertex.class)){
             return getVertexexFromVertex(elementIterator);
         }
         else {
