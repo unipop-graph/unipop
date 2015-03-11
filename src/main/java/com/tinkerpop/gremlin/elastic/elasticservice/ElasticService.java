@@ -46,21 +46,18 @@ public class ElasticService {
     //region initialization
 
     public static ElasticService create(ElasticGraph graph, Configuration configuration) throws IOException {
-        return new ElasticService(graph, configuration,
-                configuration.getString("elasticsearch.cluster.name", "elasticsearch"),
-                configuration.getString("elasticsearch.schemaProvider", DefaultSchemaProvider.class.getCanonicalName()),
-                configuration.getBoolean("elasticsearch.refresh", true),
-                configuration.getString("elasticsearch.client", ClientType.NODE),
-                configuration.getString("elasticsearch.cluster.address", "127.0.0.1"));
+        return new ElasticService(graph, configuration);
     }
 
-    public ElasticService(ElasticGraph graph, Configuration configuration, String clusterName, String schemaProvider, boolean refresh, String clientType, String addresses) throws IOException {
+    public ElasticService(ElasticGraph graph, Configuration configuration) throws IOException {
         timer("initialization").start();
 
         this.graph = graph;
-        this.refresh = refresh;
-        this.clusterName = clusterName;
-        this.addresses = addresses;
+        this.refresh = configuration.getBoolean("elasticsearch.refresh", true);
+        this.clusterName = configuration.getString("elasticsearch.cluster.name", "elasticsearch");
+        this.addresses = configuration.getString("elasticsearch.cluster.address", "127.0.0.1");
+        String schemaProvider = configuration.getString("elasticsearch.schemaProvider", DefaultSchemaProvider.class.getCanonicalName());
+        String clientType =configuration.getString("elasticsearch.client", ClientType.NODE);
 
         if (clientType.equals(ClientType.TRANSPORT_CLIENT)) createTransportClient();
         else if (clientType.equals(ClientType.NODE_CLIENT)) createNode(true);
