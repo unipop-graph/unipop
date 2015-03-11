@@ -32,6 +32,10 @@ public class FilterBuilderProvider {
                 switch (predicateString) {
                     case ("eq"):
                         if (has.key.equals("~label")) searchStep.setLabel(has.value.toString());
+                        else if(has.key.equals("~id")) {
+                            searchStep.addId(has.value);
+                            ids = searchStep.getIds();
+                        }
                         else boolFilterBuilder.must(FilterBuilders.termFilter(has.key, has.value));
                         break;
                     case ("neq"):
