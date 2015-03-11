@@ -1,6 +1,9 @@
 package com.tinkerpop.gremlin.elastic.process.graph.traversal.strategy;
 
+import com.tinkerpop.gremlin.elastic.process.graph.traversal.sideEffect.EdgeSearchStep;
 import com.tinkerpop.gremlin.elastic.process.graph.traversal.sideEffect.ElasticGraphStep;
+import com.tinkerpop.gremlin.elastic.process.graph.traversal.sideEffect.ElasticSearchStep;
+import com.tinkerpop.gremlin.elastic.process.graph.traversal.sideEffect.VertexSearchStep;
 import com.tinkerpop.gremlin.elastic.structure.ElasticGraph;
 import com.tinkerpop.gremlin.elastic.structure.ElasticVertex;
 import com.tinkerpop.gremlin.process.*;
@@ -12,6 +15,9 @@ import com.tinkerpop.gremlin.process.graph.strategy.AbstractTraversalStrategy;
 import com.tinkerpop.gremlin.process.util.EmptyStep;
 import com.tinkerpop.gremlin.process.util.TraversalHelper;
 import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Element;
+import com.tinkerpop.gremlin.structure.Vertex;
 
 public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
     private static final ElasticGraphStepStrategy INSTANCE = new ElasticGraphStepStrategy();
@@ -28,14 +34,14 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
         if (startStep instanceof GraphStep) {
             final GraphStep<?> originalGraphStep = (GraphStep) startStep;
             ElasticGraph graph = originalGraphStep.getGraph(ElasticGraph.class);
-            final ElasticGraphStep<?> elasticGraphStep = new ElasticGraphStep<>(null,originalGraphStep.getTraversal(), graph, originalGraphStep.getReturnClass(), originalGraphStep.getLabel(), originalGraphStep.getIds());
+            final ElasticGraphStep<?> elasticGraphStep = new ElasticGraphStep<>(originalGraphStep.getTraversal(), graph, originalGraphStep.getReturnClass(), originalGraphStep.getLabel(), originalGraphStep.getIds());
             TraversalHelper.replaceStep(startStep, (Step) elasticGraphStep, traversal);
-            ElasticGraphStep lastElasticGraphStep = elasticGraphStep;
+            ElasticSearchStep lastElasticSearchStep = elasticGraphStep;
             Step<?, ?> currentStep = elasticGraphStep.getNextStep();
             while (true) {
                 if (currentStep instanceof HasContainerHolder) {
 
-                    lastElasticGraphStep.hasContainers.addAll(((HasContainerHolder) currentStep).getHasContainers());
+                    lastElasticSearchStep.addPredicates(((HasContainerHolder) currentStep).getHasContainers());
                     if (currentStep.getLabel().isPresent()) {
                         final IdentityStep identityStep = new IdentityStep<>(traversal);
                         identityStep.setLabel(currentStep.getLabel().get());
@@ -46,23 +52,31 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
                 } else if (currentStep instanceof VertexStep) {
 
                     VertexStep<?> originalVertexStep = (VertexStep) currentStep;
-                     ElasticGraphStep<?> graphStep = new ElasticGraphStep<>(originalVertexStep.getDirection(),originalVertexStep.getTraversal(), graph, originalVertexStep.getReturnClass(), originalVertexStep.getLabel(),new Object[0]);
-                    lastElasticGraphStep = graphStep;
-                    TraversalHelper.replaceStep(currentStep, (Step) graphStep, traversal);
+                    Class<? extends Element> returnClassOfVertexStep = originalVertexStep.getReturnClass();
+                    ElasticSearchStep newSearchStep;
+                    if(Vertex.class.isAssignableFrom(returnClassOfVertexStep)){
+                        newSearchStep = new VertexSearchStep<>(originalVertexStep.getTraversal(), originalVertexStep.getDirection(), graph.elasticService,returnClassOfVertexStep, originalVertexStep.getLabel());
+                    }
+                    else {
+                        newSearchStep = new EdgeSearchStep(originalVertexStep.getTraversal(),originalVertexStep.getDirection(),graph.elasticService,originalVertexStep.getLabel());
+                    }
+                    TraversalHelper.replaceStep(currentStep, (Step) newSearchStep, traversal);
+                    lastElasticSearchStep = newSearchStep;
 
                 }
                 else if (currentStep instanceof EdgeVertexStep){
 
                     EdgeVertexStep originalEdgeStep = (EdgeVertexStep) currentStep;
-                    ElasticGraphStep<?> graphStep = new ElasticGraphStep<>(originalEdgeStep.getDirection(),originalEdgeStep.getTraversal(), graph, ElasticVertex.class, originalEdgeStep.getLabel(),new Object[0]);
-                    lastElasticGraphStep = graphStep;
-                    TraversalHelper.replaceStep(currentStep, (Step) graphStep, traversal);
+                    ElasticSearchStep newSearchStep = new VertexSearchStep<>(originalEdgeStep.getTraversal(),originalEdgeStep.getDirection(),graph.elasticService, Edge.class,originalEdgeStep.getLabel());
+                    TraversalHelper.replaceStep(currentStep, (Step) newSearchStep, traversal);
+                    lastElasticSearchStep = newSearchStep;
                 }
 
                 else if (currentStep instanceof EmptyStep) {
                     break;
                 } else {
-                    //do nothing
+                    //continue?
+                    //break;
                 }
 
                 currentStep = currentStep.getNextStep();
