@@ -12,14 +12,15 @@ import java.util.Optional;
 /**
  * Created by Eliran on 11/3/2015.
  */
-public class EdgeSearchStep extends ElasticSearchFlatMap<Iterator<Vertex>,Edge> {
+public class EdgeSearchStep extends ElasticSearchFlatMap<Vertex,Edge> {
     ElasticService elasticService;
     Direction direction;
     public EdgeSearchStep(Traversal traversal,Direction direction,ElasticService elasticService, Optional<String> label) {
         super(traversal);
         this.elasticService = elasticService;
         this.direction = direction;
-        this.setFunction(traverser -> getEdgesIterator(traverser.get()) );
+        this.setFunction(traverser ->
+                getEdgesIterator(traverser) );
         if(label.isPresent()){
             this.setLabel(label.get());
         }

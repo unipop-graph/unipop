@@ -5,6 +5,7 @@ import com.tinkerpop.gremlin.process.Traverser;
 import com.tinkerpop.gremlin.process.graph.marker.Reversible;
 import com.tinkerpop.gremlin.process.graph.step.map.FlatMapStep;
 import com.tinkerpop.gremlin.process.graph.util.HasContainer;
+import com.tinkerpop.gremlin.process.util.AbstractStep;
 import com.tinkerpop.gremlin.process.util.TraversalMetrics;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Edge;
@@ -12,17 +13,20 @@ import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Vertex;
 
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import java.lang.reflect.ParameterizedType;
+import java.util.*;
+import java.util.function.Function;
 
 /**
  * Created by Eliran on 11/3/2015.
  */
-public class ElasticSearchFlatMap<S extends Iterator<? extends Element>, E extends Element > extends FlatMapStep<S,E> implements Reversible,ElasticSearchStep {
+public class ElasticSearchFlatMap<S extends  Element, E extends Element > extends AbstractStep<S,E> implements Reversible,ElasticSearchStep {
     private List<HasContainer> hasContainers;
     private List<Object> ids;
+    private Function<Iterator<S>, Iterator<E>> function = null;
+    private Traverser.Admin<S> head = null;
+    private Iterator<E> iterator = Collections.emptyIterator();
+
     public ElasticSearchFlatMap(Traversal traversal) {
         super(traversal);
         this.hasContainers = new ArrayList<>();
@@ -53,5 +57,38 @@ public class ElasticSearchFlatMap<S extends Iterator<? extends Element>, E exten
         return this.hasContainers;
     }
 
+
+    public void setFunction(final Function<Iterator<S>, Iterator<E>> function) {
+        this.function = function;
+    }
+
+    @Override
+    protected Traverser<E> processNextStart() {
+        while (true) {
+            if (this.iterator.hasNext()) {
+
+                final Traverser<E> end = this.head.split(this.iterator.next(), this);
+                return end;
+            } else {
+                Traverser.Admin<S> last = this.starts.next();
+                List<S> elementsContainer = new ArrayList<>();
+                elementsContainer.add(last.get());
+                while(this.starts.hasNext()){
+                    last = this.starts.next();
+                    elementsContainer.add(last.get());
+                }
+                this.head = last;
+                if (PROFILING_ENABLED) TraversalMetrics.start(this);
+                this.iterator = this.function.apply(elementsContainer.iterator());
+                if (PROFILING_ENABLED) TraversalMetrics.stop(this);
+            }
+        }
+    }
+
+    @Override
+    public void reset() {
+        super.reset();
+        this.iterator = Collections.emptyIterator();
+    }
 
 }

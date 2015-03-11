@@ -18,7 +18,7 @@ import java.util.Optional;
 /**
  * Created by Eliran on 11/3/2015.
  */
-public class VertexSearchStep<E extends Element> extends ElasticSearchFlatMap<Iterator<E>,Vertex> {
+public class VertexSearchStep<E extends Element> extends ElasticSearchFlatMap<E,Vertex> {
 
     ElasticService elasticService;
     Direction direction;
@@ -31,7 +31,7 @@ public class VertexSearchStep<E extends Element> extends ElasticSearchFlatMap<It
         if(label.isPresent()){
             this.setLabel(label.get());
         }
-        this.setFunction(traverser -> geVertexIterator((traverser.get())));
+        this.setFunction(traverser -> geVertexIterator(traverser));
     }
 
     private Iterator<Vertex> geVertexIterator(Iterator<E> elementIterator) {
