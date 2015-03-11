@@ -16,17 +16,4 @@ import org.junit.runner.RunWith;
 @RunWith(StructureStandardSuite.class)
 @StructureStandardSuite.GraphProviderClass(provider = ElasticGraphGraphProvider.class, graph = ElasticGraph.class)
 public class ElasticGraphStructureStandardTest {
-    static Node node;
-
-    @BeforeClass
-    public static void setUp() throws Exception {
-        //node = NodeBuilder.nodeBuilder().clusterName("elasticsearch").local(true).node();
-        //System.out.print(node.toString());
-    }
-
-    @AfterClass
-    public static void destroy() {
-        //node.close();
-    }
-
 }
