@@ -15,7 +15,8 @@ import java.util.Optional;
 public class EdgeSearchStep extends ElasticSearchFlatMap<Vertex,Edge> {
     ElasticService elasticService;
     Direction direction;
-    public EdgeSearchStep(Traversal traversal,Direction direction,ElasticService elasticService, Optional<String> label) {
+    String[] edgeLabels;
+    public EdgeSearchStep(Traversal traversal,Direction direction,ElasticService elasticService, Optional<String> label,String... edgeLabels) {
         super(traversal);
         this.elasticService = elasticService;
         this.direction = direction;
@@ -24,11 +25,12 @@ public class EdgeSearchStep extends ElasticSearchFlatMap<Vertex,Edge> {
         if(label.isPresent()){
             this.setLabel(label.get());
         }
+        this.edgeLabels = edgeLabels;
     }
 
     private Iterator<Edge> getEdgesIterator(Iterator<Vertex> vertexIterator) {
         vertexIterator.forEachRemaining(vertex -> this.addId(vertex.id()));
-        Iterator<Edge> edgeIterator = this.elasticService.searchEdges(FilterBuilderProvider.getFilter(this, direction));
+        Iterator<Edge> edgeIterator = this.elasticService.searchEdges(FilterBuilderProvider.getFilter(this, direction),edgeLabels);
         return edgeIterator;
     }
 }

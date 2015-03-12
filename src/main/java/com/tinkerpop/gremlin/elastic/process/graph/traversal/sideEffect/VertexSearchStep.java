@@ -23,7 +23,8 @@ public class VertexSearchStep<E extends Element> extends ElasticSearchFlatMap<E,
     ElasticService elasticService;
     Direction direction;
     Class<E> stepClass;
-    public VertexSearchStep(Traversal traversal, Direction direction, ElasticService elasticService,Class<E> stepClass, Optional<String> label) {
+    String[] edgeLabels;
+    public VertexSearchStep(Traversal traversal, Direction direction, ElasticService elasticService,Class<E> stepClass, Optional<String> label,String... edgeLabels) {
         super(traversal);
         this.elasticService = elasticService;
         this.direction = direction;
@@ -32,6 +33,7 @@ public class VertexSearchStep<E extends Element> extends ElasticSearchFlatMap<E,
             this.setLabel(label.get());
         }
         this.setFunction(traverser -> geVertexIterator(traverser));
+        this.edgeLabels = edgeLabels;
     }
 
     private Iterator<Vertex> geVertexIterator(Iterator<E> elementIterator) {
@@ -46,7 +48,7 @@ public class VertexSearchStep<E extends Element> extends ElasticSearchFlatMap<E,
 
     private Iterator<Vertex> getVertexexFromVertex(Iterator<E> elementIterator) {
         elementIterator.forEachRemaining(vertex -> this.addId(vertex.id()));
-        Iterator<Edge> edgeIterator = this.elasticService.searchEdges(FilterBuilderProvider.getFilter(this, this.direction));
+        Iterator<Edge> edgeIterator = this.elasticService.searchEdges(FilterBuilderProvider.getFilter(this, this.direction),edgeLabels);
         List<String> edgesIds = new ArrayList<String>();
         while(edgeIterator.hasNext()){
             ElasticEdge edge = (ElasticEdge) edgeIterator.next();
@@ -63,6 +65,6 @@ public class VertexSearchStep<E extends Element> extends ElasticSearchFlatMap<E,
             ElasticEdge edge = (ElasticEdge) elementIterator.next();
             this.addIds(edge.getVertexId(direction).toArray());
         }
-        return elasticService.searchVertices(FilterBuilderProvider.getFilter(this));
+        return elasticService.searchVertices(FilterBuilderProvider.getFilter(this),label.get());
     }
 }

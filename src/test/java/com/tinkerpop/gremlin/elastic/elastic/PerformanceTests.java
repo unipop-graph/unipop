@@ -8,6 +8,7 @@ import com.tinkerpop.gremlin.elastic.elasticservice.TimingAccessor;
 import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.process.graph.step.filter.GroovyHasNotTest;
+import com.tinkerpop.gremlin.process.graph.step.filter.GroovyHasTest;
 import com.tinkerpop.gremlin.structure.*;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.junit.Test;
@@ -34,9 +35,17 @@ public class PerformanceTests {
         ((DefaultSchemaProvider)graph.elasticService.schemaProvider).clearAllData();
         Vertex vertex = graph.addVertex(T.label, "test_doc", T.id, "1", "name", "eliran", "age", 24);
         Vertex vertex1 = graph.addVertex(T.label, "test_doc", T.id, "2", "name", "ran");
+        Vertex vertex2 = graph.addVertex(T.label, "test_doc", T.id, "3", "name", "chiko");
+        Vertex vertex3 = graph.addVertex(T.label, "test_doc", T.id, "4", "name", "medico");
+        vertex2.addEdge("heardof",vertex,T.id,"111");
         vertex.addEdge("knows",vertex1);
-        vertex1.addEdge("knows",vertex);
-        Object next = graph.V().outE().has(T.label, "knows").inV().values("name").next();
+        vertex.addEdge("heardof",vertex3);
+        //graph.V("1").outE("heardof").next();
+        //vertex1.addEdge("knows",vertex);
+        Element knows = graph.E("111").has(T.label, "heardof").next();
+
+        Object out = graph.V("1").out().next();
+        Object in = graph.V("1").in().next();
         int i=1;
 
     }
