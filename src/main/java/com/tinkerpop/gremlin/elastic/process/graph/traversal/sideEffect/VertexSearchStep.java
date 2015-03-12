@@ -52,10 +52,18 @@ public class VertexSearchStep<E extends Element> extends ElasticSearchFlatMap<E,
         //perdicates belongs to vertices query
         List<HasContainer> predicates = this.getPredicates();
         this.clearPredicates();
-        Iterator<Edge> edgeIterator = this.elasticService.searchEdges(FilterBuilderProvider.getFilter(this,this.direction),edgeLabels);
         List<Object> vertexIds = new ArrayList<Object>();
-        edgeIterator.forEachRemaining(edge -> vertexIds.addAll(((ElasticEdge) edge).getVertexId(this.direction.opposite())));
-        //remove ids from last query and put new ones
+        if(this.direction == Direction.BOTH){
+            Iterator<Edge> inEdgeIterator = this.elasticService.searchEdges(FilterBuilderProvider.getFilter(this,Direction.IN),edgeLabels);
+            inEdgeIterator.forEachRemaining(edge -> vertexIds.addAll(((ElasticEdge) edge).getVertexId(Direction.OUT)));
+            Iterator<Edge> outEdgeIterator = this.elasticService.searchEdges(FilterBuilderProvider.getFilter(this,Direction.OUT),edgeLabels);
+            outEdgeIterator.forEachRemaining(edge -> vertexIds.addAll(((ElasticEdge) edge).getVertexId(Direction.IN)));
+        }
+        else {
+            Iterator<Edge> edgeIterator = this.elasticService.searchEdges(FilterBuilderProvider.getFilter(this, this.direction), edgeLabels);
+            edgeIterator.forEachRemaining(edge -> vertexIds.addAll(((ElasticEdge) edge).getVertexId(this.direction.opposite())));
+        }
+        //remove ids from edges query and put new ones
         this.clearIds();
         this.addIds(vertexIds.toArray());
         this.addPredicates(predicates);
