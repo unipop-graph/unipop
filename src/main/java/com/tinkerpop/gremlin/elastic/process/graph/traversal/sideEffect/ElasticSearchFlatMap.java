@@ -48,6 +48,15 @@ public class ElasticSearchFlatMap<S extends  Element, E extends Element > extend
     }
 
     @Override
+    public void clearIds() {
+        this.ids = new ArrayList<Object>();
+    }
+    @Override
+    public void clearPredicates() {
+        this.hasContainers = new ArrayList<HasContainer>();
+    }
+
+    @Override
     public void addPredicates(List<HasContainer> containerList) {
         this.hasContainers.addAll(containerList);
     }
