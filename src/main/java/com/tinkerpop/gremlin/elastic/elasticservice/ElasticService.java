@@ -45,10 +45,6 @@ public class ElasticService {
 
     //region initialization
 
-    public static ElasticService create(ElasticGraph graph, Configuration configuration) throws IOException {
-        return new ElasticService(graph, configuration);
-    }
-
     public ElasticService(ElasticGraph graph, Configuration configuration) throws IOException {
         timer("initialization").start();
 

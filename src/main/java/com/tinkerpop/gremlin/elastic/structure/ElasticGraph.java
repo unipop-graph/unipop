@@ -36,7 +36,7 @@ public class ElasticGraph implements Graph, Graph.Iterators {
     public ElasticGraph(Configuration configuration) throws IOException {
         this.configuration = configuration;
         configuration.setProperty(Graph.GRAPH, ElasticGraph.class.getName());
-        elasticService = ElasticService.create(this, configuration);
+        elasticService = new ElasticService(this, configuration);
     }
 
     @Override
