@@ -71,21 +71,21 @@ public class FilterBuilderProvider {
                 stringIds[i] = ids[i].toString();
             if(direction==null)
                 boolFilterBuilder.must(FilterBuilders.idsFilter().addIds(stringIds));
-            else boolFilterBuilder.must(createIdsFilterForEdgeStep(stringIds,direction));
+            else createIdsFilterForEdgeStep(stringIds,direction, boolFilterBuilder);
         }
         if (!boolFilterBuilder.hasClauses()) return null;
         return boolFilterBuilder;
     }
 
-    private static FilterBuilder createIdsFilterForEdgeStep(String[] stringIds ,Direction direction) {
+    private static void createIdsFilterForEdgeStep(String[] stringIds, Direction direction, BoolFilterBuilder boolFilterBuilder) {
 
         TermsFilterBuilder inFilter =  FilterBuilders.termsFilter(ElasticEdge.InId, stringIds);
         TermsFilterBuilder outFilter =  FilterBuilders.termsFilter(ElasticEdge.OutId, stringIds);
 
-        if(direction == Direction.IN) return inFilter;
-        if(direction == Direction.OUT) return outFilter;
-        if(direction == Direction.BOTH) return FilterBuilders.orFilter(inFilter, outFilter);
-        throw new EnumConstantNotPresentException(direction.getClass(),direction.name());
+        if(direction == Direction.IN) boolFilterBuilder.must(inFilter);
+        else if(direction == Direction.OUT) boolFilterBuilder.must(outFilter);
+        else if(direction == Direction.BOTH) boolFilterBuilder.should(inFilter, outFilter);
+        else throw new EnumConstantNotPresentException(direction.getClass(),direction.name());
     }
 
     private static ShapeBuilder GetShapeBuilder(Object object) {

@@ -97,7 +97,7 @@ public class ElasticVertex extends ElasticElement implements Vertex, Vertex.Iter
         FilterBuilder filter;
         if (direction == Direction.IN) filter = getFilter(ElasticEdge.InId);
         else if (direction == Direction.OUT) filter = getFilter(ElasticEdge.OutId);
-        else filter = FilterBuilders.orFilter(getFilter(ElasticEdge.InId), getFilter(ElasticEdge.OutId));
+        else filter = FilterBuilders.boolFilter().should(getFilter(ElasticEdge.InId), getFilter(ElasticEdge.OutId));
 
         return elasticService.searchEdges(filter, edgeLabels);
     }

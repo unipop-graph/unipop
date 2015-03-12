@@ -98,9 +98,10 @@ public class DefaultSchemaProvider implements SchemaProvider {
 
             @Override
             public FilterBuilder getFilter() {
-                FilterBuilder finalFilter = FilterBuilders.termFilter(TYPE, type.toString());
-                if (filter != null) finalFilter = FilterBuilders.andFilter(finalFilter, filter);
-                return finalFilter;
+                TermFilterBuilder typeFilter = FilterBuilders.termFilter(TYPE, type.toString());
+                if(filter == null) return typeFilter;
+                else if(filter instanceof BoolFilterBuilder) return ((BoolFilterBuilder) filter).must(typeFilter);
+                else return FilterBuilders.boolFilter().must(typeFilter).must(filter);
             }
         };
 

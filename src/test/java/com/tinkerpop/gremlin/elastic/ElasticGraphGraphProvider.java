@@ -65,14 +65,9 @@ public class ElasticGraphGraphProvider extends AbstractGraphProvider {
     @Override
     public void clear(final Graph g, final Configuration configuration) throws Exception {
         if (g != null) {
-            String indexName = configuration.getString("elasticsearch.index.name");
             //don't use elasticGraph.elasticService.clearAllData(), because sometimes the graph is closed before clear
+            String indexName = configuration.getString("elasticsearch.index.name");
             client.prepareDeleteByQuery(indexName).setQuery(QueryBuilders.matchAllQuery()).execute().actionGet();
-            g.close();
-            if (g instanceof ElasticGraph) {
-                ElasticGraph elasticGraph = (ElasticGraph) g;
-                //elasticGraph.elasticService.collectData();
-            }
             g.close();
         }
     }

@@ -1,19 +1,11 @@
 package com.tinkerpop.gremlin.elastic.process.graph.traversal.sideEffect;
 
-import com.tinkerpop.gremlin.process.Traversal;
-import com.tinkerpop.gremlin.process.Traverser;
+import com.tinkerpop.gremlin.process.*;
 import com.tinkerpop.gremlin.process.graph.marker.Reversible;
-import com.tinkerpop.gremlin.process.graph.step.map.FlatMapStep;
 import com.tinkerpop.gremlin.process.graph.util.HasContainer;
-import com.tinkerpop.gremlin.process.util.AbstractStep;
-import com.tinkerpop.gremlin.process.util.TraversalMetrics;
-import com.tinkerpop.gremlin.structure.Direction;
-import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.process.util.*;
 import com.tinkerpop.gremlin.structure.Element;
-import com.tinkerpop.gremlin.structure.Vertex;
 
-
-import java.lang.reflect.ParameterizedType;
 import java.util.*;
 import java.util.function.Function;
 

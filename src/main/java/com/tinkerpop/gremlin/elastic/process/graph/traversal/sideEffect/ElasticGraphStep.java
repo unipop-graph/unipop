@@ -1,26 +1,12 @@
 package com.tinkerpop.gremlin.elastic.process.graph.traversal.sideEffect;
 
 import com.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
-import com.tinkerpop.gremlin.elastic.structure.ElasticEdge;
 import com.tinkerpop.gremlin.elastic.structure.ElasticGraph;
-import com.tinkerpop.gremlin.elastic.structure.ElasticVertex;
 import com.tinkerpop.gremlin.process.Traversal;
-import com.tinkerpop.gremlin.process.TraverserGenerator;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.GraphStep;
-import com.tinkerpop.gremlin.process.graph.step.sideEffect.IdentityStep;
-import com.tinkerpop.gremlin.process.graph.step.sideEffect.SideEffectStep;
-import com.tinkerpop.gremlin.process.graph.step.util.MarkerIdentityStep;
 import com.tinkerpop.gremlin.process.graph.util.HasContainer;
-import com.tinkerpop.gremlin.process.util.BulkSet;
-import com.tinkerpop.gremlin.process.util.EmptyStep;
-import com.tinkerpop.gremlin.process.util.TraversalMetrics;
 import com.tinkerpop.gremlin.structure.*;
-import org.apache.lucene.queries.TermFilter;
-import org.elasticsearch.common.geo.builders.ShapeBuilder;
-import org.elasticsearch.common.xcontent.XContentParser;
-import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.index.query.*;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.*;
 

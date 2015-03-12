@@ -12,7 +12,7 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.*;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
-import org.elasticsearch.index.query.FilterBuilder;
+import org.elasticsearch.index.query.*;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.*;
 import org.elasticsearch.script.ScriptService;
@@ -196,7 +196,8 @@ public class ElasticService {
         if (refresh) client.admin().indices().prepareRefresh(result.getIndices()).execute().actionGet();
 
 
-        SearchRequestBuilder searchRequestBuilder = client.prepareSearch(result.getIndices()).setPostFilter(result.getFilter()).setFrom(0).setSize(100000); //TODO: retrive with scroll for efficiency
+        SearchRequestBuilder searchRequestBuilder = client.prepareSearch(result.getIndices())
+                .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(),result.getFilter())).setFrom(0).setSize(100000); //TODO: retrive with scroll for efficiency
         if (labels != null && labels.length > 0 && labels[0] != null)
             searchRequestBuilder = searchRequestBuilder.setTypes(labels);
 
