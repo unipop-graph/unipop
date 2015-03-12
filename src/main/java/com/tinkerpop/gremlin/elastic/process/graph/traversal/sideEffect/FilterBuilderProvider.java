@@ -33,6 +33,7 @@ public class FilterBuilderProvider {
                     case ("eq"):
                         if (has.key.equals("~label")) searchStep.setLabel(has.value.toString());
                         else if(has.key.equals("~id")) {
+                            searchStep.clearIds();
                             searchStep.addId(has.value);
                             ids = searchStep.getIds();
                         }
