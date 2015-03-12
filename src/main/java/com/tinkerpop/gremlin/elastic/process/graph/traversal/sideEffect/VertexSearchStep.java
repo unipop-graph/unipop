@@ -48,8 +48,12 @@ public class VertexSearchStep<E extends Element> extends ElasticSearchFlatMap<E,
         elementIterator.forEachRemaining(vertex -> this.addId(vertex.id()));
         Iterator<Edge> edgeIterator = this.elasticService.searchEdges(FilterBuilderProvider.getFilter(this, this.direction));
         List<String> edgesIds = new ArrayList<String>();
-        edgeIterator.forEachRemaining(edge -> edgesIds.add(((ElasticEdge)edge).getVertexId(this.direction.opposite()).toString()));
-        BoolFilterBuilder filterBuilder = FilterBuilders.boolFilter().must(FilterBuilders.idsFilter().addIds(edgesIds.toString()));
+        while(edgeIterator.hasNext()){
+            ElasticEdge edge = (ElasticEdge) edgeIterator.next();
+            List<Object> objects = edge.getVertexId(this.direction.opposite());
+            objects.iterator().forEachRemaining(idFromEdge -> edgesIds.add(idFromEdge.toString()));
+        }
+        BoolFilterBuilder filterBuilder = FilterBuilders.boolFilter().must(FilterBuilders.idsFilter().addIds(edgesIds.toArray(new String[edgesIds.size()])));
         return this.elasticService.searchVertices(filterBuilder);
 
     }
