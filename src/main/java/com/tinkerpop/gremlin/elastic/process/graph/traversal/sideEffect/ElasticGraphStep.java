@@ -17,7 +17,7 @@ public class ElasticGraphStep<E extends Element> extends GraphStep<E> implements
     List<Object> idsExtended;
     BoolFilterBuilder boolFilterBuilder;
 
-    public final List<HasContainer> hasContainers = new ArrayList<HasContainer>();
+    public  List<HasContainer> hasContainers = new ArrayList<HasContainer>();
     public ElasticGraphStep(final Traversal traversal, final ElasticGraph graph, final Class<E> returnClass, Optional<String> label, final Object... ids) {
         super(traversal, graph, returnClass, ids);
         this.idsExtended = new ArrayList<>();
@@ -62,4 +62,14 @@ public class ElasticGraphStep<E extends Element> extends GraphStep<E> implements
     public void addId(Object id) {
         this.idsExtended.add(id);
     }
+
+    @Override
+    public void clearIds() {
+        this.idsExtended = new ArrayList<Object>();
+    }
+    @Override
+    public void clearPredicates() {
+        this.hasContainers = new ArrayList<HasContainer>();
+    }
+
 }

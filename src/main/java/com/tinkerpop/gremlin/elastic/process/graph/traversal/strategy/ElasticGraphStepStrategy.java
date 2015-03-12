@@ -71,17 +71,15 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
                     TraversalHelper.replaceStep(currentStep, (Step) newSearchStep, traversal);
                     lastElasticSearchStep = newSearchStep;
                 }
-
+                //empty step is the last step
                 else if (currentStep instanceof EmptyStep) {
                     break;
                 } else {
-                    //continue?
-                    //break;
+                    //continue on other Steps.
                 }
 
                 currentStep = currentStep.getNextStep();
             }
-            int i=1;
         }
     }
 }

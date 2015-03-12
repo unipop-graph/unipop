@@ -14,4 +14,7 @@ public interface ElasticSearchStep {
     void addPredicates(List<HasContainer> containerList);
     List<HasContainer> getPredicates();
     void addId(Object id);
+    void clearIds();
+    void clearPredicates();
+
 }
