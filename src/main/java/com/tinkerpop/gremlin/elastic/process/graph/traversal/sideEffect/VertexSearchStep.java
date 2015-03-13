@@ -4,6 +4,7 @@ import com.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
 import com.tinkerpop.gremlin.elastic.structure.ElasticEdge;
 import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.graph.util.HasContainer;
+import com.tinkerpop.gremlin.process.util.TraversalHelper;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Vertex;
@@ -11,10 +12,7 @@ import com.tinkerpop.gremlin.structure.Element;
 import org.elasticsearch.index.query.BoolFilterBuilder;
 import org.elasticsearch.index.query.FilterBuilders;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Created by Eliran on 11/3/2015.
@@ -63,6 +61,8 @@ public class VertexSearchStep<E extends Element> extends ElasticSearchFlatMap<E,
             Iterator<Edge> edgeIterator = this.elasticService.searchEdges(FilterBuilderProvider.getFilter(this, this.direction), edgeLabels);
             edgeIterator.forEachRemaining(edge -> vertexIds.addAll(((ElasticEdge) edge).getVertexId(this.direction.opposite())));
         }
+
+        if(vertexIds.isEmpty()) return (new ArrayList<Vertex>()).iterator();
         //remove ids from edges query and put new ones
         this.clearIds();
         this.addIds(vertexIds.toArray());
@@ -78,5 +78,13 @@ public class VertexSearchStep<E extends Element> extends ElasticSearchFlatMap<E,
         }
         String label = this.getLabel().isPresent()?  this.label.get() : null;
         return elasticService.searchVertices(FilterBuilderProvider.getFilter(this),label);
+    }
+
+
+    @Override
+    public String toString(){
+        if(this.edgeLabels!=null && this.edgeLabels.length > 0)
+            return TraversalHelper.makeStepString(this, this.direction, this.stepClass.getSimpleName().toLowerCase(), Arrays.asList(this.edgeLabels),this.getPredicates());
+        return TraversalHelper.makeStepString(this, this.direction, this.stepClass.getSimpleName().toLowerCase(),this.getPredicates());
     }
 }

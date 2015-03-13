@@ -31,7 +31,7 @@ public class FilterBuilderProvider {
                 String predicateString = has.predicate.toString();
                 switch (predicateString) {
                     case ("eq"):
-                        if (has.key.equals("~label")) searchStep.setLabel(has.value.toString());
+                        if (has.key.equals("~label")) searchStep.setTypeLabel(has.value.toString());
                         else if(has.key.equals("~id")) {
                             searchStep.clearIds();
                             searchStep.addId(has.value);
