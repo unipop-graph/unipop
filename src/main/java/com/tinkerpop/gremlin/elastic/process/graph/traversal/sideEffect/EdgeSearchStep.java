@@ -13,12 +13,11 @@ import java.util.*;
  * Created by Eliran on 11/3/2015.
  */
 public class EdgeSearchStep extends ElasticSearchFlatMap<Vertex,Edge> {
-    ElasticService elasticService;
-    Direction direction;
-    List<String> edgeLabels;
+
+    private Direction direction;
+    private List<String> edgeLabels;
     public EdgeSearchStep(Traversal traversal,Direction direction,ElasticService elasticService, Optional<String> label,String... edgeLabels) {
-        super(traversal);
-        this.elasticService = elasticService;
+        super(traversal,elasticService);
         this.direction = direction;
         this.setFunction(traverser ->
                 getEdgesIterator(traverser) );
@@ -35,7 +34,7 @@ public class EdgeSearchStep extends ElasticSearchFlatMap<Vertex,Edge> {
 
     private Iterator<Edge> getEdgesIterator(Iterator<Vertex> vertexIterator) {
         vertexIterator.forEachRemaining(vertex -> this.addId(vertex.id()));
-        Iterator<Edge> edgeIterator = this.elasticService.searchEdges(FilterBuilderProvider.getFilter(this, direction),edgeLabels.toArray(new String[edgeLabels.size()]));
+        Iterator<Edge> edgeIterator = searchWithDups(Edge.class,direction,edgeLabels.toArray(new String[edgeLabels.size()]));
         return edgeIterator;
     }
 

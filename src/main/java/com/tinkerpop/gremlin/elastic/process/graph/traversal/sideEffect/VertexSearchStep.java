@@ -10,6 +10,7 @@ import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.Element;
 import org.elasticsearch.index.query.BoolFilterBuilder;
+import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.index.query.FilterBuilders;
 
 import java.util.*;
@@ -19,28 +20,28 @@ import java.util.*;
  */
 public class VertexSearchStep<E extends Element> extends ElasticSearchFlatMap<E,Vertex> {
 
-    ElasticService elasticService;
-    Direction direction;
-    Class<E> stepClass;
-    String[] edgeLabels;
+
+    private Direction direction;
+    private Class<E> stepClass;
+    private String[] edgeLabels;
+
     public VertexSearchStep(Traversal traversal, Direction direction, ElasticService elasticService,Class<E> stepClass, Optional<String> label,String... edgeLabels) {
-        super(traversal);
-        this.elasticService = elasticService;
+        super(traversal,elasticService);
         this.direction = direction;
         this.stepClass = stepClass;
         if(label.isPresent()){
             this.setLabel(label.get());
         }
-        this.setFunction(traverser -> geVertexIterator(traverser));
+        this.setFunction(traverser -> getVertexIterator(traverser));
         this.edgeLabels = edgeLabels;
     }
 
-    private Iterator<Vertex> geVertexIterator(Iterator<E> elementIterator) {
+    private Iterator<Vertex> getVertexIterator(Iterator<E> elementIterator) {
         if(stepClass.isAssignableFrom(Vertex.class)){
             return getVerticesFromVertex(elementIterator);
         }
         else {
-            return getVertexesFromEdges(elementIterator);
+            return getVerticesFromEdges(elementIterator);
         }
 
     }
@@ -52,14 +53,11 @@ public class VertexSearchStep<E extends Element> extends ElasticSearchFlatMap<E,
         this.clearPredicates();
         List<Object> vertexIds = new ArrayList<Object>();
         if(this.direction == Direction.BOTH){
-            Iterator<Edge> inEdgeIterator = this.elasticService.searchEdges(FilterBuilderProvider.getFilter(this,Direction.IN),edgeLabels);
-            inEdgeIterator.forEachRemaining(edge -> vertexIds.addAll(((ElasticEdge) edge).getVertexId(Direction.OUT)));
-            Iterator<Edge> outEdgeIterator = this.elasticService.searchEdges(FilterBuilderProvider.getFilter(this,Direction.OUT),edgeLabels);
-            outEdgeIterator.forEachRemaining(edge -> vertexIds.addAll(((ElasticEdge) edge).getVertexId(Direction.IN)));
+            searchEdgesAndAddIds(Direction.IN,vertexIds);
+            searchEdgesAndAddIds(Direction.OUT,vertexIds);
         }
         else {
-            Iterator<Edge> edgeIterator = this.elasticService.searchEdges(FilterBuilderProvider.getFilter(this, this.direction), edgeLabels);
-            edgeIterator.forEachRemaining(edge -> vertexIds.addAll(((ElasticEdge) edge).getVertexId(this.direction.opposite())));
+            searchEdgesAndAddIds(this.direction,vertexIds);
         }
 
         if(vertexIds.isEmpty()) return (new ArrayList<Vertex>()).iterator();
@@ -67,18 +65,25 @@ public class VertexSearchStep<E extends Element> extends ElasticSearchFlatMap<E,
         this.clearIds();
         this.addIds(vertexIds.toArray());
         this.addPredicates(predicates);
-        return this.elasticService.searchVertices(FilterBuilderProvider.getFilter(this));
+
+        return searchWithDups(Vertex.class,null);
 
     }
 
-    private Iterator<Vertex> getVertexesFromEdges(Iterator<E> elementIterator) {
+    private void searchEdgesAndAddIds(Direction direction, List<Object> vertexIds) {
+        Iterator<Edge> edgeIterator = searchWithDups(Edge.class, direction, edgeLabels);
+        edgeIterator.forEachRemaining(edge -> vertexIds.addAll(((ElasticEdge) edge).getVertexId(direction.opposite())));
+    }
+
+    private Iterator<Vertex> getVerticesFromEdges(Iterator<E> elementIterator) {
         while(elementIterator.hasNext()){
             ElasticEdge edge = (ElasticEdge) elementIterator.next();
             this.addIds(edge.getVertexId(direction).toArray());
         }
         String label = this.getLabel().isPresent()?  this.label.get() : null;
-        return elasticService.searchVertices(FilterBuilderProvider.getFilter(this),label);
+        return searchWithDups(Vertex.class,null,label);
     }
+
 
 
     @Override

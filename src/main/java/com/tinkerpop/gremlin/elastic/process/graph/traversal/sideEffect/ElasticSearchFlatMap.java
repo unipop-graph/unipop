@@ -1,11 +1,15 @@
 package com.tinkerpop.gremlin.elastic.process.graph.traversal.sideEffect;
 
+import com.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
 import com.tinkerpop.gremlin.process.*;
 import com.tinkerpop.gremlin.process.graph.marker.Reversible;
 import com.tinkerpop.gremlin.process.graph.step.map.VertexStep;
 import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.process.util.*;
+import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Element;
+import com.tinkerpop.gremlin.structure.Vertex;
+import org.elasticsearch.index.query.FilterBuilder;
 
 import java.util.*;
 import java.util.function.Function;
@@ -19,9 +23,11 @@ public  class ElasticSearchFlatMap<S extends  Element, E extends Element > exten
     private Function<Iterator<S>, Iterator<E>> function = null;
     private Traverser.Admin<S> head = null;
     private Iterator<E> iterator = Collections.emptyIterator();
+    protected ElasticService elasticService;
 
-    public ElasticSearchFlatMap(Traversal traversal) {
+    public ElasticSearchFlatMap(Traversal traversal,ElasticService elasticService) {
         super(traversal);
+        this.elasticService = elasticService;
         this.hasContainers = new ArrayList<>();
         this.ids = new ArrayList<Object>();
     }
@@ -79,7 +85,7 @@ public  class ElasticSearchFlatMap<S extends  Element, E extends Element > exten
 
                 Traverser.Admin<S> first = this.starts.next();
                 Traverser.Admin<S> last = first;
-                List<S> elementsContainer = new ArrayList<>();
+                List<S> elementsContainer = new ArrayList<S>();
                 elementsContainer.add(last.get());
                 while(this.starts.hasNext()){
                     last = this.starts.next();
@@ -91,6 +97,39 @@ public  class ElasticSearchFlatMap<S extends  Element, E extends Element > exten
                 if (PROFILING_ENABLED) TraversalMetrics.stop(this);
             }
         }
+    }
+
+    protected <G extends Element> Iterator<G> searchWithDups(Class<G> returnClass ,Direction direction,String ... labels ){
+        //search and add duplicates
+        FilterBuilder filter = FilterBuilderProvider.getFilter(this,direction);
+        Object[] ids = this.getIds();
+        HashMap<String,Integer> idToOccurences = new HashMap<>();
+        for (Object id : ids){
+            String stringId = id.toString();
+            if(idToOccurences.containsKey(stringId)){
+                Integer integer = idToOccurences.get(stringId);
+                idToOccurences.put(stringId,integer +1 );
+            }
+            else {
+                idToOccurences.put(stringId,1 );
+            }
+        }
+        Iterator<G> iterator;
+        if(returnClass.isAssignableFrom(Vertex.class))
+            iterator = (Iterator<G>) this.elasticService.searchVertices(filter,labels);
+        else iterator = (Iterator<G>) this.elasticService.searchEdges(filter, labels);
+        List<G> itemsWithDups = new ArrayList<G>();
+        while(iterator.hasNext()){
+            G vertex = iterator.next();
+            int numberOfDups = 1;
+            if(idToOccurences.containsKey(vertex.id().toString()))
+                numberOfDups = idToOccurences.get(vertex.id().toString());
+            for (int i=0 ; i<numberOfDups;i++){
+                itemsWithDups.add(vertex);
+            }
+        }
+
+        return itemsWithDups.iterator();
     }
 
     @Override
