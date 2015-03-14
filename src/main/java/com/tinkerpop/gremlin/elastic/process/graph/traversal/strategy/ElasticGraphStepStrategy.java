@@ -52,8 +52,13 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
                     traversal.removeStep(currentStep);
 
                 } else if (currentStep instanceof VertexStep) {
-                    addPredicates = true;
                     VertexStep<?> originalVertexStep = (VertexStep) currentStep;
+//                    if(originalVertexStep.getLabel().isPresent()){
+//                        addPredicates = false;
+//                        currentStep = currentStep.getNextStep();
+//                        continue;
+//                    }
+                    addPredicates = true;
                     Class<? extends Element> returnClassOfVertexStep = originalVertexStep.getReturnClass();
                     ElasticSearchStep newSearchStep;
                     if(Vertex.class.isAssignableFrom(returnClassOfVertexStep)){
@@ -67,8 +72,13 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
 
                 }
                 else if (currentStep instanceof EdgeVertexStep){
-                    addPredicates = true;
                     EdgeVertexStep originalEdgeStep = (EdgeVertexStep) currentStep;
+//                    if(originalEdgeStep.getLabel().isPresent()){
+//                        addPredicates = false;
+//                        currentStep = currentStep.getNextStep();
+//                        continue;
+//                    }
+                    addPredicates = true;
                     ElasticSearchStep newSearchStep = new VertexSearchStep<>(originalEdgeStep.getTraversal(),originalEdgeStep.getDirection(),graph.elasticService, Edge.class,originalEdgeStep.getLabel());
                     TraversalHelper.replaceStep(currentStep, (Step) newSearchStep, traversal);
                     lastElasticSearchStep = newSearchStep;

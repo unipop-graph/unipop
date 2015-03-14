@@ -1,6 +1,7 @@
 package com.tinkerpop.gremlin.elastic.process.graph.traversal.sideEffect;
 
 import com.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
+import com.tinkerpop.gremlin.elastic.structure.ElasticEdge;
 import com.tinkerpop.gremlin.process.*;
 import com.tinkerpop.gremlin.process.graph.marker.Reversible;
 import com.tinkerpop.gremlin.process.graph.step.map.VertexStep;
@@ -24,12 +25,15 @@ public  class ElasticSearchFlatMap<S extends  Element, E extends Element > exten
     private Traverser.Admin<S> head = null;
     private Iterator<E> iterator = Collections.emptyIterator();
     protected ElasticService elasticService;
+    Iterator< Traverser.Admin<S>> formerStepIterator;
+    protected List<Integer> jumpingPoints;
 
     public ElasticSearchFlatMap(Traversal traversal,ElasticService elasticService) {
         super(traversal);
         this.elasticService = elasticService;
         this.hasContainers = new ArrayList<>();
         this.ids = new ArrayList<Object>();
+        this.jumpingPoints = new ArrayList<>();
     }
 
     @Override
@@ -74,24 +78,35 @@ public  class ElasticSearchFlatMap<S extends  Element, E extends Element > exten
         this.function = function;
     }
 
+    private int counter =0;
     @Override
     protected Traverser<E> processNextStart() {
         while (true) {
-            if (this.iterator.hasNext()) {
 
+            if (this.iterator.hasNext()) {
+                if(jumpingPoints.size() > 0 ){
+                    while(jumpingPoints.size() > 0 && counter == jumpingPoints.get(0)){
+                        this.head = formerStepIterator.next();
+                        jumpingPoints.remove(0);
+                    }
+                }
+                counter++;
                 final Traverser<E> end = this.head.split(this.iterator.next(), this);
                 return end;
             } else {
-
+                List<Traverser.Admin<S>> steps = new ArrayList<Traverser.Admin<S>>();
                 Traverser.Admin<S> first = this.starts.next();
                 Traverser.Admin<S> last = first;
+                steps.add(first);
                 List<S> elementsContainer = new ArrayList<S>();
                 elementsContainer.add(last.get());
                 while(this.starts.hasNext()){
                     last = this.starts.next();
                     elementsContainer.add(last.get());
+                    steps.add(last);
                 }
-                this.head = first;
+                formerStepIterator = steps.iterator();
+                this.head = formerStepIterator.next();
                 if (PROFILING_ENABLED) TraversalMetrics.start(this);
                 this.iterator = this.function.apply(elementsContainer.iterator());
                 if (PROFILING_ENABLED) TraversalMetrics.stop(this);
@@ -103,7 +118,7 @@ public  class ElasticSearchFlatMap<S extends  Element, E extends Element > exten
         //search and add duplicates
         FilterBuilder filter = FilterBuilderProvider.getFilter(this,direction);
         Object[] ids = this.getIds();
-        HashMap<String,Integer> idToOccurences = new HashMap<>();
+        HashMap<String,Integer> idToOccurences = new HashMap<String,Integer>();
         for (Object id : ids){
             String stringId = id.toString();
             if(idToOccurences.containsKey(stringId)){
@@ -120,12 +135,18 @@ public  class ElasticSearchFlatMap<S extends  Element, E extends Element > exten
         else iterator = (Iterator<G>) this.elasticService.searchEdges(filter, labels);
         List<G> itemsWithDups = new ArrayList<G>();
         while(iterator.hasNext()){
-            G vertex = iterator.next();
+            G element = iterator.next();
             int numberOfDups = 1;
-            if(idToOccurences.containsKey(vertex.id().toString()))
-                numberOfDups = idToOccurences.get(vertex.id().toString());
+            String idForDups;
+            if(returnClass.isAssignableFrom(Vertex.class)) idForDups = element.id().toString();
+            else {
+                ElasticEdge edge = (ElasticEdge) element;
+                idForDups =  edge.getVertexId(direction).get(0).toString();
+            }
+            if(idToOccurences.containsKey(idForDups))
+                numberOfDups = idToOccurences.get(idForDups);
             for (int i=0 ; i<numberOfDups;i++){
-                itemsWithDups.add(vertex);
+                itemsWithDups.add(element);
             }
         }
 
