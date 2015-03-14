@@ -28,6 +28,7 @@ public  class ElasticSearchFlatMap<S extends  Element, E extends Element > exten
     protected ElasticService elasticService;
     Iterator< Traverser.Admin<S>> formerStepIterator;
     protected List<Integer> jumpingPoints;
+    protected String typeLabel;
 
     public ElasticSearchFlatMap(Traversal traversal,ElasticService elasticService) {
         super(traversal);
@@ -39,7 +40,7 @@ public  class ElasticSearchFlatMap<S extends  Element, E extends Element > exten
 
     @Override
     public void setTypeLabel(String label){
-        this.setLabel(label);
+        this.typeLabel = label;
     }
     @Override
     public Object[] getIds() {

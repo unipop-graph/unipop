@@ -71,9 +71,8 @@ public class VertexSearchStep<E extends Element> extends ElasticSearchFlatMap<E,
         this.clearIds();
         this.addIds(vertexIds.toArray());
         this.addPredicates(predicates);
-
-        Iterator<Vertex> vertexIterator = this.elasticService.searchVertices(FilterBuilderProvider.getFilter(this));
-        return prepareAndAddJumpingPointsAndReturnCorrectedIterator(originalVertexIterator,idToResultsIds,vertexIterator);
+        Iterator<Vertex> vertexIterator = this.elasticService.searchVertices(FilterBuilderProvider.getFilter(this),this.typeLabel);
+        return prepareAndAddJumpingPointsAndReturnCorrectedIterator(originalVertexIterator, idToResultsIds, vertexIterator);
     }
 
     private Map<String,List<String>> searchEdgesAndAddIds(Direction direction, List<Object> vertexIds, Map<String,List<String>> vertexToResultVertices) {
@@ -106,8 +105,8 @@ public class VertexSearchStep<E extends Element> extends ElasticSearchFlatMap<E,
             originalEdgeIds.add(edgeId);
         }
 
-        Iterator<Vertex> vertexIterator = this.elasticService.searchVertices(FilterBuilderProvider.getFilter(this));
-        return prepareAndAddJumpingPointsAndReturnCorrectedIterator(originalEdgeIds,edgeIdToResultsIds,vertexIterator);
+        Iterator<Vertex> vertexIterator = this.elasticService.searchVertices(FilterBuilderProvider.getFilter(this),this.typeLabel);
+        return prepareAndAddJumpingPointsAndReturnCorrectedIterator(originalEdgeIds, edgeIdToResultsIds, vertexIterator);
     }
 
 
