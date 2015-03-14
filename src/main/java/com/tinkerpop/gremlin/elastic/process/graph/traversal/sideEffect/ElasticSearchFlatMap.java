@@ -1,10 +1,17 @@
 package com.tinkerpop.gremlin.elastic.process.graph.traversal.sideEffect;
 
+import com.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
+import com.tinkerpop.gremlin.elastic.structure.ElasticEdge;
 import com.tinkerpop.gremlin.process.*;
 import com.tinkerpop.gremlin.process.graph.marker.Reversible;
+import com.tinkerpop.gremlin.process.graph.step.map.VertexStep;
 import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.process.util.*;
+import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Element;
+import com.tinkerpop.gremlin.structure.Vertex;
+import org.elasticsearch.index.query.FilterBuilder;
 
 import java.util.*;
 import java.util.function.Function;
@@ -12,19 +19,29 @@ import java.util.function.Function;
 /**
  * Created by Eliran on 11/3/2015.
  */
-public class ElasticSearchFlatMap<S extends  Element, E extends Element > extends AbstractStep<S,E> implements Reversible,ElasticSearchStep {
+public  class ElasticSearchFlatMap<S extends  Element, E extends Element > extends AbstractStep<S,E> implements Reversible,ElasticSearchStep {
     private List<HasContainer> hasContainers;
     private List<Object> ids;
     private Function<Iterator<S>, Iterator<E>> function = null;
     private Traverser.Admin<S> head = null;
     private Iterator<E> iterator = Collections.emptyIterator();
+    protected ElasticService elasticService;
+    Iterator< Traverser.Admin<S>> formerStepIterator;
+    protected List<Integer> jumpingPoints;
+    protected String typeLabel;
 
-    public ElasticSearchFlatMap(Traversal traversal) {
+    public ElasticSearchFlatMap(Traversal traversal,ElasticService elasticService) {
         super(traversal);
+        this.elasticService = elasticService;
         this.hasContainers = new ArrayList<>();
         this.ids = new ArrayList<Object>();
+        this.jumpingPoints = new ArrayList<>();
     }
 
+    @Override
+    public void setTypeLabel(String label){
+        this.typeLabel = label;
+    }
     @Override
     public Object[] getIds() {
         return this.ids.toArray();
@@ -63,22 +80,34 @@ public class ElasticSearchFlatMap<S extends  Element, E extends Element > extend
         this.function = function;
     }
 
+    private int counter =0;
     @Override
     protected Traverser<E> processNextStart() {
         while (true) {
-            if (this.iterator.hasNext()) {
 
+            if (this.iterator.hasNext()) {
+                if(jumpingPoints.size() > 0 ){
+                    while(jumpingPoints.size() > 0 && counter == jumpingPoints.get(0)){
+                        this.head = formerStepIterator.next();
+                        jumpingPoints.remove(0);
+                    }
+                }
+                counter++;
                 final Traverser<E> end = this.head.split(this.iterator.next(), this);
                 return end;
             } else {
-                Traverser.Admin<S> last = this.starts.next();
-                List<S> elementsContainer = new ArrayList<>();
-                elementsContainer.add(last.get());
+                List<Traverser.Admin<S>> steps = new ArrayList<Traverser.Admin<S>>();
+                Traverser.Admin<S> first = this.starts.next();
+                steps.add(first);
+                List<S> elementsContainer = new ArrayList<S>();
+                elementsContainer.add(first.get());
                 while(this.starts.hasNext()){
-                    last = this.starts.next();
-                    elementsContainer.add(last.get());
+                    Traverser.Admin<S> next = this.starts.next();
+                    elementsContainer.add(next.get());
+                    steps.add(next);
                 }
-                this.head = last;
+                formerStepIterator = steps.iterator();
+                this.head = formerStepIterator.next();
                 if (PROFILING_ENABLED) TraversalMetrics.start(this);
                 this.iterator = this.function.apply(elementsContainer.iterator());
                 if (PROFILING_ENABLED) TraversalMetrics.stop(this);
@@ -90,6 +119,30 @@ public class ElasticSearchFlatMap<S extends  Element, E extends Element > extend
     public void reset() {
         super.reset();
         this.iterator = Collections.emptyIterator();
+    }
+
+    @Override
+    public String toString() {
+        return TraversalHelper.makeStepString(this,this.hasContainers);
+    }
+
+    protected Iterator<E> addJumpingPointsAndReturnCorrectedIterator(List<String> inputIds,Map<String,List<String>> inputIdToResultSet,Map<String,E> IdToElement){
+        List<E> elements = new ArrayList<E>();
+        int counter = 0 ;
+        for(String fromId : inputIds){
+            if(inputIdToResultSet.containsKey(fromId)) {
+                List<String> toIds = inputIdToResultSet.get(fromId);
+                for (String toId : toIds) {
+                    if(IdToElement.containsKey(toId)) {
+                        elements.add(IdToElement.get(toId));
+                        counter++;
+                    }
+                }
+            }
+            this.jumpingPoints.add(counter);
+        }
+        return elements.iterator();
+
     }
 
 }

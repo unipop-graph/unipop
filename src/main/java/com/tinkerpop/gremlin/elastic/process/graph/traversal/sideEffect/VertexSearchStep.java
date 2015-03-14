@@ -3,80 +3,130 @@ package com.tinkerpop.gremlin.elastic.process.graph.traversal.sideEffect;
 import com.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
 import com.tinkerpop.gremlin.elastic.structure.ElasticEdge;
 import com.tinkerpop.gremlin.process.Traversal;
+import com.tinkerpop.gremlin.process.graph.step.map.VertexStep;
 import com.tinkerpop.gremlin.process.graph.util.HasContainer;
+import com.tinkerpop.gremlin.process.util.TraversalHelper;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.Element;
 import org.elasticsearch.index.query.BoolFilterBuilder;
+import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.index.query.FilterBuilders;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Created by Eliran on 11/3/2015.
  */
 public class VertexSearchStep<E extends Element> extends ElasticSearchFlatMap<E,Vertex> {
 
-    ElasticService elasticService;
-    Direction direction;
-    Class<E> stepClass;
-    String[] edgeLabels;
+
+    private Direction direction;
+    private Class<E> stepClass;
+    private String[] edgeLabels;
+
     public VertexSearchStep(Traversal traversal, Direction direction, ElasticService elasticService,Class<E> stepClass, Optional<String> label,String... edgeLabels) {
-        super(traversal);
-        this.elasticService = elasticService;
+        super(traversal,elasticService);
         this.direction = direction;
         this.stepClass = stepClass;
         if(label.isPresent()){
             this.setLabel(label.get());
         }
-        this.setFunction(traverser -> geVertexIterator(traverser));
+        this.setFunction(traverser -> getVertexIterator(traverser));
         this.edgeLabels = edgeLabels;
     }
 
-    private Iterator<Vertex> geVertexIterator(Iterator<E> elementIterator) {
+    private Iterator<Vertex> getVertexIterator(Iterator<E> elementIterator) {
         if(stepClass.isAssignableFrom(Vertex.class)){
             return getVerticesFromVertex(elementIterator);
         }
         else {
-            return getVertexesFromEdges(elementIterator);
+            return getVerticesFromEdges(elementIterator);
         }
 
     }
 
     private Iterator<Vertex> getVerticesFromVertex(Iterator<E> elementIterator) {
-        elementIterator.forEachRemaining(vertex -> this.addId(vertex.id()));
+        List<String> originalVertexIterator = new ArrayList<>();
+        elementIterator.forEachRemaining(vertex -> {
+            this.addId(vertex.id());
+            originalVertexIterator.add(vertex.id().toString());
+        });
         //perdicates belongs to vertices query
         List<HasContainer> predicates = this.getPredicates();
         this.clearPredicates();
         List<Object> vertexIds = new ArrayList<Object>();
+        Map<String,List<String>> idToResultsIds = new HashMap<String,List<String>>();
         if(this.direction == Direction.BOTH){
-            Iterator<Edge> inEdgeIterator = this.elasticService.searchEdges(FilterBuilderProvider.getFilter(this,Direction.IN),edgeLabels);
-            inEdgeIterator.forEachRemaining(edge -> vertexIds.addAll(((ElasticEdge) edge).getVertexId(Direction.OUT)));
-            Iterator<Edge> outEdgeIterator = this.elasticService.searchEdges(FilterBuilderProvider.getFilter(this,Direction.OUT),edgeLabels);
-            outEdgeIterator.forEachRemaining(edge -> vertexIds.addAll(((ElasticEdge) edge).getVertexId(Direction.IN)));
+            searchEdgesAndAddIds(Direction.IN,vertexIds,idToResultsIds);
+            idToResultsIds =  searchEdgesAndAddIds(Direction.OUT,vertexIds,idToResultsIds);
         }
         else {
-            Iterator<Edge> edgeIterator = this.elasticService.searchEdges(FilterBuilderProvider.getFilter(this, this.direction), edgeLabels);
-            edgeIterator.forEachRemaining(edge -> vertexIds.addAll(((ElasticEdge) edge).getVertexId(this.direction.opposite())));
+            idToResultsIds =  searchEdgesAndAddIds(this.direction,vertexIds,idToResultsIds);
         }
+
+        if(vertexIds.isEmpty()) return (new ArrayList<Vertex>()).iterator();
         //remove ids from edges query and put new ones
         this.clearIds();
         this.addIds(vertexIds.toArray());
         this.addPredicates(predicates);
-        return this.elasticService.searchVertices(FilterBuilderProvider.getFilter(this));
-
+        Iterator<Vertex> vertexIterator = this.elasticService.searchVertices(FilterBuilderProvider.getFilter(this),this.typeLabel);
+        return prepareAndAddJumpingPointsAndReturnCorrectedIterator(originalVertexIterator, idToResultsIds, vertexIterator);
     }
 
-    private Iterator<Vertex> getVertexesFromEdges(Iterator<E> elementIterator) {
+    private Map<String,List<String>> searchEdgesAndAddIds(Direction direction, List<Object> vertexIds, Map<String,List<String>> vertexToResultVertices) {
+        Iterator<Edge> edgeIterator = this.elasticService.searchEdges(FilterBuilderProvider.getFilter(this,direction),this.edgeLabels );
+        edgeIterator.forEachRemaining(edge -> {
+            Object idOposite = ((ElasticEdge) edge).getVertexId(direction.opposite()).get(0);
+            String idOpositeString = idOposite.toString();
+            String idNormal = ((ElasticEdge) edge).getVertexId(direction).get(0).toString();
+            vertexIds.add(idOposite);
+            List<String> cacheList;
+            if(!vertexToResultVertices.containsKey(idNormal)){
+                cacheList = new ArrayList<String>();
+                vertexToResultVertices.put(idNormal,cacheList);
+            }
+            else cacheList = vertexToResultVertices.get(idNormal);
+            cacheList.add(idOpositeString);
+        });
+        return vertexToResultVertices;
+    }
+
+    private Iterator<Vertex> getVerticesFromEdges(Iterator<E> elementIterator) {
+        Map<String,List<String>> edgeIdToResultsIds =  new HashMap<String,List<String>>();
+        List<String> originalEdgeIds = new ArrayList<String>();
         while(elementIterator.hasNext()){
             ElasticEdge edge = (ElasticEdge) elementIterator.next();
-            this.addIds(edge.getVertexId(direction).toArray());
+            List vertexIds = edge.getVertexId(direction);
+            this.addIds(vertexIds.toArray());
+            String edgeId = edge.id().toString();
+            edgeIdToResultsIds.put(edgeId, vertexIds);
+            originalEdgeIds.add(edgeId);
         }
-        String label = this.getLabel().isPresent()?  this.label.get() : null;
-        return elasticService.searchVertices(FilterBuilderProvider.getFilter(this),label);
+
+        Iterator<Vertex> vertexIterator = this.elasticService.searchVertices(FilterBuilderProvider.getFilter(this),this.typeLabel);
+        return prepareAndAddJumpingPointsAndReturnCorrectedIterator(originalEdgeIds, edgeIdToResultsIds, vertexIterator);
     }
+
+
+
+    @Override
+    public String toString(){
+        if(this.edgeLabels!=null && this.edgeLabels.length > 0)
+            return TraversalHelper.makeStepString(this, this.direction, this.stepClass.getSimpleName().toLowerCase(), Arrays.asList(this.edgeLabels),this.getPredicates());
+        return TraversalHelper.makeStepString(this, this.direction, this.stepClass.getSimpleName().toLowerCase(),this.getPredicates());
+    }
+
+
+
+    private Iterator<Vertex> prepareAndAddJumpingPointsAndReturnCorrectedIterator(List<String> inputIds,Map<String,List<String>> inputIdToResultSet,Iterator<Vertex> resultSetFromSearch){
+        HashMap<String,Vertex> idToVertex  = new HashMap<String,Vertex>();
+        while(resultSetFromSearch.hasNext()){
+            Vertex v = resultSetFromSearch.next();
+            idToVertex.put(v.id().toString(),v);
+        }
+       return addJumpingPointsAndReturnCorrectedIterator(inputIds,inputIdToResultSet,idToVertex);
+    }
+
 }

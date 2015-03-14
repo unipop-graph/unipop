@@ -10,7 +10,7 @@ import java.util.List;
 public interface ElasticSearchStep {
     Object[] getIds();
     void addIds(Object[] ids);
-    void setLabel(String label);
+    void setTypeLabel(String label);
     void addPredicates(List<HasContainer> containerList);
     List<HasContainer> getPredicates();
     void addId(Object id);
