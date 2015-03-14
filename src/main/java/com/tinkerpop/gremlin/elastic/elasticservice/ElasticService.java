@@ -193,11 +193,12 @@ public class ElasticService {
 
 
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch(result.getIndices())
-                .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(),result.getFilter())).setFrom(0).setSize(100000); //TODO: retrive with scroll for efficiency
+                .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(),result.getFilter())).setFrom(0).setSize(2000000); //TODO: retrive with scroll for efficiency
         if (labels != null && labels.length > 0 && labels[0] != null)
             searchRequestBuilder = searchRequestBuilder.setTypes(labels);
 
         SearchResponse searchResponse = searchRequestBuilder.execute().actionGet();
+
         Iterable<SearchHit> hitsIterable = () -> searchResponse.getHits().iterator();
         Stream<SearchHit> hitStream = StreamSupport.stream(hitsIterable.spliterator(), false);
         timer("search").stop();
