@@ -2,14 +2,11 @@ package com.tinkerpop.gremlin.elastic.process.graph.traversal.sideEffect;
 
 import com.tinkerpop.gremlin.elastic.structure.ElasticEdge;
 import com.tinkerpop.gremlin.process.graph.util.HasContainer;
-import com.tinkerpop.gremlin.structure.Compare;
-import com.tinkerpop.gremlin.structure.Contains;
-import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.*;
 import org.elasticsearch.common.geo.builders.ShapeBuilder;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.index.query.*;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.List;
 
@@ -64,7 +61,7 @@ public class FilterBuilderProvider {
                     boolFilterBuilder.must(FilterBuilders.existsFilter(has.key));
             } else if (has.predicate instanceof Geo)
                 boolFilterBuilder.must(new GeoShapeFilterBuilder(has.key, GetShapeBuilder(has.value), ((Geo) has.predicate).getRelation()));
-            else throw new NotImplementedException();
+            else throw new IllegalArgumentException("predicate not supported: " + has.predicate.toString());
         }
         if (ids.length > 0) {
             String[] stringIds = new String[ids.length];

@@ -1,24 +1,15 @@
 package com.tinkerpop.gremlin.elastic.process.graph.traversal.strategy;
 
-import com.tinkerpop.gremlin.elastic.process.graph.traversal.sideEffect.EdgeSearchStep;
-import com.tinkerpop.gremlin.elastic.process.graph.traversal.sideEffect.ElasticGraphStep;
-import com.tinkerpop.gremlin.elastic.process.graph.traversal.sideEffect.ElasticSearchStep;
-import com.tinkerpop.gremlin.elastic.process.graph.traversal.sideEffect.VertexSearchStep;
+import com.tinkerpop.gremlin.elastic.process.graph.traversal.sideEffect.*;
 import com.tinkerpop.gremlin.elastic.structure.ElasticGraph;
-import com.tinkerpop.gremlin.elastic.structure.ElasticVertex;
 import com.tinkerpop.gremlin.process.*;
 import com.tinkerpop.gremlin.process.graph.marker.HasContainerHolder;
-import com.tinkerpop.gremlin.process.graph.step.map.EdgeVertexStep;
-import com.tinkerpop.gremlin.process.graph.step.map.VertexStep;
+import com.tinkerpop.gremlin.process.graph.step.map.*;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.*;
 import com.tinkerpop.gremlin.process.graph.strategy.AbstractTraversalStrategy;
 import com.tinkerpop.gremlin.process.graph.util.HasContainer;
-import com.tinkerpop.gremlin.process.util.EmptyStep;
-import com.tinkerpop.gremlin.process.util.TraversalHelper;
-import com.tinkerpop.gremlin.structure.Direction;
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Element;
-import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.process.util.*;
+import com.tinkerpop.gremlin.structure.*;
 
 import java.util.List;
 
