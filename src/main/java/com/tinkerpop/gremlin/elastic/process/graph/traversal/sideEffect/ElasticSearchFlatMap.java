@@ -8,6 +8,7 @@ import com.tinkerpop.gremlin.process.graph.step.map.VertexStep;
 import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.process.util.*;
 import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.elasticsearch.index.query.FilterBuilder;
@@ -123,6 +124,25 @@ public  class ElasticSearchFlatMap<S extends  Element, E extends Element > exten
     @Override
     public String toString() {
         return TraversalHelper.makeStepString(this,this.hasContainers);
+    }
+
+    protected Iterator<E> addJumpingPointsAndReturnCorrectedIterator(List<String> inputIds,Map<String,List<String>> inputIdToResultSet,Map<String,E> IdToElement){
+        List<E> elements = new ArrayList<E>();
+        int counter = 0 ;
+        for(String fromId : inputIds){
+            if(inputIdToResultSet.containsKey(fromId)) {
+                List<String> toIds = inputIdToResultSet.get(fromId);
+                for (String toId : toIds) {
+                    if(IdToElement.containsKey(toId)) {
+                        elements.add(IdToElement.get(toId));
+                        counter++;
+                    }
+                }
+            }
+            this.jumpingPoints.add(counter);
+        }
+        return elements.iterator();
+
     }
 
 }

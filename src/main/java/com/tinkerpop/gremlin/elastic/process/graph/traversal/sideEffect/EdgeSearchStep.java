@@ -66,27 +66,6 @@ public class EdgeSearchStep extends ElasticSearchFlatMap<Vertex,Edge> {
 
 
 
-
-    private Iterator<Edge> addJumpingPointsAndReturnCorrectedIterator(List<String> inputIds,Map<String,List<String>> inputIdToResultSet,Map<String,Edge> edgeIdToEdge){
-
-        List<Edge> edges = new ArrayList<Edge>();
-        int counter = 0 ;
-        for(String fromVertexId : inputIds){
-            if(inputIdToResultSet.containsKey(fromVertexId)) {
-                List<String> toEdges = inputIdToResultSet.get(fromVertexId);
-                for (String edgeId : toEdges) {
-                    if(edgeIdToEdge.containsKey(edgeId)) {
-                        edges.add(edgeIdToEdge.get(edgeId));
-                        counter++;
-                    }
-                }
-            }
-            this.jumpingPoints.add(counter);
-        }
-        return edges.iterator();
-
-    }
-
     @Override
     public void setTypeLabel(String label){
         edgeLabels.add(label);

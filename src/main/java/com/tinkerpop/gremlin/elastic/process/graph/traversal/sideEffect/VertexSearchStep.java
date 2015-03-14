@@ -72,17 +72,11 @@ public class VertexSearchStep<E extends Element> extends ElasticSearchFlatMap<E,
         this.addIds(vertexIds.toArray());
         this.addPredicates(predicates);
 
-        FilterBuilder filter = FilterBuilderProvider.getFilter(this);
-        Object[] ids = this.getIds();
-        //Iterator<Vertex> vertexIterator = searchWithDups(Vertex.class, null);
-
-
-        Iterator<Vertex> vertexIterator = this.elasticService.searchVertices(filter);
-        return addJumpingPointsAndReturnCorrectedIterator(originalVertexIterator,idToResultsIds,vertexIterator);
+        Iterator<Vertex> vertexIterator = this.elasticService.searchVertices(FilterBuilderProvider.getFilter(this));
+        return prepareAndAddJumpingPointsAndReturnCorrectedIterator(originalVertexIterator,idToResultsIds,vertexIterator);
     }
 
     private Map<String,List<String>> searchEdgesAndAddIds(Direction direction, List<Object> vertexIds, Map<String,List<String>> vertexToResultVertices) {
-        //Iterator<Edge> edgeIterator = searchWithDups(Edge.class, direction, edgeLabels);
         Iterator<Edge> edgeIterator = this.elasticService.searchEdges(FilterBuilderProvider.getFilter(this,direction),this.edgeLabels );
         edgeIterator.forEachRemaining(edge -> {
             Object idOposite = ((ElasticEdge) edge).getVertexId(direction.opposite()).get(0);
@@ -112,9 +106,8 @@ public class VertexSearchStep<E extends Element> extends ElasticSearchFlatMap<E,
             originalEdgeIds.add(edgeId);
         }
 
-        //String label = this.getLabel().isPresent()?  this.label.get() : null;
         Iterator<Vertex> vertexIterator = this.elasticService.searchVertices(FilterBuilderProvider.getFilter(this));
-        return addJumpingPointsAndReturnCorrectedIterator(originalEdgeIds,edgeIdToResultsIds,vertexIterator);
+        return prepareAndAddJumpingPointsAndReturnCorrectedIterator(originalEdgeIds,edgeIdToResultsIds,vertexIterator);
     }
 
 
@@ -128,28 +121,13 @@ public class VertexSearchStep<E extends Element> extends ElasticSearchFlatMap<E,
 
 
 
-    private Iterator<Vertex> addJumpingPointsAndReturnCorrectedIterator(List<String> inputIds,Map<String,List<String>> inputIdToResultSet,Iterator<Vertex> resultSetFromSearch){
+    private Iterator<Vertex> prepareAndAddJumpingPointsAndReturnCorrectedIterator(List<String> inputIds,Map<String,List<String>> inputIdToResultSet,Iterator<Vertex> resultSetFromSearch){
         HashMap<String,Vertex> idToVertex  = new HashMap<String,Vertex>();
         while(resultSetFromSearch.hasNext()){
             Vertex v = resultSetFromSearch.next();
             idToVertex.put(v.id().toString(),v);
         }
-        List<Vertex> vertices = new ArrayList<Vertex>();
-        int counter = 0 ;
-        for(String fromVertexId : inputIds){
-            if(inputIdToResultSet.containsKey(fromVertexId)) {
-                List<String> toVertices = inputIdToResultSet.get(fromVertexId);
-                for (String vertexId : toVertices) {
-                    if(idToVertex.containsKey(vertexId)) {
-                        vertices.add(idToVertex.get(vertexId));
-                        counter++;
-                    }
-                }
-            }
-            this.jumpingPoints.add(counter);
-        }
-        return vertices.iterator();
-
+       return addJumpingPointsAndReturnCorrectedIterator(inputIds,inputIdToResultSet,idToVertex);
     }
 
 }
