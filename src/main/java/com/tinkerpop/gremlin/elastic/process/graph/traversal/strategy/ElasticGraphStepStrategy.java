@@ -12,12 +12,15 @@ import com.tinkerpop.gremlin.process.graph.step.map.EdgeVertexStep;
 import com.tinkerpop.gremlin.process.graph.step.map.VertexStep;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.*;
 import com.tinkerpop.gremlin.process.graph.strategy.AbstractTraversalStrategy;
+import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.process.util.EmptyStep;
 import com.tinkerpop.gremlin.process.util.TraversalHelper;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Vertex;
+
+import java.util.List;
 
 public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
     private static final ElasticGraphStepStrategy INSTANCE = new ElasticGraphStepStrategy();
@@ -42,14 +45,22 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
             boolean addPredicates = true;
             while (true) {
                 if (currentStep instanceof HasContainerHolder) {
-
-                    if(addPredicates) lastElasticSearchStep.addPredicates(((HasContainerHolder) currentStep).getHasContainers());
-                    if (currentStep.getLabel().isPresent()) {
-                        final IdentityStep identityStep = new IdentityStep<>(traversal);
-                        identityStep.setLabel(currentStep.getLabel().get());
-                        TraversalHelper.insertAfterStep(identityStep, currentStep, traversal);
+                    List<HasContainer> hasContainers = ((HasContainerHolder) currentStep).getHasContainers();
+                    boolean containsLambda = false;
+                    for(HasContainer container : hasContainers){
+                        if(container.predicate.toString().contains("$$")){
+                            containsLambda = true;
+                        }
                     }
-                    traversal.removeStep(currentStep);
+                    if(addPredicates&&!containsLambda) {
+                        lastElasticSearchStep.addPredicates(((HasContainerHolder) currentStep).getHasContainers());
+                        if (currentStep.getLabel().isPresent()) {
+                            final IdentityStep identityStep = new IdentityStep<>(traversal);
+                            identityStep.setLabel(currentStep.getLabel().get());
+                            TraversalHelper.insertAfterStep(identityStep, currentStep, traversal);
+                        }
+                        traversal.removeStep(currentStep);
+                    }
 
                 } else if (currentStep instanceof VertexStep) {
                     VertexStep<?> originalVertexStep = (VertexStep) currentStep;
