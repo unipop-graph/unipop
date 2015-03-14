@@ -97,14 +97,13 @@ public  class ElasticSearchFlatMap<S extends  Element, E extends Element > exten
             } else {
                 List<Traverser.Admin<S>> steps = new ArrayList<Traverser.Admin<S>>();
                 Traverser.Admin<S> first = this.starts.next();
-                Traverser.Admin<S> last = first;
                 steps.add(first);
                 List<S> elementsContainer = new ArrayList<S>();
-                elementsContainer.add(last.get());
+                elementsContainer.add(first.get());
                 while(this.starts.hasNext()){
-                    last = this.starts.next();
-                    elementsContainer.add(last.get());
-                    steps.add(last);
+                    Traverser.Admin<S> next = this.starts.next();
+                    elementsContainer.add(next.get());
+                    steps.add(next);
                 }
                 formerStepIterator = steps.iterator();
                 this.head = formerStepIterator.next();
