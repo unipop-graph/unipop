@@ -114,45 +114,6 @@ public  class ElasticSearchFlatMap<S extends  Element, E extends Element > exten
         }
     }
 
-    protected <G extends Element> Iterator<G> searchWithDups(Class<G> returnClass ,Direction direction,String ... labels ){
-        //search and add duplicates
-        FilterBuilder filter = FilterBuilderProvider.getFilter(this,direction);
-        Object[] ids = this.getIds();
-        HashMap<String,Integer> idToOccurences = new HashMap<String,Integer>();
-        for (Object id : ids){
-            String stringId = id.toString();
-            if(idToOccurences.containsKey(stringId)){
-                Integer integer = idToOccurences.get(stringId);
-                idToOccurences.put(stringId,integer +1 );
-            }
-            else {
-                idToOccurences.put(stringId,1 );
-            }
-        }
-        Iterator<G> iterator;
-        if(returnClass.isAssignableFrom(Vertex.class))
-            iterator = (Iterator<G>) this.elasticService.searchVertices(filter,labels);
-        else iterator = (Iterator<G>) this.elasticService.searchEdges(filter, labels);
-        List<G> itemsWithDups = new ArrayList<G>();
-        while(iterator.hasNext()){
-            G element = iterator.next();
-            int numberOfDups = 1;
-            String idForDups;
-            if(returnClass.isAssignableFrom(Vertex.class)) idForDups = element.id().toString();
-            else {
-                ElasticEdge edge = (ElasticEdge) element;
-                idForDups =  edge.getVertexId(direction).get(0).toString();
-            }
-            if(idToOccurences.containsKey(idForDups))
-                numberOfDups = idToOccurences.get(idForDups);
-            for (int i=0 ; i<numberOfDups;i++){
-                itemsWithDups.add(element);
-            }
-        }
-
-        return itemsWithDups.iterator();
-    }
-
     @Override
     public void reset() {
         super.reset();
