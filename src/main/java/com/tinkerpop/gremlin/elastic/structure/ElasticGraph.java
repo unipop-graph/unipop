@@ -7,7 +7,6 @@ import com.tinkerpop.gremlin.process.computer.GraphComputer;
 import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.*;
 import org.apache.commons.configuration.Configuration;
-import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 
 import java.io.IOException;
@@ -97,10 +96,14 @@ public class ElasticGraph implements Graph, Graph.Iterators {
         Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
         try {
-            IndexResponse response = elasticService.addElement(label, idValue, ElasticElement.Type.vertex, keyValues);
-            return new ElasticVertex(response.getId(), label, keyValues, this);
+            String id = elasticService.addElement(label, idValue, ElasticElement.Type.vertex, keyValues);
+            return new ElasticVertex(id, label, keyValues, this);
         } catch (DocumentAlreadyExistsException ex) {
             throw Graph.Exceptions.vertexWithIdAlreadyExists(idValue);
         }
+    }
+
+    public void commit() {
+        elasticService.ccmmit();
     }
 }

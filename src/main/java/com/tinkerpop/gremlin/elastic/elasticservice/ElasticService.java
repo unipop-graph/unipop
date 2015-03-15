@@ -5,6 +5,7 @@ import com.tinkerpop.gremlin.elastic.structure.*;
 import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.commons.configuration.Configuration;
+import org.elasticsearch.action.bulk.*;
 import org.elasticsearch.action.get.*;
 import org.elasticsearch.action.index.*;
 import org.elasticsearch.action.search.*;
@@ -17,6 +18,7 @@ import org.elasticsearch.node.Node;
 import org.elasticsearch.node.*;
 import org.elasticsearch.script.ScriptService;
 import org.elasticsearch.search.SearchHit;
+import com.eaio.uuid.UUID;
 
 import java.io.IOException;
 import java.util.*;
@@ -35,6 +37,7 @@ public class ElasticService {
     private ElasticGraph graph;
     public SchemaProvider schemaProvider;
     private boolean refresh;
+    BulkRequestBuilder bulkRequest;
     private final String clusterName;
     private final String addresses;
     public Client client;
@@ -52,6 +55,7 @@ public class ElasticService {
         this.refresh = configuration.getBoolean("elasticsearch.refresh", true);
         this.clusterName = configuration.getString("elasticsearch.cluster.name", "elasticsearch");
         this.addresses = configuration.getString("elasticsearch.cluster.address", "127.0.0.1");
+        boolean bulk = configuration.getBoolean("elasticsearch.batch", false);
         String schemaProvider = configuration.getString("elasticsearch.schemaProvider", DefaultSchemaProvider.class.getCanonicalName());
         String clientType =configuration.getString("elasticsearch.client", ClientType.NODE);
 
@@ -67,6 +71,9 @@ public class ElasticService {
         } catch (Exception e) {
             throw new IllegalArgumentException("failed to load SchemaProvider:" + schemaProvider, e);
         }
+
+        if(bulk)
+            bulkRequest = client.prepareBulk();
 
         timer("initialization").stop();
     }
@@ -92,27 +99,40 @@ public class ElasticService {
         timingAccessor.print();
     }
 
+    public void ccmmit() {
+        if(bulkRequest == null) return;
+        BulkResponse bulkItemResponses = bulkRequest.execute().actionGet();
+        bulkRequest = client.prepareBulk();
+    }
+
+
     //endregion
 
     //region queries
 
-    public IndexResponse addElement(String label, Object idValue, ElasticElement.Type type, Object... keyValues) {
-        timer("add element").start();
+    public String addElement(String label, Object idValue, ElasticElement.Type type, Object... keyValues) {
+        if(bulkRequest == null) timer("add element").start();
+
         for (int i = 0; i < keyValues.length; i = i + 2) {
             String key = keyValues[i].toString();
             Object value = keyValues[i + 1];
             ElementHelper.validateProperty(key, value);
         }
+        if(idValue == null) idValue = new UUID().toString();
 
         SchemaProvider.AddElementResult addElementResult = schemaProvider.addElement(label, idValue, type, keyValues);
 
-        IndexRequestBuilder indexRequestBuilder;
-        if (idValue == null) indexRequestBuilder = client.prepareIndex(addElementResult.getIndex(), label);
-        else indexRequestBuilder = client.prepareIndex(addElementResult.getIndex(), label, idValue.toString());
+        IndexRequestBuilder indexRequestBuilder =
+                client.prepareIndex(addElementResult.getIndex(), label, addElementResult.getId()).
+                setCreate(true).setSource(addElementResult.getKeyValues());
 
-        IndexResponse indexResponse = indexRequestBuilder.setCreate(true).setSource(addElementResult.getKeyValues()).execute().actionGet();
-        timer("add element").stop();
-        return indexResponse;
+        if(bulkRequest != null)
+            bulkRequest.add(indexRequestBuilder);
+        else {
+            IndexResponse indexResponse = indexRequestBuilder.execute().actionGet();
+            timer("add element").stop();
+        }
+        return addElementResult.getId();
     }
 
     public void deleteElement(Element element) {

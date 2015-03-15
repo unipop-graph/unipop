@@ -75,6 +75,11 @@ public class DefaultSchemaProvider implements SchemaProvider {
             public Object[] getKeyValues() {
                 return all;
             }
+
+            @Override
+            public String getId() {
+                return idValue.toString();
+            }
         };
     }
 

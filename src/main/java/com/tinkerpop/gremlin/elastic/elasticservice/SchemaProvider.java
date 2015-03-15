@@ -21,6 +21,7 @@ public interface SchemaProvider {
     public interface AddElementResult{
         public String getIndex() ;
         public Object[] getKeyValues();
+        String getId();
     }
 
     public interface SearchResult{

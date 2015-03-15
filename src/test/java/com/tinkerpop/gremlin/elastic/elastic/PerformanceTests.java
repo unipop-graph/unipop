@@ -1,14 +1,9 @@
 package com.tinkerpop.gremlin.elastic.elastic;
 
 
-import com.tinkerpop.gremlin.elastic.elasticservice.DefaultSchemaProvider;
-import com.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
+import com.tinkerpop.gremlin.elastic.elasticservice.*;
 import com.tinkerpop.gremlin.elastic.structure.ElasticGraph;
-import com.tinkerpop.gremlin.elastic.elasticservice.TimingAccessor;
 import com.tinkerpop.gremlin.process.T;
-import com.tinkerpop.gremlin.process.graph.GraphTraversal;
-import com.tinkerpop.gremlin.process.graph.step.filter.GroovyHasNotTest;
-import com.tinkerpop.gremlin.process.graph.step.filter.GroovyHasTest;
 import com.tinkerpop.gremlin.structure.*;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.junit.Test;
@@ -24,15 +19,14 @@ public class PerformanceTests {
     @Test
     public void hasNot() throws IOException {
         BaseConfiguration config = new BaseConfiguration();
-        config.addProperty(Graph.GRAPH, ElasticGraph.class.getName());
-        config.addProperty("elasticsearch.cluster.name", "test2");
-        String indexName = "graph2";
-        config.addProperty("elasticsearch.index.name", indexName.toLowerCase());
-        config.addProperty("elasticsearch.local", true);
+        config.addProperty("elasticsearch.cluster.name", "test");
+        config.addProperty("elasticsearch.index.name", "graph");
         config.addProperty("elasticsearch.refresh", true);
-        config.addProperty("elasticsearch.client", "NODE");
+        config.addProperty("elasticsearch.client", ElasticService.ClientType.NODE);
+
         ElasticGraph graph = new ElasticGraph(config);
         ((DefaultSchemaProvider)graph.elasticService.schemaProvider).clearAllData();
+
         Vertex vertex = graph.addVertex(T.label, "test_doc", T.id, "1", "name", "eliran", "age", 24);
         Vertex vertex1 = graph.addVertex(T.label, "test_doc", T.id, "2", "name", "ran");
         Vertex vertex2 = graph.addVertex(T.label, "test_doc", T.id, "3", "name", "chiko");
@@ -48,6 +42,8 @@ public class PerformanceTests {
         Object in = graph.V("1").in().next();
         int i=1;
 
+        graph.close();
+
     }
 
     @Test
@@ -57,11 +53,12 @@ public class PerformanceTests {
         config.addProperty("elasticsearch.cluster.name", "test");
         config.addProperty("elasticsearch.index.name", "graph");
         config.addProperty("elasticsearch.refresh", true);
-        config.addProperty("elasticsearch.client", ElasticService.ClientType.NODE.toString());
+        config.addProperty("elasticsearch.client", ElasticService.ClientType.NODE);
 
         startWatch("graph initalization");
         ElasticGraph graph = new ElasticGraph(config);
         stopWatch("graph initalization");
+        ((DefaultSchemaProvider)graph.elasticService.schemaProvider).clearAllData();
 
         startWatch("add vertices");
         int count = 10000;
@@ -83,7 +80,47 @@ public class PerformanceTests {
 
         sw.print();
         System.out.println("-----");
-        graph.elasticService.collectData();
+        graph.close();
+    }
+
+    @Test
+    public void batchLoad() throws IOException {
+        BaseConfiguration config = new BaseConfiguration();
+        config.addProperty(Graph.GRAPH, ElasticGraph.class.getName());
+        config.addProperty("elasticsearch.cluster.name", "test");
+        config.addProperty("elasticsearch.index.name", "graph");
+        config.addProperty("elasticsearch.refresh", true);
+        config.addProperty("elasticsearch.batch", true);
+        config.addProperty("elasticsearch.client", ElasticService.ClientType.NODE);
+
+        startWatch("graph initalization");
+        ElasticGraph graph = new ElasticGraph(config);
+        stopWatch("graph initalization");
+        ((DefaultSchemaProvider)graph.elasticService.schemaProvider).clearAllData();
+
+        startWatch("add vertices");
+        int count = 10000;
+        for(int i = 0; i < count; i++)
+            graph.addVertex();
+        graph.commit();
+        stopWatch("add vertices");
+
+
+        startWatch("vertex iterator");
+        Iterator<Vertex> vertexIterator = graph.iterators().vertexIterator();
+        stopWatch("vertex iterator");
+
+        startWatch("add edges");
+        vertexIterator.forEachRemaining(v -> v.addEdge("bla", v));
+        graph.commit();
+        stopWatch("add edges");
+
+        startWatch("edge iterator");
+        Iterator<Edge> edgeIterator = graph.iterators().edgeIterator();
+        stopWatch("edge iterator");
+
+        sw.print();
+        System.out.println("-----");
         graph.close();
     }
 

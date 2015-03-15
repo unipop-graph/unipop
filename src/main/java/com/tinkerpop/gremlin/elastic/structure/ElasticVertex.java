@@ -4,7 +4,6 @@ import com.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
 import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.*;
 import org.apache.commons.lang3.ArrayUtils;
-import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.elasticsearch.index.query.*;
 
@@ -61,8 +60,8 @@ public class ElasticVertex extends ElasticElement implements Vertex, Vertex.Iter
         Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
 
         try {
-            IndexResponse response = elasticService.addElement(label, idValue, Type.edge, ArrayUtils.addAll(keyValues, ElasticEdge.InId, vertex.id(), ElasticEdge.OutId, this.id()));
-            return new ElasticEdge(response.getId(), label, this.id(), vertex.id(), keyValues, graph);
+            String id = elasticService.addElement(label, idValue, Type.edge, ArrayUtils.addAll(keyValues, ElasticEdge.InId, vertex.id(), ElasticEdge.OutId, this.id()));
+            return new ElasticEdge(id, label, this.id(), vertex.id(), keyValues, graph);
         } catch (DocumentAlreadyExistsException ex) {
             throw Graph.Exceptions.edgeWithIdAlreadyExists(idValue);
         }
