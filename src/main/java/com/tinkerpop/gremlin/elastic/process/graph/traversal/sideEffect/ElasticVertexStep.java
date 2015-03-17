@@ -61,7 +61,7 @@ public class ElasticVertexStep<E extends Element> extends ElasticFlatMapStep<Ver
         Map<String,List<ElasticTraverser>> vertexIdToTraversers = new HashMap<>();
         traversers.forEach(traverser -> {
             traverser.getResults().forEach(edge ->
-                ((ElasticEdge) edge).getVertexId(direction).forEach(id -> {
+                ((ElasticEdge) edge).getVertexId(direction.opposite()).forEach(id -> {
                     List<ElasticTraverser> traverserList = vertexIdToTraversers.get(id);
                     if (traverserList == null) {
                         traverserList = new ArrayList<>();
@@ -75,9 +75,10 @@ public class ElasticVertexStep<E extends Element> extends ElasticFlatMapStep<Ver
         Object[] allVertexIds = vertexIdToTraversers.keySet().toArray();
         Iterator<Vertex> vertexIterator = elasticService.searchVertices(boolFilter, allVertexIds, typeLabels);
 
-        vertexIterator.forEachRemaining(vertex ->
-                vertexIdToTraversers.get(vertex.id()).forEach(traverser ->
-                        traverser.addResult((E) vertex)));
+        vertexIterator.forEachRemaining(vertex -> {
+            List<ElasticTraverser> elasticTraversers = vertexIdToTraversers.get(vertex.id());
+            if(elasticTraversers != null) elasticTraversers.forEach(traverser -> traverser.addResult((E) vertex));
+        });
     }
 
     @Override
