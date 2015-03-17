@@ -93,12 +93,12 @@ public class ElasticVertex extends ElasticElement implements Vertex, Vertex.Iter
 
     @Override
     public Iterator<Edge> edgeIterator(final Direction direction, final String... edgeLabels) {
-        FilterBuilder filter;
-        if (direction == Direction.IN) filter = getFilter(ElasticEdge.InId);
-        else if (direction == Direction.OUT) filter = getFilter(ElasticEdge.OutId);
-        else filter = FilterBuilders.boolFilter().should(getFilter(ElasticEdge.InId), getFilter(ElasticEdge.OutId));
-
-        return elasticService.searchEdges(filter, edgeLabels);
+        BoolFilterBuilder filter = FilterBuilders.boolFilter();
+        if(direction == Direction.IN) filter.must(getFilter(ElasticEdge.InId));
+        else if(direction == Direction.OUT) filter.must(getFilter(ElasticEdge.OutId));
+        else if(direction == Direction.BOTH) filter.should(getFilter(ElasticEdge.InId), getFilter(ElasticEdge.OutId));
+        else throw new EnumConstantNotPresentException(direction.getClass(),direction.name());
+        return elasticService.searchEdges(filter, null, edgeLabels);
     }
 
     private FilterBuilder getFilter(String key) {

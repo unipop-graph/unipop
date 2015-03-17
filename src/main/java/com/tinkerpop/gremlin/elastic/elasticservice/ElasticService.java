@@ -184,14 +184,27 @@ public class ElasticService {
         return edges.iterator();
     }
 
-    public Iterator<Vertex> searchVertices(FilterBuilder filter, String... labels) {
-        Stream<SearchHit> hits = search(filter, ElasticElement.Type.vertex, labels);
+    public Iterator<Vertex> searchVertices(BoolFilterBuilder filter, Object[] ids, String[] labels) {
+        if((filter == null || !filter.hasClauses()) && ids != null && ids.length > 0) return getVertices(ids);
+        FilterBuilder finalFilter = (ids != null && ids.length > 0) ? idsFilter(filter, ids) : filter;
+        Stream<SearchHit> hits = search(finalFilter, ElasticElement.Type.vertex, labels);
         return hits.map((hit) -> createVertex(hit.getId(), hit.getType(), hit.getSource())).iterator();
     }
 
-    public Iterator<Edge> searchEdges(FilterBuilder filter, String... labels) {
-        Stream<SearchHit> hits = search(filter, ElasticElement.Type.edge, labels);
+    public Iterator<Edge> searchEdges(BoolFilterBuilder filter, Object[] ids, String[] labels) {
+        if((filter == null || !filter.hasClauses()) && ids != null && ids.length > 0) return getEdges(ids);
+        FilterBuilder finalFilter = (ids != null && ids.length > 0) ? idsFilter(filter, ids) : filter;
+        Stream<SearchHit> hits = search(finalFilter, ElasticElement.Type.edge, labels);
         return hits.map((hit) -> createEdge(hit.getId(), hit.getType(), hit.getSource())).iterator();
+    }
+
+
+    public static AndFilterBuilder idsFilter(BoolFilterBuilder boolFilterBuilder, Object[] ids) {
+        String[] stringIds = new String[ids.length];
+        for(int i = 0; i<ids.length; i++)
+            stringIds[i] = ids[i].toString();
+        IdsFilterBuilder idsFilterBuilder = FilterBuilders.idsFilter().addIds(stringIds);
+        return FilterBuilders.andFilter(boolFilterBuilder, idsFilterBuilder);
     }
 
     private MultiGetResponse get(Object[] ids) {
@@ -210,7 +223,6 @@ public class ElasticService {
         SchemaProvider.SearchResult result = schemaProvider.search(filter, type, labels);
 
         if (refresh) client.admin().indices().prepareRefresh(result.getIndices()).execute().actionGet();
-
 
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch(result.getIndices())
                 .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(),result.getFilter())).setFrom(0).setSize(2000000); //TODO: retrive with scroll for efficiency
