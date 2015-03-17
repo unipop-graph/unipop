@@ -7,6 +7,7 @@ import com.tinkerpop.gremlin.process.*;
 import com.tinkerpop.gremlin.process.graph.marker.HasContainerHolder;
 import com.tinkerpop.gremlin.process.graph.step.map.*;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.GraphStep;
+import com.tinkerpop.gremlin.process.graph.step.sideEffect.IdentityStep;
 import com.tinkerpop.gremlin.process.graph.strategy.AbstractTraversalStrategy;
 import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.process.util.*;
@@ -41,29 +42,41 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
     private void processStep(Step<?, ?> currentStep, Traversal.Admin<?, ?> traversal, ElasticService elasticService) {
         BoolFilterBuilder boolFilter = FilterBuilders.boolFilter();
         List<String> typeLabels = new ArrayList<>();
+        List<Object> onlyIdsAllowed = new ArrayList<>();
         Step<?, ?> nextStep = currentStep.getNextStep();
         while(nextStep instanceof HasContainerHolder) {
+            final boolean[] containesLambada = {false};
             ((HasContainerHolder) nextStep).getHasContainers().forEach((has)->{
-                if(has.predicate.equals("eq") && has.key.equals("~label"))
+                if(has.predicate.toString().equals("eq") && has.key.equals("~label"))
                     typeLabels.add(has.value.toString());
+                else if(has.predicate.toString().equals("eq") && has.key.equals("~id"))
+                    onlyIdsAllowed.add(has.value);
+                else if(has.predicate.toString().contains("$$")){
+                    containesLambada[0] = true;
+                }
                 else addFilter(boolFilter, has);
             });
-            traversal.removeStep(nextStep);
+            if (nextStep.getLabel().isPresent()) {
+                final IdentityStep identityStep = new IdentityStep<>(traversal);
+                identityStep.setLabel(nextStep.getLabel().get());
+                TraversalHelper.insertAfterStep(identityStep, currentStep, traversal);
+            }
+            if(!containesLambada[0]) traversal.removeStep(nextStep);
             nextStep  = nextStep.getNextStep();
         }
         String[] typeLabelsArray = typeLabels.toArray(new String[0]);
-
+        Object[] onlyIdsAllowedArray = onlyIdsAllowed.toArray(new Object[onlyIdsAllowed.size()]);
 
         if (currentStep instanceof GraphStep) {
-            final ElasticGraphStep<?> elasticGraphStep = new ElasticGraphStep<>((GraphStep) currentStep, boolFilter, typeLabelsArray, elasticService);
+            final ElasticGraphStep<?> elasticGraphStep = new ElasticGraphStep<>((GraphStep) currentStep, boolFilter, typeLabelsArray,onlyIdsAllowedArray, elasticService);
             TraversalHelper.replaceStep(currentStep, (Step) elasticGraphStep, traversal);
         }
         else if (currentStep instanceof VertexStep) {
-            ElasticVertexStep<Element> elasticVertexStep = new ElasticVertexStep<>((VertexStep) currentStep, boolFilter, typeLabelsArray, elasticService);
+            ElasticVertexStep<Element> elasticVertexStep = new ElasticVertexStep<>((VertexStep) currentStep, boolFilter, typeLabelsArray,onlyIdsAllowedArray, elasticService);
             TraversalHelper.replaceStep(currentStep, (Step) elasticVertexStep, traversal);
         }
         else if (currentStep instanceof EdgeVertexStep){
-            ElasticEdgeVertexStep newSearchStep = new ElasticEdgeVertexStep((EdgeVertexStep)currentStep, boolFilter, typeLabelsArray, elasticService);
+            ElasticEdgeVertexStep newSearchStep = new ElasticEdgeVertexStep((EdgeVertexStep)currentStep, boolFilter, typeLabelsArray,onlyIdsAllowedArray, elasticService);
             TraversalHelper.replaceStep(currentStep, (Step) newSearchStep, traversal);
         }
         else {

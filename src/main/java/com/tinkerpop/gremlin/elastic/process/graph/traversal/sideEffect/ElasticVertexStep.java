@@ -14,11 +14,12 @@ public class ElasticVertexStep<E extends Element> extends ElasticFlatMapStep<Ver
     private final Class returnClass;
     private final String[] typeLabels;
     private String[] edgeLabels;
-
-    public ElasticVertexStep(VertexStep originalStep, BoolFilterBuilder boolFilter, String[] typeLabels, ElasticService elasticService) {
+    private Object[] onlyAllowedIds;
+    public ElasticVertexStep(VertexStep originalStep, BoolFilterBuilder boolFilter, String[] typeLabels,Object[] onlyAllowedIds, ElasticService elasticService) {
         super(originalStep.getTraversal(), originalStep.getLabel(), elasticService, boolFilter, originalStep.getDirection());
         this.typeLabels = typeLabels;
         this.edgeLabels = originalStep.getEdgeLabels();
+        this.onlyAllowedIds = onlyAllowedIds;
         returnClass = originalStep.getReturnClass();
     }
 
@@ -52,7 +53,10 @@ public class ElasticVertexStep<E extends Element> extends ElasticFlatMapStep<Ver
 
         edgeIterator.forEachRemaining(edge ->
                 ((ElasticEdge) edge).getVertexId(direction).forEach(vertexKey ->
-                        vertexIdToTraverser.get(vertexKey).forEach(traverser -> traverser.addResult((E) edge))));
+                {
+                    if(vertexIdToTraverser.get(vertexKey)!=null)
+                    vertexIdToTraverser.get(vertexKey).forEach(traverser -> traverser.addResult((E) edge));
+                }));
     }
 
     private void loadVertices(List<ElasticTraverser> traversers) {
@@ -72,7 +76,8 @@ public class ElasticVertexStep<E extends Element> extends ElasticFlatMapStep<Ver
             traverser.clearResults();
         });
 
-        Object[] allVertexIds = vertexIdToTraversers.keySet().toArray();
+        Object[] allVertexIds = onlyAllowedIds.length > 0? onlyAllowedIds : vertexIdToTraversers.keySet().toArray();
+
         Iterator<Vertex> vertexIterator = elasticService.searchVertices(boolFilter, allVertexIds, typeLabels);
 
         vertexIterator.forEachRemaining(vertex -> {

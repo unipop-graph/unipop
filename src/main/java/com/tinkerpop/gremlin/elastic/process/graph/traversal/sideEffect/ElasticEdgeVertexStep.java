@@ -12,10 +12,11 @@ import java.util.*;
 public class ElasticEdgeVertexStep extends ElasticFlatMapStep<Edge,Vertex> {
 
     private final String[] typeLabels;
-
-    public ElasticEdgeVertexStep(EdgeVertexStep originalStep, BoolFilterBuilder boolFilter, String[] typeLabels, ElasticService elasticService) {
+    private Object[] onlyAllowedIds;
+    public ElasticEdgeVertexStep(EdgeVertexStep originalStep, BoolFilterBuilder boolFilter, String[] typeLabels,Object[] onlyAllowedIds, ElasticService elasticService) {
         super(originalStep.getTraversal(), originalStep.getLabel(), elasticService, boolFilter, originalStep.getDirection());
         this.typeLabels = typeLabels;
+        this.onlyAllowedIds = onlyAllowedIds;
     }
 
     @Override
@@ -30,7 +31,7 @@ public class ElasticEdgeVertexStep extends ElasticFlatMapStep<Edge,Vertex> {
             traverserList.add(traver);
         }));
 
-        Object[] allVertexIds = vertexIdToTraverser.keySet().toArray();
+        Object[] allVertexIds = onlyAllowedIds.length > 0? onlyAllowedIds : vertexIdToTraverser.keySet().toArray();
         Iterator<Vertex> vertexIterator = elasticService.searchVertices(boolFilter, allVertexIds, typeLabels);
 
         vertexIterator.forEachRemaining(vertex ->

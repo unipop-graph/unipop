@@ -185,26 +185,32 @@ public class ElasticService {
     }
 
     public Iterator<Vertex> searchVertices(BoolFilterBuilder filter, Object[] ids, String[] labels) {
-        if((filter == null || !filter.hasClauses()) && ids != null && ids.length > 0) return getVertices(ids);
+        if(idsOnlyQuery(filter, ids, labels)) return getVertices(ids);
         FilterBuilder finalFilter = (ids != null && ids.length > 0) ? idsFilter(filter, ids) : filter;
         Stream<SearchHit> hits = search(finalFilter, ElasticElement.Type.vertex, labels);
         return hits.map((hit) -> createVertex(hit.getId(), hit.getType(), hit.getSource())).iterator();
     }
 
+    private boolean idsOnlyQuery(BoolFilterBuilder filter, Object[] ids, String[] labels) {
+        return (filter == null || !filter.hasClauses()) &&(labels == null || labels.length == 0) && ids != null && ids.length > 0;
+    }
+
     public Iterator<Edge> searchEdges(BoolFilterBuilder filter, Object[] ids, String[] labels) {
-        if((filter == null || !filter.hasClauses()) && ids != null && ids.length > 0) return getEdges(ids);
+        if(idsOnlyQuery(filter,ids,labels)) return getEdges(ids);
         FilterBuilder finalFilter = (ids != null && ids.length > 0) ? idsFilter(filter, ids) : filter;
         Stream<SearchHit> hits = search(finalFilter, ElasticElement.Type.edge, labels);
         return hits.map((hit) -> createEdge(hit.getId(), hit.getType(), hit.getSource())).iterator();
     }
 
 
-    public static AndFilterBuilder idsFilter(BoolFilterBuilder boolFilterBuilder, Object[] ids) {
+    public static FilterBuilder idsFilter(BoolFilterBuilder boolFilterBuilder, Object[] ids) {
         String[] stringIds = new String[ids.length];
         for(int i = 0; i<ids.length; i++)
             stringIds[i] = ids[i].toString();
         IdsFilterBuilder idsFilterBuilder = FilterBuilders.idsFilter().addIds(stringIds);
-        return FilterBuilders.andFilter(boolFilterBuilder, idsFilterBuilder);
+        if(boolFilterBuilder.hasClauses())
+            return FilterBuilders.andFilter(boolFilterBuilder, idsFilterBuilder);
+        return idsFilterBuilder;
     }
 
     private MultiGetResponse get(Object[] ids) {
