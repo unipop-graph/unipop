@@ -15,10 +15,10 @@ public class ElasticEdgeVertexStep extends ElasticFlatMapStep<Edge,Vertex> {
     }
 
     @Override
-    protected void load(Iterator<ElasticTraver> traversers) {
-        Map<String,List<ElasticTraver>> vertexIdToTraverser =  new HashMap<>();
+    protected void load(Iterator<ElasticTraverser> traversers) {
+        Map<String,List<ElasticTraverser>> vertexIdToTraverser =  new HashMap<>();
         traversers.forEachRemaining(traver -> ((ElasticEdge) traver.getElement()).getVertexId(direction).forEach(id -> {
-            List<ElasticTraver> traverserList = vertexIdToTraverser.get(id);
+            List<ElasticTraverser> traverserList = vertexIdToTraverser.get(id);
             if (traverserList == null) traverserList = new ArrayList<>();
             traverserList.add(traver);
         }));

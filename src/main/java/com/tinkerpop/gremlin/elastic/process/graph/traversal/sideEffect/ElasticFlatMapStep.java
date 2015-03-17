@@ -15,8 +15,8 @@ public abstract class ElasticFlatMapStep<S extends  Element, E extends Element >
     protected final Direction direction;
     protected final ElasticService elasticService;
 
-    private Iterator<ElasticTraver> traversers;
-    private ElasticTraver currentTraverser;
+    private Iterator<ElasticTraverser> traversers;
+    private ElasticTraverser currentTraverser;
 
     public ElasticFlatMapStep(Traversal traversal, ElasticService elasticService, BoolFilterBuilder boolFilter, String[] labels, Direction direction) {
         super(traversal);
@@ -37,15 +37,15 @@ public abstract class ElasticFlatMapStep<S extends  Element, E extends Element >
     }
 
     private void loadData() {
-        LinkedList<ElasticTraver> traversers = new LinkedList<>();
-        this.starts.forEachRemaining(traverser -> traversers.add(new ElasticTraver(traverser, this)));
+        LinkedList<ElasticTraverser> traversers = new LinkedList<>();
+        this.starts.forEachRemaining(traverser -> traversers.add(new ElasticTraverser(traverser, this)));
         this.traversers = traversers.iterator();
         if (PROFILING_ENABLED) TraversalMetrics.start(this);
         load(traversers.iterator());
         if (PROFILING_ENABLED) TraversalMetrics.stop(this);
     }
 
-    protected abstract void load(Iterator<ElasticTraver> iterator);
+    protected abstract void load(Iterator<ElasticTraverser> iterator);
 
     @Override
     public void reset() {
@@ -54,13 +54,13 @@ public abstract class ElasticFlatMapStep<S extends  Element, E extends Element >
         currentTraverser = null;
     }
 
-    public class ElasticTraver implements Iterator<Traverser<E>> {
+    public class ElasticTraverser implements Iterator<Traverser<E>> {
         private Traverser.Admin<S> traverer;
         private AbstractStep<S, E> step;
         private List<E> results = new ArrayList<>();
         private Iterator<E> iterator = null;
 
-        private ElasticTraver(Traverser.Admin<S> traverer, AbstractStep<S, E> step) {
+        private ElasticTraverser(Traverser.Admin<S> traverer, AbstractStep<S, E> step) {
             this.traverer = traverer;
             this.step = step;
         }

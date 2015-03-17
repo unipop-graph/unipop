@@ -20,17 +20,17 @@ public class ElasticVertexStep<E extends Element> extends ElasticFlatMapStep<Ver
     }
 
     @Override
-    protected void load(Iterator<ElasticTraver> traversers) {
+    protected void load(Iterator<ElasticTraverser> traversers) {
         if(returnClass.isAssignableFrom(Vertex.class))
              loadVertices(traversers);
         else loadEdges(traversers, boolFilter);
     }
 
-    private void loadEdges(Iterator<ElasticTraver> traversers, BoolFilterBuilder filter) {
-        HashMap<String, List<ElasticTraver>> vertexIdToTraverser = new HashMap<>();
+    private void loadEdges(Iterator<ElasticTraverser> traversers, BoolFilterBuilder filter) {
+        HashMap<String, List<ElasticTraverser>> vertexIdToTraverser = new HashMap<>();
         traversers.forEachRemaining(traverser -> {
             String id = traverser.getElement().id().toString();
-            List<ElasticTraver> traverserList = vertexIdToTraverser.get(id);
+            List<ElasticTraverser> traverserList = vertexIdToTraverser.get(id);
             if (traverserList == null) traverserList = new ArrayList<>();
             traverserList.add(traverser);
         });
@@ -48,15 +48,15 @@ public class ElasticVertexStep<E extends Element> extends ElasticFlatMapStep<Ver
                         vertexIdToTraverser.get(vertexKey).forEach(traverser -> traverser.addResult((E) edge))));
     }
 
-    private void loadVertices(Iterator<ElasticTraver> traversers) {
+    private void loadVertices(Iterator<ElasticTraverser> traversers) {
         loadEdges(traversers, FilterBuilders.boolFilter());//perdicates belong to vertices query
 
-        Map<String,List<ElasticTraver>> vertexIdToTraversers = new HashMap<>();
+        Map<String,List<ElasticTraverser>> vertexIdToTraversers = new HashMap<>();
         traversers.forEachRemaining(traverser -> {
             traverser.clearResults();
             traverser.getResults().forEach(edge ->
                 ((ElasticEdge) edge).getVertexId(direction).forEach(id -> {
-                    List<ElasticTraver> traverserList = vertexIdToTraversers.get(id);
+                    List<ElasticTraverser> traverserList = vertexIdToTraversers.get(id);
                     if (traverserList == null) traverserList = new ArrayList<>();
                     traverserList.add(traverser);
                     vertexIdToTraversers.put(id.toString(), traverserList);
