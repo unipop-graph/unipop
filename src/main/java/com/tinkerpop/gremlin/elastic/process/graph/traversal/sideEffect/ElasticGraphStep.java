@@ -14,23 +14,24 @@ import java.util.*;
 public class ElasticGraphStep<E extends Element> extends GraphStep<E> {
 
     private final BoolFilterBuilder boolFilter;
-    private final String[] labels;
+    private final String[] typeLabels;
     private final ElasticService elasticService;
 
-    public ElasticGraphStep(GraphStep originalStep, BoolFilterBuilder boolFilter, String[] labels, ElasticService elasticService) {
+    public ElasticGraphStep(GraphStep originalStep, BoolFilterBuilder boolFilter, String[] typeLabels, ElasticService elasticService) {
         super(originalStep.getTraversal(), originalStep.getGraph(ElasticGraph.class),originalStep.getReturnClass(),originalStep.getIds());
+        if (originalStep.getLabel().isPresent()) this.setLabel(originalStep.getLabel().get().toString());
         this.boolFilter = boolFilter;
-        this.labels = labels;
+        this.typeLabels = typeLabels;
         this.elasticService = elasticService;
         this.setIteratorSupplier(() -> (Iterator<E>) (Vertex.class.isAssignableFrom(this.returnClass) ? this.vertices() : this.edges()));
     }
 
     private Iterator<? extends Vertex> vertices() {
-         return elasticService.searchVertices(boolFilter, this.getIds(), labels);
+         return elasticService.searchVertices(boolFilter, this.getIds(), typeLabels);
     }
 
     private Iterator<? extends Edge> edges() {
-         return elasticService.searchEdges(boolFilter, ids, labels);
+         return elasticService.searchEdges(boolFilter, ids, typeLabels);
     }
 
     @Override

@@ -40,27 +40,30 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
 
     private void processStep(Step<?, ?> currentStep, Traversal.Admin<?, ?> traversal, ElasticService elasticService) {
         BoolFilterBuilder boolFilter = FilterBuilders.boolFilter();
-        List<String> labels = new ArrayList<>();
+        List<String> typeLabels = new ArrayList<>();
         Step<?, ?> nextStep = currentStep.getNextStep();
         while(nextStep instanceof HasContainerHolder) {
-            ((HasContainerHolder) nextStep).getHasContainers().forEach((has)->addFilter(boolFilter, has));
-            if (nextStep.getLabel().isPresent()) labels.add(nextStep.getLabel().get());
+            ((HasContainerHolder) nextStep).getHasContainers().forEach((has)->{
+                if(has.predicate.equals("eq") && has.key.equals("~label"))
+                    typeLabels.add(has.value.toString());
+                else addFilter(boolFilter, has);
+            });
             traversal.removeStep(nextStep);
             nextStep  = nextStep.getNextStep();
         }
-        if(currentStep.getLabel().isPresent()){ labels.add(currentStep.getLabel().get()); }
-        String[] labelArray = labels.toArray(new String[labels.size()]);
+        String[] typeLabelsArray = typeLabels.toArray(new String[0]);
+
 
         if (currentStep instanceof GraphStep) {
-            final ElasticGraphStep<?> elasticGraphStep = new ElasticGraphStep<>((GraphStep) currentStep, boolFilter, labelArray, elasticService);
+            final ElasticGraphStep<?> elasticGraphStep = new ElasticGraphStep<>((GraphStep) currentStep, boolFilter, typeLabelsArray, elasticService);
             TraversalHelper.replaceStep(currentStep, (Step) elasticGraphStep, traversal);
         }
         else if (currentStep instanceof VertexStep) {
-            ElasticVertexStep<Element> elasticVertexStep = new ElasticVertexStep<>((VertexStep) currentStep, boolFilter, labelArray, elasticService);
+            ElasticVertexStep<Element> elasticVertexStep = new ElasticVertexStep<>((VertexStep) currentStep, boolFilter, typeLabelsArray, elasticService);
             TraversalHelper.replaceStep(currentStep, (Step) elasticVertexStep, traversal);
         }
         else if (currentStep instanceof EdgeVertexStep){
-            ElasticEdgeVertexStep newSearchStep = new ElasticEdgeVertexStep((EdgeVertexStep)currentStep, boolFilter, labelArray, elasticService);
+            ElasticEdgeVertexStep newSearchStep = new ElasticEdgeVertexStep((EdgeVertexStep)currentStep, boolFilter, typeLabelsArray, elasticService);
             TraversalHelper.replaceStep(currentStep, (Step) newSearchStep, traversal);
         }
         else {

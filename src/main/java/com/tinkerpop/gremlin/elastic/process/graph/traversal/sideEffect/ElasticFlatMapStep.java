@@ -11,18 +11,17 @@ import java.util.*;
 
 public abstract class ElasticFlatMapStep<S extends  Element, E extends Element > extends AbstractStep<S,E> implements Reversible {
     protected final BoolFilterBuilder boolFilter;
-    protected final String[] labels;
     protected final Direction direction;
     protected final ElasticService elasticService;
 
     private Iterator<ElasticTraverser> traversers;
     private ElasticTraverser currentTraverser;
 
-    public ElasticFlatMapStep(Traversal traversal, ElasticService elasticService, BoolFilterBuilder boolFilter, String[] labels, Direction direction) {
+    public ElasticFlatMapStep(Traversal traversal, Optional<String> label, ElasticService elasticService, BoolFilterBuilder boolFilter, Direction direction) {
         super(traversal);
+        if(label.isPresent()) setLabel(label.get());
         this.elasticService = elasticService;
         this.boolFilter = boolFilter;
-        this.labels = labels;
         this.direction = direction;
     }
 
@@ -38,14 +37,18 @@ public abstract class ElasticFlatMapStep<S extends  Element, E extends Element >
 
     private void loadData() {
         LinkedList<ElasticTraverser> traversers = new LinkedList<>();
-        this.starts.forEachRemaining(traverser -> traversers.add(new ElasticTraverser(traverser, this)));
+        do{
+            Traverser.Admin<S> traverser = this.starts.next();
+            ElasticTraverser elasticTraverser = new ElasticTraverser(traverser, this);
+            traversers.add(elasticTraverser);
+        }while(this.starts.hasNext());
         this.traversers = traversers.iterator();
         if (PROFILING_ENABLED) TraversalMetrics.start(this);
-        load(traversers.iterator());
+        load(traversers);
         if (PROFILING_ENABLED) TraversalMetrics.stop(this);
     }
 
-    protected abstract void load(Iterator<ElasticTraverser> iterator);
+    protected abstract void load(List<ElasticTraverser> iterator);
 
     @Override
     public void reset() {
