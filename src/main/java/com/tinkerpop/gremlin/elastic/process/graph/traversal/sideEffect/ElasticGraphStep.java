@@ -64,7 +64,10 @@ public class ElasticGraphStep<E extends Element> extends GraphStep<E> {
                     this.starts.add(traverserGenerator.generate((E) this.start, this, 1l));
                 }
             }
-        } catch (final Exception e) {
+        }catch (NoSuchElementException ex){
+            throw ex;
+        }
+        catch (final Exception e) {
             throw new IllegalStateException(e.getMessage(), e);
         } finally {
             if (PROFILING_ENABLED) TraversalMetrics.stop(this);
