@@ -1,14 +1,17 @@
 package com.tinkerpop.gremlin.elastic.elasticservice;
 
+import com.eaio.uuid.UUID;
 import com.tinkerpop.gremlin.elastic.elasticservice.TimingAccessor.Timer;
 import com.tinkerpop.gremlin.elastic.structure.*;
 import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.commons.configuration.Configuration;
 import org.elasticsearch.action.bulk.*;
+import org.elasticsearch.action.delete.DeleteRequestBuilder;
 import org.elasticsearch.action.get.*;
-import org.elasticsearch.action.index.*;
+import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.search.*;
+import org.elasticsearch.action.update.UpdateRequestBuilder;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.*;
@@ -18,7 +21,6 @@ import org.elasticsearch.node.Node;
 import org.elasticsearch.node.*;
 import org.elasticsearch.script.ScriptService;
 import org.elasticsearch.search.SearchHit;
-import com.eaio.uuid.UUID;
 
 import java.io.IOException;
 import java.util.*;
@@ -101,17 +103,18 @@ public class ElasticService {
 
     public void ccmmit() {
         if(bulkRequest == null) return;
+        timer("bulk execute").start();
         BulkResponse bulkItemResponses = bulkRequest.execute().actionGet();
         bulkRequest = client.prepareBulk();
+        timer("bulk execute").stop();
     }
-
 
     //endregion
 
     //region queries
 
     public String addElement(String label, Object idValue, ElasticElement.Type type, Object... keyValues) {
-        if(bulkRequest == null) timer("add element").start();
+        timer("add element").start();
 
         for (int i = 0; i < keyValues.length; i = i + 2) {
             String key = keyValues[i].toString();
@@ -126,18 +129,18 @@ public class ElasticService {
                 client.prepareIndex(addElementResult.getIndex(), label, addElementResult.getId()).
                 setCreate(true).setSource(addElementResult.getKeyValues());
 
-        if(bulkRequest != null)
-            bulkRequest.add(indexRequestBuilder);
-        else {
-            IndexResponse indexResponse = indexRequestBuilder.execute().actionGet();
-            timer("add element").stop();
-        }
+        if(bulkRequest != null) bulkRequest.add(indexRequestBuilder);
+        else indexRequestBuilder.execute().actionGet();
+
+        timer("add element").stop();
         return addElementResult.getId();
     }
 
     public void deleteElement(Element element) {
         timer("remove element").start();
-        client.prepareDelete(schemaProvider.getIndex(element), element.label(), element.id().toString()).execute().actionGet();
+        DeleteRequestBuilder deleteRequestBuilder = client.prepareDelete(schemaProvider.getIndex(element), element.label(), element.id().toString());
+        if(bulkRequest != null) bulkRequest.add(deleteRequestBuilder);
+        else deleteRequestBuilder.execute().actionGet();
         timer("remove element").stop();
     }
 
@@ -147,14 +150,17 @@ public class ElasticService {
 
     public <V> void addProperty(Element element, String key, V value) {
         timer("update property").start();
-        client.prepareUpdate(schemaProvider.getIndex(element), element.label(), element.id().toString())
-                .setDoc(key, value).execute().actionGet();
+        UpdateRequestBuilder updateRequestBuilder = client.prepareUpdate(schemaProvider.getIndex(element), element.label(), element.id().toString()).setDoc(key, value);
+        if(bulkRequest != null) bulkRequest.add(updateRequestBuilder);
+        else updateRequestBuilder.execute().actionGet();
         timer("update property").stop();
     }
 
     public void removeProperty(Element element, String key) {
         timer("remove property").start();
-        client.prepareUpdate(schemaProvider.getIndex(element), element.label(), element.id().toString()).setScript("ctx._source.remove(\"" + key + "\")", ScriptService.ScriptType.INLINE).get();
+        UpdateRequestBuilder updateRequestBuilder = client.prepareUpdate(schemaProvider.getIndex(element), element.label(), element.id().toString()).setScript("ctx._source.remove(\"" + key + "\")", ScriptService.ScriptType.INLINE);
+        if(bulkRequest != null) bulkRequest.add(updateRequestBuilder);
+        else updateRequestBuilder.execute().actionGet();
         timer("remove property").stop();
     }
 
