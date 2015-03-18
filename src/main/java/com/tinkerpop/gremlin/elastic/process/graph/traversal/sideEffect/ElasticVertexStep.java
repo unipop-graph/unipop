@@ -67,9 +67,9 @@ public class ElasticVertexStep<E extends Element> extends ElasticFlatMapStep<Ver
             traverser.getResults().forEach(edge -> {
                 ElasticEdge elasticEdge = (ElasticEdge) edge;
                 elasticEdge.getVertexId(direction.opposite()).forEach(id -> {
-                    if(id == traverser.getElement() && //disregard self in Direction.BOTH traversals
+                    if(id.toString().equals(traverser.getElement().id().toString()) && //disregard self in Direction.BOTH traversals
                         direction.equals(Direction.BOTH) &&
-                        elasticEdge.getVertexId(Direction.IN) != elasticEdge.getVertexId(Direction.OUT)) // except when the vertex points to itself
+                        !elasticEdge.getVertexId(Direction.IN).get(0).toString().equals(elasticEdge.getVertexId(Direction.OUT).get(0).toString())) // except when the vertex points to itself
                         return;
 
                     List<ElasticTraverser> traverserList = vertexIdToTraversers.get(id);

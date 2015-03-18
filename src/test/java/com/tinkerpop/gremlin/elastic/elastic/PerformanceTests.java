@@ -1,15 +1,26 @@
 package com.tinkerpop.gremlin.elastic.elastic;
 
 
+import com.tinkerpop.gremlin.LoadGraphWith;
+import com.tinkerpop.gremlin.elastic.ElasticGraphGraphProvider;
 import com.tinkerpop.gremlin.elastic.elasticservice.*;
 import com.tinkerpop.gremlin.elastic.structure.ElasticGraph;
 import com.tinkerpop.gremlin.process.T;
+import com.tinkerpop.gremlin.process.graph.GraphTraversal;
+import com.tinkerpop.gremlin.process.graph.step.filter.WhereStep;
+import com.tinkerpop.gremlin.process.graph.step.filter.WhereTest;
 import com.tinkerpop.gremlin.structure.*;
 import org.apache.commons.configuration.BaseConfiguration;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.Iterator;
+import java.util.Map;
+
+import static com.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
+import static com.tinkerpop.gremlin.process.graph.AnonymousGraphTraversal.Tokens.__;
 
 public class PerformanceTests {
 
@@ -17,33 +28,53 @@ public class PerformanceTests {
 
 
     @Test
-    public void hasNot() throws IOException {
+    @LoadGraphWith(MODERN)
+    public void testToPassTests() throws IOException, NoSuchMethodException {
         BaseConfiguration config = new BaseConfiguration();
-        config.addProperty("elasticsearch.cluster.name", "test");
-        config.addProperty("elasticsearch.index.name", "graph");
+        config.addProperty(Graph.GRAPH, ElasticGraph.class.getName());
+        config.addProperty("elasticsearch.cluster.name", "testgraph");
+        String indexName = "graphtest";
+        config.addProperty("elasticsearch.index.name", indexName.toLowerCase());
+        config.addProperty("elasticsearch.local", true);
         config.addProperty("elasticsearch.refresh", true);
-        config.addProperty("elasticsearch.client", ElasticService.ClientType.NODE);
-
+        config.addProperty("elasticsearch.client", "NODE");
         ElasticGraph graph = new ElasticGraph(config);
-        ((DefaultSchemaProvider)graph.elasticService.schemaProvider).clearAllData();
+        ((DefaultSchemaProvider) graph.elasticService.schemaProvider).clearAllData();
 
-        Vertex vertex = graph.addVertex(T.label, "test_doc", T.id, "1", "name", "eliran", "age", 24);
-        Vertex vertex1 = graph.addVertex(T.label, "test_doc", T.id, "2", "name", "ran");
-        Vertex vertex2 = graph.addVertex(T.label, "test_doc", T.id, "3", "name", "chiko");
-        Vertex vertex3 = graph.addVertex(T.label, "test_doc", T.id, "4", "name", "medico");
-        vertex2.addEdge("heardof",vertex,T.id,"111");
-        vertex.addEdge("knows",vertex1);
-        vertex.addEdge("heardof",vertex3);
-        //graph.V("1").outE("heardof").next();
-        //vertex1.addEdge("knows",vertex);
-        Element knows = graph.E("111").has(T.label, "heardof").next();
+        ElasticGraphGraphProvider elasticGraphProvider = new ElasticGraphGraphProvider();
+        Method m = this.getClass().getMethod("testToPassTests");
+        LoadGraphWith[] loadGraphWiths = m.getAnnotationsByType(LoadGraphWith.class);
 
-        Object out = graph.V("1").out().next();
-        Object in = graph.V("1").in().next();
-        int i=1;
+        elasticGraphProvider.loadGraphData(graph, loadGraphWiths[0], this.getClass(), m.getName());
 
+        //GraphTraversal<Vertex, Object> iter = graph.V().has("age").select("name");
+        // GraphTraversal<Vertex, Element> iter = graph.V().has("age");
+        // GraphTraversal<Vertex, Object> iter = graph.V().both().has(T.label, "software").values("name");
+        //GraphTraversal<Vertex, Object> iter = graph.V().both().has(T.label, "software").dedup().by("lang").values("name");
+
+        //GraphTraversal<Vertex, Element> iter = graph.V().has("name", (a, b) -> a.equals(b), "marko");
+//        startWatch("graph repeat");
+//        //8 took 127 , 4 took 5.51
+//        GraphTraversal<Vertex, Long> iter = graph.V().repeat(__.both()).times(8).count();
+        //GraphTraversal<Vertex, Object> iter = graph.V().match("a", __.as("a").out().as("b")).select("b").by(T.id);
+        //GraphTraversal<Vertex, Element> iter = graph.V().has(T.label, "person").has("name", "marko");
+        //GraphTraversal<Vertex, Element> iter = graph.V().both().has(T.label, "software");
+        //GraphTraversal<Vertex, Map<String, Object>> iter = graph.V().has("age").as("a").out().in().has("age").as("b").select().where("a", Compare.eq, "b");
+        GraphTraversal<Vertex, Vertex> iter = graph.V("4").both();
+        System.out.println("iter = " + iter);
+        while(iter.hasNext()){
+            Object next = iter.next();
+            String s = next.toString();
+            System.out.println("s = " + s);
+        }
+
+
+
+        int i =1 ;
+
+
+        graph.elasticService.client.admin().indices().delete(new DeleteIndexRequest(indexName)).actionGet();
         graph.close();
-
     }
 
     @Test
