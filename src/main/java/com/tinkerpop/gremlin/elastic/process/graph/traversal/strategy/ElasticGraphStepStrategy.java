@@ -91,12 +91,6 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
             String predicateString = has.predicate.toString();
             switch (predicateString) {
                 case ("eq"):
-/*                        if (has.key.equals("~label")) searchStep.setLabel(has.value.toString());
-                else if(has.key.equals("~id")) {
-                    searchStep.addId(has.value);
-                    ids = searchStep.getIds();
-                }
-                else*/
                     boolFilterBuilder.must(FilterBuilders.termFilter(has.key, has.value));
                     break;
                 case ("neq"):
@@ -119,7 +113,10 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
             }
         } else if (has.predicate instanceof Contains) {
             if (has.predicate == Contains.without) boolFilterBuilder.mustNot(FilterBuilders.existsFilter(has.key));
-            else if (has.predicate == Contains.within) boolFilterBuilder.must(FilterBuilders.existsFilter(has.key));
+            else if (has.predicate == Contains.within){
+                if(has.value == null) boolFilterBuilder.must(FilterBuilders.existsFilter(has.key));
+                else  boolFilterBuilder.must(FilterBuilders.termsFilter(has.key,has.value));
+            }
         } else if (has.predicate instanceof Geo) boolFilterBuilder.must(new GeoShapeFilterBuilder(has.key, GetShapeBuilder(has.value), ((Geo) has.predicate).getRelation()));
         else throw new IllegalArgumentException("predicate not supported by elastic-gremlin: " + has.predicate.toString());
     }
