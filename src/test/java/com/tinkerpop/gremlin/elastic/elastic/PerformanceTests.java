@@ -12,9 +12,11 @@ import com.tinkerpop.gremlin.process.graph.step.branch.RepeatStep;
 import com.tinkerpop.gremlin.process.graph.step.branch.RepeatTest;
 import com.tinkerpop.gremlin.process.graph.step.filter.WhereStep;
 import com.tinkerpop.gremlin.process.graph.step.filter.WhereTest;
+import com.tinkerpop.gremlin.process.graph.step.map.LocalStep;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.CountStep;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.CountTest;
 import com.tinkerpop.gremlin.structure.*;
+import com.tinkerpop.gremlin.structure.util.GraphFactory;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.junit.Test;
@@ -46,7 +48,6 @@ public class PerformanceTests {
         config.addProperty("elasticsearch.client", "NODE");
         ElasticGraph graph = new ElasticGraph(config);
         ((DefaultSchemaProvider) graph.elasticService.schemaProvider).clearAllData();
-
         ElasticGraphGraphProvider elasticGraphProvider = new ElasticGraphGraphProvider();
         Method m = this.getClass().getMethod("testToPassTests");
         LoadGraphWith[] loadGraphWiths = m.getAnnotationsByType(LoadGraphWith.class);
@@ -69,7 +70,8 @@ public class PerformanceTests {
         //GraphTraversal<Vertex, Element> iter = graph.V().both().has(T.label, "software");
        //GraphTraversal<Vertex, Map<String, Object>> iter = graph.V().has("age").as("a").out().in().has("age").as("b").select().where("a", Compare.eq, "b");
         //GraphTraversal<Vertex, Map<String, Object>> iter = graph.V().as("a").out().as("b").select().by("name");
-        GraphTraversal<Vertex, Path> iter = graph.V().emit().times(2).repeat(__.out()).path();
+        //GraphTraversal<Vertex, Path> iter = graph.V().emit().times(2).repeat(__.out()).path();
+        GraphTraversal<Vertex, Long> iter = graph.V().local(__.outE().count());
 //        String[] names = new String[2];
 //        names[0]="marko";
 //        names[1]="josh";

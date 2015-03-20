@@ -34,7 +34,6 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
         if (engine.equals(TraversalEngine.COMPUTER)) return;
 
         Step<?, ?> startStep = TraversalHelper.getStart(traversal);
-
         if(startStep instanceof GraphStep || graph != null) {
             if(startStep instanceof GraphStep ) graph.set((ElasticGraph) ((GraphStep) startStep).getGraph(ElasticGraph.class));
             processStep(startStep, traversal, graph.get().elasticService);
@@ -86,6 +85,11 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
             RepeatStep formerRepeateStep = (RepeatStep) currentStep;
             ElasticRepeatStep repeatStep = new ElasticRepeatStep(currentStep.getTraversal(),formerRepeateStep);
             TraversalHelper.replaceStep(currentStep, (Step) repeatStep, traversal);
+        }
+        else if (currentStep instanceof  LocalStep){
+            //local step is working on each vertex -> we don't want our strategy to apply on this step
+            LocalStep localStep = (LocalStep) currentStep;
+            ((Traversal) localStep.getTraversals().get(0)).asAdmin().setStrategies(TraversalStrategies.GlobalCache.getStrategies(Graph.class));
         }
 
         else {
