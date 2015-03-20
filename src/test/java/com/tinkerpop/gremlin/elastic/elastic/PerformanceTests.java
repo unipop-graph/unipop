@@ -10,9 +10,11 @@ import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.process.graph.step.branch.RepeatStep;
 import com.tinkerpop.gremlin.process.graph.step.branch.RepeatTest;
+import com.tinkerpop.gremlin.process.graph.step.branch.UnionTest;
 import com.tinkerpop.gremlin.process.graph.step.filter.WhereStep;
 import com.tinkerpop.gremlin.process.graph.step.filter.WhereTest;
 import com.tinkerpop.gremlin.process.graph.step.map.LocalStep;
+import com.tinkerpop.gremlin.process.graph.step.map.MatchTest;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.CountStep;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.CountTest;
 import com.tinkerpop.gremlin.structure.*;
@@ -24,6 +26,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import static com.tinkerpop.gremlin.LoadGraphWith.GraphData.GRATEFUL;
@@ -71,7 +74,10 @@ public class PerformanceTests {
        //GraphTraversal<Vertex, Map<String, Object>> iter = graph.V().has("age").as("a").out().in().has("age").as("b").select().where("a", Compare.eq, "b");
         //GraphTraversal<Vertex, Map<String, Object>> iter = graph.V().as("a").out().as("b").select().by("name");
         //GraphTraversal<Vertex, Path> iter = graph.V().emit().times(2).repeat(__.out()).path();
-        GraphTraversal<Vertex, Long> iter = graph.V().local(__.outE().count());
+//        GraphTraversal<Vertex, Long> iter = graph.V().local(__.outE().count());
+        GraphTraversal<Vertex, Object> iter = graph.V().union(__.out(), __.in()).values("name");
+
+        List<Object> objects = iter.toList();
 //        String[] names = new String[2];
 //        names[0]="marko";
 //        names[1]="josh";

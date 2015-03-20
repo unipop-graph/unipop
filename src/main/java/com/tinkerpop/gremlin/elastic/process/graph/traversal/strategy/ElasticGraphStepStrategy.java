@@ -1,15 +1,19 @@
 package com.tinkerpop.gremlin.elastic.process.graph.traversal.strategy;
 
+import com.sun.xml.internal.bind.v2.schemagen.xmlschema.Union;
 import com.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
 import com.tinkerpop.gremlin.elastic.process.graph.traversal.sideEffect.*;
 import com.tinkerpop.gremlin.elastic.process.graph.traversal.traversalHolder.ElasticRepeatStep;
+import com.tinkerpop.gremlin.elastic.process.graph.traversal.traversalHolder.ElasticUnionStep;
 import com.tinkerpop.gremlin.elastic.structure.ElasticGraph;
 import com.tinkerpop.gremlin.process.*;
 import com.tinkerpop.gremlin.process.graph.marker.HasContainerHolder;
 import com.tinkerpop.gremlin.process.graph.step.branch.RepeatStep;
+import com.tinkerpop.gremlin.process.graph.step.branch.UnionStep;
 import com.tinkerpop.gremlin.process.graph.step.map.*;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.GraphStep;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.IdentityStep;
+import com.tinkerpop.gremlin.process.graph.step.sideEffect.StartStep;
 import com.tinkerpop.gremlin.process.graph.strategy.AbstractTraversalStrategy;
 import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.process.util.*;
@@ -82,14 +86,22 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
             TraversalHelper.replaceStep(currentStep, (Step) newSearchStep, traversal);
         }
         else if (currentStep instanceof RepeatStep){
-            RepeatStep formerRepeateStep = (RepeatStep) currentStep;
-            ElasticRepeatStep repeatStep = new ElasticRepeatStep(currentStep.getTraversal(),formerRepeateStep);
+            RepeatStep originalRepeatStep = (RepeatStep) currentStep;
+            ElasticRepeatStep repeatStep = new ElasticRepeatStep(currentStep.getTraversal(),originalRepeatStep);
             TraversalHelper.replaceStep(currentStep, (Step) repeatStep, traversal);
         }
         else if (currentStep instanceof  LocalStep){
             //local step is working on each vertex -> we don't want our strategy to apply on this step
             LocalStep localStep = (LocalStep) currentStep;
             ((Traversal) localStep.getTraversals().get(0)).asAdmin().setStrategies(TraversalStrategies.GlobalCache.getStrategies(Graph.class));
+        }
+        else if (currentStep instanceof UnionStep){
+            UnionStep originalUnionStep = (UnionStep) currentStep;
+            ElasticUnionStep unionStep = new ElasticUnionStep(currentStep.getTraversal(),originalUnionStep);
+            TraversalHelper.replaceStep(currentStep, (Step) unionStep, traversal);
+        }
+        else if (currentStep instanceof StartStep){
+            //need a startStep holder who can do searches if needed?
         }
 
         else {
