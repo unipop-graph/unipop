@@ -2,6 +2,7 @@ package com.tinkerpop.gremlin.elastic.process.graph.traversal.strategy;
 
 import com.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
 import com.tinkerpop.gremlin.elastic.process.graph.traversal.sideEffect.*;
+import com.tinkerpop.gremlin.elastic.process.graph.traversal.traversalHolder.ElasticRepeatStep;
 import com.tinkerpop.gremlin.elastic.structure.ElasticGraph;
 import com.tinkerpop.gremlin.process.*;
 import com.tinkerpop.gremlin.process.graph.marker.HasContainerHolder;
@@ -19,14 +20,14 @@ import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.index.query.*;
 
 import java.util.*;
-import java.util.function.Predicate;
 
 public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
     private static final ElasticGraphStepStrategy INSTANCE = new ElasticGraphStepStrategy();
-    ElasticGraph graph;
+
     public static ElasticGraphStepStrategy instance() {
         return INSTANCE;
     }
+    private static ThreadLocal<ElasticGraph> graph = new ThreadLocal<>();
 
     @Override
     public void apply(final Traversal.Admin<?, ?> traversal, final TraversalEngine engine) {
@@ -35,8 +36,8 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
         Step<?, ?> startStep = TraversalHelper.getStart(traversal);
 
         if(startStep instanceof GraphStep || graph != null) {
-            if(startStep instanceof GraphStep ) graph = (ElasticGraph) ((GraphStep) startStep).getGraph(ElasticGraph.class);
-            processStep(startStep, traversal, graph.elasticService);
+            if(startStep instanceof GraphStep ) graph.set((ElasticGraph) ((GraphStep) startStep).getGraph(ElasticGraph.class));
+            processStep(startStep, traversal, graph.get().elasticService);
         }
 
     }
@@ -83,10 +84,7 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
         }
         else if (currentStep instanceof RepeatStep){
             RepeatStep formerRepeateStep = (RepeatStep) currentStep;
-            ElasticRepeatStep repeatStep = new ElasticRepeatStep(currentStep.getTraversal());
-            repeatStep.setEmitPredicate(formerRepeateStep.getEmitPredicate());
-            repeatStep.setRepeatTraversal((Traversal) formerRepeateStep.getTraversals().get(0));
-            repeatStep.setUntilPredicate(formerRepeateStep.getUntilPredicate());
+            ElasticRepeatStep repeatStep = new ElasticRepeatStep(currentStep.getTraversal(),formerRepeateStep);
             TraversalHelper.replaceStep(currentStep, (Step) repeatStep, traversal);
         }
 
