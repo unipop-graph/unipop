@@ -19,6 +19,7 @@ import java.lang.reflect.Method;
 import java.util.Iterator;
 import java.util.Map;
 
+import static com.tinkerpop.gremlin.LoadGraphWith.GraphData.GRATEFUL;
 import static com.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
 import static com.tinkerpop.gremlin.process.graph.AnonymousGraphTraversal.Tokens.__;
 
@@ -28,12 +29,12 @@ public class PerformanceTests {
 
 
     @Test
-    @LoadGraphWith(MODERN)
+    @LoadGraphWith(GRATEFUL)
     public void testToPassTests() throws IOException, NoSuchMethodException {
         BaseConfiguration config = new BaseConfiguration();
         config.addProperty(Graph.GRAPH, ElasticGraph.class.getName());
         config.addProperty("elasticsearch.cluster.name", "testgraph");
-        String indexName = "graphtest";
+        String indexName = "graphtest5";
         config.addProperty("elasticsearch.index.name", indexName.toLowerCase());
         config.addProperty("elasticsearch.local", true);
         config.addProperty("elasticsearch.refresh", true);
@@ -53,21 +54,28 @@ public class PerformanceTests {
         //GraphTraversal<Vertex, Object> iter = graph.V().both().has(T.label, "software").dedup().by("lang").values("name");
 
         //GraphTraversal<Vertex, Element> iter = graph.V().has("name", (a, b) -> a.equals(b), "marko");
-//        startWatch("graph repeat");
+        startWatch("graph repeat");
 //        //8 took 127 , 4 took 5.51
-//        GraphTraversal<Vertex, Long> iter = graph.V().repeat(__.both()).times(8).count();
+        //14465066L
+       // GraphTraversal<Vertex, Long> iter = graph.V().out().count();
+
+        GraphTraversal<Vertex, Long> iter = graph.V().repeat(__.out()).times(8).count();
         //GraphTraversal<Vertex, Object> iter = graph.V().match("a", __.as("a").out().as("b")).select("b").by(T.id);
         //GraphTraversal<Vertex, Element> iter = graph.V().has(T.label, "person").has("name", "marko");
         //GraphTraversal<Vertex, Element> iter = graph.V().both().has(T.label, "software");
         //GraphTraversal<Vertex, Map<String, Object>> iter = graph.V().has("age").as("a").out().in().has("age").as("b").select().where("a", Compare.eq, "b");
-        GraphTraversal<Vertex, Vertex> iter = graph.V("4").both();
+//        String[] names = new String[2];
+//        names[0]="marko";
+//        names[1]="josh";
+//        GraphTraversal<Vertex, Vertex> iter = graph.V().has("name",Contains.within,names);
         System.out.println("iter = " + iter);
         while(iter.hasNext()){
             Object next = iter.next();
             String s = next.toString();
             System.out.println("s = " + s);
         }
-
+        stopWatch("graph repeat");
+        sw.print();
 
 
         int i =1 ;

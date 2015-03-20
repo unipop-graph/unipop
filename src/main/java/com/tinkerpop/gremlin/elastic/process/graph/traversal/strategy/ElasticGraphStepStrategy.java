@@ -5,6 +5,7 @@ import com.tinkerpop.gremlin.elastic.process.graph.traversal.sideEffect.*;
 import com.tinkerpop.gremlin.elastic.structure.ElasticGraph;
 import com.tinkerpop.gremlin.process.*;
 import com.tinkerpop.gremlin.process.graph.marker.HasContainerHolder;
+import com.tinkerpop.gremlin.process.graph.step.branch.RepeatStep;
 import com.tinkerpop.gremlin.process.graph.step.map.*;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.GraphStep;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.IdentityStep;
@@ -18,10 +19,11 @@ import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.index.query.*;
 
 import java.util.*;
+import java.util.function.Predicate;
 
 public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
     private static final ElasticGraphStepStrategy INSTANCE = new ElasticGraphStepStrategy();
-
+    ElasticGraph graph;
     public static ElasticGraphStepStrategy instance() {
         return INSTANCE;
     }
@@ -32,8 +34,8 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
 
         Step<?, ?> startStep = TraversalHelper.getStart(traversal);
 
-        if(startStep instanceof GraphStep) {
-            ElasticGraph graph = (ElasticGraph) ((GraphStep) startStep).getGraph(ElasticGraph.class);
+        if(startStep instanceof GraphStep || graph != null) {
+            if(startStep instanceof GraphStep ) graph = (ElasticGraph) ((GraphStep) startStep).getGraph(ElasticGraph.class);
             processStep(startStep, traversal, graph.elasticService);
         }
 
@@ -79,6 +81,15 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
             ElasticEdgeVertexStep newSearchStep = new ElasticEdgeVertexStep((EdgeVertexStep)currentStep, boolFilter, typeLabelsArray,onlyIdsAllowedArray, elasticService);
             TraversalHelper.replaceStep(currentStep, (Step) newSearchStep, traversal);
         }
+        else if (currentStep instanceof RepeatStep){
+            RepeatStep formerRepeateStep = (RepeatStep) currentStep;
+            ElasticRepeatStep repeatStep = new ElasticRepeatStep(currentStep.getTraversal());
+            repeatStep.setEmitPredicate(formerRepeateStep.getEmitPredicate());
+            repeatStep.setRepeatTraversal((Traversal) formerRepeateStep.getTraversals().get(0));
+            repeatStep.setUntilPredicate(formerRepeateStep.getUntilPredicate());
+            TraversalHelper.replaceStep(currentStep, (Step) repeatStep, traversal);
+        }
+
         else {
             //TODO
         }
@@ -115,7 +126,7 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
             if (has.predicate == Contains.without) boolFilterBuilder.mustNot(FilterBuilders.existsFilter(has.key));
             else if (has.predicate == Contains.within){
                 if(has.value == null) boolFilterBuilder.must(FilterBuilders.existsFilter(has.key));
-                else  boolFilterBuilder.must(FilterBuilders.termsFilter(has.key,has.value));
+                else  boolFilterBuilder.must(FilterBuilders.termsFilter(has.key, has.value));
             }
         } else if (has.predicate instanceof Geo) boolFilterBuilder.must(new GeoShapeFilterBuilder(has.key, GetShapeBuilder(has.value), ((Geo) has.predicate).getRelation()));
         else throw new IllegalArgumentException("predicate not supported by elastic-gremlin: " + has.predicate.toString());
