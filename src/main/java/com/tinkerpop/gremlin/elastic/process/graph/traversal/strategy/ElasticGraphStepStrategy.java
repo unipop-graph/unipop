@@ -1,6 +1,5 @@
 package com.tinkerpop.gremlin.elastic.process.graph.traversal.strategy;
 
-import com.sun.xml.internal.bind.v2.schemagen.xmlschema.Union;
 import com.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
 import com.tinkerpop.gremlin.elastic.process.graph.traversal.sideEffect.*;
 import com.tinkerpop.gremlin.elastic.process.graph.traversal.traversalHolder.ElasticRepeatStep;
@@ -13,7 +12,6 @@ import com.tinkerpop.gremlin.process.graph.step.branch.UnionStep;
 import com.tinkerpop.gremlin.process.graph.step.map.*;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.GraphStep;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.IdentityStep;
-import com.tinkerpop.gremlin.process.graph.step.sideEffect.StartStep;
 import com.tinkerpop.gremlin.process.graph.strategy.AbstractTraversalStrategy;
 import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.process.util.*;
@@ -50,7 +48,8 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
         List<String> typeLabels = new ArrayList<>();
         List<Object> onlyIdsAllowed = new ArrayList<>();
         Step<?, ?> nextStep = currentStep.getNextStep();
-        while(nextStep instanceof HasContainerHolder) {
+
+        while(stepCanConsumePredicates(currentStep) && nextStep instanceof HasContainerHolder) {
             final boolean[] containesLambada = {false};
             ((HasContainerHolder) nextStep).getHasContainers().forEach((has)->{
                 if(has.predicate.toString().equals("eq") && has.key.equals("~label"))
@@ -100,15 +99,15 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
             ElasticUnionStep unionStep = new ElasticUnionStep(currentStep.getTraversal(),originalUnionStep);
             TraversalHelper.replaceStep(currentStep, (Step) unionStep, traversal);
         }
-        else if (currentStep instanceof StartStep){
-            //need a startStep holder who can do searches if needed?
-        }
-
         else {
             //TODO
         }
 
         if(!(currentStep instanceof EmptyStep)) processStep(nextStep, traversal, elasticService);
+    }
+
+    private boolean stepCanConsumePredicates(Step<?, ?> step) {
+        return (step instanceof VertexStep)|| (step instanceof EdgeVertexStep ) || (step instanceof GraphStep);
     }
 
     private void addFilter(BoolFilterBuilder boolFilterBuilder, HasContainer has){

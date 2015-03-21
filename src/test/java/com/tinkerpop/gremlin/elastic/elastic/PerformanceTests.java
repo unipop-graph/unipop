@@ -15,6 +15,7 @@ import com.tinkerpop.gremlin.process.graph.step.filter.WhereStep;
 import com.tinkerpop.gremlin.process.graph.step.filter.WhereTest;
 import com.tinkerpop.gremlin.process.graph.step.map.LocalStep;
 import com.tinkerpop.gremlin.process.graph.step.map.MatchTest;
+import com.tinkerpop.gremlin.process.graph.step.map.match.MatchStep;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.CountStep;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.CountTest;
 import com.tinkerpop.gremlin.structure.*;
@@ -44,7 +45,7 @@ public class PerformanceTests {
         BaseConfiguration config = new BaseConfiguration();
         config.addProperty(Graph.GRAPH, ElasticGraph.class.getName());
         config.addProperty("elasticsearch.cluster.name", "testgraph");
-        String indexName = "graphtest8";
+        String indexName = "graphtest9";
         config.addProperty("elasticsearch.index.name", indexName.toLowerCase());
         config.addProperty("elasticsearch.local", true);
         config.addProperty("elasticsearch.refresh", true);
@@ -55,7 +56,6 @@ public class PerformanceTests {
         Method m = this.getClass().getMethod("testToPassTests");
         LoadGraphWith[] loadGraphWiths = m.getAnnotationsByType(LoadGraphWith.class);
         elasticGraphProvider.loadGraphData(graph, loadGraphWiths[0], this.getClass(), m.getName());
-
         //GraphTraversal<Vertex, Object> iter = graph.V().has("age").select("name");
         // GraphTraversal<Vertex, Element> iter = graph.V().has("age");
         // GraphTraversal<Vertex, Object> iter = graph.V().both().has(T.label, "software").values("name");
@@ -63,6 +63,7 @@ public class PerformanceTests {
 
         //GraphTraversal<Vertex, Element> iter = graph.V().has("name", (a, b) -> a.equals(b), "marko");
         startWatch("graph repeat");
+
 //        //8 took 127 , 4 took 5.51
         //14465066L
        //GraphTraversal<Vertex, Long> iter = graph.V().out().count();
@@ -75,9 +76,12 @@ public class PerformanceTests {
         //GraphTraversal<Vertex, Map<String, Object>> iter = graph.V().as("a").out().as("b").select().by("name");
         //GraphTraversal<Vertex, Path> iter = graph.V().emit().times(2).repeat(__.out()).path();
 //        GraphTraversal<Vertex, Long> iter = graph.V().local(__.outE().count());
-        GraphTraversal<Vertex, Object> iter = graph.V().union(__.out(), __.in()).values("name");
+        //GraphTraversal<Vertex, Object> iter = graph.V().union(__.out(), __.in()).values("name");
+        GraphTraversal<Vertex, Map<String, Object>> iter = graph.V().match("a",
+                __.as("a").out("knows").as("b"),
+                __.as("b").out("created").as("c"));
 
-        List<Object> objects = iter.toList();
+
 //        String[] names = new String[2];
 //        names[0]="marko";
 //        names[1]="josh";
