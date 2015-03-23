@@ -2,9 +2,13 @@ package com.tinkerpop.gremlin.elastic.process.graph.traversal.strategy;
 
 import com.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
 import com.tinkerpop.gremlin.elastic.process.graph.traversal.sideEffect.*;
+import com.tinkerpop.gremlin.elastic.process.graph.traversal.traversalHolder.ElasticRepeatStep;
+import com.tinkerpop.gremlin.elastic.process.graph.traversal.traversalHolder.ElasticUnionStep;
 import com.tinkerpop.gremlin.elastic.structure.ElasticGraph;
 import com.tinkerpop.gremlin.process.*;
 import com.tinkerpop.gremlin.process.graph.marker.HasContainerHolder;
+import com.tinkerpop.gremlin.process.graph.step.branch.RepeatStep;
+import com.tinkerpop.gremlin.process.graph.step.branch.UnionStep;
 import com.tinkerpop.gremlin.process.graph.step.map.*;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.GraphStep;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.IdentityStep;
@@ -25,16 +29,16 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
     public static ElasticGraphStepStrategy instance() {
         return INSTANCE;
     }
+    private static ThreadLocal<ElasticGraph> graph = new ThreadLocal<>();
 
     @Override
     public void apply(final Traversal.Admin<?, ?> traversal, final TraversalEngine engine) {
         if (engine.equals(TraversalEngine.COMPUTER)) return;
 
         Step<?, ?> startStep = TraversalHelper.getStart(traversal);
-
-        if(startStep instanceof GraphStep) {
-            ElasticGraph graph = (ElasticGraph) ((GraphStep) startStep).getGraph(ElasticGraph.class);
-            processStep(startStep, traversal, graph.elasticService);
+        if(startStep instanceof GraphStep || graph != null) {
+            if(startStep instanceof GraphStep ) graph.set((ElasticGraph) ((GraphStep) startStep).getGraph(ElasticGraph.class));
+            processStep(startStep, traversal, graph.get().elasticService);
         }
 
     }
@@ -44,7 +48,8 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
         List<String> typeLabels = new ArrayList<>();
         List<Object> onlyIdsAllowed = new ArrayList<>();
         Step<?, ?> nextStep = currentStep.getNextStep();
-        while(nextStep instanceof HasContainerHolder) {
+
+        while(stepCanConsumePredicates(currentStep) && nextStep instanceof HasContainerHolder) {
             final boolean[] containesLambada = {false};
             ((HasContainerHolder) nextStep).getHasContainers().forEach((has)->{
                 if(has.predicate.toString().equals("eq") && has.key.equals("~label"))
@@ -79,11 +84,30 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
             ElasticEdgeVertexStep newSearchStep = new ElasticEdgeVertexStep((EdgeVertexStep)currentStep, boolFilter, typeLabelsArray,onlyIdsAllowedArray, elasticService);
             TraversalHelper.replaceStep(currentStep, (Step) newSearchStep, traversal);
         }
+        else if (currentStep instanceof RepeatStep){
+            RepeatStep originalRepeatStep = (RepeatStep) currentStep;
+            ElasticRepeatStep repeatStep = new ElasticRepeatStep(currentStep.getTraversal(),originalRepeatStep);
+            TraversalHelper.replaceStep(currentStep, (Step) repeatStep, traversal);
+        }
+        else if (currentStep instanceof  LocalStep){
+            //local step is working on each vertex -> we don't want our strategy to apply on this step
+            LocalStep localStep = (LocalStep) currentStep;
+            ((Traversal) localStep.getTraversals().get(0)).asAdmin().setStrategies(TraversalStrategies.GlobalCache.getStrategies(Graph.class));
+        }
+        else if (currentStep instanceof UnionStep){
+            UnionStep originalUnionStep = (UnionStep) currentStep;
+            ElasticUnionStep unionStep = new ElasticUnionStep(currentStep.getTraversal(),originalUnionStep);
+            TraversalHelper.replaceStep(currentStep, (Step) unionStep, traversal);
+        }
         else {
             //TODO
         }
 
         if(!(currentStep instanceof EmptyStep)) processStep(nextStep, traversal, elasticService);
+    }
+
+    private boolean stepCanConsumePredicates(Step<?, ?> step) {
+        return (step instanceof VertexStep)|| (step instanceof EdgeVertexStep ) || (step instanceof GraphStep);
     }
 
     private void addFilter(BoolFilterBuilder boolFilterBuilder, HasContainer has){
@@ -115,7 +139,7 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
             if (has.predicate == Contains.without) boolFilterBuilder.mustNot(FilterBuilders.existsFilter(has.key));
             else if (has.predicate == Contains.within){
                 if(has.value == null) boolFilterBuilder.must(FilterBuilders.existsFilter(has.key));
-                else  boolFilterBuilder.must(FilterBuilders.termsFilter(has.key,has.value));
+                else  boolFilterBuilder.must(FilterBuilders.termsFilter(has.key, has.value));
             }
         } else if (has.predicate instanceof Geo) boolFilterBuilder.must(new GeoShapeFilterBuilder(has.key, GetShapeBuilder(has.value), ((Geo) has.predicate).getRelation()));
         else throw new IllegalArgumentException("predicate not supported by elastic-gremlin: " + has.predicate.toString());
