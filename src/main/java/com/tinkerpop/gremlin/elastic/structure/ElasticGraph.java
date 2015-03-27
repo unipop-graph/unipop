@@ -104,6 +104,6 @@ public class ElasticGraph implements Graph, Graph.Iterators {
     }
 
     public void commit() {
-        elasticService.ccmmit();
+        elasticService.commit();
     }
 }

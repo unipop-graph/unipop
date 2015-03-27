@@ -101,7 +101,7 @@ public class ElasticService {
         timingAccessor.print();
     }
 
-    public void ccmmit() {
+    public void commit() {
         if(bulkRequest == null) return;
         timer("bulk execute").start();
         BulkResponse bulkItemResponses = bulkRequest.execute().actionGet();
