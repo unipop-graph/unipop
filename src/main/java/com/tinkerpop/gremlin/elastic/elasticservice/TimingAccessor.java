@@ -35,8 +35,12 @@ public class TimingAccessor {
         }
 
         public void start() {
-            if (sw.isSuspended()) sw.resume();
-            else sw.start();
+            if(!sw.isStarted()) {
+                sw.start();
+                return;
+            }
+            if(!sw.isSuspended()) stop();
+            sw.resume();
         }
 
         public void stop() {

@@ -52,8 +52,9 @@ public class ElasticEdge extends ElasticElement implements Edge, Edge.Iterators 
     }
 
     @Override
-    public String toString() {
-        return StringFactory.edgeString(this);
+    public String toString()
+    {
+        return "E[" + this.id() +"]["+this.outId+"_"+this.label +"->"+ this.inId+"]";
     }
 
     @Override
