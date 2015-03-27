@@ -164,23 +164,23 @@ public class ElasticService {
         timer("remove property").stop();
     }
 
-    public Iterator<Vertex> getVertices(Object... ids) {
+    public Iterator<Vertex> getVertices(String type,Object... ids) {
         if (ids == null || ids.length == 0) return Collections.emptyIterator();
 
-        MultiGetResponse responses = get(ids);
+        MultiGetResponse responses = get(type,ids);
         ArrayList<Vertex> vertices = new ArrayList<>(ids.length);
         for (MultiGetItemResponse getResponse : responses) {
             GetResponse response = getResponse.getResponse();
-            if (!response.isExists()) throw Graph.Exceptions.elementNotFound(Vertex.class, response.getId());
+            if(!response.isExists()) continue;
             vertices.add(createVertex(response.getId(), response.getType(), response.getSource()));
         }
         return vertices.iterator();
     }
 
-    public Iterator<Edge> getEdges(Object... ids) {
+    public Iterator<Edge> getEdges(String type, Object... ids) {
         if (ids == null || ids.length == 0) return Collections.emptyIterator();
 
-        MultiGetResponse responses = get(ids);
+        MultiGetResponse responses = get(type,ids);
         ArrayList<Edge> edges = new ArrayList<>(ids.length);
         for (MultiGetItemResponse getResponse : responses) {
             GetResponse response = getResponse.getResponse();
@@ -191,18 +191,23 @@ public class ElasticService {
     }
 
     public Iterator<Vertex> searchVertices(BoolFilterBuilder filter, Object[] ids, String[] labels) {
-        if(idsOnlyQuery(filter, ids, labels)) return getVertices(ids);
+        if(idsOnlyQuery(filter, ids, labels)) return getVertices(getFirstOrDefaultLabel(labels),ids);
         FilterBuilder finalFilter = (ids != null && ids.length > 0) ? idsFilter(filter, ids) : filter;
         Stream<SearchHit> hits = search(finalFilter, ElasticElement.Type.vertex, labels);
         return hits.map((hit) -> createVertex(hit.getId(), hit.getType(), hit.getSource())).iterator();
     }
 
+    private String getFirstOrDefaultLabel(String[] labels) {
+        if(labels == null || labels.length == 0) return null;
+        return labels[0];
+    }
+
     private boolean idsOnlyQuery(BoolFilterBuilder filter, Object[] ids, String[] labels) {
-        return (filter == null || !filter.hasClauses()) &&(labels == null || labels.length == 0) && ids != null && ids.length > 0;
+        return (filter == null || !filter.hasClauses()) &&(labels == null || labels.length <= 1) && ids != null && ids.length > 0;
     }
 
     public Iterator<Edge> searchEdges(BoolFilterBuilder filter, Object[] ids, String[] labels) {
-        if(idsOnlyQuery(filter,ids,labels)) return getEdges(ids);
+        if(idsOnlyQuery(filter,ids,labels)) getEdges(getFirstOrDefaultLabel(labels),ids);
         FilterBuilder finalFilter = (ids != null && ids.length > 0) ? idsFilter(filter, ids) : filter;
         Stream<SearchHit> hits = search(finalFilter, ElasticElement.Type.edge, labels);
         return hits.map((hit) -> createEdge(hit.getId(), hit.getType(), hit.getSource())).iterator();
@@ -219,11 +224,11 @@ public class ElasticService {
         return idsFilterBuilder;
     }
 
-    private MultiGetResponse get(Object[] ids) {
+    private MultiGetResponse get(String type,Object[] ids) {
         timer("get").start();
         MultiGetRequest request = new MultiGetRequest();
         for (Object id : ids)
-            request.add(schemaProvider.getIndex(id), null, id.toString());
+            request.add(schemaProvider.getIndex(id), type, id.toString());
         MultiGetResponse multiGetItemResponses = client.multiGet(request).actionGet();
         timer("get").stop();
         return multiGetItemResponses;
