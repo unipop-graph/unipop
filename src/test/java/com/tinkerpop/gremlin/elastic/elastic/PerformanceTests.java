@@ -5,32 +5,16 @@ import com.tinkerpop.gremlin.LoadGraphWith;
 import com.tinkerpop.gremlin.elastic.ElasticGraphGraphProvider;
 import com.tinkerpop.gremlin.elastic.elasticservice.*;
 import com.tinkerpop.gremlin.elastic.structure.ElasticGraph;
-import com.tinkerpop.gremlin.process.Path;
-import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
-import com.tinkerpop.gremlin.process.graph.step.branch.RepeatStep;
-import com.tinkerpop.gremlin.process.graph.step.branch.RepeatTest;
-import com.tinkerpop.gremlin.process.graph.step.branch.UnionTest;
-import com.tinkerpop.gremlin.process.graph.step.filter.WhereStep;
-import com.tinkerpop.gremlin.process.graph.step.filter.WhereTest;
-import com.tinkerpop.gremlin.process.graph.step.map.LocalStep;
-import com.tinkerpop.gremlin.process.graph.step.map.MatchTest;
-import com.tinkerpop.gremlin.process.graph.step.map.match.MatchStep;
-import com.tinkerpop.gremlin.process.graph.step.sideEffect.CountStep;
-import com.tinkerpop.gremlin.process.graph.step.sideEffect.CountTest;
 import com.tinkerpop.gremlin.structure.*;
-import com.tinkerpop.gremlin.structure.util.GraphFactory;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-import static com.tinkerpop.gremlin.LoadGraphWith.GraphData.GRATEFUL;
 import static com.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
 import static com.tinkerpop.gremlin.process.graph.AnonymousGraphTraversal.Tokens.__;
 
@@ -43,13 +27,11 @@ public class PerformanceTests {
     @LoadGraphWith(MODERN)
     public void testToPassTests() throws IOException, NoSuchMethodException {
         BaseConfiguration config = new BaseConfiguration();
-        config.addProperty(Graph.GRAPH, ElasticGraph.class.getName());
         config.addProperty("elasticsearch.cluster.name", "testgraph");
         String indexName = "graphtest9";
         config.addProperty("elasticsearch.index.name", indexName.toLowerCase());
-        config.addProperty("elasticsearch.local", true);
         config.addProperty("elasticsearch.refresh", true);
-        config.addProperty("elasticsearch.client", "NODE");
+        config.addProperty("elasticsearch.client", ElasticService.ClientType.NODE);
         ElasticGraph graph = new ElasticGraph(config);
         ((DefaultSchemaProvider) graph.elasticService.schemaProvider).clearAllData();
         ElasticGraphGraphProvider elasticGraphProvider = new ElasticGraphGraphProvider();
@@ -106,7 +88,6 @@ public class PerformanceTests {
     @Test
     public void profile() throws IOException {
         BaseConfiguration config = new BaseConfiguration();
-        config.addProperty(Graph.GRAPH, ElasticGraph.class.getName());
         config.addProperty("elasticsearch.cluster.name", "test");
         config.addProperty("elasticsearch.index.name", "graph");
         config.addProperty("elasticsearch.refresh", true);
@@ -143,7 +124,6 @@ public class PerformanceTests {
     @Test
     public void batchLoad() throws IOException {
         BaseConfiguration config = new BaseConfiguration();
-        config.addProperty(Graph.GRAPH, ElasticGraph.class.getName());
         config.addProperty("elasticsearch.cluster.name", "test");
         config.addProperty("elasticsearch.index.name", "graph");
         config.addProperty("elasticsearch.refresh", true);
