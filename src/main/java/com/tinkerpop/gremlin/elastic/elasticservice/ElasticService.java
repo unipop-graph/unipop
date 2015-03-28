@@ -35,17 +35,15 @@ public class ElasticService {
         public static String NODE_CLIENT = "NODE_CLIENT";
         public static String NODE = "NODE";
     }
+    private static int DEFAULT_MAX_RESULT_LIMIT = 2000000;
 
     private ElasticGraph graph;
     public SchemaProvider schemaProvider;
     private boolean refresh;
     BulkRequestBuilder bulkRequest;
-    private final String clusterName;
-    private final String addresses;
     public Client client;
     private Node node;
     TimingAccessor timingAccessor = new TimingAccessor();
-    private int DEFAULT_MAX_RESULT_LIMIT=2000000;
 
     //endregion
 
@@ -56,15 +54,15 @@ public class ElasticService {
 
         this.graph = graph;
         this.refresh = configuration.getBoolean("elasticsearch.refresh", true);
-        this.clusterName = configuration.getString("elasticsearch.cluster.name", "elasticsearch");
-        this.addresses = configuration.getString("elasticsearch.cluster.address", "127.0.0.1");
+        String clusterName = configuration.getString("elasticsearch.cluster.name", "elasticsearch");
+        String addresses = configuration.getString("elasticsearch.cluster.address", "127.0.0.1:9300");
         boolean bulk = configuration.getBoolean("elasticsearch.batch", false);
         String schemaProvider = configuration.getString("elasticsearch.schemaProvider", DefaultSchemaProvider.class.getCanonicalName());
         String clientType =configuration.getString("elasticsearch.client", ClientType.NODE);
 
-        if (clientType.equals(ClientType.TRANSPORT_CLIENT)) createTransportClient();
-        else if (clientType.equals(ClientType.NODE_CLIENT)) createNode(true);
-        else if (clientType.equals(ClientType.NODE)) createNode(false);
+        if (clientType.equals(ClientType.TRANSPORT_CLIENT)) createTransportClient(clusterName, addresses);
+        else if (clientType.equals(ClientType.NODE_CLIENT)) createNode(clusterName, true);
+        else if (clientType.equals(ClientType.NODE)) createNode(clusterName, false);
         else throw new IllegalArgumentException("clientType unknown:" + clientType);
 
         try {
@@ -81,15 +79,18 @@ public class ElasticService {
         timer("initialization").stop();
     }
 
-    private void createTransportClient() {
+    private void createTransportClient(String clusterName, String addresses) {
         Settings settings = ImmutableSettings.settingsBuilder().put("cluster.name", clusterName).build();
         TransportClient transportClient = new TransportClient(settings);
-        for(String address : addresses.split(","))
-            transportClient.addTransportAddress(new InetSocketTransportAddress(address, 9300));
+        for(String address : addresses.split(",")) {
+            String[] split = address.split(":");
+            if(split.length != 2) throw new IllegalArgumentException("Address invalid:" + address +  ". Should contain ip and port, e.g. 127.0.0.1:9300");
+            transportClient.addTransportAddress(new InetSocketTransportAddress(split[0], Integer.parseInt(split[1])));
+        }
         this.client = transportClient;
     }
 
-    private void createNode(boolean client) {
+    private void createNode(String clusterName, boolean client) {
         this.node = NodeBuilder.nodeBuilder().client(client).clusterName(clusterName).build();
         node.start();
         this.client = node.client();
