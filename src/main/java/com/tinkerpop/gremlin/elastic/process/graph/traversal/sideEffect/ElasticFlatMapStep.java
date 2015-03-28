@@ -13,16 +13,18 @@ public abstract class ElasticFlatMapStep<S extends  Element, E extends Element >
     protected final BoolFilterBuilder boolFilter;
     protected final Direction direction;
     protected final ElasticService elasticService;
+    protected final Integer resultsLimit;
 
     private Iterator<ElasticTraverser> traversers;
     private ElasticTraverser currentTraverser;
 
-    public ElasticFlatMapStep(Traversal traversal, Optional<String> label, ElasticService elasticService, BoolFilterBuilder boolFilter, Direction direction) {
+    public ElasticFlatMapStep(Traversal traversal, Optional<String> label, ElasticService elasticService, BoolFilterBuilder boolFilter, Direction direction,Integer resultsLimit) {
         super(traversal);
         if(label.isPresent()) setLabel(label.get());
         this.elasticService = elasticService;
         this.boolFilter = boolFilter;
         this.direction = direction;
+        this.resultsLimit = resultsLimit;
     }
 
     @Override

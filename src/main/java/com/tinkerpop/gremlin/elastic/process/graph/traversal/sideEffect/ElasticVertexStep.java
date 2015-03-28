@@ -15,8 +15,8 @@ public class ElasticVertexStep<E extends Element> extends ElasticFlatMapStep<Ver
     private final String[] typeLabels;
     private String[] edgeLabels;
     private Object[] onlyAllowedIds;
-    public ElasticVertexStep(VertexStep originalStep, BoolFilterBuilder boolFilter, String[] typeLabels,Object[] onlyAllowedIds, ElasticService elasticService) {
-        super(originalStep.getTraversal(), originalStep.getLabel(), elasticService, boolFilter, originalStep.getDirection());
+    public ElasticVertexStep(VertexStep originalStep, BoolFilterBuilder boolFilter, String[] typeLabels,Object[] onlyAllowedIds, ElasticService elasticService,Integer resultsLimit) {
+        super(originalStep.getTraversal(), originalStep.getLabel(), elasticService, boolFilter, originalStep.getDirection(),resultsLimit);
         this.typeLabels = typeLabels;
         this.edgeLabels = originalStep.getEdgeLabels();
         this.onlyAllowedIds = onlyAllowedIds;
@@ -49,7 +49,7 @@ public class ElasticVertexStep<E extends Element> extends ElasticFlatMapStep<Ver
         else if(direction == Direction.BOTH) filter.should(FilterBuilders.termsFilter(ElasticEdge.InId, allVertexIds), FilterBuilders.termsFilter(ElasticEdge.OutId, allVertexIds));
         else throw new EnumConstantNotPresentException(direction.getClass(),direction.name());
 
-        Iterator<Edge> edgeIterator = elasticService.searchEdges(filter, null, edgeLabels);
+        Iterator<Edge> edgeIterator = elasticService.searchEdges(filter, null, edgeLabels,resultsLimit);
 
         edgeIterator.forEachRemaining(edge ->
                 ((ElasticEdge) edge).getVertexId(direction).forEach(vertexKey ->
@@ -85,7 +85,7 @@ public class ElasticVertexStep<E extends Element> extends ElasticFlatMapStep<Ver
 
         Object[] allVertexIds = onlyAllowedIds.length > 0? onlyAllowedIds : vertexIdToTraversers.keySet().toArray();
 
-        Iterator<Vertex> vertexIterator = elasticService.searchVertices(boolFilter, allVertexIds, typeLabels);
+        Iterator<Vertex> vertexIterator = elasticService.searchVertices(boolFilter, allVertexIds, typeLabels,resultsLimit);
 
         vertexIterator.forEachRemaining(vertex -> {
             List<ElasticTraverser> elasticTraversers = vertexIdToTraversers.get(vertex.id());

@@ -45,6 +45,7 @@ public class ElasticService {
     public Client client;
     private Node node;
     TimingAccessor timingAccessor = new TimingAccessor();
+    private int DEFAULT_MAX_RESULT_LIMIT=2000000;
 
     //endregion
 
@@ -164,10 +165,10 @@ public class ElasticService {
         timer("remove property").stop();
     }
 
-    public Iterator<Vertex> getVertices(String type,Object... ids) {
+    public Iterator<Vertex> getVertices(String type,Integer resultsLimit,Object... ids) {
         if (ids == null || ids.length == 0) return Collections.emptyIterator();
 
-        MultiGetResponse responses = get(type,ids);
+        MultiGetResponse responses = get(type,resultsLimit,ids);
         ArrayList<Vertex> vertices = new ArrayList<>(ids.length);
         for (MultiGetItemResponse getResponse : responses) {
             GetResponse response = getResponse.getResponse();
@@ -177,10 +178,10 @@ public class ElasticService {
         return vertices.iterator();
     }
 
-    public Iterator<Edge> getEdges(String type, Object... ids) {
+    public Iterator<Edge> getEdges(String type,Integer resultsLimit, Object... ids) {
         if (ids == null || ids.length == 0) return Collections.emptyIterator();
 
-        MultiGetResponse responses = get(type,ids);
+        MultiGetResponse responses = get(type,resultsLimit,ids);
         ArrayList<Edge> edges = new ArrayList<>(ids.length);
         for (MultiGetItemResponse getResponse : responses) {
             GetResponse response = getResponse.getResponse();
@@ -190,11 +191,15 @@ public class ElasticService {
         return edges.iterator();
     }
 
-    public Iterator<Vertex> searchVertices(BoolFilterBuilder filter, Object[] ids, String[] labels) {
-        if(idsOnlyQuery(filter, ids, labels)) return getVertices(getFirstOrDefaultLabel(labels),ids);
+    public Iterator<Vertex> searchVertices(BoolFilterBuilder filter, Object[] ids, String[] labels,Integer resultsLimit) {
+        if(idsOnlyQuery(filter, ids, labels)) return getVertices(getFirstOrDefaultLabel(labels),resultsLimit,ids);
         FilterBuilder finalFilter = (ids != null && ids.length > 0) ? idsFilter(filter, ids) : filter;
-        Stream<SearchHit> hits = search(finalFilter, ElasticElement.Type.vertex, labels);
+        Stream<SearchHit> hits = search(finalFilter,resultsLimit, ElasticElement.Type.vertex, labels);
         return hits.map((hit) -> createVertex(hit.getId(), hit.getType(), hit.getSource())).iterator();
+    }
+
+    public Iterator<Vertex> searchVertices(BoolFilterBuilder filter, Object[] ids, String[] labels) {
+        return searchVertices(filter, ids, labels,null);
     }
 
     private String getFirstOrDefaultLabel(String[] labels) {
@@ -206,11 +211,14 @@ public class ElasticService {
         return (filter == null || !filter.hasClauses()) &&(labels == null || labels.length <= 1) && ids != null && ids.length > 0;
     }
 
-    public Iterator<Edge> searchEdges(BoolFilterBuilder filter, Object[] ids, String[] labels) {
-        if(idsOnlyQuery(filter,ids,labels)) getEdges(getFirstOrDefaultLabel(labels),ids);
+    public Iterator<Edge> searchEdges(BoolFilterBuilder filter, Object[] ids, String[] labels,Integer resultsLimit) {
+        if(idsOnlyQuery(filter,ids,labels)) getEdges(getFirstOrDefaultLabel(labels),resultsLimit,ids);
         FilterBuilder finalFilter = (ids != null && ids.length > 0) ? idsFilter(filter, ids) : filter;
-        Stream<SearchHit> hits = search(finalFilter, ElasticElement.Type.edge, labels);
+        Stream<SearchHit> hits = search(finalFilter,resultsLimit, ElasticElement.Type.edge, labels);
         return hits.map((hit) -> createEdge(hit.getId(), hit.getType(), hit.getSource())).iterator();
+    }
+    public Iterator<Edge> searchEdges(BoolFilterBuilder filter, Object[] ids, String[] labels){
+        return searchEdges(filter, ids,  labels,null);
     }
 
 
@@ -224,17 +232,26 @@ public class ElasticService {
         return idsFilterBuilder;
     }
 
-    private MultiGetResponse get(String type,Object[] ids) {
+    private MultiGetResponse get(String type,Integer resultsLimit,Object[] ids) {
         timer("get").start();
         MultiGetRequest request = new MultiGetRequest();
-        for (Object id : ids)
-            request.add(schemaProvider.getIndex(id), type, id.toString());
+        if (resultsLimit == null || ids.length <= resultsLimit) {
+            for (Object id : ids)
+                request.add(schemaProvider.getIndex(id), type, id.toString());
+        }
+        else {
+            int counter = 0;
+            while(counter  < resultsLimit){
+                Object id = ids[counter++];
+                request.add(schemaProvider.getIndex(id), type, id.toString());
+            }
+        }
         MultiGetResponse multiGetItemResponses = client.multiGet(request).actionGet();
         timer("get").stop();
         return multiGetItemResponses;
     }
 
-    private Stream<SearchHit> search(FilterBuilder filter, ElasticElement.Type type, String... labels) {
+    private Stream<SearchHit> search(FilterBuilder filter,Integer resultsLimit, ElasticElement.Type type, String... labels) {
         timer("search").start();
 
         SchemaProvider.SearchResult result = schemaProvider.search(filter, type, labels);
@@ -242,7 +259,10 @@ public class ElasticService {
         if (refresh) client.admin().indices().prepareRefresh(result.getIndices()).execute().actionGet();
 
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch(result.getIndices())
-                .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(),result.getFilter())).setFrom(0).setSize(2000000); //TODO: retrive with scroll for efficiency
+                .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(),result.getFilter())).setFrom(0);
+        //TODO: retrive with scroll for efficiency
+        if(resultsLimit != null ) searchRequestBuilder.setSize(resultsLimit);
+        else  searchRequestBuilder.setSize(DEFAULT_MAX_RESULT_LIMIT);
         if (labels != null && labels.length > 0 && labels[0] != null)
             searchRequestBuilder = searchRequestBuilder.setTypes(labels);
 

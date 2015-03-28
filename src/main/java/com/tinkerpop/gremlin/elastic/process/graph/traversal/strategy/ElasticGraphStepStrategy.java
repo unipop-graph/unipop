@@ -9,6 +9,7 @@ import com.tinkerpop.gremlin.process.*;
 import com.tinkerpop.gremlin.process.graph.marker.HasContainerHolder;
 import com.tinkerpop.gremlin.process.graph.step.branch.RepeatStep;
 import com.tinkerpop.gremlin.process.graph.step.branch.UnionStep;
+import com.tinkerpop.gremlin.process.graph.step.filter.RangeStep;
 import com.tinkerpop.gremlin.process.graph.step.map.*;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.GraphStep;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.IdentityStep;
@@ -69,19 +70,28 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
             if(!containesLambada[0]) traversal.removeStep(nextStep);
             nextStep  = nextStep.getNextStep();
         }
+
+        Integer resultsLimit = null;
+        if(nextStep instanceof RangeStep){
+           RangeStep rangeStep = (RangeStep) nextStep;
+            if (isLimitStep(rangeStep) && stepCanConsumePredicates(currentStep)){
+                resultsLimit = (int) rangeStep.getHighRange();
+                traversal.removeStep(nextStep);
+            }
+        }
         String[] typeLabelsArray = typeLabels.toArray(new String[0]);
         Object[] onlyIdsAllowedArray = onlyIdsAllowed.toArray(new Object[onlyIdsAllowed.size()]);
 
         if (currentStep instanceof GraphStep) {
-            final ElasticGraphStep<?> elasticGraphStep = new ElasticGraphStep<>((GraphStep) currentStep, boolFilter, typeLabelsArray,onlyIdsAllowedArray, elasticService);
+            final ElasticGraphStep<?> elasticGraphStep = new ElasticGraphStep<>((GraphStep) currentStep, boolFilter, typeLabelsArray,onlyIdsAllowedArray, elasticService,resultsLimit);
             TraversalHelper.replaceStep(currentStep, (Step) elasticGraphStep, traversal);
         }
         else if (currentStep instanceof VertexStep) {
-            ElasticVertexStep<Element> elasticVertexStep = new ElasticVertexStep<>((VertexStep) currentStep, boolFilter, typeLabelsArray,onlyIdsAllowedArray, elasticService);
+            ElasticVertexStep<Element> elasticVertexStep = new ElasticVertexStep<>((VertexStep) currentStep, boolFilter, typeLabelsArray,onlyIdsAllowedArray, elasticService,resultsLimit);
             TraversalHelper.replaceStep(currentStep, (Step) elasticVertexStep, traversal);
         }
         else if (currentStep instanceof EdgeVertexStep){
-            ElasticEdgeVertexStep newSearchStep = new ElasticEdgeVertexStep((EdgeVertexStep)currentStep, boolFilter, typeLabelsArray,onlyIdsAllowedArray, elasticService);
+            ElasticEdgeVertexStep newSearchStep = new ElasticEdgeVertexStep((EdgeVertexStep)currentStep, boolFilter, typeLabelsArray,onlyIdsAllowedArray, elasticService,resultsLimit);
             TraversalHelper.replaceStep(currentStep, (Step) newSearchStep, traversal);
         }
         else if (currentStep instanceof RepeatStep){
@@ -105,6 +115,8 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
 
         if(!(currentStep instanceof EmptyStep)) processStep(nextStep, traversal, elasticService);
     }
+
+
 
     private boolean stepCanConsumePredicates(Step<?, ?> step) {
         return (step instanceof VertexStep)|| (step instanceof EdgeVertexStep ) || (step instanceof GraphStep);
@@ -155,5 +167,9 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private boolean isLimitStep(RangeStep rangeStep) {
+        return rangeStep.getLowRange() == 0;
     }
 }

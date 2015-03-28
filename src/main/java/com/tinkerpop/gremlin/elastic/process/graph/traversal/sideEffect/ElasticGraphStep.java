@@ -17,23 +17,25 @@ public class ElasticGraphStep<E extends Element> extends GraphStep<E> {
     private final String[] typeLabels;
     private final ElasticService elasticService;
     private Object[] onlyAllowedIds;
-    public ElasticGraphStep(GraphStep originalStep, BoolFilterBuilder boolFilter, String[] typeLabels,Object[] onlyAllowedIds, ElasticService elasticService) {
+    private Integer resultLimit;
+    public ElasticGraphStep(GraphStep originalStep, BoolFilterBuilder boolFilter, String[] typeLabels,Object[] onlyAllowedIds, ElasticService elasticService,Integer resultLimit) {
         super(originalStep.getTraversal(), originalStep.getGraph(ElasticGraph.class),originalStep.getReturnClass(),originalStep.getIds());
         if (originalStep.getLabel().isPresent()) this.setLabel(originalStep.getLabel().get().toString());
         this.boolFilter = boolFilter;
         this.typeLabels = typeLabels;
         this.elasticService = elasticService;
         this.onlyAllowedIds = onlyAllowedIds;
+        this.resultLimit = resultLimit;
         this.setIteratorSupplier(() -> (Iterator<E>) (Vertex.class.isAssignableFrom(this.returnClass) ? this.vertices() : this.edges()));
     }
 
 
     private Iterator<? extends Vertex> vertices() {
-         return elasticService.searchVertices(boolFilter, this.getIds(), typeLabels);
+        return elasticService.searchVertices(boolFilter, this.getIds(), typeLabels,resultLimit);
     }
 
     private Iterator<? extends Edge> edges() {
-         return elasticService.searchEdges(boolFilter, ids, typeLabels);
+         return elasticService.searchEdges(boolFilter, ids, typeLabels,resultLimit);
     }
 
     @Override
