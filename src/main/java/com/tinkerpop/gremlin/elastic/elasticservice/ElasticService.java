@@ -102,12 +102,13 @@ public class ElasticService {
         timingAccessor.print();
     }
 
-    public void commit() {
-        if(bulkRequest == null) return;
+    public BulkResponse commit() {
+        if(bulkRequest == null) return null;
         timer("bulk execute").start();
         BulkResponse bulkItemResponses = bulkRequest.execute().actionGet();
         bulkRequest = client.prepareBulk();
         timer("bulk execute").stop();
+        return bulkItemResponses;
     }
 
     //endregion
@@ -218,7 +219,7 @@ public class ElasticService {
         return hits.map((hit) -> createEdge(hit.getId(), hit.getType(), hit.getSource())).iterator();
     }
     public Iterator<Edge> searchEdges(BoolFilterBuilder filter, Object[] ids, String[] labels){
-        return searchEdges(filter, ids,  labels,null);
+        return searchEdges(filter, ids, labels, null);
     }
 
 
@@ -259,7 +260,7 @@ public class ElasticService {
         if (refresh) client.admin().indices().prepareRefresh(result.getIndices()).execute().actionGet();
 
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch(result.getIndices())
-                .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(),result.getFilter())).setFrom(0);
+                .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), result.getFilter())).setFrom(0);
         //TODO: retrive with scroll for efficiency
         if(resultsLimit != null ) searchRequestBuilder.setSize(resultsLimit);
         else  searchRequestBuilder.setSize(DEFAULT_MAX_RESULT_LIMIT);

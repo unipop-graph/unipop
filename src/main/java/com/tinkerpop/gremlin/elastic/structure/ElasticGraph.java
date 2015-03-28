@@ -103,7 +103,7 @@ public class ElasticGraph implements Graph, Graph.Iterators {
         }
     }
 
-    public void commit() {
-        elasticService.commit();
+    public org.elasticsearch.action.bulk.BulkResponse commit() {
+        return elasticService.commit();
     }
 }
