@@ -9,9 +9,9 @@ import org.apache.commons.configuration.Configuration;
 import org.elasticsearch.action.bulk.*;
 import org.elasticsearch.action.delete.DeleteRequestBuilder;
 import org.elasticsearch.action.get.*;
-import org.elasticsearch.action.index.IndexRequestBuilder;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.*;
-import org.elasticsearch.action.update.UpdateRequestBuilder;
+import org.elasticsearch.action.update.*;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.*;
@@ -24,6 +24,7 @@ import org.elasticsearch.search.SearchHit;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.*;
 
 public class ElasticService {
@@ -43,6 +44,7 @@ public class ElasticService {
     BulkRequestBuilder bulkRequest;
     public Client client;
     private Node node;
+    private final boolean upsert;
     TimingAccessor timingAccessor = new TimingAccessor();
 
     //endregion
@@ -58,7 +60,8 @@ public class ElasticService {
         String addresses = configuration.getString("elasticsearch.cluster.address", "127.0.0.1:9300");
         boolean bulk = configuration.getBoolean("elasticsearch.batch", false);
         String schemaProvider = configuration.getString("elasticsearch.schemaProvider", DefaultSchemaProvider.class.getCanonicalName());
-        String clientType =configuration.getString("elasticsearch.client", ClientType.NODE);
+        String clientType = configuration.getString("elasticsearch.client", ClientType.NODE);
+        this.upsert = configuration.getBoolean("elasticsearch.upsert", false);
 
         if (clientType.equals(ClientType.TRANSPORT_CLIENT)) createTransportClient(clusterName, addresses);
         else if (clientType.equals(ClientType.NODE_CLIENT)) createNode(clusterName, true);
@@ -128,12 +131,25 @@ public class ElasticService {
 
         SchemaProvider.AddElementResult addElementResult = schemaProvider.addElement(label, idValue, type, keyValues);
 
-        IndexRequestBuilder indexRequestBuilder =
-                client.prepareIndex(addElementResult.getIndex(), label, addElementResult.getId()).
-                setCreate(true).setSource(addElementResult.getKeyValues());
 
-        if(bulkRequest != null) bulkRequest.add(indexRequestBuilder);
-        else indexRequestBuilder.execute().actionGet();
+        if(!upsert) {
+            IndexRequest indexRequest = new IndexRequest(addElementResult.getIndex(), label, addElementResult.getId()).source(addElementResult.getKeyValues()).create(true);
+            if(bulkRequest != null) bulkRequest.add(indexRequest);
+            else client.index(indexRequest).actionGet();
+        }
+        else {
+            UpdateRequest updateRequest = new UpdateRequest(addElementResult.getIndex(), label, addElementResult.getId()).doc(addElementResult.getKeyValues()).detectNoop(true);
+            updateRequest.docAsUpsert(true);
+
+            if (bulkRequest != null) bulkRequest.add(updateRequest);
+            else try {
+                client.update(updateRequest).get();// update(update).get();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
+        }
 
         timer("add element").stop();
         return addElementResult.getId();
