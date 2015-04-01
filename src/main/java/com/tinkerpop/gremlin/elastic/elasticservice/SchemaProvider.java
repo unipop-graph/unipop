@@ -14,7 +14,7 @@ public interface SchemaProvider {
 
     AddElementResult addElement(String label, Object idValue, ElasticService.Type type, Object[] keyValues);
     String getIndex(Element element);
-    String getIndex(Object id);
+    String getIndex(String label, Object id);
     SearchResult search(FilterBuilder filter, ElasticService.Type type, String[] labels);
 
     public interface AddElementResult{

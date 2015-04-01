@@ -149,10 +149,8 @@ public class ElasticService {
 
             if (bulkRequest != null) bulkRequest.add(updateRequest);
             else try {
-                client.update(updateRequest).get();// update(update).get();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (ExecutionException e) {
+                client.update(updateRequest).get();
+            } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
             }
         }
@@ -189,10 +187,10 @@ public class ElasticService {
         timer("remove property").stop();
     }
 
-    public Iterator<Vertex> getVertices(String type,Integer resultsLimit,Object... ids) {
+    public Iterator<Vertex> getVertices(String label,Integer resultsLimit,Object... ids) {
         if (ids == null || ids.length == 0) return Collections.emptyIterator();
 
-        MultiGetResponse responses = get(type, resultsLimit, ids);
+        MultiGetResponse responses = get(label, resultsLimit, ids);
         ArrayList<Vertex> vertices = new ArrayList<>(ids.length);
         for (MultiGetItemResponse getResponse : responses) {
             GetResponse response = getResponse.getResponse();
@@ -202,10 +200,10 @@ public class ElasticService {
         return vertices.iterator();
     }
 
-    public Iterator<Edge> getEdges(String type,Integer resultsLimit, Object... ids) {
+    public Iterator<Edge> getEdges(String label,Integer resultsLimit, Object... ids) {
         if (ids == null || ids.length == 0) return Collections.emptyIterator();
 
-        MultiGetResponse responses = get(type,resultsLimit,ids);
+        MultiGetResponse responses = get(label,resultsLimit,ids);
         ArrayList<Edge> edges = new ArrayList<>(ids.length);
         for (MultiGetItemResponse getResponse : responses) {
             GetResponse response = getResponse.getResponse();
@@ -261,13 +259,13 @@ public class ElasticService {
         MultiGetRequest request = new MultiGetRequest();
         if (resultsLimit == null || ids.length <= resultsLimit) {
             for (Object id : ids)
-                request.add(schemaProvider.getIndex(id), type, id.toString());
+                request.add(schemaProvider.getIndex(type, id), type, id.toString());
         }
         else {
             int counter = 0;
             while(counter  < resultsLimit){
                 Object id = ids[counter++];
-                request.add(schemaProvider.getIndex(id), type, id.toString());
+                request.add(schemaProvider.getIndex(type, id), type, id.toString());
             }
         }
         MultiGetResponse multiGetItemResponses = client.multiGet(request).actionGet();

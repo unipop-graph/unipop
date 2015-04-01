@@ -85,7 +85,7 @@ public class DefaultSchemaProvider implements SchemaProvider {
     }
 
     @Override
-    public String getIndex(Object id) {
+    public String getIndex(String type, Object id) {
         return indexName;
     }
 
