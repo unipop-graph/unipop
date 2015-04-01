@@ -60,7 +60,7 @@ public class ElasticVertex extends ElasticElement implements Vertex, Vertex.Iter
         Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
 
         try {
-            String id = elasticService.addElement(label, idValue, Type.edge, ArrayUtils.addAll(keyValues, ElasticEdge.InId, vertex.id(), ElasticEdge.OutId, this.id()));
+            String id = elasticService.addElement(label, idValue, ElasticService.Type.edge, ArrayUtils.addAll(keyValues, ElasticEdge.InId, vertex.id(), ElasticEdge.OutId, this.id()));
             return new ElasticEdge(id, label, this.id(), vertex.id(), keyValues, graph);
         } catch (DocumentAlreadyExistsException ex) {
             throw Graph.Exceptions.edgeWithIdAlreadyExists(idValue);

@@ -1,9 +1,7 @@
 package com.tinkerpop.gremlin.elastic.elasticservice;
 
-import com.tinkerpop.gremlin.elastic.structure.ElasticElement;
 import com.tinkerpop.gremlin.structure.Element;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang3.ArrayUtils;
 import org.elasticsearch.action.admin.cluster.health.*;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.exists.indices.*;
@@ -16,7 +14,6 @@ import java.io.IOException;
 
 
 public class DefaultSchemaProvider implements SchemaProvider {
-    public static String TYPE = "ty";
     String indexName;
     private Client client;
 
@@ -46,13 +43,13 @@ public class DefaultSchemaProvider implements SchemaProvider {
         }
     }
 
-    public void clearAllData() {
-        client.prepareDeleteByQuery(indexName).setQuery(QueryBuilders.matchAllQuery()).execute().actionGet();
-    }
-
     @Override
     public void close() {
 
+    }
+
+    public void clearAllData() {
+        client.prepareDeleteByQuery(indexName).setQuery(QueryBuilders.matchAllQuery()).execute().actionGet();
     }
 
     @Override
@@ -63,8 +60,7 @@ public class DefaultSchemaProvider implements SchemaProvider {
     }
 
     @Override
-    public AddElementResult addElement(String label, Object idValue, ElasticElement.Type type, Object[] keyValues) {
-        Object[] all = ArrayUtils.addAll(keyValues, TYPE, type.toString());
+    public AddElementResult addElement(String label, Object idValue, ElasticService.Type type, Object[] keyValues) {
         return new AddElementResult() {
             @Override
             public String getIndex() {
@@ -73,7 +69,7 @@ public class DefaultSchemaProvider implements SchemaProvider {
 
             @Override
             public Object[] getKeyValues() {
-                return all;
+                return keyValues;
             }
 
             @Override
@@ -94,7 +90,7 @@ public class DefaultSchemaProvider implements SchemaProvider {
     }
 
     @Override
-    public SearchResult search(FilterBuilder filter, ElasticElement.Type type, String[] labels) {
+    public SearchResult search(FilterBuilder filter, ElasticService.Type type, String[] labels) {
         return new SearchResult() {
             @Override
             public String[] getIndices() {
@@ -103,14 +99,9 @@ public class DefaultSchemaProvider implements SchemaProvider {
 
             @Override
             public FilterBuilder getFilter() {
-                TermFilterBuilder typeFilter = FilterBuilders.termFilter(TYPE, type.toString());
-                if(filter == null) return typeFilter;
-                else if(filter instanceof BoolFilterBuilder) return ((BoolFilterBuilder) filter).must(typeFilter);
-                else return FilterBuilders.boolFilter().must(typeFilter).must(filter);
+                return filter;
             }
         };
 
     }
-
-
 }

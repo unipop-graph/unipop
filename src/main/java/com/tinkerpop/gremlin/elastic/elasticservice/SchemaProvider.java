@@ -1,6 +1,5 @@
 package com.tinkerpop.gremlin.elastic.elasticservice;
 
-import com.tinkerpop.gremlin.elastic.structure.ElasticElement;
 import com.tinkerpop.gremlin.structure.Element;
 import org.apache.commons.configuration.Configuration;
 import org.elasticsearch.client.Client;
@@ -13,10 +12,10 @@ public interface SchemaProvider {
     void init(Client client, Configuration configuration) throws IOException;
     void close();
 
-    AddElementResult addElement(String label, Object idValue, ElasticElement.Type type, Object[] keyValues);
+    AddElementResult addElement(String label, Object idValue, ElasticService.Type type, Object[] keyValues);
     String getIndex(Element element);
     String getIndex(Object id);
-    SearchResult search(FilterBuilder filter, ElasticElement.Type type, String[] labels);
+    SearchResult search(FilterBuilder filter, ElasticService.Type type, String[] labels);
 
     public interface AddElementResult{
         public String getIndex() ;

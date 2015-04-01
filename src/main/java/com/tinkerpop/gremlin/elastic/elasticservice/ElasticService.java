@@ -36,6 +36,12 @@ public class ElasticService {
         public static String NODE_CLIENT = "NODE_CLIENT";
         public static String NODE = "NODE";
     }
+
+    public enum Type {
+        vertex,
+        edge
+    }
+
     private static int DEFAULT_MAX_RESULT_LIMIT = 2000000;
 
     private ElasticGraph graph;
@@ -119,7 +125,7 @@ public class ElasticService {
 
     //region queries
 
-    public String addElement(String label, Object idValue, ElasticElement.Type type, Object... keyValues) {
+    public String addElement(String label, Object idValue, Type type, Object... keyValues) {
         timer("add element").start();
 
         for (int i = 0; i < keyValues.length; i = i + 2) {
@@ -186,7 +192,7 @@ public class ElasticService {
     public Iterator<Vertex> getVertices(String type,Integer resultsLimit,Object... ids) {
         if (ids == null || ids.length == 0) return Collections.emptyIterator();
 
-        MultiGetResponse responses = get(type,resultsLimit,ids);
+        MultiGetResponse responses = get(type, resultsLimit, ids);
         ArrayList<Vertex> vertices = new ArrayList<>(ids.length);
         for (MultiGetItemResponse getResponse : responses) {
             GetResponse response = getResponse.getResponse();
@@ -210,14 +216,14 @@ public class ElasticService {
     }
 
     public Iterator<Vertex> searchVertices(BoolFilterBuilder filter, Object[] ids, String[] labels,Integer resultsLimit) {
-        if(idsOnlyQuery(filter, ids, labels)) return getVertices(getFirstOrDefaultLabel(labels),resultsLimit,ids);
+        if(idsOnlyQuery(filter, ids, labels)) return getVertices(getFirstOrDefaultLabel(labels), resultsLimit, ids);
         FilterBuilder finalFilter = (ids != null && ids.length > 0) ? idsFilter(filter, ids) : filter;
-        Stream<SearchHit> hits = search(finalFilter,resultsLimit, ElasticElement.Type.vertex, labels);
+        Stream<SearchHit> hits = search(finalFilter,resultsLimit, Type.vertex, labels);
         return hits.map((hit) -> createVertex(hit.getId(), hit.getType(), hit.getSource())).iterator();
     }
 
     public Iterator<Vertex> searchVertices(BoolFilterBuilder filter, Object[] ids, String[] labels) {
-        return searchVertices(filter, ids, labels,null);
+        return searchVertices(filter, ids, labels, null);
     }
 
     private String getFirstOrDefaultLabel(String[] labels) {
@@ -232,7 +238,7 @@ public class ElasticService {
     public Iterator<Edge> searchEdges(BoolFilterBuilder filter, Object[] ids, String[] labels,Integer resultsLimit) {
         if(idsOnlyQuery(filter,ids,labels)) getEdges(getFirstOrDefaultLabel(labels),resultsLimit,ids);
         FilterBuilder finalFilter = (ids != null && ids.length > 0) ? idsFilter(filter, ids) : filter;
-        Stream<SearchHit> hits = search(finalFilter,resultsLimit, ElasticElement.Type.edge, labels);
+        Stream<SearchHit> hits = search(finalFilter,resultsLimit, Type.edge, labels);
         return hits.map((hit) -> createEdge(hit.getId(), hit.getType(), hit.getSource())).iterator();
     }
     public Iterator<Edge> searchEdges(BoolFilterBuilder filter, Object[] ids, String[] labels){
@@ -269,10 +275,23 @@ public class ElasticService {
         return multiGetItemResponses;
     }
 
-    private Stream<SearchHit> search(FilterBuilder filter,Integer resultsLimit, ElasticElement.Type type, String... labels) {
+    private Stream<SearchHit> search(FilterBuilder filter,Integer resultsLimit, Type type, String... labels) {
         timer("search").start();
 
-        SchemaProvider.SearchResult result = schemaProvider.search(filter, type, labels);
+        BoolFilterBuilder boolFilter;
+        if(filter instanceof BoolFilterBuilder) boolFilter = (BoolFilterBuilder) filter;
+        else {
+            boolFilter = FilterBuilders.boolFilter();
+            if(filter != null)
+                boolFilter.must(filter);
+        }
+
+        if(type.equals(Type.edge))
+            boolFilter.should(FilterBuilders.existsFilter(ElasticEdge.InId), FilterBuilders.existsFilter(ElasticEdge.OutId));
+        else boolFilter.mustNot(FilterBuilders.existsFilter(ElasticEdge.InId), FilterBuilders.existsFilter(ElasticEdge.OutId));
+
+
+        SchemaProvider.SearchResult result = schemaProvider.search(boolFilter, type, labels);
 
         if (refresh) client.admin().indices().prepareRefresh(result.getIndices()).execute().actionGet();
 
