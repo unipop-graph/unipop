@@ -54,17 +54,7 @@ public class ElasticVertex extends ElasticElement implements Vertex, Vertex.Iter
     public Edge addEdge(final String label, final Vertex vertex, final Object... keyValues) {
         if (null == vertex) throw Graph.Exceptions.argumentCanNotBeNull("vertex");
         checkRemoved();
-        ElementHelper.validateLabel(label);
-        ElementHelper.legalPropertyKeyValueArray(keyValues);
-
-        Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
-
-        try {
-            String id = elasticService.addElement(label, idValue, ElasticService.Type.edge, ArrayUtils.addAll(keyValues, ElasticEdge.InId, vertex.id(), ElasticEdge.OutId, this.id()));
-            return new ElasticEdge(id, label, this.id(), vertex.id(), keyValues, graph);
-        } catch (DocumentAlreadyExistsException ex) {
-            throw Graph.Exceptions.edgeWithIdAlreadyExists(idValue);
-        }
+        return graph.addEdge(label,this.id(),this.label(),vertex.id(),vertex.label(),keyValues);
     }
 
     @Override

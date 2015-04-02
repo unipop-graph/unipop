@@ -62,8 +62,8 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
                 }
                 else addFilter(boolFilter, has);
             });
+            //if the step containes as("label")
             if (nextStep.getLabel().isPresent()) {
-                typeLabels.add(nextStep.getLabel().get());
                 final IdentityStep identityStep = new IdentityStep<>(traversal);
                 identityStep.setLabel(nextStep.getLabel().get());
                 TraversalHelper.insertAfterStep(identityStep, currentStep, traversal);

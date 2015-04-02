@@ -9,15 +9,21 @@ import java.util.*;
 public class ElasticEdge extends ElasticElement implements Edge, Edge.Iterators {
 
     public static String OutId = "outId";
+    public static String OutLabel = "outLabel";
     public static String InId = "inId";
+    public static String InLabel = "inLabel";
 
     private String inId;
     private String outId;
+    private String inLabel;
+    private String outLabel;
     private ElasticService elasticService;
 
-    public ElasticEdge(final Object id, final String label, Object outId, Object inId, Object[] keyValues, final ElasticGraph graph) {
+    public ElasticEdge(final Object id, final String label, Object outId,String outLabel, Object inId,String inLabel, Object[] keyValues, final ElasticGraph graph) {
         super(id, label, graph, keyValues);
         this.inId = inId.toString();
+        this.inLabel = inLabel;
+        this.outLabel = outLabel;
         this.outId = outId.toString();
         elasticService = graph.elasticService;
     }
@@ -32,7 +38,7 @@ public class ElasticEdge extends ElasticElement implements Edge, Edge.Iterators 
 
     @Override
     protected boolean shouldAddProperty(String key) {
-        return super.shouldAddProperty(key) && key != OutId && key != InId;
+        return super.shouldAddProperty(key) && !(key.equals(OutId) || key.equals(OutLabel) || key.equals(InId) || key.equals(InLabel) ) ;
     }
 
     @Override
