@@ -54,7 +54,7 @@ public class ElasticEdge extends ElasticElement implements Edge, Edge.Iterators 
     @Override
     public String toString()
     {
-        return "e[" + this.id() +"]["+this.outId+"_"+this.label +"->"+ this.inId+"]";
+        return "e[" + this.id() +"]["+this.outId+"-"+this.label +"->"+ this.inId+"]";
     }
 
     @Override
