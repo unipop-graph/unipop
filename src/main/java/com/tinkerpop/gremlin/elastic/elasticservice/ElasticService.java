@@ -285,8 +285,8 @@ public class ElasticService {
         }
 
         if(type.equals(Type.edge))
-            boolFilter.should(FilterBuilders.existsFilter(ElasticEdge.InId), FilterBuilders.existsFilter(ElasticEdge.OutId));
-        else boolFilter.mustNot(FilterBuilders.existsFilter(ElasticEdge.InId), FilterBuilders.existsFilter(ElasticEdge.OutId));
+            boolFilter.must(FilterBuilders.existsFilter(ElasticEdge.InId));
+        else boolFilter.mustNot(FilterBuilders.existsFilter(ElasticEdge.InId));
 
 
         SchemaProvider.SearchResult result = schemaProvider.search(boolFilter, type, labels);
@@ -317,7 +317,7 @@ public class ElasticService {
     }
 
     private Edge createEdge(Object id, String label, Map<String, Object> fields) {
-        ElasticEdge edge = new ElasticEdge(id, label, fields.get(ElasticEdge.OutId), fields.get(ElasticEdge.InId), null, graph);
+        ElasticEdge edge = new ElasticEdge(id, label, fields.get(ElasticEdge.OutId),fields.get(ElasticEdge.OutLabel).toString(), fields.get(ElasticEdge.InId),fields.get(ElasticEdge.InLabel).toString(), null, graph);
         fields.entrySet().forEach((field) -> edge.addPropertyLocal(field.getKey(), field.getValue()));
         return edge;
     }

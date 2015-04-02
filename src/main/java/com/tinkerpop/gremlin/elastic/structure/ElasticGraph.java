@@ -111,7 +111,7 @@ public class ElasticGraph implements Graph, Graph.Iterators {
         Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
         try {
             String id = elasticService.addElement(label, idValue, ElasticService.Type.edge, ArrayUtils.addAll(keyValues, ElasticEdge.InId, inId, ElasticEdge.OutId, outId, ElasticEdge.InLabel, inLabel, ElasticEdge.OutLabel, outLabel));
-            return new ElasticEdge(id, label,outId, inId, keyValues, this);
+            return new ElasticEdge(id, label,outId, outLabel,inId,inLabel, keyValues, this);
         } catch (DocumentAlreadyExistsException ex) {
             throw Graph.Exceptions.edgeWithIdAlreadyExists(idValue);
         }
