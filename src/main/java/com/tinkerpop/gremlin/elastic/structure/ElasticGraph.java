@@ -7,6 +7,7 @@ import com.tinkerpop.gremlin.process.computer.GraphComputer;
 import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.*;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang3.ArrayUtils;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 
 import java.io.IOException;
@@ -102,7 +103,19 @@ public class ElasticGraph implements Graph, Graph.Iterators {
             throw Graph.Exceptions.vertexWithIdAlreadyExists(idValue);
         }
     }
-
+    public Edge addEdge(String label,Object outId,String outLabel,Object inId,String inLabel,Object... keyValues){
+        ElementHelper.validateLabel(label);
+        ElementHelper.validateLabel(outLabel);
+        ElementHelper.validateLabel(inLabel);
+        ElementHelper.legalPropertyKeyValueArray(keyValues);
+        Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
+        try {
+            String id = elasticService.addElement(label, idValue, ElasticService.Type.edge, ArrayUtils.addAll(keyValues, ElasticEdge.InId, inId, ElasticEdge.OutId, outId, ElasticEdge.InLabel, inLabel, ElasticEdge.OutLabel, outLabel));
+            return new ElasticEdge(id, label,outId, inId, keyValues, this);
+        } catch (DocumentAlreadyExistsException ex) {
+            throw Graph.Exceptions.edgeWithIdAlreadyExists(idValue);
+        }
+    }
     public org.elasticsearch.action.bulk.BulkResponse commit() {
         return elasticService.commit();
     }

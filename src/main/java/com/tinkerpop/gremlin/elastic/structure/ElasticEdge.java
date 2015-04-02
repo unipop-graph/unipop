@@ -9,7 +9,9 @@ import java.util.*;
 public class ElasticEdge extends ElasticElement implements Edge, Edge.Iterators {
 
     public static String OutId = "outId";
+    public static String OutLabel = "outLabel";
     public static String InId = "inId";
+    public static String InLabel = "inLabel";
 
     private String inId;
     private String outId;
