@@ -43,7 +43,7 @@ public class SpatialStepTests {
 
         graph = new ElasticGraph(config);
 
-        ((DefaultSchemaProvider)graph.elasticService.schemaProvider).clearAllData();
+        graph.elasticService.clearAllData();
         createGeoShapeMapping(graph.elasticService.client,DOCUMENT_TYPE);
     }
 

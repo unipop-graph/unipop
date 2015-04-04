@@ -24,7 +24,7 @@ public class ConfigurationTests {
         config.addProperty("elasticsearch.client", ElasticService.ClientType.NODE);
         config.addProperty("elasticsearch.upsert", true);
         ElasticGraph graph = new ElasticGraph(config);
-        ((DefaultSchemaProvider)graph.elasticService.schemaProvider).clearAllData();
+        graph.elasticService.clearAllData();
 
         graph.addVertex(T.id, "1", "field", "a", "field2", "c");
         graph.addVertex(T.id, "1", "field", "b");

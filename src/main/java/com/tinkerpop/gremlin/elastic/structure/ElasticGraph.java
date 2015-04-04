@@ -97,7 +97,7 @@ public class ElasticGraph implements Graph, Graph.Iterators {
         Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
         try {
-            String id = elasticService.addElement(label, idValue, ElasticService.Type.vertex, keyValues);
+            Object id = elasticService.addElement(label, idValue, ElasticService.ElementType.vertex, keyValues);
             return new ElasticVertex(id, label, keyValues, this);
         } catch (DocumentAlreadyExistsException ex) {
             throw Graph.Exceptions.vertexWithIdAlreadyExists(idValue);
@@ -110,7 +110,7 @@ public class ElasticGraph implements Graph, Graph.Iterators {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
         try {
-            String id = elasticService.addElement(label, idValue, ElasticService.Type.edge, ArrayUtils.addAll(keyValues, ElasticEdge.InId, inId, ElasticEdge.OutId, outId, ElasticEdge.InLabel, inLabel, ElasticEdge.OutLabel, outLabel));
+            Object id = elasticService.addElement(label, idValue, ElasticService.ElementType.edge, ArrayUtils.addAll(keyValues, ElasticEdge.InId, inId, ElasticEdge.OutId, outId, ElasticEdge.InLabel, inLabel, ElasticEdge.OutLabel, outLabel));
             return new ElasticEdge(id, label,outId, outLabel,inId,inLabel, keyValues, this);
         } catch (DocumentAlreadyExistsException ex) {
             throw Graph.Exceptions.edgeWithIdAlreadyExists(idValue);

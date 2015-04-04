@@ -33,7 +33,7 @@ public class PerformanceTests {
         config.addProperty("elasticsearch.refresh", true);
         config.addProperty("elasticsearch.client", ElasticService.ClientType.NODE);
         ElasticGraph graph = new ElasticGraph(config);
-        ((DefaultSchemaProvider) graph.elasticService.schemaProvider).clearAllData();
+        graph.elasticService.clearAllData();
         ElasticGraphGraphProvider elasticGraphProvider = new ElasticGraphGraphProvider();
         Method m = this.getClass().getMethod("testToPassTests");
         LoadGraphWith[] loadGraphWiths = m.getAnnotationsByType(LoadGraphWith.class);
@@ -96,7 +96,7 @@ public class PerformanceTests {
         startWatch("graph initalization");
         ElasticGraph graph = new ElasticGraph(config);
         stopWatch("graph initalization");
-        ((DefaultSchemaProvider)graph.elasticService.schemaProvider).clearAllData();
+        graph.elasticService.clearAllData();
 
         startWatch("add vertices");
         int count = 10000;
@@ -133,7 +133,7 @@ public class PerformanceTests {
         startWatch("graph initalization");
         ElasticGraph graph = new ElasticGraph(config);
         stopWatch("graph initalization");
-        ((DefaultSchemaProvider)graph.elasticService.schemaProvider).clearAllData();
+        graph.elasticService.clearAllData();
 
         startWatch("add vertices");
         int count = 10000;

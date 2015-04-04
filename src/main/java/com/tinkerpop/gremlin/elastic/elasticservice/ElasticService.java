@@ -37,7 +37,7 @@ public class ElasticService {
         public static String NODE = "NODE";
     }
 
-    public enum Type {
+    public enum ElementType {
         vertex,
         edge
     }
@@ -112,6 +112,11 @@ public class ElasticService {
         timingAccessor.print();
     }
 
+    public void clearAllData() {
+        client.prepareDeleteByQuery(schemaProvider.getIndicesForClearGraph())
+                .setQuery(QueryBuilders.matchAllQuery()).execute().actionGet();
+    }
+
     public BulkResponse commit() {
         if(bulkRequest == null) return null;
         timer("bulk execute").start();
@@ -125,7 +130,7 @@ public class ElasticService {
 
     //region queries
 
-    public String addElement(String label, Object idValue, Type type, Object... keyValues) {
+    public Object addElement(String label, Object idValue, ElementType elementType, Object... keyValues) {
         timer("add element").start();
 
         for (int i = 0; i < keyValues.length; i = i + 2) {
@@ -135,16 +140,17 @@ public class ElasticService {
         }
         if(idValue == null) idValue = new UUID().toString();
 
-        SchemaProvider.AddElementResult addElementResult = schemaProvider.addElement(label, idValue, type, keyValues);
-
+        SchemaProvider.Result schemaProviderResult = schemaProvider.getIndex(label, idValue, elementType, keyValues);
 
         if(!upsert) {
-            IndexRequest indexRequest = new IndexRequest(addElementResult.getIndex(), label, addElementResult.getId()).source(addElementResult.getKeyValues()).create(true);
+            IndexRequest indexRequest = new IndexRequest(schemaProviderResult.getIndex(), label, idValue.toString())
+                    .source(keyValues).routing(schemaProviderResult.getRouting()).create(true);
             if(bulkRequest != null) bulkRequest.add(indexRequest);
             else client.index(indexRequest).actionGet();
         }
         else {
-            UpdateRequest updateRequest = new UpdateRequest(addElementResult.getIndex(), label, addElementResult.getId()).doc(addElementResult.getKeyValues()).detectNoop(true);
+            UpdateRequest updateRequest = new UpdateRequest(schemaProviderResult.getIndex(), label, idValue.toString())
+                    .doc(keyValues).routing(schemaProviderResult.getRouting()).detectNoop(true);
             updateRequest.docAsUpsert(true);
 
             if (bulkRequest != null) bulkRequest.add(updateRequest);
@@ -156,12 +162,15 @@ public class ElasticService {
         }
 
         timer("add element").stop();
-        return addElementResult.getId();
+        return idValue;
     }
 
     public void deleteElement(Element element) {
         timer("remove element").start();
-        DeleteRequestBuilder deleteRequestBuilder = client.prepareDelete(schemaProvider.getIndex(element), element.label(), element.id().toString());
+        SchemaProvider.Result schemaProviderResult = schemaProvider.getIndex(element);
+        DeleteRequestBuilder deleteRequestBuilder =
+                client.prepareDelete(schemaProviderResult.getIndex(), element.label(), element.id().toString())
+                        .setRouting(schemaProviderResult.getRouting());
         if(bulkRequest != null) bulkRequest.add(deleteRequestBuilder);
         else deleteRequestBuilder.execute().actionGet();
         timer("remove element").stop();
@@ -173,7 +182,8 @@ public class ElasticService {
 
     public <V> void addProperty(Element element, String key, V value) {
         timer("update property").start();
-        UpdateRequestBuilder updateRequestBuilder = client.prepareUpdate(schemaProvider.getIndex(element), element.label(), element.id().toString()).setDoc(key, value);
+        SchemaProvider.Result schemaProviderResult = schemaProvider.getIndex(element);
+        UpdateRequestBuilder updateRequestBuilder = client.prepareUpdate(schemaProviderResult.getIndex(), element.label(), element.id().toString()).setDoc(key, value).setRouting(schemaProviderResult.getRouting());
         if(bulkRequest != null) bulkRequest.add(updateRequestBuilder);
         else updateRequestBuilder.execute().actionGet();
         timer("update property").stop();
@@ -181,7 +191,8 @@ public class ElasticService {
 
     public void removeProperty(Element element, String key) {
         timer("remove property").start();
-        UpdateRequestBuilder updateRequestBuilder = client.prepareUpdate(schemaProvider.getIndex(element), element.label(), element.id().toString()).setScript("ctx._source.remove(\"" + key + "\")", ScriptService.ScriptType.INLINE);
+        SchemaProvider.Result schemaProviderResult = schemaProvider.getIndex(element);
+        UpdateRequestBuilder updateRequestBuilder = client.prepareUpdate(schemaProviderResult.getIndex(), element.label(), element.id().toString()).setScript("ctx._source.remove(\"" + key + "\")", ScriptService.ScriptType.INLINE).setRouting(schemaProviderResult.getRouting());
         if(bulkRequest != null) bulkRequest.add(updateRequestBuilder);
         else updateRequestBuilder.execute().actionGet();
         timer("remove property").stop();
@@ -190,7 +201,7 @@ public class ElasticService {
     public Iterator<Vertex> getVertices(String label,Integer resultsLimit,Object... ids) {
         if (ids == null || ids.length == 0) return Collections.emptyIterator();
 
-        MultiGetResponse responses = get(label, resultsLimit, ids);
+        MultiGetResponse responses = get(label, resultsLimit, ids, ElementType.vertex);
         ArrayList<Vertex> vertices = new ArrayList<>(ids.length);
         for (MultiGetItemResponse getResponse : responses) {
             GetResponse response = getResponse.getResponse();
@@ -203,7 +214,7 @@ public class ElasticService {
     public Iterator<Edge> getEdges(String label,Integer resultsLimit, Object... ids) {
         if (ids == null || ids.length == 0) return Collections.emptyIterator();
 
-        MultiGetResponse responses = get(label,resultsLimit,ids);
+        MultiGetResponse responses = get(label, resultsLimit, ids, ElementType.edge);
         ArrayList<Edge> edges = new ArrayList<>(ids.length);
         for (MultiGetItemResponse getResponse : responses) {
             GetResponse response = getResponse.getResponse();
@@ -216,7 +227,7 @@ public class ElasticService {
     public Iterator<Vertex> searchVertices(BoolFilterBuilder filter, Object[] ids, String[] labels,Integer resultsLimit) {
         if(idsOnlyQuery(filter, ids, labels)) return getVertices(getFirstOrDefaultLabel(labels), resultsLimit, ids);
         FilterBuilder finalFilter = (ids != null && ids.length > 0) ? idsFilter(filter, ids) : filter;
-        Stream<SearchHit> hits = search(finalFilter,resultsLimit, Type.vertex, labels);
+        Stream<SearchHit> hits = search(finalFilter,resultsLimit, ElementType.vertex, labels);
         return hits.map((hit) -> createVertex(hit.getId(), hit.getType(), hit.getSource())).iterator();
     }
 
@@ -236,7 +247,7 @@ public class ElasticService {
     public Iterator<Edge> searchEdges(BoolFilterBuilder filter, Object[] ids, String[] labels,Integer resultsLimit) {
         if(idsOnlyQuery(filter,ids,labels)) getEdges(getFirstOrDefaultLabel(labels),resultsLimit,ids);
         FilterBuilder finalFilter = (ids != null && ids.length > 0) ? idsFilter(filter, ids) : filter;
-        Stream<SearchHit> hits = search(finalFilter,resultsLimit, Type.edge, labels);
+        Stream<SearchHit> hits = search(finalFilter,resultsLimit, ElementType.edge, labels);
         return hits.map((hit) -> createEdge(hit.getId(), hit.getType(), hit.getSource())).iterator();
     }
     public Iterator<Edge> searchEdges(BoolFilterBuilder filter, Object[] ids, String[] labels){
@@ -254,26 +265,24 @@ public class ElasticService {
         return idsFilterBuilder;
     }
 
-    private MultiGetResponse get(String type,Integer resultsLimit,Object[] ids) {
+    private MultiGetResponse get(String label, Integer resultsLimit, Object[] ids, ElementType type) {
         timer("get").start();
         MultiGetRequest request = new MultiGetRequest();
-        if (resultsLimit == null || ids.length <= resultsLimit) {
-            for (Object id : ids)
-                request.add(schemaProvider.getIndex(type, id), type, id.toString());
+
+        int counter = 0;
+        while((resultsLimit == null || counter  < resultsLimit) && counter < ids.length){
+            Object id = ids[counter];
+            SchemaProvider.Result schemaProviderResult = schemaProvider.getIndex(label, id, type, null);
+            request.add(schemaProviderResult.getIndex(), label, id.toString()); //TODO: add routing..?
+            counter++;
         }
-        else {
-            int counter = 0;
-            while(counter  < resultsLimit){
-                Object id = ids[counter++];
-                request.add(schemaProvider.getIndex(type, id), type, id.toString());
-            }
-        }
+
         MultiGetResponse multiGetItemResponses = client.multiGet(request).actionGet();
         timer("get").stop();
         return multiGetItemResponses;
     }
 
-    private Stream<SearchHit> search(FilterBuilder filter,Integer resultsLimit, Type type, String... labels) {
+    private Stream<SearchHit> search(FilterBuilder filter,Integer resultsLimit, ElementType elementType, String... labels) {
         timer("search").start();
 
         BoolFilterBuilder boolFilter;
@@ -284,17 +293,16 @@ public class ElasticService {
                 boolFilter.must(filter);
         }
 
-        if(type.equals(Type.edge))
+        if(elementType.equals(ElementType.edge))
             boolFilter.must(FilterBuilders.existsFilter(ElasticEdge.InId));
         else boolFilter.mustNot(FilterBuilders.existsFilter(ElasticEdge.InId));
 
 
-        SchemaProvider.SearchResult result = schemaProvider.search(boolFilter, type, labels);
+        SchemaProvider.Result result = schemaProvider.getIndex(boolFilter, elementType, labels);
+        if (refresh) client.admin().indices().prepareRefresh(result.getIndex()).execute().actionGet();
 
-        if (refresh) client.admin().indices().prepareRefresh(result.getIndices()).execute().actionGet();
-
-        SearchRequestBuilder searchRequestBuilder = client.prepareSearch(result.getIndices())
-                .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), result.getFilter())).setFrom(0);
+        SearchRequestBuilder searchRequestBuilder = client.prepareSearch(result.getIndex())
+                .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), boolFilter)).setRouting(result.getRouting()).setFrom(0);
         //TODO: retrive with scroll for efficiency
         if(resultsLimit != null ) searchRequestBuilder.setSize(resultsLimit);
         else  searchRequestBuilder.setSize(DEFAULT_MAX_RESULT_LIMIT);

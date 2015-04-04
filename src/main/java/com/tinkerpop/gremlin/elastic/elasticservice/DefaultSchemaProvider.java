@@ -1,6 +1,5 @@
 package com.tinkerpop.gremlin.elastic.elasticservice;
 
-import com.tinkerpop.gremlin.structure.Element;
 import org.apache.commons.configuration.Configuration;
 import org.elasticsearch.action.admin.cluster.health.*;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
@@ -14,17 +13,16 @@ import java.io.IOException;
 
 
 public class DefaultSchemaProvider implements SchemaProvider {
-    String indexName;
-    private Client client;
+    private Result result;
 
     @Override
     public void init(Client client, Configuration configuration) throws IOException {
-        this.client = client;
-        indexName = configuration.getString("elasticsearch.index.name", "graph");
-        createIndex();
+        String indexName = configuration.getString("elasticsearch.index.name", "graph");
+        this.result = new Result(indexName, null);
+        createIndex(indexName, client);
     }
 
-    private void createIndex() throws IOException {
+    private void createIndex(String indexName, Client client) throws IOException {
         IndicesExistsRequest request = new IndicesExistsRequest(indexName);
         IndicesExistsResponse response = client.admin().indices().exists(request).actionGet();
         if (!response.isExists()) {
@@ -44,64 +42,25 @@ public class DefaultSchemaProvider implements SchemaProvider {
     }
 
     @Override
-    public void close() {
-
+    public Result getIndex(String label, Object idValue, ElasticService.ElementType elementType, Object[] keyValues) {
+        return result;
     }
 
-    public void clearAllData() {
-        client.prepareDeleteByQuery(indexName).setQuery(QueryBuilders.matchAllQuery()).execute().actionGet();
+    @Override
+    public Result getIndex(FilterBuilder filter, ElasticService.ElementType elementType, String[] labels) {
+        return result;
     }
+
+    @Override
+    public String[] getIndicesForClearGraph() {
+        return new String[]{result.getIndex()};
+    }
+
 
     @Override
     public String toString() {
         return "DefaultSchemaProvider{" +
-                "indexName='" + indexName + '\'' +
+                "indexName='" + result.getIndex() + '\'' +
                 '}';
-    }
-
-    @Override
-    public AddElementResult addElement(String label, Object idValue, ElasticService.Type type, Object[] keyValues) {
-        return new AddElementResult() {
-            @Override
-            public String getIndex() {
-                return indexName;
-            }
-
-            @Override
-            public Object[] getKeyValues() {
-                return keyValues;
-            }
-
-            @Override
-            public String getId() {
-                return idValue.toString();
-            }
-        };
-    }
-
-    @Override
-    public String getIndex(Element element) {
-        return indexName;
-    }
-
-    @Override
-    public String getIndex(String type, Object id) {
-        return indexName;
-    }
-
-    @Override
-    public SearchResult search(FilterBuilder filter, ElasticService.Type type, String[] labels) {
-        return new SearchResult() {
-            @Override
-            public String[] getIndices() {
-                return new String[]{indexName};
-            }
-
-            @Override
-            public FilterBuilder getFilter() {
-                return filter;
-            }
-        };
-
     }
 }

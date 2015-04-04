@@ -3,8 +3,6 @@ package com.tinkerpop.gremlin.elastic.structure;
 import com.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
 import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.*;
-import org.apache.commons.lang3.ArrayUtils;
-import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.elasticsearch.index.query.*;
 
 import java.util.*;
