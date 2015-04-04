@@ -89,7 +89,7 @@ public class ElasticService {
     }
 
     private void createTransportClient(String clusterName, String addresses) {
-        Settings settings = ImmutableSettings.settingsBuilder().put("cluster.name", clusterName).build();
+        Settings settings = ImmutableSettings.settingsBuilder().put("cluster.name", clusterName).put("client.transport.sniff", true).build();
         TransportClient transportClient = new TransportClient(settings);
         for(String address : addresses.split(",")) {
             String[] split = address.split(":");
