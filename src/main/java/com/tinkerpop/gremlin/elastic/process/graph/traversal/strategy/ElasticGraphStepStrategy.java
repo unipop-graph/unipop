@@ -1,9 +1,10 @@
 package com.tinkerpop.gremlin.elastic.process.graph.traversal.strategy;
 
 import com.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
-import com.tinkerpop.gremlin.elastic.process.graph.traversal.sideEffect.*;
-import com.tinkerpop.gremlin.elastic.process.graph.traversal.traversalHolder.ElasticRepeatStep;
-import com.tinkerpop.gremlin.elastic.process.graph.traversal.traversalHolder.ElasticUnionStep;
+import com.tinkerpop.gremlin.elastic.process.graph.traversal.steps.*;
+import com.tinkerpop.gremlin.elastic.process.graph.traversal.steps.flatmap.*;
+import com.tinkerpop.gremlin.elastic.process.graph.traversal.steps.traversalHolder.ElasticRepeatStep;
+import com.tinkerpop.gremlin.elastic.process.graph.traversal.steps.traversalHolder.ElasticUnionStep;
 import com.tinkerpop.gremlin.elastic.structure.ElasticGraph;
 import com.tinkerpop.gremlin.process.*;
 import com.tinkerpop.gremlin.process.graph.marker.HasContainerHolder;

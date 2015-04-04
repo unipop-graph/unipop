@@ -1,4 +1,4 @@
-package com.tinkerpop.gremlin.elastic.process.graph.traversal.traversalHolder;
+package com.tinkerpop.gremlin.elastic.process.graph.traversal.steps.traversalHolder;
 
 import com.tinkerpop.gremlin.process.Step;
 import com.tinkerpop.gremlin.process.Traversal;
@@ -7,7 +7,6 @@ import com.tinkerpop.gremlin.process.Traverser;
 import com.tinkerpop.gremlin.process.graph.marker.TraversalHolder;
 import com.tinkerpop.gremlin.process.graph.step.branch.RepeatStep;
 import com.tinkerpop.gremlin.process.graph.step.util.ComputerAwareStep;
-import com.tinkerpop.gremlin.process.graph.strategy.SideEffectCapStrategy;
 import com.tinkerpop.gremlin.process.traverser.TraverserRequirement;
 import com.tinkerpop.gremlin.process.util.TraversalHelper;
 import com.tinkerpop.gremlin.util.iterator.IteratorUtils;
@@ -15,9 +14,6 @@ import com.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import java.util.*;
 import java.util.function.Predicate;
 
-/**
- * Created by Eliran on 20/3/2015.
- */
 public class ElasticRepeatStep<S> extends ComputerAwareStep<S, S> implements TraversalHolder<S, S> {
 
     public ElasticRepeatStep(Traversal traversal,RepeatStep<S> originalStep)

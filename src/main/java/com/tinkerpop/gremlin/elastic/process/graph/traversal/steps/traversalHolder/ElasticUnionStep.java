@@ -1,4 +1,4 @@
-package com.tinkerpop.gremlin.elastic.process.graph.traversal.traversalHolder;
+package com.tinkerpop.gremlin.elastic.process.graph.traversal.steps.traversalHolder;
 
 import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.TraversalStrategies;
@@ -6,15 +6,11 @@ import com.tinkerpop.gremlin.process.Traverser;
 import com.tinkerpop.gremlin.process.graph.marker.TraversalHolder;
 import com.tinkerpop.gremlin.process.graph.step.branch.UnionStep;
 import com.tinkerpop.gremlin.process.graph.step.util.ComputerAwareStep;
-import com.tinkerpop.gremlin.process.graph.strategy.SideEffectCapStrategy;
 import com.tinkerpop.gremlin.process.traverser.TraverserRequirement;
 import com.tinkerpop.gremlin.process.util.TraversalHelper;
 
 import java.util.*;
 
-/**
- * Created by Eliran on 20/3/2015.
- */
 public class ElasticUnionStep<S,E> extends ComputerAwareStep<S, E> implements TraversalHolder<S, E> {
     private UnionStep originalStep;
     public ElasticUnionStep(Traversal traversal,UnionStep originalStep) {

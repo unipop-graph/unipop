@@ -1,4 +1,4 @@
-package com.tinkerpop.gremlin.elastic.process.graph.traversal.sideEffect;
+package com.tinkerpop.gremlin.elastic.process.graph.traversal.steps;
 
 import com.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
 import com.tinkerpop.gremlin.elastic.structure.ElasticGraph;

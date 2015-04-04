@@ -5,7 +5,7 @@ import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.impl.PointImpl;
 import com.tinkerpop.gremlin.elastic.elasticservice.*;
 import com.tinkerpop.gremlin.elastic.structure.ElasticGraph;
-import com.tinkerpop.gremlin.elastic.process.graph.traversal.sideEffect.Geo;
+import com.tinkerpop.gremlin.elastic.process.graph.traversal.strategy.Geo;
 import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.structure.Element;
 import org.apache.commons.configuration.BaseConfiguration;
