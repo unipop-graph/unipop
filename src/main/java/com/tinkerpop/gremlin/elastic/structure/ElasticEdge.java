@@ -50,8 +50,8 @@ public class ElasticEdge extends ElasticElement implements Edge, Edge.Iterators 
     @Override
     public void remove() {
         checkRemoved();
-        this.removed = true;
         elasticService.deleteElement(this);
+        this.removed = true;
     }
 
     @Override

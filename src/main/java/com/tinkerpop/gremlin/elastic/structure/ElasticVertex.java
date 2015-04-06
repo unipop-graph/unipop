@@ -56,9 +56,9 @@ public class ElasticVertex extends ElasticElement implements Vertex, Vertex.Iter
     @Override
     public void remove() {
         checkRemoved();
-        this.removed = true;
         elasticService.deleteElement(this);
         elasticService.deleteElements((Iterator) edgeIterator(Direction.BOTH));
+        this.removed = true;
     }
 
     @Override
