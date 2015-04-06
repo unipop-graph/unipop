@@ -16,7 +16,23 @@ public abstract class ElasticElement implements Element, Element.Iterators {
         this.graph = graph;
         this.id = id;
         this.label = label;
-        if (keyValues != null) addPropertiesLocal(keyValues);
+        if (keyValues != null) {
+            for (int i = 0; i < keyValues.length; i = i + 2) {
+                String key = keyValues[i].toString();
+                Object value = keyValues[i + 1];
+                addPropertyLocal(key, value);
+            }
+        }
+    }
+
+    public Property addPropertyLocal(String key, Object value) {
+        checkRemoved();
+        if (shouldAddProperty(key)) {
+            Property property = createProperty(key, value);
+            properties.put(key, property);
+            return property;
+        }
+        return null;
     }
 
     @Override
@@ -71,15 +87,7 @@ public abstract class ElasticElement implements Element, Element.Iterators {
         graph.elasticService.removeProperty(this, property.key());
     }
 
-    private void addPropertiesLocal(Object[] keyValues) {
-        for (int i = 0; i < keyValues.length; i = i + 2) {
-            String key = keyValues[i].toString();
-            Object value = keyValues[i + 1];
-            this.addPropertyLocal(key, value);
-        }
-    }
-
-    public abstract Property addPropertyLocal(String key, Object value);
+    public abstract Property createProperty(String key, Object value);
 
     protected boolean shouldAddProperty(String key) {
         return key != "label" && key != "id";

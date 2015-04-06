@@ -28,7 +28,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.*;
 
 public class ElasticService {
-
     //region members
 
     public static class ClientType {
@@ -43,6 +42,7 @@ public class ElasticService {
     }
 
     private static int DEFAULT_MAX_RESULT_LIMIT = 2000000;
+    private static final int MAX_LAZY_GET = 1000;
 
     private ElasticGraph graph;
     public SchemaProvider schemaProvider;
@@ -52,6 +52,9 @@ public class ElasticService {
     private Node node;
     private final boolean upsert;
     TimingAccessor timingAccessor = new TimingAccessor();
+
+    private LazyGetter lazyGetter;
+
 
     //endregion
 
@@ -211,6 +214,44 @@ public class ElasticService {
         return vertices.iterator();
     }
 
+    public LazyGetter registerLazyVertex(ElasticVertex v) {
+        if(lazyGetter == null || lazyGetter.isExecuted() || lazyGetter.multiGetRequest.getItems().size() > MAX_LAZY_GET)
+            lazyGetter = new LazyGetter();
+        lazyGetter.register(v);
+        return lazyGetter;
+    }
+
+    public class LazyGetter {
+        private boolean executed = false;
+        private MultiGetRequest multiGetRequest = new MultiGetRequest();
+        private HashMap<String, ElasticVertex> lazyGetters = new HashMap();
+
+        public LazyGetter register(ElasticVertex v) {
+            SchemaProvider.Result schemaProviderResult = schemaProvider.getIndex(v.label(), v.id(), ElementType.vertex, null);
+            multiGetRequest.add(schemaProviderResult.getIndex(), v.label(), v.id().toString()); //TODO: add routing..?
+            lazyGetters.put(v.id().toString(), v);
+            return lazyGetter;
+        }
+
+        public boolean isExecuted() {
+            return executed;
+        }
+
+        public void execute() {
+            if(!executed) {
+                MultiGetResponse multiGetItemResponses = client.multiGet(multiGetRequest).actionGet();
+                multiGetItemResponses.forEach(response -> {
+                    Map<String, Object> source = response.getResponse().getSource();
+                    ElasticVertex v = lazyGetters.get(response.getId());
+                    source.entrySet().forEach((field) -> v.addPropertyLocal(field.getKey(), field.getValue()));
+                });
+                executed = true;
+                multiGetRequest = null;
+                lazyGetters = null;
+            }
+        }
+    }
+
     public Iterator<Edge> getEdges(String label,Integer resultsLimit, Object... ids) {
         if (ids == null || ids.length == 0) return Collections.emptyIterator();
 
@@ -319,7 +360,7 @@ public class ElasticService {
 
 
     private Vertex createVertex(Object id, String label, Map<String, Object> fields) {
-        ElasticVertex vertex = new ElasticVertex(id, label, null, graph);
+        ElasticVertex vertex = new ElasticVertex(id, label, null, graph, false);
         fields.entrySet().forEach((field) -> vertex.addPropertyLocal(field.getKey(), field.getValue()));
         return vertex;
     }
