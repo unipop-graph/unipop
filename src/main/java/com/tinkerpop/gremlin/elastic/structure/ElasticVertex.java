@@ -1,6 +1,6 @@
 package com.tinkerpop.gremlin.elastic.structure;
 
-import com.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
+import com.tinkerpop.gremlin.elastic.elasticservice.*;
 import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.*;
 import org.elasticsearch.index.query.*;
@@ -8,13 +8,16 @@ import org.elasticsearch.index.query.*;
 import java.util.*;
 
 public class ElasticVertex extends ElasticElement implements Vertex, Vertex.Iterators {
-    private ElasticService.LazyGetter lazyGetter;
+    private LazyGetter lazyGetter;
     private ElasticService elasticService;
 
     public ElasticVertex(final Object id, final String label, Object[] keyValues, ElasticGraph graph, Boolean lazy) {
         super(id, label, graph, keyValues);
         elasticService = graph.elasticService;
-        if(lazy) this.lazyGetter = graph.elasticService.registerLazyVertex(this);
+        if(lazy) {
+            this.lazyGetter = graph.elasticService.getLazyGetter();
+            lazyGetter.register(this);
+        }
     }
 
     @Override
