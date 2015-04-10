@@ -98,7 +98,7 @@ public class ElasticGraph implements Graph, Graph.Iterators {
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
         try {
             Object id = elasticService.addElement(label, idValue, ElasticService.ElementType.vertex, keyValues);
-            return new ElasticVertex(id, label, keyValues, this);
+            return new ElasticVertex(id, label, keyValues, this, false);
         } catch (DocumentAlreadyExistsException ex) {
             throw Graph.Exceptions.vertexWithIdAlreadyExists(idValue);
         }

@@ -1,6 +1,6 @@
 package com.tinkerpop.gremlin.elastic.structure;
 
-import com.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
+import com.tinkerpop.gremlin.elastic.elasticservice.*;
 import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.*;
 import org.elasticsearch.index.query.*;
@@ -8,20 +8,21 @@ import org.elasticsearch.index.query.*;
 import java.util.*;
 
 public class ElasticVertex extends ElasticElement implements Vertex, Vertex.Iterators {
+    private LazyGetter lazyGetter;
     private ElasticService elasticService;
 
-    public ElasticVertex(final Object id, final String label, Object[] keyValues, ElasticGraph graph) {
+    public ElasticVertex(final Object id, final String label, Object[] keyValues, ElasticGraph graph, Boolean lazy) {
         super(id, label, graph, keyValues);
         elasticService = graph.elasticService;
+        if(lazy) {
+            this.lazyGetter = graph.elasticService.getLazyGetter();
+            lazyGetter.register(this);
+        }
     }
 
     @Override
-    public Property addPropertyLocal(String key, Object value) {
-        checkRemoved();
-        if (!shouldAddProperty(key)) return Property.empty();
-        ElasticVertexProperty vertexProperty = new ElasticVertexProperty(this, key, value);
-        properties.put(key, vertexProperty);
-        return vertexProperty;
+    public Property createProperty(String key, Object value) {
+        return new ElasticVertexProperty(this, key, value);
     }
 
     @Override
@@ -35,7 +36,6 @@ public class ElasticVertex extends ElasticElement implements Vertex, Vertex.Iter
         checkRemoved();
         ElementHelper.validateProperty(key, value);
         ElasticVertexProperty vertexProperty = (ElasticVertexProperty) addPropertyLocal(key, value);
-        properties.put(key, vertexProperty);
         elasticService.addProperty(this, key, value);
         return vertexProperty;
     }
@@ -43,6 +43,7 @@ public class ElasticVertex extends ElasticElement implements Vertex, Vertex.Iter
     @Override
     public <V> VertexProperty<V> property(final String key) {
         checkRemoved();
+        if(lazyGetter != null) lazyGetter.execute();
         if (this.properties.containsKey(key)) {
             return (VertexProperty<V>) this.properties.get(key);
         } else return VertexProperty.<V>empty();
@@ -58,9 +59,9 @@ public class ElasticVertex extends ElasticElement implements Vertex, Vertex.Iter
     @Override
     public void remove() {
         checkRemoved();
-        this.removed = true;
         elasticService.deleteElement(this);
         elasticService.deleteElements((Iterator) edgeIterator(Direction.BOTH));
+        this.removed = true;
     }
 
     @Override
@@ -76,6 +77,7 @@ public class ElasticVertex extends ElasticElement implements Vertex, Vertex.Iter
     @Override
     public <V> Iterator<VertexProperty<V>> propertyIterator(final String... propertyKeys) {
         checkRemoved();
+        if(lazyGetter != null) lazyGetter.execute();
         return innerPropertyIterator(propertyKeys);
     }
 

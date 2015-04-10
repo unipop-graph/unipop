@@ -29,11 +29,8 @@ public class ElasticEdge extends ElasticElement implements Edge, Edge.Iterators 
     }
 
     @Override
-    public Property addPropertyLocal(String key, Object value) {
-        if (!shouldAddProperty(key)) return Property.empty();
-        ElasticProperty vertexProperty = new ElasticProperty(this, key, value);
-        properties.put(key, vertexProperty);
-        return vertexProperty;
+    public Property createProperty(String key, Object value) {
+        return new ElasticProperty(this, key, value);
     }
 
     @Override
@@ -53,8 +50,8 @@ public class ElasticEdge extends ElasticElement implements Edge, Edge.Iterators 
     @Override
     public void remove() {
         checkRemoved();
-        this.removed = true;
         elasticService.deleteElement(this);
+        this.removed = true;
     }
 
     @Override
@@ -72,7 +69,13 @@ public class ElasticEdge extends ElasticElement implements Edge, Edge.Iterators 
     @Override
     public Iterator<Vertex> vertexIterator(final Direction direction) {
         checkRemoved();
-        return elasticService.getVertices(null,null,getVertexId(direction).toArray());
+        ArrayList vertices = new ArrayList();
+        //return elasticService.getVertices(null,null,getVertexId(direction).toArray());
+        if(direction.equals(Direction.OUT) || direction.equals(Direction.BOTH))
+            vertices.add(new ElasticVertex(outId,outLabel,null,graph,true));
+        if(direction.equals(Direction.IN) || direction.equals(Direction.BOTH))
+            vertices.add(new ElasticVertex(inId,inLabel,null,graph,true));
+        return vertices.iterator();
     }
 
     public List getVertexId(Direction direction) {

@@ -28,7 +28,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.*;
 
 public class ElasticService {
-
     //region members
 
     public static class ClientType {
@@ -52,6 +51,9 @@ public class ElasticService {
     private Node node;
     private final boolean upsert;
     TimingAccessor timingAccessor = new TimingAccessor();
+
+    private LazyGetter lazyGetter;
+
 
     //endregion
 
@@ -124,6 +126,12 @@ public class ElasticService {
         bulkRequest = client.prepareBulk();
         timer("bulk execute").stop();
         return bulkItemResponses;
+    }
+
+    public LazyGetter getLazyGetter() {
+        if(lazyGetter == null || !lazyGetter.canRegister())
+            lazyGetter = new LazyGetter(this);
+        return lazyGetter;
     }
 
     //endregion
@@ -319,7 +327,7 @@ public class ElasticService {
 
 
     private Vertex createVertex(Object id, String label, Map<String, Object> fields) {
-        ElasticVertex vertex = new ElasticVertex(id, label, null, graph);
+        ElasticVertex vertex = new ElasticVertex(id, label, null, graph, false);
         fields.entrySet().forEach((field) -> vertex.addPropertyLocal(field.getKey(), field.getValue()));
         return vertex;
     }
