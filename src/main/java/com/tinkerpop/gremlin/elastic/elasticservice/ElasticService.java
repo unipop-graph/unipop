@@ -49,7 +49,6 @@ public class ElasticService {
     BulkRequestBuilder bulkRequest;
     public Client client;
     private Node node;
-    private final boolean upsert;
     TimingAccessor timingAccessor = new TimingAccessor();
 
     private LazyGetter lazyGetter;
@@ -69,7 +68,6 @@ public class ElasticService {
         boolean bulk = configuration.getBoolean("elasticsearch.batch", false);
         String schemaProvider = configuration.getString("elasticsearch.schemaProvider", DefaultSchemaProvider.class.getCanonicalName());
         String clientType = configuration.getString("elasticsearch.client", ClientType.NODE);
-        this.upsert = configuration.getBoolean("elasticsearch.upsert", false);
 
         if (clientType.equals(ClientType.TRANSPORT_CLIENT)) createTransportClient(clusterName, addresses);
         else if (clientType.equals(ClientType.NODE_CLIENT)) createNode(clusterName, true);
@@ -138,7 +136,7 @@ public class ElasticService {
 
     //region queries
 
-    public Object addElement(String label, Object idValue, ElementType elementType, Object... keyValues) {
+    public Object addElement(Boolean upsert, String label, Object idValue, ElementType elementType, Object... keyValues) {
         timer("add element").start();
 
         for (int i = 0; i < keyValues.length; i = i + 2) {
