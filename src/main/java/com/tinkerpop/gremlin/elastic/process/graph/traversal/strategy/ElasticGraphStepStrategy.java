@@ -150,7 +150,7 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
                     throw new IllegalArgumentException("predicate not supported in has step: " + has.predicate.toString());
             }
         } else if (has.predicate instanceof Contains) {
-            if (has.predicate == Contains.without) boolFilterBuilder.mustNot(FilterBuilders.existsFilter(has.key));
+            if (has.predicate == Contains.without) boolFilterBuilder.must(FilterBuilders.missingFilter(has.key));
             else if (has.predicate == Contains.within){
                 if(has.value == null) boolFilterBuilder.must(FilterBuilders.existsFilter(has.key));
                 else  boolFilterBuilder.must(FilterBuilders.termsFilter(has.key, has.value));

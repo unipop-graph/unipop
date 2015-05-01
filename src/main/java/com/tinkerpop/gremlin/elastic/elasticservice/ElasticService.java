@@ -100,7 +100,8 @@ public class ElasticService {
     }
 
     private void createNode(String clusterName, boolean client) {
-        this.node = NodeBuilder.nodeBuilder().client(client).clusterName(clusterName).build();
+        Settings settings = NodeBuilder.nodeBuilder().settings().put("script.groovy.sandbox.enabled", true).put("script.disable_dynamic", false).build();
+        this.node = NodeBuilder.nodeBuilder().client(client).clusterName(clusterName).settings(settings).build();
         node.start();
         this.client = node.client();
     }
@@ -301,7 +302,7 @@ public class ElasticService {
 
         if(elementType.equals(ElementType.edge))
             boolFilter.must(FilterBuilders.existsFilter(ElasticEdge.InId));
-        else boolFilter.mustNot(FilterBuilders.existsFilter(ElasticEdge.InId));
+        else boolFilter.must(FilterBuilders.missingFilter(ElasticEdge.InId));
 
 
         SchemaProvider.Result result = schemaProvider.getIndex(boolFilter, elementType, labels);
