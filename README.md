@@ -3,7 +3,7 @@
 ## Elastic-gremlin configuration properties
 | Property  | Value type| Default Value| Description      |
 | --------- | ------- | ------- | ------------------      |  
-| `elasticsearch.client` | "NODE","NODE_CLIENT","TRANSPORT_CLIENT"  | "NODE" | The client type used when connecting to elastic, for moe information read [here](http://www.elastic.co/guide/en/elasticsearch/client/java-api/current/client.html)          |
+| `elasticsearch.client` | "NODE" "NODE_CLIENT" "TRANSPORT_CLIENT"  | "NODE" | The client type used when connecting to elastic, for moe information read [here](http://www.elastic.co/guide/en/elasticsearch/client/java-api/current/client.html)          |
 | `elasticsearch.cluster.name`  | String  | "elasticsearch" | The elasticsearch cluster you are connecting too              |
 | `elasticsearch.index.name` | String | "graph" | The index on elasticsearch on which elements will be inserted |
 | `elasticsearch.cluster.address`  | String | "127.0.0.1:9300" | The elasticsearch address you are connecting too.The format is: "ip1:port1,ip2:port2,...".  You can add one or more by using "," . it is used on TransportClient settings              |
