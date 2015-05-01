@@ -1,15 +1,15 @@
 # elastic-gremlin
 [TinkerPop 3](http://www.tinkerpop.com/docs/3.0.0.M7/) implementation on Elasticsearch backend.
 ## Elastic-gremlin configuration properties
-| Property      | Value type    | Default Value   | Description   |
-| ------------- | ------------- | -------------   | ------------- |  
-| elasticsearch.client  | ElasticService.ClientType  (on Java API) or just one of those Strings: NODE , NODE_CLIENT , TRANSPORT_CLIENT  | "NODE" | The client type used when connecting to elastic, for moe information read [here](http://www.elastic.co/guide/en/elasticsearch/client/java-api/current/client.html)          |
-| elasticsearch.cluster.name  | String  | "elasticsearch" | The elasticsearch cluster you are connecting too              |
-| elasticsearch.index.name | String | "graph" | The index on elasticsearch on which elements will be inserted |
-| elasticsearch.cluster.address  | String on this format: "ip1:port1,ip2:port2,..." | "127.0.0.1:9300" | The elasticsearch address you are connecting too. You can add one or more by using "," . it is used on TransportClient settings              |
-|elasticsearch.refresh | Boolean | true | whether to refresh the index after each insert/update operation. good for testing and to ensure consistency. |
-|elasticsearch.batch | Boolean | false | when using this option , addVertex / addEdge operations does not make effect on your elasticsearch cluster until you do: g.commit() . On g.commit() a bulk request will be send to elastic. when using this option make sure to set elasticsearch.refresh to false  |
-|elasticsearch.schemaProvider | class that implements SchemaProvider interface | DefaultSchemaProvider | SchemaProvider is used to figure the index name / routing for each insert/update/search of an element. it is also provides how to create a new index if needed. you can use it to create a "time based partition index" for some elements, store different elements on different indices and create your index with special configurations (like analyzers) |
+| Property  | Value type| Default Value| Description      |
+| --------- | ------- | ------- | ------------------      |  
+| `elasticsearch.client` | "NODE","NODE_CLIENT","TRANSPORT_CLIENT"  | "NODE" | The client type used when connecting to elastic, for moe information read [here](http://www.elastic.co/guide/en/elasticsearch/client/java-api/current/client.html)          |
+| `elasticsearch.cluster.name`  | String  | "elasticsearch" | The elasticsearch cluster you are connecting too              |
+| `elasticsearch.index.name` | String | "graph" | The index on elasticsearch on which elements will be inserted |
+| `elasticsearch.cluster.address`  | String | "127.0.0.1:9300" | The elasticsearch address you are connecting too.The format is: "ip1:port1,ip2:port2,...".  You can add one or more by using "," . it is used on TransportClient settings              |
+|`elasticsearch.refresh` | Boolean | true | whether to refresh the index after each insert/update operation. good for testing and to ensure consistency. |
+|`elasticsearch.batch` | Boolean | false | when using this option , addVertex / addEdge operations does not make effect on your elasticsearch cluster until you do: g.commit() . On g.commit() a bulk request will be send to elastic. when using this option make sure to set elasticsearch.refresh to false  |
+|`elasticsearch.schemaProvider` | Class that implements SchemaProvider | DefaultSchemaProvider | SchemaProvider is used to figure the index name / routing for each insert/update/search of an element. it is also provides how to create a new index if needed. you can use it to create a "time based partition index" for some elements, store different elements on different indices and create your index with special configurations (like analyzers) |
 
 ## Getting Started!
 clone our project to your workspace
