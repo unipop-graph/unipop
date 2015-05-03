@@ -8,6 +8,7 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.FileUtils;
 import org.elasticsearch.action.admin.cluster.health.*;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.*;
@@ -38,8 +39,8 @@ public class ElasticGraphGraphProvider extends AbstractGraphProvider {
         String path = new java.io.File( "." ).getCanonicalPath() + "\\data";
         File file = new File(path);
         FileUtils.deleteQuietly(file);
-
-        node = NodeBuilder.nodeBuilder().client(false).clusterName(CLUSTER_NAME).build();
+        Settings settings = NodeBuilder.nodeBuilder().settings().put("script.groovy.sandbox.enabled", true).put("script.disable_dynamic", false).build();
+        node = NodeBuilder.nodeBuilder().settings(settings).client(false).clusterName(CLUSTER_NAME).build();
         node.start();
         client = node.client();
         final ClusterHealthRequest clusterHealthRequest = new ClusterHealthRequest().timeout(TimeValue.timeValueSeconds(10)).waitForYellowStatus();

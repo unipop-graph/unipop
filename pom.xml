@@ -10,7 +10,7 @@
     </parent>
     <artifactId>elastic-gremlin</artifactId>
     <properties>
-        <elasticsearch.version>1.4.2</elasticsearch.version>
+        <elasticsearch.version>1.5.2</elasticsearch.version>
     </properties>
     <dependencies>
         <dependency>
