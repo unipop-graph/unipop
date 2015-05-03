@@ -44,19 +44,17 @@ public class ElasticVertexStep<E extends Element> extends ElasticFlatMapStep<Ver
         });
 
         Object[] allVertexIds = vertexIdToTraverser.keySet().toArray();
-        if(direction == Direction.IN) filter.must(FilterBuilders.termsFilter(ElasticEdge.InId, allVertexIds));
-        else if(direction == Direction.OUT) filter.must(FilterBuilders.termsFilter(ElasticEdge.OutId, allVertexIds));
-        else if(direction == Direction.BOTH) filter.should(FilterBuilders.termsFilter(ElasticEdge.InId, allVertexIds), FilterBuilders.termsFilter(ElasticEdge.OutId, allVertexIds));
-        else throw new EnumConstantNotPresentException(direction.getClass(),direction.name());
+        if (direction == Direction.IN) filter.must(FilterBuilders.termsFilter(ElasticEdge.InId, allVertexIds));
+        else if (direction == Direction.OUT) filter.must(FilterBuilders.termsFilter(ElasticEdge.OutId, allVertexIds));
+        else if (direction == Direction.BOTH) filter.should(FilterBuilders.termsFilter(ElasticEdge.InId, allVertexIds), FilterBuilders.termsFilter(ElasticEdge.OutId, allVertexIds));
+        else throw new EnumConstantNotPresentException(direction.getClass(), direction.name());
 
-        Iterator<Edge> edgeIterator = elasticService.searchEdges(filter, null, edgeLabels,resultsLimit);
+        Iterator<Edge> edgeIterator = elasticService.searchEdges(filter, null, edgeLabels, resultsLimit);
 
-        edgeIterator.forEachRemaining(edge ->
-                ((ElasticEdge) edge).getVertexId(direction).forEach(vertexKey ->
-                {
-                    if(vertexIdToTraverser.get(vertexKey)!=null)
-                    vertexIdToTraverser.get(vertexKey).forEach(traverser -> traverser.addResult((E) edge));
-                }));
+        edgeIterator.forEachRemaining(edge -> ((ElasticEdge) edge).getVertexId(direction).forEach(vertexKey -> {
+            if (vertexIdToTraverser.get(vertexKey) != null)
+                vertexIdToTraverser.get(vertexKey).forEach(traverser -> traverser.addResult((E) edge));
+        }));
     }
 
     private void loadVertices(List<ElasticTraverser> traversers) {

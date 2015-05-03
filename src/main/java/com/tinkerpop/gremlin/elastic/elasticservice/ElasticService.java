@@ -275,7 +275,7 @@ public class ElasticService {
 
     private MultiGetResponse get(String label, Integer resultsLimit, Object[] ids, ElementType type) {
         timer("get").start();
-        MultiGetRequest request = new MultiGetRequest();
+        MultiGetRequest request = new MultiGetRequest().refresh(refresh);
 
         int counter = 0;
         while((resultsLimit == null || counter  < resultsLimit) && counter < ids.length){
@@ -310,7 +310,8 @@ public class ElasticService {
         if (refresh) client.admin().indices().prepareRefresh(result.getIndex()).execute().actionGet();
 
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch(result.getIndex())
-                .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), boolFilter)).setRouting(result.getRouting()).setFrom(0);
+                .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), boolFilter))
+                .setRouting(result.getRouting()).setFrom(0);
         //TODO: retrive with scroll for efficiency
         if(resultsLimit != null ) searchRequestBuilder.setSize(resultsLimit);
         else  searchRequestBuilder.setSize(DEFAULT_MAX_RESULT_LIMIT);
