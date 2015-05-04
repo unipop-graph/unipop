@@ -18,10 +18,6 @@ import com.tinkerpop.gremlin.process.graph.strategy.AbstractTraversalStrategy;
 import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.process.util.*;
 import com.tinkerpop.gremlin.structure.*;
-import org.elasticsearch.common.geo.builders.ShapeBuilder;
-import org.elasticsearch.common.xcontent.XContentParser;
-import org.elasticsearch.common.xcontent.json.JsonXContent;
-import org.elasticsearch.index.query.*;
 
 import java.util.*;
 
@@ -46,22 +42,16 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
     }
 
     private void processStep(Step<?, ?> currentStep, Traversal.Admin<?, ?> traversal, ElasticService elasticService) {
-        BoolFilterBuilder boolFilter = FilterBuilders.boolFilter();
-        List<String> typeLabels = new ArrayList<>();
-        List<Object> onlyIdsAllowed = new ArrayList<>();
+        ArrayList<HasContainer> hasContainers = new ArrayList<>();
         Step<?, ?> nextStep = currentStep.getNextStep();
 
         while(stepCanConsumePredicates(currentStep) && nextStep instanceof HasContainerHolder) {
             final boolean[] containesLambada = {false};
             ((HasContainerHolder) nextStep).getHasContainers().forEach((has)->{
-                if(has.predicate.toString().equals("eq") && has.key.equals("~label"))
-                    typeLabels.add(has.value.toString());
-                else if(has.predicate.toString().equals("eq") && has.key.equals("~id"))
-                    onlyIdsAllowed.add(has.value);
-                else if(has.predicate.toString().contains("$$")){
+                if(has.predicate.toString().contains("$$")){
                     containesLambada[0] = true;
                 }
-                else addFilter(boolFilter, has);
+                else hasContainers.add(has);
             });
             //if the step containes as("label")
             if (nextStep.getLabel().isPresent()) {
@@ -81,19 +71,17 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
                 traversal.removeStep(nextStep);
             }
         }
-        String[] typeLabelsArray = typeLabels.toArray(new String[0]);
-        Object[] onlyIdsAllowedArray = onlyIdsAllowed.toArray(new Object[onlyIdsAllowed.size()]);
 
         if (currentStep instanceof GraphStep) {
-            final ElasticGraphStep<?> elasticGraphStep = new ElasticGraphStep<>((GraphStep) currentStep, boolFilter, typeLabelsArray,onlyIdsAllowedArray, elasticService,resultsLimit);
+            final ElasticGraphStep<?> elasticGraphStep = new ElasticGraphStep<>((GraphStep) currentStep, hasContainers, elasticService,resultsLimit);
             TraversalHelper.replaceStep(currentStep, (Step) elasticGraphStep, traversal);
         }
         else if (currentStep instanceof VertexStep) {
-            ElasticVertexStep<Element> elasticVertexStep = new ElasticVertexStep<>((VertexStep) currentStep, boolFilter, typeLabelsArray,onlyIdsAllowedArray, elasticService,resultsLimit);
+            ElasticVertexStep<Element> elasticVertexStep = new ElasticVertexStep<>((VertexStep) currentStep, hasContainers, elasticService,resultsLimit);
             TraversalHelper.replaceStep(currentStep, (Step) elasticVertexStep, traversal);
         }
         else if (currentStep instanceof EdgeVertexStep){
-            ElasticEdgeVertexStep newSearchStep = new ElasticEdgeVertexStep((EdgeVertexStep)currentStep, boolFilter, typeLabelsArray,onlyIdsAllowedArray, elasticService,resultsLimit);
+            ElasticEdgeVertexStep newSearchStep = new ElasticEdgeVertexStep((EdgeVertexStep)currentStep, hasContainers, elasticService,resultsLimit);
             TraversalHelper.replaceStep(currentStep, (Step) newSearchStep, traversal);
         }
         else if (currentStep instanceof RepeatStep){
@@ -118,57 +106,8 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
         if(!(currentStep instanceof EmptyStep)) processStep(nextStep, traversal, elasticService);
     }
 
-
-
     private boolean stepCanConsumePredicates(Step<?, ?> step) {
         return (step instanceof VertexStep)|| (step instanceof EdgeVertexStep ) || (step instanceof GraphStep);
-    }
-
-    private void addFilter(BoolFilterBuilder boolFilterBuilder, HasContainer has){
-        if (has.predicate instanceof Compare) {
-            String predicateString = has.predicate.toString();
-            switch (predicateString) {
-                case ("eq"):
-                    boolFilterBuilder.must(FilterBuilders.termFilter(has.key, has.value));
-                    break;
-                case ("neq"):
-                    boolFilterBuilder.mustNot(FilterBuilders.termFilter(has.key, has.value));
-                    break;
-                case ("gt"):
-                    boolFilterBuilder.must(FilterBuilders.rangeFilter(has.key).gt(has.value));
-                    break;
-                case ("gte"):
-                    boolFilterBuilder.must(FilterBuilders.rangeFilter(has.key).gte(has.value));
-                    break;
-                case ("lt"):
-                    boolFilterBuilder.must(FilterBuilders.rangeFilter(has.key).lt(has.value));
-                    break;
-                case ("lte"):
-                    boolFilterBuilder.must(FilterBuilders.rangeFilter(has.key).lte(has.value));
-                    break;
-                default:
-                    throw new IllegalArgumentException("predicate not supported in has step: " + has.predicate.toString());
-            }
-        } else if (has.predicate instanceof Contains) {
-            if (has.predicate == Contains.without) boolFilterBuilder.must(FilterBuilders.missingFilter(has.key));
-            else if (has.predicate == Contains.within){
-                if(has.value == null) boolFilterBuilder.must(FilterBuilders.existsFilter(has.key));
-                else  boolFilterBuilder.must(FilterBuilders.termsFilter(has.key, has.value));
-            }
-        } else if (has.predicate instanceof Geo) boolFilterBuilder.must(new GeoShapeFilterBuilder(has.key, GetShapeBuilder(has.value), ((Geo) has.predicate).getRelation()));
-        else throw new IllegalArgumentException("predicate not supported by elastic-gremlin: " + has.predicate.toString());
-    }
-
-    private ShapeBuilder GetShapeBuilder(Object object) {
-        try {
-            String geoJson = (String) object;
-            XContentParser parser = JsonXContent.jsonXContent.createParser(geoJson);
-            parser.nextToken();
-
-            return ShapeBuilder.parse(parser);
-        } catch (Exception e) {
-            return null;
-        }
     }
 
     private boolean isLimitStep(RangeStep rangeStep) {

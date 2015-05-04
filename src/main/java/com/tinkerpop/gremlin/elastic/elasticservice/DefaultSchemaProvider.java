@@ -1,5 +1,6 @@
 package com.tinkerpop.gremlin.elastic.elasticservice;
 
+import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import org.apache.commons.configuration.Configuration;
 import org.elasticsearch.action.admin.cluster.health.*;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
@@ -10,6 +11,7 @@ import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.*;
 
 import java.io.IOException;
+import java.util.List;
 
 
 public class DefaultSchemaProvider implements SchemaProvider {
@@ -47,7 +49,7 @@ public class DefaultSchemaProvider implements SchemaProvider {
     }
 
     @Override
-    public Result getIndex(FilterBuilder filter, ElasticService.ElementType elementType, String[] labels) {
+    public Result getIndex(List<HasContainer> hasContainers, ElasticService.ElementType elementType) {
         return result;
     }
 

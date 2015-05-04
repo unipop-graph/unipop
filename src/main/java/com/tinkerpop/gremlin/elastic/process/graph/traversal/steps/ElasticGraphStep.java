@@ -4,43 +4,46 @@ import com.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
 import com.tinkerpop.gremlin.elastic.structure.ElasticGraph;
 import com.tinkerpop.gremlin.process.TraverserGenerator;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.GraphStep;
+import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.process.traverser.B_O_P_PA_S_SE_SL_TraverserGenerator;
 import com.tinkerpop.gremlin.process.util.TraversalMetrics;
 import com.tinkerpop.gremlin.structure.*;
-import org.elasticsearch.index.query.BoolFilterBuilder;
 
 import java.util.*;
 
 public class ElasticGraphStep<E extends Element> extends GraphStep<E> {
 
-    private final BoolFilterBuilder boolFilter;
-    private final String[] typeLabels;
+    private final ArrayList<HasContainer> hasContainers;
     private final ElasticService elasticService;
-    private Object[] onlyAllowedIds;
     private Integer resultLimit;
-    public ElasticGraphStep(GraphStep originalStep, BoolFilterBuilder boolFilter, String[] typeLabels,Object[] onlyAllowedIds, ElasticService elasticService,Integer resultLimit) {
+
+    public ElasticGraphStep(GraphStep originalStep, ArrayList<HasContainer> hasContainers, ElasticService elasticService,Integer resultLimit) {
         super(originalStep.getTraversal(), originalStep.getGraph(ElasticGraph.class),originalStep.getReturnClass(),originalStep.getIds());
         if (originalStep.getLabel().isPresent()) this.setLabel(originalStep.getLabel().get().toString());
-        this.boolFilter = boolFilter;
-        this.typeLabels = typeLabels;
+        this.hasContainers = hasContainers;
         this.elasticService = elasticService;
-        this.onlyAllowedIds = onlyAllowedIds;
         this.resultLimit = resultLimit;
         this.setIteratorSupplier(() -> (Iterator<E>) (Vertex.class.isAssignableFrom(this.returnClass) ? this.vertices() : this.edges()));
     }
 
-
     private Iterator<? extends Vertex> vertices() {
-        return elasticService.searchVertices(boolFilter, this.getIds(), typeLabels,resultLimit);
+        ArrayList<HasContainer> hasList = hasContainers;
+        Object[] ids = super.getIds();
+        if(ids.length > 0) {
+            hasList  = (ArrayList<HasContainer>) hasContainers.clone();
+            hasList.add(new HasContainer("~id", Contains.within, ids));
+        }
+        return elasticService.searchVertices(hasList, resultLimit);
     }
 
     private Iterator<? extends Edge> edges() {
-         return elasticService.searchEdges(boolFilter, ids, typeLabels,resultLimit);
-    }
-
-    @Override
-    public Object[] getIds(){
-        return onlyAllowedIds.length > 0? onlyAllowedIds : super.getIds();
+        ArrayList<HasContainer> hasList = hasContainers;
+        Object[] ids = super.getIds();
+        if(ids.length > 0) {
+            hasList  = (ArrayList<HasContainer>) hasContainers.clone();
+            hasList.add(new HasContainer("~id", Contains.within, ids));
+        }
+         return elasticService.searchEdges(hasList, resultLimit, null, null);
     }
 
     @Override

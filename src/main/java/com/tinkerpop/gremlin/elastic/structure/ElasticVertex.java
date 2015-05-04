@@ -1,6 +1,8 @@
 package com.tinkerpop.gremlin.elastic.structure;
 
 import com.tinkerpop.gremlin.elastic.elasticservice.*;
+import com.tinkerpop.gremlin.process.T;
+import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.*;
 import org.elasticsearch.index.query.*;
@@ -53,7 +55,7 @@ public class ElasticVertex extends ElasticElement implements Vertex, Vertex.Iter
     public Edge addEdge(final String label, final Vertex vertex, final Object... keyValues) {
         if (null == vertex) throw Graph.Exceptions.argumentCanNotBeNull("vertex");
         checkRemoved();
-        return graph.addEdge(label,this.id(),this.label(),vertex.id(),vertex.label(),keyValues);
+        return graph.addEdge(label, this.id(), this.label(), vertex.id(), vertex.label(), keyValues);
     }
 
     @Override
@@ -83,16 +85,12 @@ public class ElasticVertex extends ElasticElement implements Vertex, Vertex.Iter
 
     @Override
     public Iterator<Edge> edgeIterator(final Direction direction, final String... edgeLabels) {
-        BoolFilterBuilder filter = FilterBuilders.boolFilter();
-        if(direction == Direction.IN) filter.must(getFilter(ElasticEdge.InId));
-        else if(direction == Direction.OUT) filter.must(getFilter(ElasticEdge.OutId));
-        else if(direction == Direction.BOTH) filter.should(getFilter(ElasticEdge.InId), getFilter(ElasticEdge.OutId));
-        else throw new EnumConstantNotPresentException(direction.getClass(),direction.name());
-        return elasticService.searchEdges(filter, null, edgeLabels);
-    }
+        ArrayList<HasContainer> hasList = new ArrayList<>();
 
-    private FilterBuilder getFilter(String key) {
-        return FilterBuilders.termFilter(key, this.id());
+        if(edgeLabels != null && edgeLabels.length > 0)
+            hasList.add(new HasContainer(T.label, Contains.within, edgeLabels));
+
+        return elasticService.searchEdges(hasList, null, direction, this.id());
     }
 
     @Override
@@ -101,7 +99,7 @@ public class ElasticVertex extends ElasticElement implements Vertex, Vertex.Iter
         Iterator<Edge> edgeIterator = edgeIterator(direction, edgeLabels);
         ArrayList<Object> ids = new ArrayList<>();
         edgeIterator.forEachRemaining((edge) -> ((ElasticEdge) edge).getVertexId(direction.opposite()).forEach((id) -> ids.add(id)));
-        return elasticService.getVertices(null,null,ids.toArray());
+        return elasticService.getVertices(null, null, ids.toArray());
     }
 
     @Override

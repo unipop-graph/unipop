@@ -3,20 +3,16 @@ package com.tinkerpop.gremlin.elastic.process.graph.traversal.steps.flatmap;
 import com.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
 import com.tinkerpop.gremlin.elastic.structure.ElasticEdge;
 import com.tinkerpop.gremlin.process.graph.step.map.EdgeVertexStep;
+import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.process.util.TraversalHelper;
 import com.tinkerpop.gremlin.structure.*;
-import org.elasticsearch.index.query.BoolFilterBuilder;
 
 import java.util.*;
 
 public class ElasticEdgeVertexStep extends ElasticFlatMapStep<Edge,Vertex> {
 
-    private final String[] typeLabels;
-    private Object[] onlyAllowedIds;
-    public ElasticEdgeVertexStep(EdgeVertexStep originalStep, BoolFilterBuilder boolFilter, String[] typeLabels,Object[] onlyAllowedIds, ElasticService elasticService,Integer resultsLimit) {
-        super(originalStep.getTraversal(), originalStep.getLabel(), elasticService, boolFilter, originalStep.getDirection(),resultsLimit);
-        this.typeLabels = typeLabels;
-        this.onlyAllowedIds = onlyAllowedIds;
+    public ElasticEdgeVertexStep(EdgeVertexStep originalStep, ArrayList<HasContainer> hasContainers, ElasticService elasticService, Integer resultsLimit) {
+        super(originalStep.getTraversal(), originalStep.getLabel(), elasticService, hasContainers, originalStep.getDirection(), resultsLimit);
     }
 
     @Override
@@ -31,8 +27,13 @@ public class ElasticEdgeVertexStep extends ElasticFlatMapStep<Edge,Vertex> {
             traverserList.add(traver);
         }));
 
-        Object[] allVertexIds = onlyAllowedIds.length > 0? onlyAllowedIds : vertexIdToTraverser.keySet().toArray();
-        Iterator<Vertex> vertexIterator = elasticService.searchVertices(boolFilter, allVertexIds, typeLabels,resultsLimit);
+        ArrayList<HasContainer> hasList = hasContainers;
+        Object[] ids = vertexIdToTraverser.keySet().toArray();
+        if(ids.length > 0) {
+            hasList  = (ArrayList<HasContainer>) hasContainers.clone();
+            hasList.add(new HasContainer("~id", Contains.within, ids));
+        }
+        Iterator<Vertex> vertexIterator = elasticService.searchVertices(hasList ,resultsLimit);
 
         vertexIterator.forEachRemaining(vertex ->
             vertexIdToTraverser.get(vertex.id()).forEach(traverser ->

@@ -1,5 +1,6 @@
 package com.tinkerpop.gremlin.elastic.elasticservice;
 
+import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.structure.*;
 import org.apache.commons.configuration.Configuration;
 import org.elasticsearch.client.Client;
@@ -7,6 +8,7 @@ import org.elasticsearch.index.query.FilterBuilder;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 
 public interface SchemaProvider {
@@ -26,7 +28,7 @@ public interface SchemaProvider {
     }
 
     Result getIndex(String label, Object idValue, ElasticService.ElementType elementType, Object[] keyValues);
-    Result getIndex(FilterBuilder filter, ElasticService.ElementType elementType, String[] labels);
+    Result getIndex(List<HasContainer> hasContainerList, ElasticService.ElementType elementType);
 
     String[] getIndicesForClearGraph();
 

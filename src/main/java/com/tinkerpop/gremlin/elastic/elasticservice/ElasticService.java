@@ -2,7 +2,9 @@ package com.tinkerpop.gremlin.elastic.elasticservice;
 
 import com.eaio.uuid.UUID;
 import com.tinkerpop.gremlin.elastic.elasticservice.TimingAccessor.Timer;
+import com.tinkerpop.gremlin.elastic.process.graph.traversal.strategy.Geo;
 import com.tinkerpop.gremlin.elastic.structure.*;
+import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.commons.configuration.Configuration;
@@ -14,8 +16,11 @@ import org.elasticsearch.action.search.*;
 import org.elasticsearch.action.update.*;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.geo.builders.ShapeBuilder;
 import org.elasticsearch.common.settings.*;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.common.xcontent.XContentParser;
+import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.*;
@@ -25,6 +30,7 @@ import org.elasticsearch.search.SearchHit;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.logging.Filter;
 import java.util.stream.*;
 
 public class ElasticService {
@@ -231,47 +237,6 @@ public class ElasticService {
         return edges.iterator();
     }
 
-    public Iterator<Vertex> searchVertices(BoolFilterBuilder filter, Object[] ids, String[] labels,Integer resultsLimit) {
-        if(idsOnlyQuery(filter, ids, labels)) return getVertices(getFirstOrDefaultLabel(labels), resultsLimit, ids);
-        FilterBuilder finalFilter = (ids != null && ids.length > 0) ? idsFilter(filter, ids) : filter;
-        Stream<SearchHit> hits = search(finalFilter,resultsLimit, ElementType.vertex, labels);
-        return hits.map((hit) -> createVertex(hit.getId(), hit.getType(), hit.getSource())).iterator();
-    }
-
-    public Iterator<Vertex> searchVertices(BoolFilterBuilder filter, Object[] ids, String[] labels) {
-        return searchVertices(filter, ids, labels, null);
-    }
-
-    private String getFirstOrDefaultLabel(String[] labels) {
-        if(labels == null || labels.length == 0) return null;
-        return labels[0];
-    }
-
-    private boolean idsOnlyQuery(BoolFilterBuilder filter, Object[] ids, String[] labels) {
-        return (filter == null || !filter.hasClauses()) &&(labels == null || labels.length <= 1) && ids != null && ids.length > 0;
-    }
-
-    public Iterator<Edge> searchEdges(BoolFilterBuilder filter, Object[] ids, String[] labels,Integer resultsLimit) {
-        if(idsOnlyQuery(filter,ids,labels)) getEdges(getFirstOrDefaultLabel(labels),resultsLimit,ids);
-        FilterBuilder finalFilter = (ids != null && ids.length > 0) ? idsFilter(filter, ids) : filter;
-        Stream<SearchHit> hits = search(finalFilter,resultsLimit, ElementType.edge, labels);
-        return hits.map((hit) -> createEdge(hit.getId(), hit.getType(), hit.getSource())).iterator();
-    }
-    public Iterator<Edge> searchEdges(BoolFilterBuilder filter, Object[] ids, String[] labels){
-        return searchEdges(filter, ids, labels, null);
-    }
-
-
-    public static FilterBuilder idsFilter(BoolFilterBuilder boolFilterBuilder, Object[] ids) {
-        String[] stringIds = new String[ids.length];
-        for(int i = 0; i<ids.length; i++)
-            stringIds[i] = ids[i].toString();
-        IdsFilterBuilder idsFilterBuilder = FilterBuilders.idsFilter().addIds(stringIds);
-        if(boolFilterBuilder.hasClauses())
-            return FilterBuilders.andFilter(boolFilterBuilder, idsFilterBuilder);
-        return idsFilterBuilder;
-    }
-
     private MultiGetResponse get(String label, Integer resultsLimit, Object[] ids, ElementType type) {
         timer("get").start();
         MultiGetRequest request = new MultiGetRequest().refresh(refresh);
@@ -289,23 +254,35 @@ public class ElasticService {
         return multiGetItemResponses;
     }
 
-    private Stream<SearchHit> search(FilterBuilder filter,Integer resultsLimit, ElementType elementType, String... labels) {
-        timer("search").start();
+    public Iterator<Vertex> searchVertices(List<HasContainer> hasContainers, Integer resultsLimit) {
+        BoolFilterBuilder boolFilter = createFilterBuilder(hasContainers);
+        boolFilter.must(FilterBuilders.missingFilter(ElasticEdge.InId));
 
-        BoolFilterBuilder boolFilter;
-        if(filter instanceof BoolFilterBuilder) boolFilter = (BoolFilterBuilder) filter;
-        else {
-            boolFilter = FilterBuilders.boolFilter();
-            if(filter != null)
-                boolFilter.must(filter);
+        Stream<SearchHit> hits = search(hasContainers, boolFilter, resultsLimit, ElementType.vertex);
+        return hits.map((hit) -> createVertex(hit.getId(), hit.getType(), hit.getSource())).iterator();
+    }
+
+    public Iterator<Edge> searchEdges(List<HasContainer> hasContainers, Integer resultsLimit, Direction direction, Object... vertexIds) {
+        BoolFilterBuilder boolFilter = createFilterBuilder(hasContainers);
+        boolFilter.must(FilterBuilders.existsFilter(ElasticEdge.InId));
+
+        if(direction != null && vertexIds != null) {
+            if (direction == Direction.IN) boolFilter.must(FilterBuilders.termsFilter(ElasticEdge.InId, vertexIds));
+            else if (direction == Direction.OUT)
+                boolFilter.must(FilterBuilders.termsFilter(ElasticEdge.OutId, vertexIds));
+            else if (direction == Direction.BOTH)
+                boolFilter.should(FilterBuilders.termsFilter(ElasticEdge.InId, vertexIds), FilterBuilders.termsFilter(ElasticEdge.OutId, vertexIds));
+            else throw new EnumConstantNotPresentException(direction.getClass(), direction.name());
         }
 
-        if(elementType.equals(ElementType.edge))
-            boolFilter.must(FilterBuilders.existsFilter(ElasticEdge.InId));
-        else boolFilter.must(FilterBuilders.missingFilter(ElasticEdge.InId));
+        Stream<SearchHit> hits = search(hasContainers, boolFilter, resultsLimit, ElementType.edge);
+        return hits.map((hit) -> createEdge(hit.getId(), hit.getType(), hit.getSource())).iterator();
+    }
 
+    private Stream<SearchHit> search(List<HasContainer> hasContainers, BoolFilterBuilder boolFilter, Integer resultsLimit, ElementType elementType) {
+        timer("search").start();
 
-        SchemaProvider.Result result = schemaProvider.getIndex(boolFilter, elementType, labels);
+        SchemaProvider.Result result = schemaProvider.getIndex(hasContainers, elementType);
         if (refresh) client.admin().indices().prepareRefresh(result.getIndex()).execute().actionGet();
 
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch(result.getIndex())
@@ -314,8 +291,6 @@ public class ElasticService {
         //TODO: retrive with scroll for efficiency
         if(resultsLimit != null ) searchRequestBuilder.setSize(resultsLimit);
         else  searchRequestBuilder.setSize(DEFAULT_MAX_RESULT_LIMIT);
-        if (labels != null && labels.length > 0 && labels[0] != null)
-            searchRequestBuilder = searchRequestBuilder.setTypes(labels);
 
         SearchResponse searchResponse = searchRequestBuilder.execute().actionGet();
 
@@ -356,6 +331,82 @@ public class ElasticService {
                 "schema='" + schemaProvider + '\'' +
                 ", client=" + client +
                 '}';
+    }
+
+    private BoolFilterBuilder createFilterBuilder(List<HasContainer> hasContainers) {
+        BoolFilterBuilder boolFilter = FilterBuilders.boolFilter();
+        if(hasContainers != null) hasContainers.forEach(has -> addFilter(boolFilter, has));
+        return boolFilter;
+    }
+
+    private void addFilter(BoolFilterBuilder boolFilterBuilder, HasContainer has){
+        if(has.key.equals("~id")) {
+            IdsFilterBuilder idsFilterBuilder = FilterBuilders.idsFilter();
+            if(has.value.getClass().isArray()) {
+                for(Object id : (Object[])has.value)
+                    idsFilterBuilder.addIds(id.toString());
+            }
+            else idsFilterBuilder.addIds(has.value.toString());
+            boolFilterBuilder.must(idsFilterBuilder);
+        }
+        else if(has.key.equals("~label")) {
+            if(has.value.getClass().isArray()) {
+                Object[] labels = (Object[]) has.value;
+                if(labels.length == 1)
+                    boolFilterBuilder.must(FilterBuilders.typeFilter(labels[0].toString()));
+                else {
+                    FilterBuilder[] filters = new FilterBuilder[labels.length];
+                    for(int i = 0; i < labels.length; i++)
+                        filters[i] = FilterBuilders.typeFilter(labels[i].toString());
+                    boolFilterBuilder.must(FilterBuilders.orFilter(filters));
+                }
+            }
+            else boolFilterBuilder.must(FilterBuilders.typeFilter(has.value.toString()));
+        }
+        else if (has.predicate instanceof Compare) {
+            String predicateString = has.predicate.toString();
+            switch (predicateString) {
+                case ("eq"):
+                    boolFilterBuilder.must(FilterBuilders.termFilter(has.key, has.value));
+                    break;
+                case ("neq"):
+                    boolFilterBuilder.mustNot(FilterBuilders.termFilter(has.key, has.value));
+                    break;
+                case ("gt"):
+                    boolFilterBuilder.must(FilterBuilders.rangeFilter(has.key).gt(has.value));
+                    break;
+                case ("gte"):
+                    boolFilterBuilder.must(FilterBuilders.rangeFilter(has.key).gte(has.value));
+                    break;
+                case ("lt"):
+                    boolFilterBuilder.must(FilterBuilders.rangeFilter(has.key).lt(has.value));
+                    break;
+                case ("lte"):
+                    boolFilterBuilder.must(FilterBuilders.rangeFilter(has.key).lte(has.value));
+                    break;
+                default:
+                    throw new IllegalArgumentException("predicate not supported in has step: " + has.predicate.toString());
+            }
+        } else if (has.predicate instanceof Contains) {
+            if (has.predicate == Contains.without) boolFilterBuilder.must(FilterBuilders.missingFilter(has.key));
+            else if (has.predicate == Contains.within){
+                if(has.value == null) boolFilterBuilder.must(FilterBuilders.existsFilter(has.key));
+                else  boolFilterBuilder.must(FilterBuilders.termsFilter (has.key, has.value));
+            }
+        } else if (has.predicate instanceof Geo) boolFilterBuilder.must(new GeoShapeFilterBuilder(has.key, GetShapeBuilder(has.value), ((Geo) has.predicate).getRelation()));
+        else throw new IllegalArgumentException("predicate not supported by elastic-gremlin: " + has.predicate.toString());
+    }
+
+    private ShapeBuilder GetShapeBuilder(Object object) {
+        try {
+            String geoJson = (String) object;
+            XContentParser parser = JsonXContent.jsonXContent.createParser(geoJson);
+            parser.nextToken();
+
+            return ShapeBuilder.parse(parser);
+        } catch (Exception e) {
+            return null;
+        }
     }
     //endregion
 }

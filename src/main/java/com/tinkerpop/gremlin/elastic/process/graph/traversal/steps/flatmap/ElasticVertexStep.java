@@ -3,23 +3,19 @@ package com.tinkerpop.gremlin.elastic.process.graph.traversal.steps.flatmap;
 import com.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
 import com.tinkerpop.gremlin.elastic.structure.ElasticEdge;
 import com.tinkerpop.gremlin.process.graph.step.map.VertexStep;
+import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.process.util.TraversalHelper;
 import com.tinkerpop.gremlin.structure.*;
-import org.elasticsearch.index.query.*;
 
 import java.util.*;
 
 public class ElasticVertexStep<E extends Element> extends ElasticFlatMapStep<Vertex,E> {
 
     private final Class returnClass;
-    private final String[] typeLabels;
     private String[] edgeLabels;
-    private Object[] onlyAllowedIds;
-    public ElasticVertexStep(VertexStep originalStep, BoolFilterBuilder boolFilter, String[] typeLabels,Object[] onlyAllowedIds, ElasticService elasticService,Integer resultsLimit) {
-        super(originalStep.getTraversal(), originalStep.getLabel(), elasticService, boolFilter, originalStep.getDirection(),resultsLimit);
-        this.typeLabels = typeLabels;
+    public ElasticVertexStep(VertexStep originalStep,  ArrayList<HasContainer> hasContainers, ElasticService elasticService,Integer resultsLimit) {
+        super(originalStep.getTraversal(), originalStep.getLabel(), elasticService, hasContainers, originalStep.getDirection(),resultsLimit);
         this.edgeLabels = originalStep.getEdgeLabels();
-        this.onlyAllowedIds = onlyAllowedIds;
         returnClass = originalStep.getReturnClass();
     }
 
@@ -27,10 +23,13 @@ public class ElasticVertexStep<E extends Element> extends ElasticFlatMapStep<Ver
     protected void load(List<ElasticTraverser> traversers) {
         if(returnClass.isAssignableFrom(Vertex.class))
              loadVertices(traversers);
-        else loadEdges(traversers, boolFilter);
+        else loadEdges(traversers, hasContainers);
     }
 
-    private void loadEdges(List<ElasticTraverser> traversers, BoolFilterBuilder filter) {
+    private void loadEdges(List<ElasticTraverser> traversers, ArrayList<HasContainer> has) {
+        ArrayList<HasContainer> edgeHasContainers = has != null ? (ArrayList<HasContainer>) has.clone() : new ArrayList<>();
+        edgeHasContainers.add(new HasContainer("~label", Contains.within, edgeLabels));
+
         HashMap<String, List<ElasticTraverser>> vertexIdToTraverser = new HashMap<>();
         traversers.forEach(traverser -> {
             String id = traverser.getElement().id().toString();
@@ -43,13 +42,8 @@ public class ElasticVertexStep<E extends Element> extends ElasticFlatMapStep<Ver
 
         });
 
-        Object[] allVertexIds = vertexIdToTraverser.keySet().toArray();
-        if (direction == Direction.IN) filter.must(FilterBuilders.termsFilter(ElasticEdge.InId, allVertexIds));
-        else if (direction == Direction.OUT) filter.must(FilterBuilders.termsFilter(ElasticEdge.OutId, allVertexIds));
-        else if (direction == Direction.BOTH) filter.should(FilterBuilders.termsFilter(ElasticEdge.InId, allVertexIds), FilterBuilders.termsFilter(ElasticEdge.OutId, allVertexIds));
-        else throw new EnumConstantNotPresentException(direction.getClass(), direction.name());
-
-        Iterator<Edge> edgeIterator = elasticService.searchEdges(filter, null, edgeLabels, resultsLimit);
+        Iterator<Edge> edgeIterator = elasticService.searchEdges(edgeHasContainers, resultsLimit, direction,
+                vertexIdToTraverser.keySet().toArray());
 
         edgeIterator.forEachRemaining(edge -> ((ElasticEdge) edge).getVertexId(direction).forEach(vertexKey -> {
             if (vertexIdToTraverser.get(vertexKey) != null)
@@ -58,16 +52,17 @@ public class ElasticVertexStep<E extends Element> extends ElasticFlatMapStep<Ver
     }
 
     private void loadVertices(List<ElasticTraverser> traversers) {
-        loadEdges(traversers, FilterBuilders.boolFilter());//perdicates belong to vertices query
+
+        loadEdges(traversers, null);
 
         Map<String,List<ElasticTraverser>> vertexIdToTraversers = new HashMap<>();
         traversers.forEach(traverser -> {
             traverser.getResults().forEach(edge -> {
                 ElasticEdge elasticEdge = (ElasticEdge) edge;
                 elasticEdge.getVertexId(direction.opposite()).forEach(id -> {
-                    if(id.toString().equals(traverser.getElement().id().toString()) && //disregard self in Direction.BOTH traversals
-                        direction.equals(Direction.BOTH) &&
-                        !elasticEdge.getVertexId(Direction.IN).get(0).toString().equals(elasticEdge.getVertexId(Direction.OUT).get(0).toString())) // except when the vertex points to itself
+                    if (id.toString().equals(traverser.getElement().id().toString()) && //disregard self in Direction.BOTH traversals
+                            direction.equals(Direction.BOTH) &&
+                            !elasticEdge.getVertexId(Direction.IN).get(0).toString().equals(elasticEdge.getVertexId(Direction.OUT).get(0).toString())) // except when the vertex points to itself
                         return;
 
                     List<ElasticTraverser> traverserList = vertexIdToTraversers.get(id);
@@ -75,15 +70,20 @@ public class ElasticVertexStep<E extends Element> extends ElasticFlatMapStep<Ver
                         traverserList = new ArrayList<>();
                         vertexIdToTraversers.put(id.toString(), traverserList);
                     }
-                traverserList.add(traverser);
+                    traverserList.add(traverser);
                 });
             });
             traverser.clearResults();
         });
 
-        Object[] allVertexIds = onlyAllowedIds.length > 0? onlyAllowedIds : vertexIdToTraversers.keySet().toArray();
+        ArrayList<HasContainer> hasList = hasContainers;
+        Object[] ids = vertexIdToTraversers.keySet().toArray();
+        if(ids.length > 0) {
+            hasList = (ArrayList<HasContainer>) hasContainers.clone();
+            hasList.add(new HasContainer("~id", Contains.within, ids));
+        }
 
-        Iterator<Vertex> vertexIterator = elasticService.searchVertices(boolFilter, allVertexIds, typeLabels,resultsLimit);
+        Iterator<Vertex> vertexIterator = elasticService.searchVertices(hasList,resultsLimit);
 
         vertexIterator.forEachRemaining(vertex -> {
             List<ElasticTraverser> elasticTraversers = vertexIdToTraversers.get(vertex.id());

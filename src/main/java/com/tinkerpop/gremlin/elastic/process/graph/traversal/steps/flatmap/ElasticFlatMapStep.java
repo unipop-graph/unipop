@@ -3,6 +3,7 @@ package com.tinkerpop.gremlin.elastic.process.graph.traversal.steps.flatmap;
 import com.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
 import com.tinkerpop.gremlin.process.*;
 import com.tinkerpop.gremlin.process.graph.marker.Reversible;
+import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.process.util.*;
 import com.tinkerpop.gremlin.structure.*;
 import org.elasticsearch.index.query.BoolFilterBuilder;
@@ -10,7 +11,7 @@ import org.elasticsearch.index.query.BoolFilterBuilder;
 import java.util.*;
 
 public abstract class ElasticFlatMapStep<S extends  Element, E extends Element > extends AbstractStep<S,E> implements Reversible {
-    protected final BoolFilterBuilder boolFilter;
+    protected final ArrayList<HasContainer> hasContainers;
     protected final Direction direction;
     protected final ElasticService elasticService;
     protected final Integer resultsLimit;
@@ -18,11 +19,11 @@ public abstract class ElasticFlatMapStep<S extends  Element, E extends Element >
     private Iterator<ElasticTraverser> traversers;
     private ElasticTraverser currentTraverser;
 
-    public ElasticFlatMapStep(Traversal traversal, Optional<String> label, ElasticService elasticService, BoolFilterBuilder boolFilter, Direction direction,Integer resultsLimit) {
+    public ElasticFlatMapStep(Traversal traversal, Optional<String> label, ElasticService elasticService, ArrayList<HasContainer> hasContainers, Direction direction,Integer resultsLimit) {
         super(traversal);
         if(label.isPresent()) setLabel(label.get());
         this.elasticService = elasticService;
-        this.boolFilter = boolFilter;
+        this.hasContainers = hasContainers;
         this.direction = direction;
         this.resultsLimit = resultsLimit;
     }
