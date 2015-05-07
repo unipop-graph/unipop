@@ -382,6 +382,12 @@ public class ElasticService {
                 case ("lte"):
                     boolFilterBuilder.must(FilterBuilders.rangeFilter(has.key).lte(has.value));
                     break;
+                case("inside"):
+                    List items =(List) has.value;
+                    Object firstItem = items.get(0);
+                    Object secondItem = items.get(1);
+                    boolFilterBuilder.must(FilterBuilders.rangeFilter(has.key).from(firstItem).to(secondItem));
+                    break;
                 default:
                     throw new IllegalArgumentException("predicate not supported in has step: " + has.predicate.toString());
             }
