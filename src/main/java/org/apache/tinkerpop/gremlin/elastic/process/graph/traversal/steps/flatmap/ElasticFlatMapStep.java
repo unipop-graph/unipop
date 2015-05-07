@@ -56,13 +56,13 @@ public abstract class ElasticFlatMapStep<S extends Element, E extends Element > 
     }
 
     public class ElasticTraverser implements Iterator<Traverser<E>> {
-        private Traverser.Admin<S> traverer;
+        private Traverser.Admin<S> traverser;
         private AbstractStep<S, E> step;
         private List<E> results = new ArrayList<>();
         private Iterator<E> iterator = null;
 
-        private ElasticTraverser(Traverser.Admin<S> traverer, AbstractStep<S, E> step) {
-            this.traverer = traverer;
+        private ElasticTraverser(Traverser.Admin<S> traverser, AbstractStep<S, E> step) {
+            this.traverser = traverser;
             this.step = step;
         }
 
@@ -73,9 +73,9 @@ public abstract class ElasticFlatMapStep<S extends Element, E extends Element > 
         }
 
         @Override
-        public Traverser<E> next() { return traverer.split(iterator.next(), step); }
+        public Traverser<E> next() { return traverser.split(iterator.next(), step); }
 
-        public S getElement() { return traverer.get();}
+        public S getElement() { return traverser.get();}
         public List<E> getResults() { return results;}
         public void addResult(E result) { results.add(result);}
         public void clearResults() { results.clear(); }

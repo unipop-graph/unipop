@@ -2,7 +2,6 @@ package org.apache.tinkerpop.gremlin.elastic.elasticservice;
 
 import com.eaio.uuid.UUID;
 import org.apache.commons.configuration.Configuration;
-import org.apache.tinkerpop.gremlin.elastic.process.graph.traversal.strategy.Geo;
 import org.apache.tinkerpop.gremlin.elastic.structure.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;

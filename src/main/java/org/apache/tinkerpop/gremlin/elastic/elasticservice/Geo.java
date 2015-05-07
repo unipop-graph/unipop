@@ -1,4 +1,4 @@
-package org.apache.tinkerpop.gremlin.elastic.process.graph.traversal.strategy;
+package org.apache.tinkerpop.gremlin.elastic.elasticservice;
 
 import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
