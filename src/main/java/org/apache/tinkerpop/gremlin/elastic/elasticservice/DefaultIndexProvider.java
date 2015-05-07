@@ -13,13 +13,15 @@ import java.io.IOException;
 import java.util.List;
 
 
-public class DefaultSchemaProvider implements SchemaProvider {
-    private Result result;
+public class DefaultIndexProvider implements IndexProvider {
+    private MutateResult mutateResult;
+    private SearchResult searchResult;
 
     @Override
     public void init(Client client, Configuration configuration) throws IOException {
         String indexName = configuration.getString("elasticsearch.index.name", "graph");
-        this.result = new Result(indexName, null);
+        this.searchResult = new SearchResult(new String[]{indexName}, null);
+        this.mutateResult = new MutateResult(indexName, null);
         createIndex(indexName, client);
     }
 
@@ -43,25 +45,25 @@ public class DefaultSchemaProvider implements SchemaProvider {
     }
 
     @Override
-    public Result getIndex(String label, Object idValue, ElasticService.ElementType elementType, Object[] keyValues) {
-        return result;
+    public MutateResult getIndex(String label, Object idValue, ElasticService.ElementType elementType, Object[] keyValues) {
+        return mutateResult;
     }
 
     @Override
-    public Result getIndex(List<HasContainer> hasContainers, ElasticService.ElementType elementType) {
-        return result;
+    public SearchResult getIndex(List<HasContainer> hasContainers, ElasticService.ElementType elementType) {
+        return searchResult;
     }
 
     @Override
     public String[] getIndicesForClearGraph() {
-        return new String[]{result.getIndex()};
+        return searchResult.getIndex();
     }
 
 
     @Override
     public String toString() {
-        return "DefaultSchemaProvider{" +
-                "indexName='" + result.getIndex() + '\'' +
+        return "DefaultIndexProvider{" +
+                "indexName='" + mutateResult.getIndex() + '\'' +
                 '}';
     }
 }

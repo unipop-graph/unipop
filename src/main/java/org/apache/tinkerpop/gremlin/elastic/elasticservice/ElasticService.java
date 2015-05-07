@@ -48,7 +48,7 @@ public class ElasticService {
     private static int DEFAULT_MAX_RESULT_LIMIT = 2000000;
 
     private ElasticGraph graph;
-    public SchemaProvider schemaProvider;
+    public IndexProvider indexProvider;
     private boolean refresh;
     BulkRequestBuilder bulkRequest;
     public Client client;
@@ -70,7 +70,7 @@ public class ElasticService {
         String clusterName = configuration.getString("elasticsearch.cluster.name", "elasticsearch");
         String addresses = configuration.getString("elasticsearch.cluster.address", "127.0.0.1:9300");
         boolean bulk = configuration.getBoolean("elasticsearch.batch", false);
-        String schemaProvider = configuration.getString("elasticsearch.schemaProvider", DefaultSchemaProvider.class.getCanonicalName());
+        String indexProvider = configuration.getString("elasticsearch.indexProvider", DefaultIndexProvider.class.getCanonicalName());
         String clientType = configuration.getString("elasticsearch.client", ClientType.NODE);
 
         if (clientType.equals(ClientType.TRANSPORT_CLIENT)) createTransportClient(clusterName, addresses);
@@ -79,11 +79,11 @@ public class ElasticService {
         else throw new IllegalArgumentException("clientType unknown:" + clientType);
 
         try {
-            Class c = Class.forName(schemaProvider);
-            this.schemaProvider = (SchemaProvider) c.newInstance();
-            this.schemaProvider.init(this.client, configuration);
+            Class c = Class.forName(indexProvider);
+            this.indexProvider = (IndexProvider) c.newInstance();
+            this.indexProvider.init(this.client, configuration);
         } catch (Exception e) {
-            throw new IllegalArgumentException("failed to load SchemaProvider:" + schemaProvider, e);
+            throw new IllegalArgumentException("failed to load indexProvider:" + indexProvider, e);
         }
 
         if(bulk)
@@ -112,13 +112,13 @@ public class ElasticService {
 
     public void close() {
         client.close();
-        schemaProvider.close();
+        indexProvider.close();
         if (node != null) node.close();
         timingAccessor.print();
     }
 
     public void clearAllData() {
-        client.prepareDeleteByQuery(schemaProvider.getIndicesForClearGraph())
+        client.prepareDeleteByQuery(indexProvider.getIndicesForClearGraph())
                 .setQuery(QueryBuilders.matchAllQuery()).execute().actionGet();
     }
 
@@ -151,17 +151,17 @@ public class ElasticService {
         }
         if(idValue == null) idValue = new UUID().toString();
 
-        SchemaProvider.Result schemaProviderResult = schemaProvider.getIndex(label, idValue, elementType, keyValues);
+        IndexProvider.MutateResult indexProviderResult = indexProvider.getIndex(label, idValue, elementType, keyValues);
 
         if(!upsert) {
-            IndexRequest indexRequest = new IndexRequest(schemaProviderResult.getIndex(), label, idValue.toString())
-                    .source(keyValues).routing(schemaProviderResult.getRouting()).create(true);
+            IndexRequest indexRequest = new IndexRequest(indexProviderResult.getIndex(), label, idValue.toString())
+                    .source(keyValues).routing(indexProviderResult.getRouting()).create(true);
             if(bulkRequest != null) bulkRequest.add(indexRequest);
             else client.index(indexRequest).actionGet();
         }
         else {
-            UpdateRequest updateRequest = new UpdateRequest(schemaProviderResult.getIndex(), label, idValue.toString())
-                    .doc(keyValues).routing(schemaProviderResult.getRouting()).detectNoop(true);
+            UpdateRequest updateRequest = new UpdateRequest(indexProviderResult.getIndex(), label, idValue.toString())
+                    .doc(keyValues).routing(indexProviderResult.getRouting()).detectNoop(true);
             updateRequest.docAsUpsert(true);
 
             if (bulkRequest != null) bulkRequest.add(updateRequest);
@@ -178,10 +178,10 @@ public class ElasticService {
 
     public void deleteElement(Element element) {
         timer("remove element").start();
-        SchemaProvider.Result schemaProviderResult = schemaProvider.getIndex(element);
+        IndexProvider.MutateResult indexProviderResult = indexProvider.getIndex(element);
         DeleteRequestBuilder deleteRequestBuilder =
-                client.prepareDelete(schemaProviderResult.getIndex(), element.label(), element.id().toString())
-                        .setRouting(schemaProviderResult.getRouting());
+                client.prepareDelete(indexProviderResult.getIndex(), element.label(), element.id().toString())
+                        .setRouting(indexProviderResult.getRouting());
         if(bulkRequest != null) bulkRequest.add(deleteRequestBuilder);
         else deleteRequestBuilder.execute().actionGet();
         timer("remove element").stop();
@@ -193,8 +193,8 @@ public class ElasticService {
 
     public <V> void addProperty(Element element, String key, V value) {
         timer("update property").start();
-        SchemaProvider.Result schemaProviderResult = schemaProvider.getIndex(element);
-        UpdateRequestBuilder updateRequestBuilder = client.prepareUpdate(schemaProviderResult.getIndex(), element.label(), element.id().toString()).setDoc(key, value).setRouting(schemaProviderResult.getRouting());
+        IndexProvider.MutateResult indexProviderResult = indexProvider.getIndex(element);
+        UpdateRequestBuilder updateRequestBuilder = client.prepareUpdate(indexProviderResult.getIndex(), element.label(), element.id().toString()).setDoc(key, value).setRouting(indexProviderResult.getRouting());
         if(bulkRequest != null) bulkRequest.add(updateRequestBuilder);
         else updateRequestBuilder.execute().actionGet();
         timer("update property").stop();
@@ -202,8 +202,8 @@ public class ElasticService {
 
     public void removeProperty(Element element, String key) {
         timer("remove property").start();
-        SchemaProvider.Result schemaProviderResult = schemaProvider.getIndex(element);
-        UpdateRequestBuilder updateRequestBuilder = client.prepareUpdate(schemaProviderResult.getIndex(), element.label(), element.id().toString()).setScript("ctx._source.remove(\"" + key + "\")", ScriptService.ScriptType.INLINE).setRouting(schemaProviderResult.getRouting());
+        IndexProvider.MutateResult indexProviderResult = indexProvider.getIndex(element);
+        UpdateRequestBuilder updateRequestBuilder = client.prepareUpdate(indexProviderResult.getIndex(), element.label(), element.id().toString()).setScript("ctx._source.remove(\"" + key + "\")", ScriptService.ScriptType.INLINE).setRouting(indexProviderResult.getRouting());
         if(bulkRequest != null) bulkRequest.add(updateRequestBuilder);
         else updateRequestBuilder.execute().actionGet();
         timer("remove property").stop();
@@ -242,8 +242,8 @@ public class ElasticService {
         int counter = 0;
         while((resultsLimit == null || counter  < resultsLimit) && counter < ids.length){
             Object id = ids[counter];
-            SchemaProvider.Result schemaProviderResult = schemaProvider.getIndex(label, id, type, null);
-            request.add(schemaProviderResult.getIndex(), label, id.toString()); //TODO: add routing..?
+            IndexProvider.MutateResult indexProviderResult = indexProvider.getIndex(label, id, type, null);
+            request.add(indexProviderResult.getIndex(), label, id.toString()); //TODO: add routing..?
             counter++;
         }
 
@@ -280,7 +280,7 @@ public class ElasticService {
     private Stream<SearchHit> search(List<HasContainer> hasContainers, BoolFilterBuilder boolFilter, Integer resultsLimit, ElementType elementType) {
         timer("search").start();
 
-        SchemaProvider.Result result = schemaProvider.getIndex(hasContainers, elementType);
+        IndexProvider.SearchResult result = indexProvider.getIndex(hasContainers, elementType);
         if (refresh) client.admin().indices().prepareRefresh(result.getIndex()).execute().actionGet();
 
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch(result.getIndex())
@@ -326,7 +326,7 @@ public class ElasticService {
     @Override
     public String toString() {
         return "ElasticService{" +
-                "schema='" + schemaProvider + '\'' +
+                "schema='" + indexProvider + '\'' +
                 ", client=" + client +
                 '}';
     }

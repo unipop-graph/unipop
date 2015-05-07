@@ -21,8 +21,8 @@ public class LazyGetter {
     }
 
     public void register(ElasticVertex v) {
-        SchemaProvider.Result schemaProviderResult = es.schemaProvider.getIndex(v.label(), v.id(), ElasticService.ElementType.vertex, null);
-        multiGetRequest.add(schemaProviderResult.getIndex(), v.label(), v.id().toString()); //TODO: add routing..?
+        IndexProvider.MutateResult indexProviderResult = es.indexProvider.getIndex(v.label(), v.id(), ElasticService.ElementType.vertex, null);
+        multiGetRequest.add(indexProviderResult.getIndex(), v.label(), v.id().toString()); //TODO: add routing..?
         lazyGetters.put(v.id().toString(), v);
     }
 
