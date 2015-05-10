@@ -1,7 +1,7 @@
 package org.apache.tinkerpop.gremlin.elastic.structure;
 
 import org.apache.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
-import org.apache.tinkerpop.gremlin.elastic.process.graph.traversal.strategy.ElasticGraphStepStrategy;
+import org.apache.tinkerpop.gremlin.elastic.process.optimize.ElasticGraphStepStrategy;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;

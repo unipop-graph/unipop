@@ -51,9 +51,28 @@ public class ElasticVertex extends ElasticElement implements Vertex {
     public Iterator<Vertex> vertices(Direction direction, String... edgeLabels) {
         checkRemoved();
         Iterator<Edge> edgeIterator = edges(direction, edgeLabels);
-        ArrayList<Object> ids = new ArrayList<>();
-        edgeIterator.forEachRemaining((edge) -> ((ElasticEdge) edge).getVertexId(direction.opposite()).forEach((id) -> ids.add(id)));
-        return elasticService.getVertices(null, null, ids.toArray());    }
+        ArrayList<Vertex> vertices = new ArrayList<>();
+        edgeIterator.forEachRemaining(edge -> vertices.add(vertexToVertex((ElasticEdge) edge, direction)));
+        return vertices.iterator();
+    }
+
+    public Vertex vertexToVertex(ElasticEdge edge, Direction direction) {
+        switch (direction) {
+            case OUT:
+                return edge.inVertex();
+            case IN:
+                return edge.outVertex();
+            case BOTH:
+                if(edge.outId.equals(edge.inId))
+                    return this; //points to self
+                if(this.id().equals(edge.inId))
+                    return edge.outVertex();
+                if(this.id().equals(edge.outId))
+                    return edge.inVertex();
+            default:
+                throw new IllegalArgumentException(direction.toString());
+        }
+    }
 
     @Override
     public <V> VertexProperty<V> property(String key, V value) {

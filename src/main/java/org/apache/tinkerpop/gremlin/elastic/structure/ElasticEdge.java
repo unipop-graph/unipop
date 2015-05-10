@@ -13,10 +13,10 @@ public class ElasticEdge extends ElasticElement implements Edge {
     public static String InId = "inId";
     public static String InLabel = "inLabel";
 
-    private String inId;
-    private String outId;
-    private String inLabel;
-    private String outLabel;
+    public String inId;
+    public String outId;
+    public String inLabel;
+    public String outLabel;
     private ElasticService elasticService;
 
     public ElasticEdge(final Object id, final String label, Object outId,String outLabel, Object inId,String inLabel, Object[] keyValues, final ElasticGraph graph) {
