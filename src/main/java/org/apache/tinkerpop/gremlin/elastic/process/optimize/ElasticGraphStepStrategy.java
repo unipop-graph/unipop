@@ -4,7 +4,7 @@ import org.apache.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
 import org.apache.tinkerpop.gremlin.elastic.structure.ElasticGraph;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.*;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.*;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
@@ -15,6 +15,8 @@ import java.util.ArrayList;
 
 public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
     private static final ElasticGraphStepStrategy INSTANCE = new ElasticGraphStepStrategy();
+    private ThreadLocal<ElasticGraph> graph = new ThreadLocal<>();
+
     public static ElasticGraphStepStrategy instance() {
         return INSTANCE;
     }
@@ -22,12 +24,11 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
     @Override
     public void apply(Traversal.Admin<?, ?> traversal) {
         if(traversal.getEngine().isComputer()) return;
-        if(!traversal.getGraph().isPresent()) return;
-        if(!(traversal.getGraph().get() instanceof ElasticGraph)) return;
+        if(traversal.getGraph().isPresent() && (traversal.getGraph().get() instanceof ElasticGraph))
+            this.graph.set((ElasticGraph) traversal.getGraph().get());
+        else return;
 
-        Step<?, ?> startStep = traversal.getStartStep();
-        ElasticGraph graph = ((ElasticGraph)traversal.getGraph().get());
-        processStep(startStep, traversal, graph.elasticService);
+        processStep(traversal.getStartStep(), traversal, graph.get().elasticService);
 
     }
 

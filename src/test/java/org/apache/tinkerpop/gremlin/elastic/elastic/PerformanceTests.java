@@ -6,8 +6,8 @@ import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.elastic.ElasticGraphGraphProvider;
 import org.apache.tinkerpop.gremlin.elastic.elasticservice.*;
 import org.apache.tinkerpop.gremlin.elastic.structure.ElasticGraph;
-import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.*;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.junit.Test;
@@ -36,15 +36,10 @@ public class PerformanceTests {
         Method m = this.getClass().getMethod("testToPassTests");
         LoadGraphWith[] loadGraphWiths = m.getAnnotationsByType(LoadGraphWith.class);
         elasticGraphProvider.loadGraphData(graph, loadGraphWiths[0], this.getClass(), m.getName());
-        GraphTraversalSource g = elasticGraphProvider.traversal(graph);
+        GraphTraversalSource g = graph.traversal();
 
-
-        graph.vertices().forEachRemaining(v->v.vertices(Direction.BOTH).forEachRemaining(v2->{
-            System.out.println("s = " + v2);
-        }));
-
-        GraphTraversal<Vertex, Path> iter = g.V().both().path();
-        //iter.profile().cap(TraversalMetrics.METRICS_KEY);
+        GraphTraversal<Vertex, Vertex> iter = g.V().repeat(__.out());//repeat(__.out()).times(1);
+        iter.profile().cap(TraversalMetrics.METRICS_KEY);
 
         System.out.println("iter = " + iter);
         while(iter.hasNext()){
