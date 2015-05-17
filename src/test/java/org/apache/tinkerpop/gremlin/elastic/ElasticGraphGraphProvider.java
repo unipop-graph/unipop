@@ -12,6 +12,7 @@ import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.*;
 
 import java.io.*;
@@ -69,7 +70,7 @@ public class ElasticGraphGraphProvider extends AbstractGraphProvider {
         if (g != null) {
             //don't use elasticGraph.elasticService.clearAllData(), because sometimes the graph is closed before clear
             String indexName = configuration.getString("elasticsearch.index.name");
-            //client.prepareDeleteByQuery(indexName).setQuery(QueryBuilders.matchAllQuery()).execute().actionGet();
+            client.prepareDeleteByQuery(indexName).setQuery(QueryBuilders.matchAllQuery()).execute().actionGet();
 
             GetMappingsResponse getMappingsResponse = client.admin().indices().prepareGetMappings(indexName).execute().actionGet();
             ArrayList<String> mappings = new ArrayList();
