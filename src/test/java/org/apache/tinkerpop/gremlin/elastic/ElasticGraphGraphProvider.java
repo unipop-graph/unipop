@@ -7,10 +7,11 @@ import org.apache.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
 import org.apache.tinkerpop.gremlin.elastic.structure.*;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.elasticsearch.action.admin.cluster.health.*;
+import org.elasticsearch.action.admin.indices.mapping.delete.DeleteMappingResponse;
+import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.*;
 
 import java.io.*;
@@ -68,7 +69,17 @@ public class ElasticGraphGraphProvider extends AbstractGraphProvider {
         if (g != null) {
             //don't use elasticGraph.elasticService.clearAllData(), because sometimes the graph is closed before clear
             String indexName = configuration.getString("elasticsearch.index.name");
-            client.prepareDeleteByQuery(indexName).setQuery(QueryBuilders.matchAllQuery()).execute().actionGet();
+            //client.prepareDeleteByQuery(indexName).setQuery(QueryBuilders.matchAllQuery()).execute().actionGet();
+
+            GetMappingsResponse getMappingsResponse = client.admin().indices().prepareGetMappings(indexName).execute().actionGet();
+            ArrayList<String> mappings = new ArrayList();
+            getMappingsResponse.getMappings().forEach(map -> {
+                map.value.forEach(map2 -> mappings.add(map2.value.type()));
+            });
+
+            if(mappings.size() > 0) {
+                DeleteMappingResponse deleteMappingResponse = client.admin().indices().prepareDeleteMapping(indexName).setType(mappings.toArray(new String[mappings.size()])).execute().actionGet();
+            }
             g.close();
         }
     }
@@ -76,5 +87,10 @@ public class ElasticGraphGraphProvider extends AbstractGraphProvider {
     @Override
     public Set<Class> getImplementations() {
         return IMPLEMENTATION;
+    }
+
+    @Override
+    public Object convertId(Object id) {
+        return id.toString();
     }
 }

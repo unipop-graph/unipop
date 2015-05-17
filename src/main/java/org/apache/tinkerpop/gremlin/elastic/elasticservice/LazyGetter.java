@@ -21,7 +21,7 @@ public class LazyGetter {
     }
 
     public void register(ElasticVertex v) {
-        IndexProvider.MutateResult indexProviderResult = es.indexProvider.getIndex(v.label(), v.id(), ElasticService.ElementType.vertex, null);
+        IndexProvider.IndexResult indexProviderResult = es.indexProvider.getIndex(v);
         multiGetRequest.add(indexProviderResult.getIndex(), v.label(), v.id().toString()); //TODO: add routing..?
         lazyGetters.put(v.id().toString(), v);
     }

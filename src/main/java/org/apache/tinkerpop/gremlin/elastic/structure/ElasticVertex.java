@@ -14,6 +14,7 @@ public class ElasticVertex extends ElasticElement implements Vertex {
 
     public ElasticVertex(final Object id, final String label, Object[] keyValues, ElasticGraph graph, Boolean lazy) {
         super(id, label, graph, keyValues);
+        if(!(this.id() instanceof String)) throw Vertex.Exceptions.userSuppliedIdsOfThisTypeNotSupported();
         elasticService = graph.elasticService;
         if(lazy) {
             this.lazyGetter = graph.elasticService.getLazyGetter();
@@ -27,14 +28,16 @@ public class ElasticVertex extends ElasticElement implements Vertex {
     }
 
     @Override
-    public <V> VertexProperty<V> property(final String key, final V value, final Object... keyValues) {
+    public <V> VertexProperty<V> property(final String key, final V value, final Object... propertyKeys) {
         checkRemoved();
+        if(propertyKeys != null | propertyKeys.length > 0) VertexProperty.Exceptions.metaPropertiesNotSupported();
         return this.property(key, value);
     }
 
     @Override
     public <V> VertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value, Object... propertyKeys) {
         checkRemoved();
+        if(propertyKeys != null | propertyKeys.length > 0) VertexProperty.Exceptions.metaPropertiesNotSupported();
         return this.property(key, value);
     }
 
@@ -79,7 +82,11 @@ public class ElasticVertex extends ElasticElement implements Vertex {
         checkRemoved();
         ElementHelper.validateProperty(key, value);
         ElasticVertexProperty vertexProperty = (ElasticVertexProperty) addPropertyLocal(key, value);
-        elasticService.addProperty(this, key, value);
+        try {
+            elasticService.addElement(this, false);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return vertexProperty;
     }
 
@@ -89,21 +96,30 @@ public class ElasticVertex extends ElasticElement implements Vertex {
         if(lazyGetter != null) lazyGetter.execute();
         if (this.properties.containsKey(key)) {
             return (VertexProperty<V>) this.properties.get(key);
-        } else return VertexProperty.<V>empty();
+        }
+        else return VertexProperty.<V>empty();
     }
 
     @Override
     public Edge addEdge(final String label, final Vertex vertex, final Object... keyValues) {
         if (null == vertex) throw Graph.Exceptions.argumentCanNotBeNull("vertex");
+
         checkRemoved();
-        return graph.addEdge(label, this.id(), this.label(), vertex.id(), vertex.label(), keyValues);
+        Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
+        ElasticEdge elasticEdge = new ElasticEdge(idValue, label, this.id, this.label, vertex.id(), vertex.label(), keyValues, this.graph);
+        elasticService.addElement(elasticEdge, true);
+        return elasticEdge;
     }
 
     @Override
     public void remove() {
         checkRemoved();
-        elasticService.deleteElement(this);
-        elasticService.deleteElements((Iterator) edges(Direction.BOTH));
+
+        ArrayList elements  = new ArrayList(){};
+        elements.add(this);
+        edges(Direction.BOTH).forEachRemaining(edge -> elements.add(edge));
+
+        elasticService.deleteElements(elements.iterator());
         this.removed = true;
     }
 

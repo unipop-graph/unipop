@@ -2,6 +2,7 @@ package org.apache.tinkerpop.gremlin.elastic.elasticservice;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.elasticsearch.action.admin.cluster.health.*;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.exists.indices.*;
@@ -14,14 +15,14 @@ import java.util.List;
 
 
 public class DefaultIndexProvider implements IndexProvider {
-    private MutateResult mutateResult;
-    private SearchResult searchResult;
+    private IndexResult indexResult;
+    private MultiIndexResult multiIndexResult;
 
     @Override
     public void init(Client client, Configuration configuration) throws IOException {
         String indexName = configuration.getString("elasticsearch.index.name", "graph");
-        this.searchResult = new SearchResult(new String[]{indexName}, null);
-        this.mutateResult = new MutateResult(indexName, null);
+        this.multiIndexResult = new MultiIndexResult(new String[]{indexName}, null);
+        this.indexResult = new IndexResult(indexName, null);
         createIndex(indexName, client);
     }
 
@@ -45,25 +46,30 @@ public class DefaultIndexProvider implements IndexProvider {
     }
 
     @Override
-    public MutateResult getIndex(String label, Object idValue, ElasticService.ElementType elementType, Object[] keyValues) {
-        return mutateResult;
+    public IndexResult getIndex(Element element) {
+        return indexResult;
     }
 
     @Override
-    public SearchResult getIndex(List<HasContainer> hasContainers, ElasticService.ElementType elementType) {
-        return searchResult;
+    public IndexResult getIndex(String label, Object idValue, ElasticService.ElementType elementType) {
+        return indexResult;
+    }
+
+    @Override
+    public MultiIndexResult getIndex(List<HasContainer> hasContainers, ElasticService.ElementType elementType) {
+        return multiIndexResult;
     }
 
     @Override
     public String[] getIndicesForClearGraph() {
-        return searchResult.getIndex();
+        return multiIndexResult.getIndex();
     }
 
 
     @Override
     public String toString() {
         return "DefaultIndexProvider{" +
-                "indexName='" + mutateResult.getIndex() + '\'' +
+                "indexName='" + indexResult.getIndex() + '\'' +
                 '}';
     }
 }

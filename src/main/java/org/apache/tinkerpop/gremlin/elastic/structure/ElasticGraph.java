@@ -1,9 +1,8 @@
 package org.apache.tinkerpop.gremlin.elastic.structure;
 
+import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
 import org.apache.tinkerpop.gremlin.elastic.process.optimize.ElasticGraphStepStrategy;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.structure.*;
@@ -13,6 +12,14 @@ import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import java.io.IOException;
 import java.util.Iterator;
 
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest",
+        method = "g_V_repeatXoutX_timesX8X_count",
+        reason = "too much time. need to implement scroll api.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest",
+        method = "g_V_repeatXoutX_timesX3X_count",
+        reason = "too much time. need to implement scroll api.")
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_STANDARD)
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_PERFORMANCE)
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
@@ -34,6 +41,12 @@ public class ElasticGraph implements Graph {
         configuration.setProperty(Graph.GRAPH, ElasticGraph.class.getName());
         elasticService = new ElasticService(this, configuration);
     }
+
+    /*@Override
+    public <C extends TraversalSource> C traversal(TraversalSource.Builder<C> contextBuilder) {
+        return (C) contextBuilder.with(new ElasticGraphStepStrategy(elasticService)).create(this);
+    }*/
+
 
     @Override
     public Configuration configuration() {
@@ -65,10 +78,6 @@ public class ElasticGraph implements Graph {
         throw Exceptions.variablesNotSupported();
     }
 
-    @Override
-    public Vertex addVertex(final Object... keyValues) {
-        return addVertex(false, keyValues);
-    }
 
     @Override
     public <C extends GraphComputer> C compute(Class<C> graphComputerClass) throws IllegalArgumentException {
@@ -83,45 +92,28 @@ public class ElasticGraph implements Graph {
     @Override
     public Iterator<Vertex> vertices(Object... vertexIds) {
         if (vertexIds == null || vertexIds.length == 0) return elasticService.searchVertices(null, null);
-        return elasticService.getVertices(null,null,vertexIds);    }
+        return elasticService.getVertices(null,null,vertexIds);
+    }
 
     @Override
     public Iterator<Edge> edges(Object... edgeIds) {
         if (edgeIds == null || edgeIds.length == 0) return elasticService.searchEdges(null, null, null, null);
-        return elasticService.getEdges(null, null, edgeIds);    }
+        return elasticService.getEdges(null, null, edgeIds);
+    }
 
-    public Vertex addVertex(Boolean upsert, final Object... keyValues) {
+    @Override
+    public Vertex addVertex(final Object... keyValues) {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
+
+        Vertex v = new ElasticVertex(idValue, label, keyValues, this, false);
+
         try {
-            Object id = elasticService.addElement(upsert, label, idValue, ElasticService.ElementType.vertex, keyValues);
-            return new ElasticVertex(id, label, keyValues, this, false);
+            elasticService.addElement(v, true);
         } catch (DocumentAlreadyExistsException ex) {
             throw Graph.Exceptions.vertexWithIdAlreadyExists(idValue);
         }
-    }
-
-
-    public Edge addEdge(String label, Object outId,String outLabel, Object inId,String inLabel,Object... keyValues){
-        return this.addEdge(false, label, outId, outLabel, inId, inLabel, keyValues);
-    }
-
-    public Edge addEdge(Boolean upsert, String label, Object outId,String outLabel, Object inId,String inLabel,Object... keyValues) {
-        ElementHelper.validateLabel(label);
-        ElementHelper.validateLabel(outLabel);
-        ElementHelper.validateLabel(inLabel);
-        ElementHelper.legalPropertyKeyValueArray(keyValues);
-        Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
-        try {
-            Object id = elasticService.addElement(upsert, label, idValue, ElasticService.ElementType.edge, ArrayUtils.addAll(keyValues, ElasticEdge.InId, inId, ElasticEdge.OutId, outId, ElasticEdge.InLabel, inLabel, ElasticEdge.OutLabel, outLabel));
-            return new ElasticEdge(id, label,outId, outLabel,inId,inLabel, keyValues, this);
-        } catch (DocumentAlreadyExistsException ex) {
-            throw Graph.Exceptions.edgeWithIdAlreadyExists(idValue);
-        }
-    }
-
-    public org.elasticsearch.action.bulk.BulkResponse commit() {
-        return elasticService.commit();
+        return v;
     }
 }

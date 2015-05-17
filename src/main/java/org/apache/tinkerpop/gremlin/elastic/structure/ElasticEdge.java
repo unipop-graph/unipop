@@ -19,8 +19,17 @@ public class ElasticEdge extends ElasticElement implements Edge {
     public String outLabel;
     private ElasticService elasticService;
 
+
+
     public ElasticEdge(final Object id, final String label, Object outId,String outLabel, Object inId,String inLabel, Object[] keyValues, final ElasticGraph graph) {
         super(id, label, graph, keyValues);
+        if(!(this.id() instanceof String)) throw Edge.Exceptions.userSuppliedIdsOfThisTypeNotSupported();
+        ElementHelper.validateLabel(label);
+        ElementHelper.validateLabel(outLabel);
+        ElementHelper.validateLabel(inLabel);
+        if(keyValues != null) ElementHelper.legalPropertyKeyValueArray(keyValues);
+
+
         this.inId = inId.toString();
         this.inLabel = inLabel;
         this.outLabel = outLabel;
@@ -35,7 +44,7 @@ public class ElasticEdge extends ElasticElement implements Edge {
 
     @Override
     protected boolean shouldAddProperty(String key) {
-        return super.shouldAddProperty(key) && !(key.equals(OutId) || key.equals(OutLabel) || key.equals(InId) || key.equals(InLabel) ) ;
+        return super.shouldAddProperty(key) && !key.equals(OutId) && !key.equals(OutLabel) && !key.equals(InId) && !key.equals(InLabel);
     }
 
     @Override
@@ -43,7 +52,11 @@ public class ElasticEdge extends ElasticElement implements Edge {
         checkRemoved();
         ElementHelper.validateProperty(key, value);
         ElasticProperty vertexProperty = (ElasticProperty) addPropertyLocal(key, value);
-        elasticService.addProperty(this, key, value);
+        try {
+            elasticService.addElement(this, false);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return vertexProperty;
     }
 
@@ -81,6 +94,16 @@ public class ElasticEdge extends ElasticElement implements Edge {
     @Override
     protected void checkRemoved() {
         if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Edge.class, this.id);
+    }
+
+    @Override
+    public Map<String, Object> allFields() {
+        Map<String, Object> map = super.allFields();
+        map.put(ElasticEdge.InId, inId);
+        map.put(ElasticEdge.OutId, outId);
+        map.put(ElasticEdge.InLabel, inLabel);
+        map.put(ElasticEdge.OutLabel, outLabel);
+        return map;
     }
 
     @Override

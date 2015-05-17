@@ -2,12 +2,11 @@ package org.apache.tinkerpop.gremlin.elastic.elastic;
 
 
 import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.tinkerpop.gremlin.LoadGraphWith;
+import org.apache.tinkerpop.gremlin.*;
 import org.apache.tinkerpop.gremlin.elastic.ElasticGraphGraphProvider;
 import org.apache.tinkerpop.gremlin.elastic.elasticservice.*;
 import org.apache.tinkerpop.gremlin.elastic.structure.ElasticGraph;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.*;
-import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.junit.Test;
@@ -16,10 +15,48 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.Iterator;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 public class PerformanceTests {
 
     TimingAccessor sw = new TimingAccessor();
 
+    @Test
+    @FeatureRequirementSet(FeatureRequirementSet.Package.SIMPLE)
+    public void shouldPersistDataOnClose() throws Exception {
+        final GraphProvider graphProvider = new ElasticGraphGraphProvider();
+        Graph graph = graphProvider.standardTestGraph(this.getClass(), "shouldPersistDataOnClose");;
+
+        final Vertex v = graph.addVertex();
+        final Vertex u = graph.addVertex();
+        if (graph.features().edge().properties().supportsStringValues()) {
+            v.property("name", "marko");
+            u.property("name", "pavel");
+        }
+
+        final Edge e = v.addEdge(graphProvider.convertLabel("collaborator"), u);
+        if (graph.features().edge().properties().supportsStringValues())
+            e.property("location", "internet");
+
+        graph.close();
+
+        final Graph reopenedGraph = graphProvider.standardTestGraph(this.getClass(), "shouldPersistDataOnClose");
+
+        if (graph.features().vertex().properties().supportsStringValues()) {
+            reopenedGraph.vertices().forEachRemaining(vertex -> {
+                assertTrue(vertex.property("name").value().equals("marko") || vertex.property("name").value().equals("pavel"));
+            });
+        }
+
+        reopenedGraph.edges().forEachRemaining(edge -> {
+            assertEquals(graphProvider.convertId("collaborator"), edge.label());
+            if (graph.features().edge().properties().supportsStringValues())
+                assertEquals("internet", edge.property("location").value());
+        });
+
+        graphProvider.clear(reopenedGraph, graphProvider.standardGraphConfiguration(this.getClass(), "shouldPersistDataOnClose"));
+    }
 
     @Test
     @LoadGraphWith(LoadGraphWith.GraphData.MODERN)
@@ -38,8 +75,8 @@ public class PerformanceTests {
         elasticGraphProvider.loadGraphData(graph, loadGraphWiths[0], this.getClass(), m.getName());
         GraphTraversalSource g = graph.traversal();
 
-        GraphTraversal<Vertex, Vertex> iter = g.V().repeat(__.out());//repeat(__.out()).times(1);
-        iter.profile().cap(TraversalMetrics.METRICS_KEY);
+        GraphTraversal<Vertex, Vertex> iter = g.V().repeat(__.out()).times(1);
+        //iter.profile().cap(TraversalMetrics.METRICS_KEY);
 
         System.out.println("iter = " + iter);
         while(iter.hasNext()){
@@ -88,7 +125,7 @@ public class PerformanceTests {
         graph.close();
     }
 
-    @Test
+    /*@Test
     public void batchLoad() throws IOException {
         BaseConfiguration config = new BaseConfiguration();
         config.addProperty("elasticsearch.cluster.name", "test");
@@ -126,7 +163,7 @@ public class PerformanceTests {
         sw.print();
         System.out.println("-----");
         graph.close();
-    }
+    }*/
 
     private void stopWatch(String s) {
         sw.timer(s).stop();

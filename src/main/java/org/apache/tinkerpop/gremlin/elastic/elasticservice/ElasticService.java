@@ -1,15 +1,14 @@
 package org.apache.tinkerpop.gremlin.elastic.elasticservice;
 
-import com.eaio.uuid.UUID;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.elastic.structure.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.elasticsearch.action.bulk.*;
-import org.elasticsearch.action.delete.DeleteRequestBuilder;
+import org.elasticsearch.action.delete.*;
+import org.elasticsearch.action.deletebyquery.DeleteByQueryResponse;
 import org.elasticsearch.action.get.*;
-import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.index.*;
 import org.elasticsearch.action.search.*;
 import org.elasticsearch.action.update.*;
 import org.elasticsearch.client.Client;
@@ -22,7 +21,6 @@ import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.*;
-import org.elasticsearch.script.ScriptService;
 import org.elasticsearch.search.SearchHit;
 
 import java.io.IOException;
@@ -49,13 +47,10 @@ public class ElasticService {
     private ElasticGraph graph;
     public IndexProvider indexProvider;
     private boolean refresh;
-    BulkRequestBuilder bulkRequest;
     public Client client;
     private Node node;
     TimingAccessor timingAccessor = new TimingAccessor();
-
     private LazyGetter lazyGetter;
-
 
     //endregion
 
@@ -65,10 +60,9 @@ public class ElasticService {
         timer("initialization").start();
 
         this.graph = graph;
-        this.refresh = configuration.getBoolean("elasticsearch.refresh", true);
+        this.refresh = configuration.getBoolean("elasticsearch.refresh", false);
         String clusterName = configuration.getString("elasticsearch.cluster.name", "elasticsearch");
         String addresses = configuration.getString("elasticsearch.cluster.address", "127.0.0.1:9300");
-        boolean bulk = configuration.getBoolean("elasticsearch.batch", false);
         String indexProvider = configuration.getString("elasticsearch.indexProvider", DefaultIndexProvider.class.getCanonicalName());
         String clientType = configuration.getString("elasticsearch.client", ClientType.NODE);
 
@@ -85,8 +79,6 @@ public class ElasticService {
             throw new IllegalArgumentException("failed to load indexProvider:" + indexProvider, e);
         }
 
-        if(bulk)
-            bulkRequest = client.prepareBulk();
 
         timer("initialization").stop();
     }
@@ -104,7 +96,7 @@ public class ElasticService {
 
     private void createNode(String clusterName, boolean client) {
         Settings settings = NodeBuilder.nodeBuilder().settings().put("script.groovy.sandbox.enabled", true).put("script.disable_dynamic", false).build();
-        this.node = NodeBuilder.nodeBuilder().client(client).clusterName(clusterName).settings(settings).build();
+        this.node = NodeBuilder.nodeBuilder().client(client).data(!client).clusterName(clusterName).settings(settings).build();
         node.start();
         this.client = node.client();
     }
@@ -116,96 +108,103 @@ public class ElasticService {
         timingAccessor.print();
     }
 
-    public void clearAllData() {
-        client.prepareDeleteByQuery(indexProvider.getIndicesForClearGraph())
+    //endregion
+
+    //region mutate
+
+    public org.elasticsearch.action.index.IndexResponse addElement(Element element, boolean create) {
+        timer("add element").start();
+        IndexResponse indexResponse = client.index(indexRequest(element, create)).actionGet();
+        timer("add element").stop();
+        return indexResponse;
+    }
+
+    public BulkResponse addElements(Iterator<Element> elements, boolean create) {
+        timer("add elements").start();
+        BulkRequestBuilder bulkRequest = client.prepareBulk();
+        elements.forEachRemaining(element -> bulkRequest.add(indexRequest(element, create)));
+        BulkResponse bulkItemResponses = bulkRequest.execute().actionGet();
+        timer("add elements").stop();
+        return bulkItemResponses;
+    }
+
+    private IndexRequest indexRequest(Element element, boolean create) {
+        IndexProvider.IndexResult indexProviderResult = indexProvider.getIndex(element);
+        return new IndexRequest(indexProviderResult.getIndex(), element.label(), element.id().toString())
+                .source(propertiesMap(element)).routing(indexProviderResult.getRouting()).create(create);
+    }
+
+    private Map propertiesMap(Element element) {
+        if(element instanceof ElasticElement)
+            return ((ElasticElement)element).allFields();
+
+        Map<String, Object> map = new HashMap<>();
+        element.properties().forEachRemaining(property -> map.put(property.key(), property.value()));
+        return map;
+    }
+
+    public Object upsertElement(Element element) throws ExecutionException, InterruptedException {
+        timer("upsert element").start();
+        UpdateRequest updateRequest = updateRequest(element, true);
+        UpdateResponse updateResponse = client.update(updateRequest).get();
+        timer("upsert element").stop();
+        return updateResponse;
+    }
+
+    public BulkResponse upsertElements(Iterator<Element> elements) {
+        timer("upsert elements").start();
+        BulkRequestBuilder bulkRequest = client.prepareBulk();
+        elements.forEachRemaining(element -> bulkRequest.add(updateRequest(element, true)));
+        BulkResponse bulkItemResponses = bulkRequest.execute().actionGet();
+        timer("upsert elements").stop();
+        return bulkItemResponses;
+    }
+    private UpdateRequest updateRequest(Element element, boolean upsert) {
+        IndexProvider.IndexResult indexProviderResult = indexProvider.getIndex(element);
+        UpdateRequest updateRequest = new UpdateRequest(indexProviderResult.getIndex(), element.label(), element.id().toString())
+                .doc(propertiesMap(element)).routing(indexProviderResult.getRouting());
+        if(upsert)
+            updateRequest.detectNoop(true).docAsUpsert(true);
+        return updateRequest;
+    }
+
+
+    public DeleteResponse deleteElement(Element element) {
+        timer("remove element").start();
+        DeleteRequestBuilder deleteRequestBuilder = deleteRequest(element);
+        DeleteResponse deleteResponse = deleteRequestBuilder.execute().actionGet();
+        timer("remove element").stop();
+        return deleteResponse;
+    }
+
+    public BulkResponse deleteElements(Iterator<Element> elements) {
+        timer("upsert elements").start();
+        BulkRequestBuilder bulkRequest = client.prepareBulk();
+        elements.forEachRemaining(element -> bulkRequest.add(deleteRequest(element)));
+        BulkResponse bulkItemResponses = bulkRequest.execute().actionGet();
+        timer("upsert elements").stop();
+        return bulkItemResponses;
+    }
+
+    private DeleteRequestBuilder deleteRequest(Element element) {
+        IndexProvider.IndexResult indexProviderResult = indexProvider.getIndex(element);
+        return client.prepareDelete(indexProviderResult.getIndex(), element.label(), element.id().toString())
+                        .setRouting(indexProviderResult.getRouting());
+    }
+
+    public DeleteByQueryResponse clearAllData() {
+        return client.prepareDeleteByQuery(indexProvider.getIndicesForClearGraph())
                 .setQuery(QueryBuilders.matchAllQuery()).execute().actionGet();
     }
 
-    public BulkResponse commit() {
-        if(bulkRequest == null) return null;
-        timer("bulk execute").start();
-        BulkResponse bulkItemResponses = bulkRequest.execute().actionGet();
-        bulkRequest = client.prepareBulk();
-        timer("bulk execute").stop();
-        return bulkItemResponses;
-    }
+    //endregion
+
+    //region query
 
     public LazyGetter getLazyGetter() {
         if(lazyGetter == null || !lazyGetter.canRegister())
             lazyGetter = new LazyGetter(this);
         return lazyGetter;
-    }
-
-    //endregion
-
-    //region queries
-
-    public Object addElement(Boolean upsert, String label, Object idValue, ElementType elementType, Object... keyValues) {
-        timer("add element").start();
-
-        for (int i = 0; i < keyValues.length; i = i + 2) {
-            String key = keyValues[i].toString();
-            Object value = keyValues[i + 1];
-            ElementHelper.validateProperty(key, value);
-        }
-        if(idValue == null) idValue = new UUID().toString();
-
-        IndexProvider.MutateResult indexProviderResult = indexProvider.getIndex(label, idValue, elementType, keyValues);
-
-        if(!upsert) {
-            IndexRequest indexRequest = new IndexRequest(indexProviderResult.getIndex(), label, idValue.toString())
-                    .source(keyValues).routing(indexProviderResult.getRouting()).create(true);
-            if(bulkRequest != null) bulkRequest.add(indexRequest);
-            else client.index(indexRequest).actionGet();
-        }
-        else {
-            UpdateRequest updateRequest = new UpdateRequest(indexProviderResult.getIndex(), label, idValue.toString())
-                    .doc(keyValues).routing(indexProviderResult.getRouting()).detectNoop(true);
-            updateRequest.docAsUpsert(true);
-
-            if (bulkRequest != null) bulkRequest.add(updateRequest);
-            else try {
-                client.update(updateRequest).get();
-            } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
-            }
-        }
-
-        timer("add element").stop();
-        return idValue;
-    }
-
-    public void deleteElement(Element element) {
-        timer("remove element").start();
-        IndexProvider.MutateResult indexProviderResult = indexProvider.getIndex(element);
-        DeleteRequestBuilder deleteRequestBuilder =
-                client.prepareDelete(indexProviderResult.getIndex(), element.label(), element.id().toString())
-                        .setRouting(indexProviderResult.getRouting());
-        if(bulkRequest != null) bulkRequest.add(deleteRequestBuilder);
-        else deleteRequestBuilder.execute().actionGet();
-        timer("remove element").stop();
-    }
-
-    public void deleteElements(Iterator<Element> elements) {
-        elements.forEachRemaining(this::deleteElement);
-    }
-
-    public <V> void addProperty(Element element, String key, V value) {
-        timer("update property").start();
-        IndexProvider.MutateResult indexProviderResult = indexProvider.getIndex(element);
-        UpdateRequestBuilder updateRequestBuilder = client.prepareUpdate(indexProviderResult.getIndex(), element.label(), element.id().toString()).setDoc(key, value).setRouting(indexProviderResult.getRouting());
-        if(bulkRequest != null) bulkRequest.add(updateRequestBuilder);
-        else updateRequestBuilder.execute().actionGet();
-        timer("update property").stop();
-    }
-
-    public void removeProperty(Element element, String key) {
-        timer("remove property").start();
-        IndexProvider.MutateResult indexProviderResult = indexProvider.getIndex(element);
-        UpdateRequestBuilder updateRequestBuilder = client.prepareUpdate(indexProviderResult.getIndex(), element.label(), element.id().toString()).setScript("ctx._source.remove(\"" + key + "\")", ScriptService.ScriptType.INLINE).setRouting(indexProviderResult.getRouting());
-        if(bulkRequest != null) bulkRequest.add(updateRequestBuilder);
-        else updateRequestBuilder.execute().actionGet();
-        timer("remove property").stop();
     }
 
     public Iterator<Vertex> getVertices(String label,Integer resultsLimit,Object... ids) {
@@ -241,7 +240,7 @@ public class ElasticService {
         int counter = 0;
         while((resultsLimit == null || counter  < resultsLimit) && counter < ids.length){
             Object id = ids[counter];
-            IndexProvider.MutateResult indexProviderResult = indexProvider.getIndex(label, id, type, null);
+            IndexProvider.IndexResult indexProviderResult = indexProvider.getIndex(label, id, type);
             request.add(indexProviderResult.getIndex(), label, id.toString()); //TODO: add routing..?
             counter++;
         }
@@ -279,7 +278,7 @@ public class ElasticService {
     private Stream<SearchHit> search(List<HasContainer> hasContainers, BoolFilterBuilder boolFilter, Integer resultsLimit, ElementType elementType) {
         timer("search").start();
 
-        IndexProvider.SearchResult result = indexProvider.getIndex(hasContainers, elementType);
+        IndexProvider.MultiIndexResult result = indexProvider.getIndex(hasContainers, elementType);
         if (refresh) client.admin().indices().prepareRefresh(result.getIndex()).execute().actionGet();
 
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch(result.getIndex())

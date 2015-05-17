@@ -14,27 +14,17 @@ public interface IndexProvider {
 
     default void close(){};
 
-    default MutateResult getIndex(Element element){
-        ArrayList keyValues = new ArrayList();
-        element.properties().forEachRemaining(property -> {
-            keyValues.add(property.key());
-            keyValues.add(property.value());
-        });
-        ElasticService.ElementType type = element.getClass().isAssignableFrom(Vertex.class) ? ElasticService.ElementType.vertex : ElasticService.ElementType.edge;
-
-        return getIndex(element.label(), element.id(), type, keyValues.toArray());
-    }
-
-    MutateResult getIndex(String label, Object idValue, ElasticService.ElementType elementType, Object[] keyValues);
-    SearchResult getIndex(List<HasContainer> hasContainerList, ElasticService.ElementType elementType);
+    IndexResult getIndex(Element element);
+    IndexResult getIndex(String label, Object idValue, ElasticService.ElementType elementType);
+    MultiIndexResult getIndex(List<HasContainer> hasContainerList, ElasticService.ElementType elementType);
 
     String[] getIndicesForClearGraph();
 
-    public class MutateResult {
+    public class IndexResult {
         private final String index;
         private final String routing;
 
-        public MutateResult(String index, String routing) {
+        public IndexResult(String index, String routing) {
             this.index = index;
             this.routing = routing;
         }
@@ -48,11 +38,11 @@ public interface IndexProvider {
         }
     }
 
-    public class SearchResult {
+    public class MultiIndexResult {
         private final String[] index;
         private final String routing;
 
-        public SearchResult(String[] index, String routing) {
+        public MultiIndexResult(String[] index, String routing) {
             this.index = index;
             this.routing = routing;
         }

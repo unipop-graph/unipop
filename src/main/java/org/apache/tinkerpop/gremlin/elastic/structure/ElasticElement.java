@@ -7,27 +7,31 @@ import java.util.*;
 
 public abstract class ElasticElement implements Element{
     protected HashMap<String, Property> properties = new HashMap();
-    protected final Object id;
+    protected final String id;
     protected final String label;
     protected final ElasticGraph graph;
     protected boolean removed = false;
 
     public ElasticElement(final Object id, final String label, ElasticGraph graph, Object[] keyValues) {
         this.graph = graph;
-        this.id = id;
+        this.id = id != null ? id.toString() : new com.eaio.uuid.UUID().toString();
         this.label = label;
         if (keyValues != null) {
+            if(keyValues.length % 2 == 1) throw Element.Exceptions.providedKeyValuesMustBeAMultipleOfTwo();
             for (int i = 0; i < keyValues.length; i = i + 2) {
                 String key = keyValues[i].toString();
                 Object value = keyValues[i + 1];
+
                 addPropertyLocal(key, value);
             }
         }
+
     }
 
     public Property addPropertyLocal(String key, Object value) {
         checkRemoved();
         if (shouldAddProperty(key)) {
+            ElementHelper.validateProperty(key, value);
             Property property = createProperty(key, value);
             properties.put(key, property);
             return property;
@@ -84,16 +88,25 @@ public abstract class ElasticElement implements Element{
 
     public void removeProperty(Property property) {
         properties.remove(property.key());
-        graph.elasticService.removeProperty(this, property.key());
+        try {
+            graph.elasticService.addElement(this, false);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
-    public abstract Property createProperty(String key, Object value);
+    protected abstract Property createProperty(String key, Object value);
 
     protected boolean shouldAddProperty(String key) {
-        return key != "label" && key != "id";
+        return !key.equals("label") && !key.equals("id");
     }
 
     protected abstract void checkRemoved();
 
 
+    public Map<String, Object> allFields() {
+        Map<String, Object> map = new HashMap<>();
+        properties.forEach((key, value) -> map.put(key, value.value()));
+        return map;
+    }
 }
