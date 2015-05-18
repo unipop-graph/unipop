@@ -2,10 +2,11 @@ package org.apache.tinkerpop.gremlin.elastic.elastic;
 
 
 import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.tinkerpop.gremlin.*;
+import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.elastic.ElasticGraphGraphProvider;
 import org.apache.tinkerpop.gremlin.elastic.elasticservice.*;
 import org.apache.tinkerpop.gremlin.elastic.structure.ElasticGraph;
+import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.*;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
@@ -15,14 +16,11 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.Iterator;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 public class PerformanceTests {
 
     TimingAccessor sw = new TimingAccessor();
 
-    @Test
+    /*@Test
     @FeatureRequirementSet(FeatureRequirementSet.Package.SIMPLE)
     public void shouldPersistDataOnClose() throws Exception {
         final GraphProvider graphProvider = new ElasticGraphGraphProvider();
@@ -56,7 +54,7 @@ public class PerformanceTests {
         });
 
         graphProvider.clear(reopenedGraph, graphProvider.standardGraphConfiguration(this.getClass(), "shouldPersistDataOnClose"));
-    }
+    }*/
 
     @Test
     @LoadGraphWith(LoadGraphWith.GraphData.MODERN)
@@ -75,7 +73,9 @@ public class PerformanceTests {
         elasticGraphProvider.loadGraphData(graph, loadGraphWiths[0], this.getClass(), m.getName());
         GraphTraversalSource g = graph.traversal();
 
-        GraphTraversal<Vertex, Vertex> iter = g.V().repeat(__.out()).times(1);
+
+        /*GraphTraversal<Vertex, Path> iter = g.V().out().outE().inV().inE().inV().both().values("name").path();
+        printTraversalForm(iter);
         //iter.profile().cap(TraversalMetrics.METRICS_KEY);
 
         System.out.println("iter = " + iter);
@@ -83,10 +83,28 @@ public class PerformanceTests {
             Object next = iter.next();
             String s = next.toString();
             System.out.println("s = " + s);
+        }*/
+
+        GraphTraversal<Vertex, String> iter2 = g.V().out().outE().inV().inE().inV().both().values("name");
+        printTraversalForm(iter2);
+        //iter.profile().cap(TraversalMetrics.METRICS_KEY);
+
+        System.out.println("iter2 = " + iter2);
+        while(iter2.hasNext()){
+            Object next = iter2.next();
+            String s = next.toString();
+            System.out.println("s = " + s);
         }
+
 
         graph.elasticService.client.admin().indices().delete(new DeleteIndexRequest(indexName)).actionGet();
         graph.close();
+    }
+
+    public void printTraversalForm(final Traversal traversal) {
+        System.out.println("   pre-strategy:" + traversal);
+        traversal.hasNext();
+        System.out.println("  post-strategy:" + traversal);
     }
 
     @Test

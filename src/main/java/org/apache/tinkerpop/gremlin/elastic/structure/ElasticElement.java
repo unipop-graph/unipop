@@ -7,14 +7,14 @@ import java.util.*;
 
 public abstract class ElasticElement implements Element{
     protected HashMap<String, Property> properties = new HashMap();
-    protected final String id;
+    protected final Object id;
     protected final String label;
     protected final ElasticGraph graph;
     protected boolean removed = false;
 
     public ElasticElement(final Object id, final String label, ElasticGraph graph, Object[] keyValues) {
         this.graph = graph;
-        this.id = id != null ? id.toString() : new com.eaio.uuid.UUID().toString();
+        this.id = id != null ? id : new com.eaio.uuid.UUID().toString();
         this.label = label;
         if (keyValues != null) {
             if(keyValues.length % 2 == 1) throw Element.Exceptions.providedKeyValuesMustBeAMultipleOfTwo();

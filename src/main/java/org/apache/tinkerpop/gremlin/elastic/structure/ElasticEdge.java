@@ -23,7 +23,7 @@ public class ElasticEdge extends ElasticElement implements Edge {
 
     public ElasticEdge(final Object id, final String label, Object outId,String outLabel, Object inId,String inLabel, Object[] keyValues, final ElasticGraph graph) {
         super(id, label, graph, keyValues);
-        if(!(this.id() instanceof String)) throw Edge.Exceptions.userSuppliedIdsOfThisTypeNotSupported();
+        //if(!(this.id() instanceof String)) throw Edge.Exceptions.userSuppliedIdsOfThisTypeNotSupported();
         ElementHelper.validateLabel(label);
         ElementHelper.validateLabel(outLabel);
         ElementHelper.validateLabel(inLabel);
@@ -81,6 +81,9 @@ public class ElasticEdge extends ElasticElement implements Edge {
 
 
     public List getVertexId(Direction direction) {
+        if(outId.equals(inId))
+            return Arrays.asList(outId);
+
         switch (direction) {
             case OUT:
                 return Arrays.asList(outId);

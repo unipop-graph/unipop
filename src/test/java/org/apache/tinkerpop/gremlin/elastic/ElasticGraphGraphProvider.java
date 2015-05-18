@@ -2,10 +2,10 @@ package org.apache.tinkerpop.gremlin.elastic;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.FileUtils;
-import org.apache.tinkerpop.gremlin.AbstractGraphProvider;
+import org.apache.tinkerpop.gremlin.*;
 import org.apache.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
 import org.apache.tinkerpop.gremlin.elastic.structure.*;
-import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.elasticsearch.action.admin.cluster.health.*;
 import org.elasticsearch.action.admin.indices.mapping.delete.DeleteMappingResponse;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
@@ -52,9 +52,8 @@ public class ElasticGraphGraphProvider extends AbstractGraphProvider {
         }
     }
 
-
     @Override
-    public Map<String, Object> getBaseConfiguration(final String graphName, final Class<?> test, final String testMethodName) {
+    public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName, LoadGraphWith.GraphData loadGraphWith) {
         System.out.println("graphName: " + graphName);
         return new HashMap<String, Object>() {{
             put(Graph.GRAPH, ElasticGraph.class.getName());
@@ -91,7 +90,7 @@ public class ElasticGraphGraphProvider extends AbstractGraphProvider {
     }
 
     @Override
-    public Object convertId(Object id) {
+    public Object convertId(Object id, Class<? extends Element> c) {
         return id.toString();
     }
 }

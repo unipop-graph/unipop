@@ -2,7 +2,7 @@ package org.apache.tinkerpop.gremlin.elastic.structure;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
-import org.apache.tinkerpop.gremlin.elastic.process.optimize.ElasticGraphStepStrategy;
+import org.apache.tinkerpop.gremlin.elastic.process.optimize.ElasticOptimizationStrategy;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.structure.*;
@@ -25,7 +25,7 @@ import java.util.Iterator;
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
 public class ElasticGraph implements Graph {
     static {
-        TraversalStrategies.GlobalCache.registerStrategies(ElasticGraph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(ElasticGraphStepStrategy.instance()));
+        TraversalStrategies.GlobalCache.registerStrategies(ElasticGraph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(ElasticOptimizationStrategy.instance()));
     }
 
     //for testSuite
@@ -104,6 +104,7 @@ public class ElasticGraph implements Graph {
     @Override
     public Vertex addVertex(final Object... keyValues) {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
+        if(keyValues!=null && keyValues.length%2==1) throw Element.Exceptions.providedKeyValuesMustBeAMultipleOfTwo();
         Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
 

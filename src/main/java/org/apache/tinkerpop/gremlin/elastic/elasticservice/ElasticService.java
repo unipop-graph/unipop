@@ -240,6 +240,7 @@ public class ElasticService {
         int counter = 0;
         while((resultsLimit == null || counter  < resultsLimit) && counter < ids.length){
             Object id = ids[counter];
+            if(id instanceof Element) id = ((Element)id).id();
             IndexProvider.IndexResult indexProviderResult = indexProvider.getIndex(label, id, type);
             request.add(indexProviderResult.getIndex(), label, id.toString()); //TODO: add routing..?
             counter++;
@@ -262,7 +263,7 @@ public class ElasticService {
         BoolFilterBuilder boolFilter = createFilterBuilder(hasContainers);
         boolFilter.must(FilterBuilders.existsFilter(ElasticEdge.InId));
 
-        if(direction != null && vertexIds != null) {
+        if(direction != null && vertexIds != null && vertexIds.length > 0) {
             if (direction == Direction.IN) boolFilter.must(FilterBuilders.termsFilter(ElasticEdge.InId, vertexIds));
             else if (direction == Direction.OUT)
                 boolFilter.must(FilterBuilders.termsFilter(ElasticEdge.OutId, vertexIds));

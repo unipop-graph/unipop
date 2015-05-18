@@ -3,9 +3,8 @@ package org.apache.tinkerpop.gremlin.elastic.elastic;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
 import org.apache.tinkerpop.gremlin.elastic.structure.ElasticGraph;
-import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.junit.Test;
 
 import java.io.IOException;

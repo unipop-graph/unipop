@@ -1,21 +1,22 @@
 package org.apache.tinkerpop.gremlin.elastic.process.optimize;
 
-import org.apache.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
 import org.apache.tinkerpop.gremlin.elastic.structure.ElasticGraph;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.*;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.*;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.*;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.ArrayList;
 
-public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
-    private static final ElasticGraphStepStrategy INSTANCE = new ElasticGraphStepStrategy();
+public class ElasticOptimizationStrategy extends AbstractTraversalStrategy<TraversalStrategy.OptimizationStrategy> {
+    private static final ElasticOptimizationStrategy INSTANCE = new ElasticOptimizationStrategy();
     private ThreadLocal<ElasticGraph> graph = new ThreadLocal<>();
 
-    public static ElasticGraphStepStrategy instance() {
+    public static ElasticOptimizationStrategy instance() {
         return INSTANCE;
     }
 
@@ -26,30 +27,21 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
             this.graph.set((ElasticGraph) traversal.getGraph().get());
         else return;
 
-        //processStep(traversal.getStartStep(), traversal, graph.get().elasticService);
+        TraversalHelper.getStepsOfClass(GraphStep.class, traversal).forEach(graphStep -> {
+            if(graphStep.getIds().length == 0) {
+                ArrayList<HasContainer> hasContainers = getPredicates(graphStep, traversal);
+                final ElasticGraphStep<?> elasticGraphStep = new ElasticGraphStep<>(graphStep, hasContainers, graph.get().elasticService, null);
+                TraversalHelper.replaceStep(graphStep, (Step) elasticGraphStep, traversal);
+            }
+        });
 
-    }
-
-    private void processStep(Step<?, ?> currentStep, Traversal.Admin<?, ?> traversal, ElasticService elasticService) {
-        Integer resultsLimit = null;
-
-        if(currentStep instanceof EmptyStep)
-            return;
-        else if (currentStep instanceof GraphStep) {
-            ArrayList<HasContainer> hasContainers = getPredicates(currentStep, traversal);
-            final ElasticGraphStep<?> elasticGraphStep = new ElasticGraphStep<>((GraphStep) currentStep, hasContainers, elasticService,resultsLimit);
-            TraversalHelper.replaceStep(currentStep, (Step) elasticGraphStep, traversal);
-        }
-        /*else if (currentStep instanceof VertexStep) {
-            VertexStep vertexStep = (VertexStep) currentStep;
+        TraversalHelper.getStepsOfClass(VertexStep.class, traversal).forEach(vertexStep -> {
             boolean returnVertex = vertexStep.getReturnClass().equals(Vertex.class);
-            ArrayList<HasContainer> hasContainers = returnVertex ? new ArrayList() : getPredicates(currentStep, traversal);
+            ArrayList<HasContainer> hasContainers = returnVertex ? new ArrayList() : getPredicates(vertexStep, traversal);
 
-            SearchEdges elasticVertexStep = new SearchEdges((VertexStep<Edge>) currentStep, hasContainers, elasticService, resultsLimit);
-            TraversalHelper.replaceStep(currentStep, elasticVertexStep, traversal);
-        }*/
-
-        processStep(currentStep.getNextStep(), traversal, elasticService);
+            ElasticVertexStep elasticVertexStep = new ElasticVertexStep(vertexStep, hasContainers, graph.get().elasticService, null);
+            TraversalHelper.replaceStep(vertexStep, elasticVertexStep, traversal);
+        });
     }
 
     private ArrayList<HasContainer> getPredicates(Step step, Traversal.Admin traversal){
@@ -61,9 +53,9 @@ public class ElasticGraphStepStrategy extends AbstractTraversalStrategy {
                 continue;
             ((HasContainerHolder) nextStep).getHasContainers().forEach((has)-> hasContainers.add(has));
 
-            if (nextStep.getLabel().isPresent()) { //if the step containes as("label")
+            if (nextStep.getLabels().size() > 0) { //if the step containes as("label")
                 final IdentityStep identityStep = new IdentityStep<>(traversal);
-                identityStep.setLabel(nextStep.getLabel().get());
+                nextStep.getLabels().forEach(label -> identityStep.addLabel(label.toString()));
                 TraversalHelper.insertAfterStep(identityStep, step, traversal);
             }
             traversal.removeStep(nextStep);
