@@ -1,7 +1,7 @@
 package org.apache.tinkerpop.gremlin.elastic.elasticservice;
 
-import com.spatial4j.core.shape.Shape;
-import com.spatial4j.core.shape.SpatialRelation;
+import com.spatial4j.core.shape.*;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.elasticsearch.common.Preconditions;
 import org.elasticsearch.common.geo.ShapeRelation;
 import org.elasticsearch.common.geo.builders.ShapeBuilder;
@@ -11,15 +11,15 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.function.BiFunction;
-import java.util.function.BiPredicate;
+import java.util.function.*;
 
 public enum Geo implements BiPredicate {
+
     /**
      * Whether the intersection between two geographic regions is non-empty
      */
 
-    INTERSECT(ShapeRelation.INTERSECTS, (geometry1, geometry2) -> {
+    INTERSECTS(ShapeRelation.INTERSECTS, (geometry1, geometry2) -> {
         SpatialRelation relation = geometry1.relate(geometry2);
         return relation == SpatialRelation.INTERSECTS || relation == SpatialRelation.CONTAINS || relation == SpatialRelation.WITHIN;
     }
@@ -85,6 +85,11 @@ public enum Geo implements BiPredicate {
 
 
     }
+
+
+    public static <V> P<V> intersercts(final V value) { return new P(Geo.INTERSECTS, value); };
+    public static <V> P<V> disjoint(final V value) { return new P(Geo.DISJOINT, value); };
+    public static <V> P<V> within(final V value) { return new P(Geo.WITHIN, value); };
 }
 
 
