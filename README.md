@@ -2,18 +2,17 @@
 [TinkerPop 3](http://tinkerpop.incubator.apache.org/docs/3.0.0-SNAPSHOT/) implementation on Elasticsearch backend. You should probably read up on that before proceeding.
 
 ### Features   
-#### Huge graphs
- elastic-gremlin utilizes ES's great scale-out capabilities. That means your graph can scale onto lots of nodes!
- We also provide a way to choose the ES indices and routing parameters to better optimize for your specific use-case. (See IndexProvider)
-#### Great indexing
- We enable full usage of ES indexing. Either let elastic-search automaticaly create them, or cofigure the mappings for your specific needs.
- You can index:
+- **Huge graphs** - elastic-gremlin utilizes ES's great scale-out capabilities. 
+That means your graph can scale onto lots of nodes!
+We also provide a way to choose the ES indices and routing parameters to better optimize for your specific use-case (See IndexProvider).
+- **Great indexing** -  We enable full usage of ES indexing. Either let elastic-search automaticaly create them, or cofigure the mappings for your specific needs. You can index:
   - Text (you can utilize ES's great analyzers)
   - Numbers
   - Dates
   - Geo (just use the Geo predicate in a 'has' clause)
- elastic-gremlin utilizes these indices when using 'has' steps.  
-#### Aggregations (Coming Soon)
+ 
+  elastic-gremlin utilizes these indices when using 'has' steps.  
+- **Aggregations** (Coming Soon)
   Aggregation traversals (e.g. g.V().count()) can benefit greatly from ES's [Aggregation module] (https://www.elastic.co/guide/en/elasticsearch/reference/1.x/search-aggregations.html)
   
 Be warned, elastic-gremlin is still very much in development!
@@ -38,9 +37,10 @@ Be warned, elastic-gremlin is still very much in development!
 
 ##### `elasticsearch.client` (Default: "NODE")
 The client type used to connect to elasticsearch. 
-  - "NODE": Sets up a local elasticsearch node and runs against it. elastic-gremlin defaults to NODE, so you can get up and running as quickly as possible.
-  - "TRANSPORT_CLIENT": connects to an existing node.
-  - "NODE_CLIENT": An optimized way to connect to an ES cluster. 
+  - **NODE** Sets up a local elasticsearch node and runs against it. elastic-gremlin defaults to NODE, so you can get up and running as quickly as possible.
+  - **TRANSPORT_CLIENT"** connects to an existing node.
+  - **NODE_CLIENT** An optimized way to connect to an ES cluster. 
+
 For more information read [here](http://www.elastic.co/guide/en/elasticsearch/client/java-api/current/client.html)
 
 ##### `elasticsearch.cluster.name`(Default: "elasticsearch")
@@ -53,7 +53,8 @@ The elasticsearch nodes' address. The format is: "ip1:port1,ip2:port2,...".
 Whether to refresh the ES index before every search. Useful for testing.
 
 ##### `elasticsearch.indexProvider` (Default: "DefaultIndexProvider")
-Accepts name of class implementing the IndexProvider interface. This interface is used to get the ES index & routing for every CRUD operation on an element. 
+Accepts a name of a class implementing the IndexProvider interface. This interface is used to get the ES index & routing for every CRUD operation on an element. 
+
 It also provides a way to create a new index if needed. You can easly implement your own IndexProvider and use it to create a "time based partition index" for some elements, store different elements on different indices , create your index with special configurations (like analyzers), etc.. 
 elastic-gremlin comes with DefaultIndexProvider, which only uses one index for all the data.
 
@@ -62,6 +63,7 @@ The elasticsearch index. For use together with DefaultIndexProvider.
 
 
 ### Bulk loading - add documentation
+
 
 ### Gremlin Server - outdated instructions!
   1.  download the latest gremlin server from [here](http://tinkerpop.com/downloads/3.0.0.M7/gremlin-server-3.0.0.M7.zip)
@@ -91,6 +93,7 @@ The elasticsearch index. For use together with DefaultIndexProvider.
     ```
   4.Run the gremlin-server/bin/gremlin-server
     now you can communicate with the gremlin-server through rest/gremlinserver api and watch the documents stored in your elasticsearch servers :)
+  
   
 ### Gremlin Console - outdated instructions!
   1.  download the latest gremlin console from [here](http://tinkerpop.com/downloads/3.0.0.M7/gremlin-console-3.0.0.M7.zip)
