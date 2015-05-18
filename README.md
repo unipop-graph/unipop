@@ -21,8 +21,10 @@ Be warned, elastic-gremlin is still very much in development!
 ### Getting Started!
 1. clone & build Tinkerpop 3.0.0.M9-incubating-rc2 from [here] (https://git-wip-us.apache.org/repos/asf?p=incubator-tinkerpop.git;a=shortlog;h=refs/tags/3.0.0.M9-incubating-rc2)
 2. clone & build elastic-gremlin
-    mvn clean install -Dmaven.test.skip=true
-3. Create an ElasticGraph
+    
+    ```mvn clean install -Dmaven.test.skip=true```
+3. Create an ElasticGraph:
+   
     ```java
     BaseConfiguration config = new BaseConfiguration();
     /* put configuration properties as you like*/
@@ -30,7 +32,7 @@ Be warned, elastic-gremlin is still very much in development!
     GraphTraversalSource g = graph.traversal();
     g.addV();
     ```
-4. Or just use the Gremlin Server or Gremlin Console
+4. Or just use the Gremlin Server or Gremlin Console.
 
 
 ### Confiuration
