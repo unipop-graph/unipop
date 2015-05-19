@@ -1,6 +1,7 @@
 package org.apache.tinkerpop.gremlin.elastic.structure;
 
 import org.apache.tinkerpop.gremlin.elastic.elasticservice.*;
+import org.apache.tinkerpop.gremlin.elastic.process.optimize.ElasticOptimizationStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.*;
@@ -43,12 +44,11 @@ public class ElasticVertex extends ElasticElement implements Vertex {
 
     @Override
     public Iterator<Edge> edges(Direction direction, String... edgeLabels) {
-        ArrayList<HasContainer> hasList = new ArrayList<>();
-
+        Predicates predicates = new Predicates();
         if(edgeLabels != null && edgeLabels.length > 0)
-            hasList.add(new HasContainer(T.label.getAccessor(), Contains.within, edgeLabels));
+            predicates.hasContainers.add(new HasContainer(T.label.getAccessor(), Contains.within, edgeLabels));
 
-        return elasticService.searchEdges(hasList, null, direction, this.id());    }
+        return elasticService.searchEdges(predicates, direction, this.id());    }
 
     @Override
     public Iterator<Vertex> vertices(Direction direction, String... edgeLabels) {

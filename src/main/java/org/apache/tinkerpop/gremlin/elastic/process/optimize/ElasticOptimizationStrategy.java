@@ -1,8 +1,10 @@
 package org.apache.tinkerpop.gremlin.elastic.process.optimize;
 
+import org.apache.tinkerpop.gremlin.elastic.elasticservice.Predicates;
 import org.apache.tinkerpop.gremlin.elastic.structure.ElasticGraph;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.*;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
@@ -29,38 +31,45 @@ public class ElasticOptimizationStrategy extends AbstractTraversalStrategy<Trave
 
         TraversalHelper.getStepsOfClass(GraphStep.class, traversal).forEach(graphStep -> {
             if(graphStep.getIds().length == 0) {
-                ArrayList<HasContainer> hasContainers = getPredicates(graphStep, traversal);
-                final ElasticGraphStep<?> elasticGraphStep = new ElasticGraphStep<>(graphStep, hasContainers, graph.get().elasticService, null);
+                Predicates predicates = getPredicates(graphStep, traversal);
+                final ElasticGraphStep<?> elasticGraphStep = new ElasticGraphStep<>(graphStep, predicates, graph.get().elasticService);
                 TraversalHelper.replaceStep(graphStep, (Step) elasticGraphStep, traversal);
             }
         });
 
         TraversalHelper.getStepsOfClass(VertexStep.class, traversal).forEach(vertexStep -> {
             boolean returnVertex = vertexStep.getReturnClass().equals(Vertex.class);
-            ArrayList<HasContainer> hasContainers = returnVertex ? new ArrayList() : getPredicates(vertexStep, traversal);
+            Predicates predicates = returnVertex ? new Predicates() : getPredicates(vertexStep, traversal);
 
-            ElasticVertexStep elasticVertexStep = new ElasticVertexStep(vertexStep, hasContainers, graph.get().elasticService, null);
+            ElasticVertexStep elasticVertexStep = new ElasticVertexStep(vertexStep, predicates, graph.get().elasticService);
             TraversalHelper.replaceStep(vertexStep, elasticVertexStep, traversal);
         });
     }
 
-    private ArrayList<HasContainer> getPredicates(Step step, Traversal.Admin traversal){
-        ArrayList<HasContainer> hasContainers = new ArrayList<>();
+    private Predicates getPredicates(Step step, Traversal.Admin traversal){
+        Predicates predicates = new Predicates();
         Step<?, ?> nextStep = step.getNextStep();
 
-        while(nextStep instanceof HasContainerHolder) {
-            if(nextStep instanceof LambdaHolder)
-                continue;
-            ((HasContainerHolder) nextStep).getHasContainers().forEach((has)-> hasContainers.add(has));
-
-            if (nextStep.getLabels().size() > 0) { //if the step containes as("label")
-                final IdentityStep identityStep = new IdentityStep<>(traversal);
-                nextStep.getLabels().forEach(label -> identityStep.addLabel(label.toString()));
-                TraversalHelper.insertAfterStep(identityStep, step, traversal);
+        while(true) {
+            if(nextStep instanceof LambdaHolder){
+                //do nothing
             }
-            traversal.removeStep(nextStep);
+            else if(nextStep instanceof HasContainerHolder) {
+                ((HasContainerHolder) nextStep).getHasContainers().forEach((has)->
+                        predicates.hasContainers.add(has));
+                nextStep.getLabels().forEach(label -> predicates.labels.add(label.toString()));
+                traversal.removeStep(nextStep);
+            }
+            else if(nextStep instanceof RangeGlobalStep){
+                RangeGlobalStep rangeGlobalStep = (RangeGlobalStep) nextStep;
+                predicates.limitLow = rangeGlobalStep.getLowRange();
+                predicates.limitHigh = rangeGlobalStep.getHighRange();
+                nextStep.getLabels().forEach(label -> predicates.labels.add(label.toString()));
+                traversal.removeStep(nextStep);
+            }
+            else return predicates;
+
             nextStep  = nextStep.getNextStep();
         }
-        return hasContainers;
     }
 }

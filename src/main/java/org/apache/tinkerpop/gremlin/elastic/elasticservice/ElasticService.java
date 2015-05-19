@@ -1,6 +1,7 @@
 package org.apache.tinkerpop.gremlin.elastic.elasticservice;
 
 import org.apache.commons.configuration.Configuration;
+import org.apache.tinkerpop.gremlin.elastic.process.optimize.ElasticOptimizationStrategy;
 import org.apache.tinkerpop.gremlin.elastic.structure.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
@@ -42,7 +43,6 @@ public class ElasticService {
         edge
     }
 
-    private static int DEFAULT_MAX_RESULT_LIMIT = 2000000;
 
     private ElasticGraph graph;
     public IndexProvider indexProvider;
@@ -251,16 +251,16 @@ public class ElasticService {
         return multiGetItemResponses;
     }
 
-    public Iterator<Vertex> searchVertices(List<HasContainer> hasContainers, Integer resultsLimit) {
-        BoolFilterBuilder boolFilter = createFilterBuilder(hasContainers);
+    public Iterator<Vertex> searchVertices(Predicates predicates) {
+        BoolFilterBuilder boolFilter = createFilterBuilder(predicates.hasContainers);
         boolFilter.must(FilterBuilders.missingFilter(ElasticEdge.InId));
 
-        Stream<SearchHit> hits = search(hasContainers, boolFilter, resultsLimit, ElementType.vertex);
+        Stream<SearchHit> hits = search(predicates, boolFilter, ElementType.vertex);
         return hits.map((hit) -> createVertex(hit.getId(), hit.getType(), hit.getSource())).iterator();
     }
 
-    public Iterator<Edge> searchEdges(List<HasContainer> hasContainers, Integer resultsLimit, Direction direction, Object... vertexIds) {
-        BoolFilterBuilder boolFilter = createFilterBuilder(hasContainers);
+    public Iterator<Edge> searchEdges(Predicates predicates, Direction direction, Object... vertexIds) {
+        BoolFilterBuilder boolFilter = createFilterBuilder(predicates.hasContainers);
         boolFilter.must(FilterBuilders.existsFilter(ElasticEdge.InId));
 
         if(direction != null && vertexIds != null && vertexIds.length > 0) {
@@ -272,22 +272,20 @@ public class ElasticService {
             else throw new EnumConstantNotPresentException(direction.getClass(), direction.name());
         }
 
-        Stream<SearchHit> hits = search(hasContainers, boolFilter, resultsLimit, ElementType.edge);
+        Stream<SearchHit> hits = search(predicates, boolFilter, ElementType.edge);
         return hits.map((hit) -> createEdge(hit.getId(), hit.getType(), hit.getSource())).iterator();
     }
 
-    private Stream<SearchHit> search(List<HasContainer> hasContainers, BoolFilterBuilder boolFilter, Integer resultsLimit, ElementType elementType) {
+    private Stream<SearchHit> search(Predicates predicates, BoolFilterBuilder boolFilter, ElementType elementType) {
         timer("search").start();
 
-        IndexProvider.MultiIndexResult result = indexProvider.getIndex(hasContainers, elementType);
+        IndexProvider.MultiIndexResult result = indexProvider.getIndex(predicates.hasContainers, elementType);
         if (refresh) client.admin().indices().prepareRefresh(result.getIndex()).execute().actionGet();
 
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch(result.getIndex())
                 .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), boolFilter))
-                .setRouting(result.getRouting()).setFrom(0);
+                .setRouting(result.getRouting()).setFrom((int) predicates.limitLow).setSize((int) predicates.limitHigh);
         //TODO: retrive with scroll for efficiency
-        if(resultsLimit != null ) searchRequestBuilder.setSize(resultsLimit);
-        else  searchRequestBuilder.setSize(DEFAULT_MAX_RESULT_LIMIT);
 
         SearchResponse searchResponse = searchRequestBuilder.execute().actionGet();
 

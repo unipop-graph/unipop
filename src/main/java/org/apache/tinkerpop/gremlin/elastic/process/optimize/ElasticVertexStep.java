@@ -1,6 +1,7 @@
 package org.apache.tinkerpop.gremlin.elastic.process.optimize;
 
 import org.apache.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
+import org.apache.tinkerpop.gremlin.elastic.elasticservice.Predicates;
 import org.apache.tinkerpop.gremlin.elastic.structure.*;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
@@ -13,19 +14,18 @@ import java.util.*;
 
 public class ElasticVertexStep<E extends Element> extends VertexStep<E> {
 
-    protected final ArrayList<HasContainer> hasContainers;
+    protected final Predicates predicates;
     protected final ElasticService elasticService;
-    protected final Integer resultsLimit;
     private Map<String, ArrayList<E>> results;
 
-    public ElasticVertexStep(VertexStep vertexStep, ArrayList<HasContainer> hasContainers, ElasticService elasticService, Integer resultsLimit) {
+    public ElasticVertexStep(VertexStep vertexStep, Predicates predicates, ElasticService elasticService) {
         super(vertexStep.getTraversal(), vertexStep.getReturnClass(), vertexStep.getDirection(), vertexStep.getEdgeLabels());
-        this.hasContainers = hasContainers;
+        this.predicates = predicates;
         this.elasticService = elasticService;
-        this.resultsLimit = resultsLimit;
         vertexStep.getLabels().forEach(label -> this.addLabel(label.toString()));
+        predicates.labels.forEach(label -> this.addLabel(label.toString()));
         if(this.getEdgeLabels().length > 0)
-            this.hasContainers.add(new HasContainer("~label", Contains.within, this.getEdgeLabels()));
+            this.predicates.hasContainers.add(new HasContainer("~label", Contains.within, this.getEdgeLabels()));
     }
 
     @Override
@@ -76,7 +76,7 @@ public class ElasticVertexStep<E extends Element> extends VertexStep<E> {
     }
 
     private void runQuery(Set<String> ids, Map<String, ArrayList<E>> results, Direction direction) {
-        Iterator<Edge> edgeIterator = elasticService.searchEdges(hasContainers, resultsLimit, direction, ids.toArray());
+        Iterator<Edge> edgeIterator = elasticService.searchEdges(predicates, direction, ids.toArray());
 
         boolean returnVertex = getReturnClass().equals(Vertex.class);
         edgeIterator.forEachRemaining(edge -> edge.vertices(direction).forEachRemaining(vertex ->
