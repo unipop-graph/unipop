@@ -2,6 +2,7 @@ package org.apache.tinkerpop.gremlin.elastic.structure;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
+import org.apache.tinkerpop.gremlin.elastic.elasticservice.Predicates;
 import org.apache.tinkerpop.gremlin.elastic.process.optimize.ElasticOptimizationStrategy;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
@@ -91,13 +92,13 @@ public class ElasticGraph implements Graph {
 
     @Override
     public Iterator<Vertex> vertices(Object... vertexIds) {
-        if (vertexIds == null || vertexIds.length == 0) return elasticService.searchVertices(null, null);
+        if (vertexIds == null || vertexIds.length == 0) return elasticService.searchVertices(new Predicates());
         return elasticService.getVertices(null,null,vertexIds);
     }
 
     @Override
     public Iterator<Edge> edges(Object... edgeIds) {
-        if (edgeIds == null || edgeIds.length == 0) return elasticService.searchEdges(null, null, null, null);
+        if (edgeIds == null || edgeIds.length == 0) return elasticService.searchEdges(new Predicates(), null);
         return elasticService.getEdges(null, null, edgeIds);
     }
 
