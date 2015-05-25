@@ -14,9 +14,9 @@ import java.io.IOException;
 import java.util.Iterator;
 
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest", method = "g_V_repeatXoutX_timesX8X_count",
-        reason = "too much time. need to implement scroll api.")
+        reason = "Takes too much time. need to implement scroll api. https://github.com/rmagen/elastic-gremlin/issues/9")
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest", method = "g_V_repeatXoutX_timesX3X_count",
-        reason = "too much time. need to implement scroll api.")
+        reason = "Takes too much time. need to implement scroll api. https://github.com/rmagen/elastic-gremlin/issues/9")
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.FeatureSupportTest$VertexPropertyFunctionalityTest", method = "shouldSupportNumericIdsIfNumericIdsAreGeneratedFromTheGraph",
         reason = "https://issues.apache.org/jira/browse/TINKERPOP3-695")
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.FeatureSupportTest$EdgeFunctionalityTest", method = "shouldSupportUserSuppliedIdsOfTypeUuid",
@@ -31,8 +31,37 @@ import java.util.Iterator;
         reason = "https://issues.apache.org/jira/browse/TINKERPOP3-695")
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.FeatureSupportTest$VertexFunctionalityTest", method = "shouldSupportUserSuppliedIdsOfTypeNumeric",
         reason = "https://issues.apache.org/jira/browse/TINKERPOP3-695")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest", method = "shouldReadWriteModernToGryo",
+        reason = "IoTest.assertId(IoTest.java:2362) doesn't call convertId. https://issues.apache.org/jira/browse/TINKERPOP3-695")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest", method = "shouldReadWriteModernToGraphSON",
+        reason = "IoTest.assertId(IoTest.java:2362) doesn't call convertId. https://issues.apache.org/jira/browse/TINKERPOP3-695")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest", method = "shouldReadWriteModernToGryoToFileWithHelpers",
+        reason = "IoTest.assertId(IoTest.java:2362) doesn't call convertId. https://issues.apache.org/jira/browse/TINKERPOP3-695")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest", method = "shouldReadWriteClassicToGraphMLToFileWithHelpers",
+        reason = "IoTest.assertId(IoTest.java:2362) doesn't call convertId. https://issues.apache.org/jira/browse/TINKERPOP3-695")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest", method = "shouldMigrateGraphWithFloat",
+        reason = "IoTest.assertId(IoTest.java:2362) doesn't call convertId. https://issues.apache.org/jira/browse/TINKERPOP3-695")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest", method = "shouldMigrateGraph",
+        reason = "IoTest.assertId(IoTest.java:2362) doesn't call convertId. https://issues.apache.org/jira/browse/TINKERPOP3-695")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest", method = "shouldReadWriteClassicToGraphSON",
+        reason = "IoTest.assertId(IoTest.java:2362) doesn't call convertId. https://issues.apache.org/jira/browse/TINKERPOP3-695")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest", method = "shouldReadWriteClassicToGryo",
+        reason = "IoTest.assertId(IoTest.java:2362) doesn't call convertId. https://issues.apache.org/jira/browse/TINKERPOP3-695")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest", method = "shouldReadWriteModernToGraphSONWithHelpers",
+        reason = "IoTest.assertId(IoTest.java:2362) doesn't call convertId. https://issues.apache.org/jira/browse/TINKERPOP3-695")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest", method = "shouldReadGraphMLAnAllSupportedDataTypes",
+        reason = "https://github.com/rmagen/elastic-gremlin/issues/52")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest", method = "shouldReadWriteVertexWithBOTHEdgesToGraphSONWithTypes",
+        reason = "https://github.com/rmagen/elastic-gremlin/issues/52")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest", method = "shouldReadGraphML",
+        reason = "https://github.com/rmagen/elastic-gremlin/issues/52")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest", method = "shouldReadLegacyGraphSON",
+        reason = "https://github.com/rmagen/elastic-gremlin/issues/52")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest", method = "shouldReadGraphMLUnorderedElements",
+        reason = "https://github.com/rmagen/elastic-gremlin/issues/52")
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.GraphConstructionTest", method = "shouldConstructAnEmptyGraph",
         reason = "need to investigate...")
+
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_STANDARD)
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_PERFORMANCE)
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
