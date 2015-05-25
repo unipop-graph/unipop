@@ -17,7 +17,7 @@ public class ElasticGraphGremlinPlugin extends AbstractGremlinPlugin {
 
     @Override
     public String getName() {
-        return "tinkerpop.elasticgraph";
+        return "tinkerpop.elasticgremlin";
     }
 
     @Override
