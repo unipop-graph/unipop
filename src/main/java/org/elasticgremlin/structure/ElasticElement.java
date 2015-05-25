@@ -8,7 +8,7 @@ import java.util.*;
 public abstract class ElasticElement implements Element{
     protected HashMap<String, Property> properties = new HashMap();
     protected final Object id;
-    protected final String label;
+    protected String label;
     protected final ElasticGraph graph;
     protected boolean removed = false;
 
