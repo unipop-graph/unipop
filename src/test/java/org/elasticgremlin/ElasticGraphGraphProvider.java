@@ -38,6 +38,7 @@ public class ElasticGraphGraphProvider extends AbstractGraphProvider {
     Client client;
 
     public ElasticGraphGraphProvider() throws IOException {
+        System.setProperty("build.dir", System.getProperty("user.dir") + "\\build");
         String path = new java.io.File( "." ).getCanonicalPath() + "\\data";
         File file = new File(path);
         FileUtils.deleteQuietly(file);
