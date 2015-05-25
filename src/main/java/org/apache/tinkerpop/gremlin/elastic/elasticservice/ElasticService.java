@@ -1,8 +1,8 @@
 package org.apache.tinkerpop.gremlin.elastic.elasticservice;
 
 import org.apache.commons.configuration.Configuration;
-import org.apache.tinkerpop.gremlin.elastic.process.optimize.ElasticOptimizationStrategy;
 import org.apache.tinkerpop.gremlin.elastic.structure.*;
+import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.elasticsearch.action.bulk.*;
@@ -27,6 +27,7 @@ import org.elasticsearch.search.SearchHit;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.function.BiPredicate;
 import java.util.stream.*;
 
 public class ElasticService {
@@ -238,6 +239,8 @@ public class ElasticService {
         MultiGetRequest request = new MultiGetRequest().refresh(refresh);
 
         int counter = 0;
+        if(ids.length > 1 && !ids[0].getClass().equals(ids[1].getClass())) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
+
         while((resultsLimit == null || counter  < resultsLimit) && counter < ids.length){
             Object id = ids[counter];
             if(id instanceof Element) id = ((Element)id).id();
@@ -284,7 +287,7 @@ public class ElasticService {
 
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch(result.getIndex())
                 .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), boolFilter))
-                .setRouting(result.getRouting()).setFrom((int) predicates.limitLow).setSize((int) predicates.limitHigh);
+                .setRouting(result.getRouting()).setFrom((int) predicates.limitLow).setSize((int) (predicates.limitHigh - predicates.limitLow));
         //TODO: retrive with scroll for efficiency
 
         SearchResponse searchResponse = searchRequestBuilder.execute().actionGet();
@@ -335,67 +338,71 @@ public class ElasticService {
     }
 
     private void addFilter(BoolFilterBuilder boolFilterBuilder, HasContainer has){
-        if(has.key.equals("~id")) {
+        String key = has.getKey();
+        Object value = has.getValue();
+        BiPredicate<?, ?> predicate = has.getBiPredicate();
+
+        if(key.equals("~id")) {
             IdsFilterBuilder idsFilterBuilder = FilterBuilders.idsFilter();
-            if(has.value.getClass().isArray()) {
-                for(Object id : (Object[])has.value)
+            if(value.getClass().isArray()) {
+                for(Object id : (Object[])value)
                     idsFilterBuilder.addIds(id.toString());
             }
-            else idsFilterBuilder.addIds(has.value.toString());
+            else idsFilterBuilder.addIds(value.toString());
             boolFilterBuilder.must(idsFilterBuilder);
         }
-        else if(has.key.equals("~label")) {
-            if(has.value.getClass().isArray()) {
-                Object[] labels = (Object[]) has.value;
-                if(labels.length == 1)
-                    boolFilterBuilder.must(FilterBuilders.typeFilter(labels[0].toString()));
+        else if(key.equals("~label")) {
+            if(value instanceof List){
+                List labels = (List) value;
+                if(labels.size() == 1)
+                    boolFilterBuilder.must(FilterBuilders.typeFilter(labels.get(0).toString()));
                 else {
-                    FilterBuilder[] filters = new FilterBuilder[labels.length];
-                    for(int i = 0; i < labels.length; i++)
-                        filters[i] = FilterBuilders.typeFilter(labels[i].toString());
+                    FilterBuilder[] filters = new FilterBuilder[labels.size()];
+                    for(int i = 0; i < labels.size(); i++)
+                        filters[i] = FilterBuilders.typeFilter(labels.get(i).toString());
                     boolFilterBuilder.must(FilterBuilders.orFilter(filters));
                 }
             }
-            else boolFilterBuilder.must(FilterBuilders.typeFilter(has.value.toString()));
+            else boolFilterBuilder.must(FilterBuilders.typeFilter(value.toString()));
         }
-        else if (has.predicate instanceof Compare) {
-            String predicateString = has.predicate.toString();
+        else if (predicate instanceof Compare) {
+            String predicateString = predicate.toString();
             switch (predicateString) {
                 case ("eq"):
-                    boolFilterBuilder.must(FilterBuilders.termFilter(has.key, has.value));
+                    boolFilterBuilder.must(FilterBuilders.termFilter(key, value));
                     break;
                 case ("neq"):
-                    boolFilterBuilder.mustNot(FilterBuilders.termFilter(has.key, has.value));
+                    boolFilterBuilder.mustNot(FilterBuilders.termFilter(key, value));
                     break;
                 case ("gt"):
-                    boolFilterBuilder.must(FilterBuilders.rangeFilter(has.key).gt(has.value));
+                    boolFilterBuilder.must(FilterBuilders.rangeFilter(key).gt(value));
                     break;
                 case ("gte"):
-                    boolFilterBuilder.must(FilterBuilders.rangeFilter(has.key).gte(has.value));
+                    boolFilterBuilder.must(FilterBuilders.rangeFilter(key).gte(value));
                     break;
                 case ("lt"):
-                    boolFilterBuilder.must(FilterBuilders.rangeFilter(has.key).lt(has.value));
+                    boolFilterBuilder.must(FilterBuilders.rangeFilter(key).lt(value));
                     break;
                 case ("lte"):
-                    boolFilterBuilder.must(FilterBuilders.rangeFilter(has.key).lte(has.value));
+                    boolFilterBuilder.must(FilterBuilders.rangeFilter(key).lte(value));
                     break;
                 case("inside"):
-                    List items =(List) has.value;
+                    List items =(List) value;
                     Object firstItem = items.get(0);
                     Object secondItem = items.get(1);
-                    boolFilterBuilder.must(FilterBuilders.rangeFilter(has.key).from(firstItem).to(secondItem));
+                    boolFilterBuilder.must(FilterBuilders.rangeFilter(key).from(firstItem).to(secondItem));
                     break;
                 default:
-                    throw new IllegalArgumentException("predicate not supported in has step: " + has.predicate.toString());
+                    throw new IllegalArgumentException("predicate not supported in has step: " + predicate.toString());
             }
-        } else if (has.predicate instanceof Contains) {
-            if (has.predicate == Contains.without) boolFilterBuilder.must(FilterBuilders.missingFilter(has.key));
-            else if (has.predicate == Contains.within){
-                if(has.value == null) boolFilterBuilder.must(FilterBuilders.existsFilter(has.key));
-                else  boolFilterBuilder.must(FilterBuilders.termsFilter (has.key, has.value));
+        } else if (predicate instanceof Contains) {
+            if (predicate == Contains.without) boolFilterBuilder.must(FilterBuilders.missingFilter(key));
+            else if (predicate == Contains.within){
+                if(value == null) boolFilterBuilder.must(FilterBuilders.existsFilter(key));
+                else  boolFilterBuilder.must(FilterBuilders.termsFilter (key, value));
             }
-        } else if (has.predicate instanceof Geo) boolFilterBuilder.must(new GeoShapeFilterBuilder(has.key, GetShapeBuilder(has.value), ((Geo) has.predicate).getRelation()));
-        else throw new IllegalArgumentException("predicate not supported by elastic-gremlin: " + has.predicate.toString());
+        } else if (predicate instanceof Geo) boolFilterBuilder.must(new GeoShapeFilterBuilder(key, GetShapeBuilder(value), ((Geo) predicate).getRelation()));
+        else throw new IllegalArgumentException("predicate not supported by elastic-gremlin: " + predicate.toString());
     }
 
     private ShapeBuilder GetShapeBuilder(Object object) {

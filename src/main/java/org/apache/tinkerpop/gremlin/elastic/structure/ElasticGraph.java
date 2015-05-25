@@ -13,10 +13,26 @@ import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import java.io.IOException;
 import java.util.Iterator;
 
-@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest", method = "g_V_repeatXoutX_timesX8X_count", reason = "too much time. need to implement scroll api.")
-@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest", method = "g_V_repeatXoutX_timesX3X_count", reason = "too much time. need to implement scroll api.")
-@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.IoTest", method = "shouldMigrateGraphWithFloat", reason = "stuck on thread.sleep() for some reason...")
-@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.IoTest", method = "shouldMigrateGraph", reason = "stuck on thread.sleep() for some reason...")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest", method = "g_V_repeatXoutX_timesX8X_count",
+        reason = "too much time. need to implement scroll api.")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest", method = "g_V_repeatXoutX_timesX3X_count",
+        reason = "too much time. need to implement scroll api.")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.FeatureSupportTest$VertexPropertyFunctionalityTest", method = "shouldSupportNumericIdsIfNumericIdsAreGeneratedFromTheGraph",
+        reason = "https://issues.apache.org/jira/browse/TINKERPOP3-695")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.FeatureSupportTest$EdgeFunctionalityTest", method = "shouldSupportUserSuppliedIdsOfTypeUuid",
+        reason = "https://issues.apache.org/jira/browse/TINKERPOP3-695")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.FeatureSupportTest$EdgeFunctionalityTest", method = "shouldSupportUserSuppliedIdsOfTypeAny",
+        reason = "https://issues.apache.org/jira/browse/TINKERPOP3-695")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.FeatureSupportTest$EdgeFunctionalityTest", method = "shouldSupportUserSuppliedIdsOfTypeNumeric",
+        reason = "https://issues.apache.org/jira/browse/TINKERPOP3-695")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.FeatureSupportTest$VertexFunctionalityTest", method = "shouldSupportUserSuppliedIdsOfTypeUuid",
+        reason = "https://issues.apache.org/jira/browse/TINKERPOP3-695")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.FeatureSupportTest$VertexFunctionalityTest", method = "shouldSupportUserSuppliedIdsOfTypeAny",
+        reason = "https://issues.apache.org/jira/browse/TINKERPOP3-695")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.FeatureSupportTest$VertexFunctionalityTest", method = "shouldSupportUserSuppliedIdsOfTypeNumeric",
+        reason = "https://issues.apache.org/jira/browse/TINKERPOP3-695")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.GraphConstructionTest", method = "shouldConstructAnEmptyGraph",
+        reason = "need to investigate...")
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_STANDARD)
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_PERFORMANCE)
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
@@ -102,7 +118,6 @@ public class ElasticGraph implements Graph {
     @Override
     public Vertex addVertex(final Object... keyValues) {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
-        if(keyValues!=null && keyValues.length%2==1) throw Element.Exceptions.providedKeyValuesMustBeAMultipleOfTwo();
         Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
 

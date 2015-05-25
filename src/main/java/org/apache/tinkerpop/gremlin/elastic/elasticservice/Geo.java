@@ -1,7 +1,7 @@
 package org.apache.tinkerpop.gremlin.elastic.elasticservice;
 
 import com.spatial4j.core.shape.*;
-import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.elasticsearch.common.Preconditions;
 import org.elasticsearch.common.geo.ShapeRelation;
 import org.elasticsearch.common.geo.builders.ShapeBuilder;

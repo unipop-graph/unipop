@@ -1,12 +1,12 @@
 package org.apache.tinkerpop.gremlin.elastic.process.optimize;
 
-import org.apache.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
-import org.apache.tinkerpop.gremlin.elastic.elasticservice.Predicates;
+import org.apache.tinkerpop.gremlin.elastic.elasticservice.*;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 
-import java.util.*;
+import java.util.Iterator;
 
 public class ElasticGraphStep<E extends Element> extends GraphStep<E> {
 
@@ -21,7 +21,7 @@ public class ElasticGraphStep<E extends Element> extends GraphStep<E> {
         this.elasticService = elasticService;
         Object[] ids = super.getIds();
         if(ids.length > 0) {
-            predicates.hasContainers.add(new HasContainer("~id", Contains.within, ids));
+            predicates.hasContainers.add(new HasContainer("~id", P.within(ids)));
         }
         this.setIteratorSupplier(() -> (Iterator<E>) (Vertex.class.isAssignableFrom(this.returnClass) ? this.vertices() : this.edges()));
     }

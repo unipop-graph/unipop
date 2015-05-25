@@ -19,7 +19,7 @@ Be warned, elastic-gremlin is still very much in development!
 
 
 ### Getting Started!
-1. clone & build Tinkerpop 3.0.0.M9-incubating-rc2 from [here] (https://git-wip-us.apache.org/repos/asf?p=incubator-tinkerpop.git;a=shortlog;h=refs/tags/3.0.0.M9-incubating-rc2)
+1. clone & build Tinkerpop 3.0.0.M9-incubating-rc3 from [here] (https://github.com/apache/incubator-tinkerpop/tree/3.0.0.M9-incubating-rc3)
 2. clone & build elastic-gremlin
     
     ```mvn clean install -Dmaven.test.skip=true```

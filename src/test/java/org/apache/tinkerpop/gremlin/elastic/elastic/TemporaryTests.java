@@ -7,7 +7,7 @@ import org.apache.tinkerpop.gremlin.elastic.elasticservice.ElasticService;
 import org.apache.tinkerpop.gremlin.elastic.structure.ElasticGraph;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.*;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.junit.Test;
 
@@ -80,7 +80,8 @@ public class TemporaryTests {
             System.out.println("s = " + s);
         }*/
 
-        GraphTraversal<Vertex, String> iter2 = g.V().out().outE().inV().inE().inV().both().values("name");
+        GraphTraversal<Vertex, Edge> iter2 = graph.traversal().V().has("name", "marko").outE("knows").as("e").inV().has("name", "vadas").<Edge>select("e");
+        System.out.println(iter2.id());
         printTraversalForm(iter2);
         //iter.profile().cap(TraversalMetrics.METRICS_KEY);
 

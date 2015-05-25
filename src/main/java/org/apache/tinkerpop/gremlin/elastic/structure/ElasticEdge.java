@@ -113,7 +113,6 @@ public class ElasticEdge extends ElasticElement implements Edge {
     public Iterator<Vertex> vertices(Direction direction) {
         checkRemoved();
         ArrayList vertices = new ArrayList();
-        //return elasticService.getVertices(null,null,getVertexId(direction).toArray());
         if(direction.equals(Direction.OUT) || direction.equals(Direction.BOTH))
             vertices.add(new ElasticVertex(outId,outLabel,null,graph,true));
         if(direction.equals(Direction.IN) || direction.equals(Direction.BOTH))
