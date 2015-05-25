@@ -2,12 +2,12 @@ package org.elasticgremlin.elastic;
 
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
+import org.apache.tinkerpop.gremlin.process.traversal.*;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.*;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticgremlin.ElasticGraphGraphProvider;
 import org.elasticgremlin.elasticservice.ElasticService;
 import org.elasticgremlin.structure.ElasticGraph;
-import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.*;
-import org.apache.tinkerpop.gremlin.structure.*;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.junit.Test;
 
@@ -65,11 +65,16 @@ public class TemporaryTests {
         ElasticGraphGraphProvider elasticGraphProvider = new ElasticGraphGraphProvider();
         Method m = this.getClass().getMethod("testToPassTests");
         LoadGraphWith[] loadGraphWiths = m.getAnnotationsByType(LoadGraphWith.class);
-        elasticGraphProvider.loadGraphData(graph, loadGraphWiths[0], this.getClass(), m.getName());
+        //elasticGraphProvider.loadGraphData(graph, loadGraphWiths[0], this.getClass(), m.getName());
         GraphTraversalSource g = graph.traversal();
 
+        Vertex vertex1 = graph.addVertex();
+        Vertex vertex2 = graph.addVertex();
+        vertex1.addEdge("bla", vertex2);
+        vertex2.addEdge("bla", vertex1);
 
-        /*GraphTraversal<Vertex, Path> iter = g.V().out().outE().inV().inE().inV().both().values("name").path();
+
+        GraphTraversal<Vertex, Vertex> iter = g.V().repeat(__.out()).times(8);
         printTraversalForm(iter);
         //iter.profile().cap(TraversalMetrics.METRICS_KEY);
 
@@ -78,19 +83,8 @@ public class TemporaryTests {
             Object next = iter.next();
             String s = next.toString();
             System.out.println("s = " + s);
-        }*/
-
-        GraphTraversal<Vertex, Edge> iter2 = graph.traversal().V().has("name", "marko").outE("knows").as("e").inV().has("name", "vadas").<Edge>select("e");
-        System.out.println(iter2.id());
-        printTraversalForm(iter2);
-        //iter.profile().cap(TraversalMetrics.METRICS_KEY);
-
-        System.out.println("iter2 = " + iter2);
-        while(iter2.hasNext()){
-            Object next = iter2.next();
-            String s = next.toString();
-            System.out.println("s = " + s);
         }
+
 
 
         graph.elasticService.client.admin().indices().delete(new DeleteIndexRequest(indexName)).actionGet();
