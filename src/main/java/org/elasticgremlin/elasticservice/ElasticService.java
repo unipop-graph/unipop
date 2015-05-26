@@ -287,11 +287,8 @@ public class ElasticService {
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch(result.getIndex())
                 .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), boolFilter))
                 .setRouting(result.getRouting()).setFrom((int) predicates.limitLow).setSize((int) (predicates.limitHigh - predicates.limitLow));
-        //TODO: retrive with scroll for efficiency
 
-        SearchResponse searchResponse = searchRequestBuilder.execute().actionGet();
-
-        Iterable<SearchHit> hitsIterable = () -> searchResponse.getHits().iterator();
+        Iterable<SearchHit> hitsIterable = () -> new ScrollIterator(searchRequestBuilder, client);
         Stream<SearchHit> hitStream = StreamSupport.stream(hitsIterable.spliterator(), false);
         timer("search").stop();
         return hitStream;
