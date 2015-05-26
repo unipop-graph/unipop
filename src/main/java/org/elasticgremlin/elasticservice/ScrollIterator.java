@@ -25,32 +25,29 @@ public class ScrollIterator implements Iterator<SearchHit> {
         scrollResponse = searchRequestBuilder
                 .setScroll(new TimeValue(60000))
                 .setSize(100).execute().actionGet(); // 100 elements per shard per scroll
-        scrollResponse = client.prepareSearchScroll(scrollResponse.getScrollId()).setScroll(new TimeValue(600000)).execute().actionGet();
         this.client = client;
         hits = scrollResponse.getHits().getHits();
-        currentIndex = 0;
+        currentIndex = -1;
         count = 0;
     }
 
     @Override
     public boolean hasNext() {
-        return currentIndex < hits.length ? true : scrollResponse.getHits().getTotalHits() < count;
+        if(currentIndex+1 < hits.length)
+        {
+            return true;
+        }
+        scrollResponse = client.prepareSearchScroll(scrollResponse.getScrollId()).setScroll(new TimeValue(600000)).execute().actionGet();
+        hits = scrollResponse.getHits().getHits();
+        currentIndex = -1;
+        return hits.length>0;
     }
 
     @Override
     public SearchHit next() {
-        if (currentIndex < hits.length) {
-            count++;
-            return hits[currentIndex++];
-        }
-        else{
-            if (scrollResponse.getHits().getTotalHits() < count){
-                currentIndex = 0;
-                scrollResponse = client.prepareSearchScroll(scrollResponse.getScrollId()).setScroll(new TimeValue(600000)).execute().actionGet();
-                hits = scrollResponse.getHits().getHits();
-                count++;
-                return hits[currentIndex++];
-            }
+        if (hasNext()) {
+            currentIndex++;
+            return hits[currentIndex];
         }
         throw new ArrayIndexOutOfBoundsException(count);
     }
