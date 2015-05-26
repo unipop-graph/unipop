@@ -264,7 +264,6 @@ public class ElasticService {
 
     public Iterator<Edge> searchEdges(Predicates predicates, Direction direction, Object... vertexIds) {
         BoolFilterBuilder boolFilter = createFilterBuilder(predicates.hasContainers);
-        boolFilter.must(FilterBuilders.existsFilter(ElasticEdge.InId));
 
         if(direction != null && vertexIds != null && vertexIds.length > 0) {
             if (direction == Direction.IN) boolFilter.must(FilterBuilders.termsFilter(ElasticEdge.InId, vertexIds));
@@ -272,8 +271,8 @@ public class ElasticService {
                 boolFilter.must(FilterBuilders.termsFilter(ElasticEdge.OutId, vertexIds));
             else if (direction == Direction.BOTH)
                 boolFilter.should(FilterBuilders.termsFilter(ElasticEdge.InId, vertexIds), FilterBuilders.termsFilter(ElasticEdge.OutId, vertexIds));
-            else throw new EnumConstantNotPresentException(direction.getClass(), direction.name());
         }
+        else boolFilter.must(FilterBuilders.existsFilter(ElasticEdge.InId));
 
         Stream<SearchHit> hits = search(predicates, boolFilter, ElementType.edge);
         return hits.map((hit) -> createEdge(hit.getId(), hit.getType(), hit.getSource())).iterator();
