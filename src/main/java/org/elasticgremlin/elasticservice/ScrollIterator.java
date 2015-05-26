@@ -10,46 +10,35 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import java.util.Iterator;
 import java.util.function.Consumer;
 
-/**
- * Created by Sean on 5/26/2015.
- */
 public class ScrollIterator implements Iterator<SearchHit> {
 
     private SearchResponse scrollResponse;
+    private int allowedRemaining;
     private Client client;
-    private SearchHit[] hits;
-    private int currentIndex;
-    private int count;
+    private Iterator<SearchHit> hits;
 
-    public ScrollIterator(SearchRequestBuilder searchRequestBuilder, Client client) {
-        scrollResponse = searchRequestBuilder
-                .setScroll(new TimeValue(60000))
-                .setSize(100).execute().actionGet(); // 100 elements per shard per scroll
+    public ScrollIterator(SearchRequestBuilder searchRequestBuilder, int maxSize, Client client) {
         this.client = client;
-        hits = scrollResponse.getHits().getHits();
-        currentIndex = -1;
-        count = 0;
+        this.allowedRemaining = maxSize;
+        int size = Math.min(100, maxSize); // 100 elements per shard per scroll
+        scrollResponse = searchRequestBuilder.setScroll(new TimeValue(60000)).setSize(size).execute().actionGet(); 
+        hits = scrollResponse.getHits().iterator();
     }
 
     @Override
     public boolean hasNext() {
-        if(currentIndex+1 < hits.length)
-        {
-            return true;
-        }
+        if(allowedRemaining <= 0) return false;
+        if(hits.hasNext()) return true;
+        
         scrollResponse = client.prepareSearchScroll(scrollResponse.getScrollId()).setScroll(new TimeValue(600000)).execute().actionGet();
-        hits = scrollResponse.getHits().getHits();
-        currentIndex = -1;
-        return hits.length>0;
+        hits = scrollResponse.getHits().iterator();
+        return hits.hasNext();
     }
 
     @Override
     public SearchHit next() {
-        if (hasNext()) {
-            currentIndex++;
-            return hits[currentIndex];
-        }
-        throw new ArrayIndexOutOfBoundsException(count);
+        allowedRemaining--;
+        return hits.next();
     }
 
     @Override
@@ -59,8 +48,6 @@ public class ScrollIterator implements Iterator<SearchHit> {
 
     @Override
     public void forEachRemaining(Consumer<? super SearchHit> action) {
-        while (hasNext()){
-            action.accept(next());
-        }
+        hits.forEachRemaining(action);
     }
 }
