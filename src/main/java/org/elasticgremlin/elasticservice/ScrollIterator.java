@@ -25,6 +25,7 @@ public class ScrollIterator implements Iterator<SearchHit> {
         scrollResponse = searchRequestBuilder
                 .setScroll(new TimeValue(60000))
                 .setSize(100).execute().actionGet(); // 100 elements per shard per scroll
+        scrollResponse = client.prepareSearchScroll(scrollResponse.getScrollId()).setScroll(new TimeValue(600000)).execute().actionGet();
         this.client = client;
         hits = scrollResponse.getHits().getHits();
         currentIndex = 0;
