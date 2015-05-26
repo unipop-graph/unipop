@@ -290,9 +290,10 @@ public class ElasticService {
                 .setRouting(result.getRouting()).setFrom((int) predicates.limitLow).setSize((int) (predicates.limitHigh - predicates.limitLow));
         //TODO: retrive with scroll for efficiency
 
-        SearchResponse searchResponse = searchRequestBuilder.execute().actionGet();
+//        SearchResponse searchResponse = searchRequestBuilder.execute().actionGet();
 
-        Iterable<SearchHit> hitsIterable = () -> searchResponse.getHits().iterator();
+
+        Iterable<SearchHit> hitsIterable = () ->  new ScrollIterator(searchRequestBuilder, client); //searchResponse.getHits().iterator();
         Stream<SearchHit> hitStream = StreamSupport.stream(hitsIterable.spliterator(), false);
         timer("search").stop();
         return hitStream;
