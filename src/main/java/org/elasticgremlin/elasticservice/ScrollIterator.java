@@ -13,15 +13,17 @@ import java.util.function.Consumer;
 public class ScrollIterator implements Iterator<SearchHit> {
 
     private SearchResponse scrollResponse;
-    private int allowedRemaining;
+    private long allowedRemaining;
     private Client client;
     private Iterator<SearchHit> hits;
 
-    public ScrollIterator(SearchRequestBuilder searchRequestBuilder, int maxSize, Client client) {
+    public ScrollIterator(SearchRequestBuilder searchRequestBuilder, int scrollSize, long maxSize, Client client) {
         this.client = client;
         this.allowedRemaining = maxSize;
-        int size = Math.min(100, maxSize); // 100 elements per shard per scroll
-        scrollResponse = searchRequestBuilder.setScroll(new TimeValue(60000)).setSize(size).execute().actionGet(); 
+        scrollResponse = searchRequestBuilder
+                .setScroll(new TimeValue(60000))
+                .setSize(maxSize < scrollSize ? (int) maxSize : scrollSize)
+                .execute().actionGet();
         hits = scrollResponse.getHits().iterator();
     }
 

@@ -45,12 +45,13 @@ public class ElasticService {
     }
 
 
-    private ElasticGraph graph;
-    public IndexProvider indexProvider;
-    private boolean refresh;
+    private final ElasticGraph graph;
+    public final IndexProvider indexProvider;
+    private final boolean refresh;
+    public final int scrollSize;
     public Client client;
     private Node node;
-    TimingAccessor timingAccessor = new TimingAccessor();
+    private final TimingAccessor timingAccessor = new TimingAccessor();
     private LazyGetter lazyGetter;
 
     //endregion
@@ -62,6 +63,7 @@ public class ElasticService {
 
         this.graph = graph;
         this.refresh = configuration.getBoolean("elasticsearch.refresh", false);
+        this.scrollSize = configuration.getInt("elasticsearch.scrollSize", 100);
         String clusterName = configuration.getString("elasticsearch.cluster.name", "elasticsearch");
         String addresses = configuration.getString("elasticsearch.cluster.address", "127.0.0.1:9300");
         String indexProvider = configuration.getString("elasticsearch.indexProvider", DefaultIndexProvider.class.getCanonicalName());
@@ -288,7 +290,7 @@ public class ElasticService {
                 .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), boolFilter))
                 .setRouting(result.getRouting()).setFrom((int) predicates.limitLow);
 
-        Iterable<SearchHit> hitsIterable = () -> new ScrollIterator(searchRequestBuilder, (int) (predicates.limitHigh - predicates.limitLow), client);
+        Iterable<SearchHit> hitsIterable = () -> new ScrollIterator(searchRequestBuilder, scrollSize, predicates.limitHigh - predicates.limitLow, client);
         Stream<SearchHit> hitStream = StreamSupport.stream(hitsIterable.spliterator(), false);
         timer("search").stop();
         return hitStream;

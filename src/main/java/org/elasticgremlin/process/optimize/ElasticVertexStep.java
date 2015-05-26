@@ -35,7 +35,7 @@ public class ElasticVertexStep<E extends Element> extends AbstractStep<Vertex, E
     protected Traverser<E> processNextStart() {
         if ((results == null || !results.hasNext()) && starts.hasNext()) {
             List<Traverser.Admin<Vertex>> traversers = new ArrayList<>();
-            for(int i=0; i < 100 && starts.hasNext(); i++)
+            for(int i=0; i < elasticService.scrollSize && starts.hasNext(); i++)
                 traversers.add(starts.next());
             results = query(traversers);
         }
