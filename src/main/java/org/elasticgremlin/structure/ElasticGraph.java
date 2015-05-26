@@ -14,9 +14,9 @@ import java.io.IOException;
 import java.util.Iterator;
 
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest", method = "g_V_repeatXoutX_timesX8X_count",
-        reason = "Takes too much time. need to implement scroll api. https://github.com/rmagen/elastic-gremlin/issues/9")
+        reason = "Takes too much time. https://github.com/rmagen/elastic-gremlin/issues/21")
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest", method = "g_V_repeatXoutX_timesX3X_count",
-        reason = "Takes too much time. need to implement scroll api. https://github.com/rmagen/elastic-gremlin/issues/9")
+        reason = "Takes too much time. https://github.com/rmagen/elastic-gremlin/issues/21")
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.FeatureSupportTest$VertexPropertyFunctionalityTest", method = "shouldSupportNumericIdsIfNumericIdsAreGeneratedFromTheGraph",
         reason = "https://issues.apache.org/jira/browse/TINKERPOP3-695")
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.FeatureSupportTest$EdgeFunctionalityTest", method = "shouldSupportUserSuppliedIdsOfTypeUuid",
