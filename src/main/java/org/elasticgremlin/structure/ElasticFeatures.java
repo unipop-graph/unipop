@@ -170,6 +170,11 @@ public class ElasticFeatures implements Graph.Features {
         public boolean supportsCustomIds() {
             return false;
         }
+
+        @Override
+        public boolean willAllowId(Object id) {
+            return true;
+        }
     }
 
     private class ElasticVertexFeatures implements VertexFeatures {
@@ -209,6 +214,11 @@ public class ElasticFeatures implements Graph.Features {
         public VertexPropertyFeatures properties() {
             return elasticVertexPropertyFeatures;
         }
+
+        /*@Override
+        public boolean willAllowId(Object id) {
+            return true;
+        }*/
     }
 
     private class ElasticVertexPropertyFeatures implements VertexPropertyFeatures {
