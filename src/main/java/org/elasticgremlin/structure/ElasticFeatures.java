@@ -51,7 +51,7 @@ public class ElasticFeatures implements Graph.Features {
         public boolean supportsThreadedTransactions() {
             return false;
         }
-    };
+    }
 
     private class ElasticVariableFeatures implements VariableFeatures {
         @Override

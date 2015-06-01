@@ -15,17 +15,13 @@ import java.util.Iterator;
 
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.FeatureSupportTest$VertexPropertyFunctionalityTest", method = "shouldSupportNumericIdsIfNumericIdsAreGeneratedFromTheGraph",
         reason = "https://issues.apache.org/jira/browse/TINKERPOP3-695")
-@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.FeatureSupportTest$EdgeFunctionalityTest", method = "shouldSupportUserSuppliedIdsOfTypeUuid",
-        reason = "https://issues.apache.org/jira/browse/TINKERPOP3-695")
-@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.FeatureSupportTest$EdgeFunctionalityTest", method = "shouldSupportUserSuppliedIdsOfTypeAny",
-        reason = "https://issues.apache.org/jira/browse/TINKERPOP3-695")
-@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.FeatureSupportTest$EdgeFunctionalityTest", method = "shouldSupportUserSuppliedIdsOfTypeNumeric",
-        reason = "https://issues.apache.org/jira/browse/TINKERPOP3-695")
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.FeatureSupportTest$VertexFunctionalityTest", method = "shouldSupportUserSuppliedIdsOfTypeUuid",
         reason = "https://issues.apache.org/jira/browse/TINKERPOP3-695")
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.FeatureSupportTest$VertexFunctionalityTest", method = "shouldSupportUserSuppliedIdsOfTypeAny",
         reason = "https://issues.apache.org/jira/browse/TINKERPOP3-695")
-@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.FeatureSupportTest$VertexFunctionalityTest", method = "shouldSupportUserSuppliedIdsOfTypeNumeric",
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.FeatureSupportTest$VertexFunctionalityTest", method = "shouldSupportUserSuppliedIdsOfTypeNumericLong",
+        reason = "https://issues.apache.org/jira/browse/TINKERPOP3-695")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.FeatureSupportTest$VertexFunctionalityTest", method = "shouldSupportUserSuppliedIdsOfTypeNumericInt",
         reason = "https://issues.apache.org/jira/browse/TINKERPOP3-695")
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest", method = "shouldReadWriteClassicToGryo",
         reason = "https://github.com/rmagen/elastic-gremlin/issues/52")
