@@ -6,7 +6,7 @@ import java.util.ArrayList;
 
 public class Predicates {
     public ArrayList<HasContainer> hasContainers = new ArrayList<>();
-    public long limitLow;
-    public long limitHigh = 2000000;
+    public long limitLow = 0;
+    public long limitHigh = Long.MAX_VALUE;
     public ArrayList<String> labels = new ArrayList<>();
 }

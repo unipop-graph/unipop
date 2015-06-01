@@ -41,10 +41,12 @@ public class LazyGetter {
         MultiGetResponse multiGetItemResponses = es.client.multiGet(multiGetRequest).actionGet();
         multiGetItemResponses.forEach(response -> {
             Map<String, Object> source = response.getResponse().getSource();
-            lazyGetters.get(response.getId()).forEach(vertex ->{
+            List<ElasticVertex> elasticVertexes = lazyGetters.get(response.getId());
+            if(elasticVertexes == null) return;
+            elasticVertexes.forEach(vertex -> {
                 vertex.setLabel(response.getType());
                 source.entrySet().forEach((field) ->
-                    vertex.addPropertyLocal(field.getKey(), field.getValue()));
+                        vertex.addPropertyLocal(field.getKey(), field.getValue()));
             });
         });
 

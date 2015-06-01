@@ -45,12 +45,13 @@ public class ElasticService {
     }
 
 
-    private ElasticGraph graph;
-    public IndexProvider indexProvider;
-    private boolean refresh;
+    private final ElasticGraph graph;
+    public final IndexProvider indexProvider;
+    private final boolean refresh;
+    public final int scrollSize;
     public Client client;
     private Node node;
-    TimingAccessor timingAccessor = new TimingAccessor();
+    private final TimingAccessor timingAccessor = new TimingAccessor();
     private LazyGetter lazyGetter;
 
     //endregion
@@ -62,6 +63,7 @@ public class ElasticService {
 
         this.graph = graph;
         this.refresh = configuration.getBoolean("elasticsearch.refresh", false);
+        this.scrollSize = configuration.getInt("elasticsearch.scrollSize", 100);
         String clusterName = configuration.getString("elasticsearch.cluster.name", "elasticsearch");
         String addresses = configuration.getString("elasticsearch.cluster.address", "127.0.0.1:9300");
         String indexProvider = configuration.getString("elasticsearch.indexProvider", DefaultIndexProvider.class.getCanonicalName());
@@ -264,7 +266,6 @@ public class ElasticService {
 
     public Iterator<Edge> searchEdges(Predicates predicates, Direction direction, Object... vertexIds) {
         BoolFilterBuilder boolFilter = createFilterBuilder(predicates.hasContainers);
-        boolFilter.must(FilterBuilders.existsFilter(ElasticEdge.InId));
 
         if(direction != null && vertexIds != null && vertexIds.length > 0) {
             if (direction == Direction.IN) boolFilter.must(FilterBuilders.termsFilter(ElasticEdge.InId, vertexIds));
@@ -272,8 +273,8 @@ public class ElasticService {
                 boolFilter.must(FilterBuilders.termsFilter(ElasticEdge.OutId, vertexIds));
             else if (direction == Direction.BOTH)
                 boolFilter.should(FilterBuilders.termsFilter(ElasticEdge.InId, vertexIds), FilterBuilders.termsFilter(ElasticEdge.OutId, vertexIds));
-            else throw new EnumConstantNotPresentException(direction.getClass(), direction.name());
         }
+        else boolFilter.must(FilterBuilders.existsFilter(ElasticEdge.InId));
 
         Stream<SearchHit> hits = search(predicates, boolFilter, ElementType.edge);
         return hits.map((hit) -> createEdge(hit.getId(), hit.getType(), hit.getSource())).iterator();
@@ -287,12 +288,9 @@ public class ElasticService {
 
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch(result.getIndex())
                 .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), boolFilter))
-                .setRouting(result.getRouting()).setFrom((int) predicates.limitLow).setSize((int) (predicates.limitHigh - predicates.limitLow));
-        //TODO: retrive with scroll for efficiency
+                .setRouting(result.getRouting()).setFrom((int) predicates.limitLow);
 
-        SearchResponse searchResponse = searchRequestBuilder.execute().actionGet();
-
-        Iterable<SearchHit> hitsIterable = () -> searchResponse.getHits().iterator();
+        Iterable<SearchHit> hitsIterable = () -> new ScrollIterator(searchRequestBuilder, scrollSize, predicates.limitHigh - predicates.limitLow, client);
         Stream<SearchHit> hitStream = StreamSupport.stream(hitsIterable.spliterator(), false);
         timer("search").stop();
         return hitStream;

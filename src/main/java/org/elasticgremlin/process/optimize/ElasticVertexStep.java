@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.*;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.elasticgremlin.elasticservice.*;
 import org.elasticgremlin.structure.*;
 
@@ -16,26 +17,29 @@ public class ElasticVertexStep<E extends Element> extends AbstractStep<Vertex, E
     protected final Predicates predicates;
     protected final ElasticService elasticService;
     private final Direction direction;
-    private final boolean returnVertex;
+    private final Class returnClass;
+    private final String[] edgeLabels;
     private Iterator<Traverser<E>> results;
 
     public ElasticVertexStep(VertexStep vertexStep, Predicates predicates, ElasticService elasticService) {
         super(vertexStep.getTraversal());
         this.direction = vertexStep.getDirection();
-        this.returnVertex = Vertex.class.equals(vertexStep.getReturnClass());
+        this.returnClass = vertexStep.getReturnClass();
         this.predicates = predicates;
         this.elasticService = elasticService;
         vertexStep.getLabels().forEach(label -> this.addLabel(label.toString()));
         predicates.labels.forEach(label -> this.addLabel(label.toString()));
-        if(vertexStep.getEdgeLabels().length > 0)
-            this.predicates.hasContainers.add(new HasContainer("~label", P.within(vertexStep.getEdgeLabels())));
+        this.edgeLabels = vertexStep.getEdgeLabels();
+        if(edgeLabels.length > 0)
+            this.predicates.hasContainers.add(new HasContainer("~label", P.within(edgeLabels)));
     }
 
     @Override
     protected Traverser<E> processNextStart() {
         if ((results == null || !results.hasNext()) && starts.hasNext()) {
             List<Traverser.Admin<Vertex>> traversers = new ArrayList<>();
-            starts.forEachRemaining(traversers::add);
+            for(int i=0; i < elasticService.scrollSize && starts.hasNext(); i++)
+                traversers.add(starts.next());
             results = query(traversers);
         }
         if(results != null && results.hasNext())
@@ -50,7 +54,10 @@ public class ElasticVertexStep<E extends Element> extends AbstractStep<Vertex, E
         Iterator<Edge> edgeIterator = elasticService.searchEdges(predicates, direction, vertexIds.toArray());
 
         Map<String, ArrayList<E>> idToResults = new HashMap<>();
-        edgeIterator.forEachRemaining(edge -> edge.vertices(direction).forEachRemaining(vertex -> putOrAddToList(idToResults, vertex.id(), !returnVertex ? edge : ElasticVertex.vertexToVertex(vertex, (ElasticEdge) edge, direction))));
+        edgeIterator.forEachRemaining(edge -> edge.vertices(direction).forEachRemaining(vertex ->
+                putOrAddToList(idToResults, vertex.id(),
+                        !Vertex.class.equals(returnClass) ?
+                                edge : ElasticVertex.vertexToVertex(vertex, (ElasticEdge) edge, direction))));
 
         List<Traverser<E>> returnTraversers = new ArrayList<>();
         traversers.forEach(traverser -> {
@@ -74,6 +81,11 @@ public class ElasticVertexStep<E extends Element> extends AbstractStep<Vertex, E
     public void reset() {
         super.reset();
         this.results = null;
+    }
+
+    @Override
+    public String toString() {
+        return StringFactory.stepString(this, this.direction, Arrays.asList(this.edgeLabels), this.returnClass.getSimpleName().toLowerCase());
     }
 
     @Override
