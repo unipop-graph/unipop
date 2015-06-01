@@ -1,17 +1,16 @@
 package org.elasticgremlin.structure;
 
 import org.apache.commons.configuration.Configuration;
-import org.elasticgremlin.elasticservice.ElasticService;
-import org.elasticgremlin.elasticservice.Predicates;
-import org.elasticgremlin.process.optimize.ElasticOptimizationStrategy;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.*;
+import org.elasticgremlin.elasticservice.*;
+import org.elasticgremlin.process.optimize.ElasticOptimizationStrategy;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 
 import java.io.IOException;
-import java.util.Iterator;
+import java.util.*;
 
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.FeatureSupportTest$VertexPropertyFunctionalityTest", method = "shouldSupportNumericIdsIfNumericIdsAreGeneratedFromTheGraph",
         reason = "need to handle ids in VertexProperties")
@@ -115,8 +114,16 @@ public class ElasticGraph implements Graph {
 
     @Override
     public Iterator<Vertex> vertices(Object... vertexIds) {
+        if(vertexIds.length > 1 && !vertexIds[0].getClass().equals(vertexIds[1].getClass())) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
         if (vertexIds == null || vertexIds.length == 0) return elasticService.searchVertices(new Predicates());
-        return elasticService.getVertices(null,null,vertexIds);
+        //return elasticService.getVertices(null,null,vertexIds);
+        List<Vertex> vertices = new ArrayList<>();
+        for(Object id : vertexIds) {
+            if(id instanceof Element)
+                id = ((Element)id).id();
+            vertices.add(new ElasticVertex(id, null, null, this, true));
+        }
+        return vertices.iterator();
     }
 
     @Override

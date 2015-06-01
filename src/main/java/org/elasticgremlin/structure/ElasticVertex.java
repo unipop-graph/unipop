@@ -22,6 +22,13 @@ public class ElasticVertex extends ElasticElement implements Vertex {
     }
 
     @Override
+    public String label() {
+        if(this.label == null && lazyGetter != null)
+            lazyGetter.execute();
+        return super.label();
+    }
+
+    @Override
     public Property createProperty(String key, Object value) {
         return new ElasticVertexProperty(this, key, value);
     }
@@ -106,7 +113,7 @@ public class ElasticVertex extends ElasticElement implements Vertex {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         checkRemoved();
         Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
-        ElasticEdge elasticEdge = new ElasticEdge(idValue, label, this.id, this.label, vertex.id(), vertex.label(), keyValues, this.graph);
+        ElasticEdge elasticEdge = new ElasticEdge(idValue, label, id(), label(), vertex.id(), vertex.label(), keyValues, this.graph);
         try {
             graph.elasticService.addElement(elasticEdge, true);
         }
@@ -144,5 +151,9 @@ public class ElasticVertex extends ElasticElement implements Vertex {
     @Override
     protected void checkRemoved() {
         if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, this.id);
+    }
+
+    public void setLabel(String label) {
+        this.label = label;
     }
 }
