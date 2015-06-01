@@ -215,10 +215,10 @@ public class ElasticFeatures implements Graph.Features {
             return elasticVertexPropertyFeatures;
         }
 
-        /*@Override
+        @Override
         public boolean willAllowId(Object id) {
             return true;
-        }*/
+        }
     }
 
     private class ElasticVertexPropertyFeatures implements VertexPropertyFeatures {
