@@ -22,7 +22,7 @@ public class LazyGetter {
 
     public void register(ElasticVertex v) {
         IndexProvider.IndexResult indexProviderResult = es.indexProvider.getIndex(v);
-        multiGetRequest.add(indexProviderResult.getIndex(), v.label(), v.id().toString()); //TODO: add routing..?
+        multiGetRequest.add(indexProviderResult.getIndex(), null, v.id().toString()); //TODO: add routing..?
 
         putOrAddToList(lazyGetters, v.id().toString(), v);
     }
@@ -42,10 +42,12 @@ public class LazyGetter {
         multiGetItemResponses.forEach(response -> {
             Map<String, Object> source = response.getResponse().getSource();
             List<ElasticVertex> elasticVertexes = lazyGetters.get(response.getId());
-            if(elasticVertexes != null)
-                elasticVertexes.forEach(vertex ->
-                        source.entrySet().forEach((field) ->
-                                vertex.addPropertyLocal(field.getKey(), field.getValue())));
+            if(elasticVertexes == null) return;
+            elasticVertexes.forEach(vertex -> {
+                vertex.setLabel(response.getType());
+                source.entrySet().forEach((field) ->
+                        vertex.addPropertyLocal(field.getKey(), field.getValue()));
+            });
         });
 
         executed = true;
