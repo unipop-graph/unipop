@@ -6,7 +6,8 @@ import com.spatial4j.core.shape.impl.PointImpl;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.elasticgremlin.elasticservice.*;
+import org.elasticgremlin.elasticsearch.ElasticClientFactory;
+import org.elasticgremlin.elasticsearch.Geo;
 import org.elasticgremlin.structure.ElasticGraph;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
 import org.elasticsearch.client.Client;
@@ -34,12 +35,12 @@ public class SpatialStepTests {
         config.addProperty("elasticsearch.cluster.name", CLUSTER_NAME);
         config.addProperty("elasticsearch.index.name", INDEX_NAME);
         config.addProperty("elasticsearch.refresh", true);
-        config.addProperty("elasticsearch.client", ElasticService.ClientType.NODE.toString());
+        config.addProperty("elasticsearch.client", ElasticClientFactory.ClientType.NODE.toString());
 
         graph = new ElasticGraph(config);
 
-        graph.elasticService.clearAllData();
-        createGeoShapeMapping(graph.elasticService.client,DOCUMENT_TYPE);
+        graph.getQueryHandler().clearAllData();
+        //createGeoShapeMapping(graph.elasticService.client,DOCUMENT_TYPE);
     }
 
     @Test

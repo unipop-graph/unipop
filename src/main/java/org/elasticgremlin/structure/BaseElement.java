@@ -5,17 +5,19 @@ import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 
 import java.util.*;
 
-public abstract class ElasticElement implements Element{
+public abstract class BaseElement implements Element{
     protected HashMap<String, Property> properties = new HashMap();
     protected final Object id;
     protected String label;
     protected final ElasticGraph graph;
     protected boolean removed = false;
 
-    public ElasticElement(final Object id, final String label, ElasticGraph graph, Object[] keyValues) {
+    public BaseElement(final Object id, final String label, ElasticGraph graph, Object[] keyValues) {
         this.graph = graph;
         this.id = id != null ? id : new com.eaio.uuid.UUID().toString();
         this.label = label;
+        if(keyValues != null) ElementHelper.legalPropertyKeyValueArray(keyValues);
+
         if (keyValues != null) {
             if(keyValues.length % 2 == 1) throw Element.Exceptions.providedKeyValuesMustBeAMultipleOfTwo();
             for (int i = 0; i < keyValues.length; i = i + 2) {
@@ -88,12 +90,10 @@ public abstract class ElasticElement implements Element{
 
     public void removeProperty(Property property) {
         properties.remove(property.key());
-        try {
-            graph.elasticService.addElement(this, false);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        this.innerRemoveProperty(property);
     }
+
+    protected abstract void innerRemoveProperty(Property property);
 
     protected abstract Property createProperty(String key, Object value);
 
@@ -103,10 +103,22 @@ public abstract class ElasticElement implements Element{
 
     protected abstract void checkRemoved();
 
+    protected abstract void innerRemove();
+
+    @Override
+    public void remove() {
+        checkRemoved();
+        innerRemove();
+        this.removed = true;
+    }
 
     public Map<String, Object> allFields() {
         Map<String, Object> map = new HashMap<>();
         properties.forEach((key, value) -> map.put(key, value.value()));
         return map;
+    }
+
+    public void setLabel(String label) {
+        this.label = label;
     }
 }

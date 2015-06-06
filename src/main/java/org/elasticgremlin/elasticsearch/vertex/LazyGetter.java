@@ -1,31 +1,33 @@
-package org.elasticgremlin.elasticservice;
+package org.elasticgremlin.elasticsearch.vertex;
 
-import org.elasticgremlin.structure.ElasticVertex;
+import org.elasticgremlin.structure.BaseElement;
 import org.elasticsearch.action.get.*;
+import org.elasticsearch.client.Client;
 
 import java.util.*;
 
 public class LazyGetter {
     private static final int MAX_LAZY_GET = 1000;
+    private Client client;
+    private final String indexName;
     private boolean executed = false;
     private MultiGetRequest multiGetRequest = new MultiGetRequest();
-    private HashMap<String, List<ElasticVertex>> lazyGetters = new HashMap();
-    private ElasticService es;
+    private HashMap<String, List<BaseElement>> lazyGetters = new HashMap();
 
-    public LazyGetter(ElasticService es) {
-        this.es = es;
+    public LazyGetter(Client client, String indexName) {
+        this.client = client;
+        this.indexName = indexName;
     }
 
     public Boolean canRegister() {
         return !executed && multiGetRequest.getItems().size() < MAX_LAZY_GET;
     }
 
-    public void register(ElasticVertex v) {
-        IndexProvider.IndexResult indexProviderResult = es.indexProvider.getIndex(v);
-        multiGetRequest.add(indexProviderResult.getIndex(), null, v.id().toString()); //TODO: add routing..?
-
+    public void register(ElasticDocVertex v) {
+        multiGetRequest.add(indexName, null, v.id().toString()); //TODO: add routing..?
         putOrAddToList(lazyGetters, v.id().toString(), v);
     }
+
     protected void putOrAddToList(Map map, Object key, Object value) {
         Object list = map.get(key);
         if(list == null || !(list instanceof List)) {
@@ -38,12 +40,12 @@ public class LazyGetter {
     public void execute() {
         if (executed) return;
 
-        MultiGetResponse multiGetItemResponses = es.client.multiGet(multiGetRequest).actionGet();
+        MultiGetResponse multiGetItemResponses = client.multiGet(multiGetRequest).actionGet();
         multiGetItemResponses.forEach(response -> {
             Map<String, Object> source = response.getResponse().getSource();
-            List<ElasticVertex> elasticVertexes = lazyGetters.get(response.getId());
-            if(elasticVertexes == null) return;
-            elasticVertexes.forEach(vertex -> {
+            List<BaseElement> vertices = lazyGetters.get(response.getId());
+            if(vertices == null) return;
+            vertices.forEach(vertex -> {
                 vertex.setLabel(response.getType());
                 source.entrySet().forEach((field) ->
                         vertex.addPropertyLocal(field.getKey(), field.getValue()));
@@ -53,6 +55,6 @@ public class LazyGetter {
         executed = true;
         multiGetRequest = null;
         lazyGetters = null;
-        es = null;
+        client = null;
     }
 }

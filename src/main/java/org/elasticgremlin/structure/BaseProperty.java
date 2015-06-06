@@ -4,13 +4,13 @@ package org.elasticgremlin.structure;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.*;
 
-public class ElasticProperty<V> implements Property<V> {
-    protected final ElasticElement element;
+public class BaseProperty<V> implements Property<V> {
+    protected final BaseElement element;
     protected final String key;
     protected V value;
     protected final ElasticGraph graph;
 
-    public ElasticProperty(ElasticElement element, String key, V value) {
+    public BaseProperty(BaseElement element, String key, V value) {
         this.element = element;
         this.key = key;
         this.value = value;

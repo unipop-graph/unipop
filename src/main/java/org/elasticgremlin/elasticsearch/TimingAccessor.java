@@ -1,4 +1,4 @@
-package org.elasticgremlin.elasticservice;
+package org.elasticgremlin.elasticsearch;
 
 import org.apache.commons.lang3.time.StopWatch;
 
@@ -15,6 +15,15 @@ public class TimingAccessor {
         Timer timer = new Timer(name);
         timers.put(name, timer);
         return timer;
+    }
+
+    public void start(String name) {
+        timer(name).start();
+    }
+
+
+    public void stop(String name) {
+        timer(name).stop();
     }
 
     public void print() {

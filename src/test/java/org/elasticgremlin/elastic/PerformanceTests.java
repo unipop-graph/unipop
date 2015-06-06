@@ -2,7 +2,8 @@ package org.elasticgremlin.elastic;
 
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.elasticgremlin.elasticservice.*;
+import org.elasticgremlin.elasticsearch.ElasticClientFactory;
+import org.elasticgremlin.elasticsearch.TimingAccessor;
 import org.elasticgremlin.structure.ElasticGraph;
 import org.junit.Test;
 
@@ -21,12 +22,12 @@ public class PerformanceTests {
         config.addProperty("elasticsearch.cluster.name", "test");
         config.addProperty("elasticsearch.index.name", "graph");
         config.addProperty("elasticsearch.refresh", true);
-        config.addProperty("elasticsearch.client", ElasticService.ClientType.NODE);
+        config.addProperty("elasticsearch.client", ElasticClientFactory.ClientType.NODE);
 
         startWatch("graph initalization");
         ElasticGraph graph = new ElasticGraph(config);
         stopWatch("graph initalization");
-        graph.elasticService.clearAllData();
+        graph.getQueryHandler().clearAllData();
 
         startWatch("add vertices");
         int count = 10000;

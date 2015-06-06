@@ -4,7 +4,7 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.FileUtils;
 import org.apache.tinkerpop.gremlin.*;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.elasticgremlin.elasticservice.ElasticService;
+import org.elasticgremlin.elasticsearch.ElasticClientFactory;
 import org.elasticgremlin.structure.*;
 import org.elasticsearch.action.admin.cluster.health.*;
 import org.elasticsearch.action.admin.indices.mapping.delete.DeleteMappingResponse;
@@ -26,12 +26,12 @@ public class ElasticGraphGraphProvider extends AbstractGraphProvider {
     private static String CLUSTER_NAME = "test";
 
     private static final Set<Class> IMPLEMENTATION = new HashSet<Class>() {{
-        add(ElasticEdge.class);
-        add(ElasticElement.class);
+        add(BaseEdge.class);
+        add(BaseElement.class);
         add(ElasticGraph.class);
-        add(ElasticProperty.class);
-        add(ElasticVertex.class);
-        add(ElasticVertexProperty.class);
+        add(BaseProperty.class);
+        add(BaseVertex.class);
+        add(BaseVertexProperty.class);
     }};
 
     Node node;
@@ -61,7 +61,7 @@ public class ElasticGraphGraphProvider extends AbstractGraphProvider {
             put("elasticsearch.cluster.name", CLUSTER_NAME);
             put("elasticsearch.index.name",graphName.toLowerCase());
             put("elasticsearch.refresh", true);
-            put("elasticsearch.client", ElasticService.ClientType.TRANSPORT_CLIENT.toString());
+            put("elasticsearch.client", ElasticClientFactory.ClientType.TRANSPORT_CLIENT.toString());
         }};
     }
 

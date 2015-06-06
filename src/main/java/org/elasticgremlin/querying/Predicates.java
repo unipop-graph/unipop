@@ -1,4 +1,4 @@
-package org.elasticgremlin.elasticservice;
+package org.elasticgremlin.querying;
 
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 

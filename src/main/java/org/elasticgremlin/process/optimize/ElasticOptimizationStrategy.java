@@ -1,16 +1,15 @@
 package org.elasticgremlin.process.optimize;
 
-import org.elasticgremlin.elasticservice.Predicates;
-import org.elasticgremlin.structure.ElasticGraph;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
-import org.apache.tinkerpop.gremlin.process.traversal.step.*;
+import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.*;
+import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
-import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.elasticgremlin.querying.Predicates;
+import org.elasticgremlin.structure.ElasticGraph;
 
 public class ElasticOptimizationStrategy extends AbstractTraversalStrategy<TraversalStrategy.VendorOptimizationStrategy> {
     private static final ElasticOptimizationStrategy INSTANCE = new ElasticOptimizationStrategy();
@@ -28,18 +27,18 @@ public class ElasticOptimizationStrategy extends AbstractTraversalStrategy<Trave
         TraversalHelper.getStepsOfClass(GraphStep.class, traversal).forEach(graphStep -> {
             if(graphStep.getIds().length == 0) {
                 Predicates predicates = getPredicates(graphStep, traversal);
-                final ElasticGraphStep<?> elasticGraphStep = new ElasticGraphStep<>(graphStep, predicates, elasticGraph.elasticService);
+                final ElasticGraphStep<?> elasticGraphStep = new ElasticGraphStep<>(graphStep, predicates, elasticGraph.getQueryHandler());
                 TraversalHelper.replaceStep(graphStep, (Step) elasticGraphStep, traversal);
             }
         });
 
-        TraversalHelper.getStepsOfClass(VertexStep.class, traversal).forEach(vertexStep -> {
+        /*TraversalHelper.getStepsOfClass(VertexStep.class, traversal).forEach(vertexStep -> {
             boolean returnVertex = vertexStep.getReturnClass().equals(Vertex.class);
             Predicates predicates = returnVertex ? new Predicates() : getPredicates(vertexStep, traversal);
 
-            ElasticVertexStep elasticVertexStep = new ElasticVertexStep(vertexStep, predicates, elasticGraph.elasticService);
+            ElasticVertexStep elasticVertexStep = new ElasticVertexStep(vertexStep, predicates, elasticGraph.getQueryHandler());
             TraversalHelper.replaceStep(vertexStep, elasticVertexStep, traversal);
-        });
+        });*/
     }
 
     private Predicates getPredicates(Step step, Traversal.Admin traversal){

@@ -5,13 +5,13 @@ import org.apache.tinkerpop.gremlin.structure.util.*;
 
 import java.util.Iterator;
 
-public class ElasticVertexProperty<V> implements VertexProperty<V> {
+public class BaseVertexProperty<V> implements VertexProperty<V> {
 
-    private final ElasticVertex vertex;
+    private final BaseVertex vertex;
     private final String key;
     private final V value;
 
-    public ElasticVertexProperty(final ElasticVertex vertex, final String key, final V value) {
+    public BaseVertexProperty(final BaseVertex vertex, final String key, final V value) {
         this.vertex = vertex;
         this.key = key;
         this.value = value;

@@ -1,17 +1,17 @@
 package org.elasticgremlin.elastic;
 
 import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.commons.io.FileUtils;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
-import org.apache.tinkerpop.gremlin.process.traversal.*;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.*;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticgremlin.ElasticGraphGraphProvider;
-import org.elasticgremlin.elasticservice.ElasticService;
+import org.elasticgremlin.elasticsearch.ElasticClientFactory;
 import org.elasticgremlin.structure.ElasticGraph;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.junit.Test;
 
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.Method;
 
 public class TemporaryTests {
@@ -54,27 +54,26 @@ public class TemporaryTests {
     @Test
     @LoadGraphWith(LoadGraphWith.GraphData.MODERN)
     public void testToPassTests() throws IOException, NoSuchMethodException {
+        String path = new java.io.File( "." ).getCanonicalPath() + "\\data";
+        File file = new File(path);
+        FileUtils.deleteQuietly(file);
+
         BaseConfiguration config = new BaseConfiguration();
         config.addProperty("elasticsearch.cluster.name", "testgraph");
         String indexName = "graphtest14";
         config.addProperty("elasticsearch.index.name", indexName.toLowerCase());
         config.addProperty("elasticsearch.refresh", true);
-        config.addProperty("elasticsearch.client", ElasticService.ClientType.NODE);
+        config.addProperty("elasticsearch.client", ElasticClientFactory.ClientType.NODE);
         ElasticGraph graph = new ElasticGraph(config);
-        graph.elasticService.clearAllData();
+        graph.getQueryHandler().clearAllData();
         ElasticGraphGraphProvider elasticGraphProvider = new ElasticGraphGraphProvider();
         Method m = this.getClass().getMethod("testToPassTests");
         LoadGraphWith[] loadGraphWiths = m.getAnnotationsByType(LoadGraphWith.class);
-        //elasticGraphProvider.loadGraphData(graph, loadGraphWiths[0], this.getClass(), m.getName());
+        elasticGraphProvider.loadGraphData(graph, loadGraphWiths[0], this.getClass(), m.getName());
         GraphTraversalSource g = graph.traversal();
 
-        Vertex vertex1 = graph.addVertex();
-        Vertex vertex2 = graph.addVertex();
-        vertex1.addEdge("bla", vertex2);
-        vertex2.addEdge("bla", vertex1);
 
-
-        GraphTraversal<Vertex, Vertex> iter = g.V().repeat(__.out()).times(8);
+        GraphTraversal<Vertex, Vertex> iter = g.V("4").both();
         printTraversalForm(iter);
         //iter.profile().cap(TraversalMetrics.METRICS_KEY);
 
@@ -87,7 +86,7 @@ public class TemporaryTests {
 
 
 
-        graph.elasticService.client.admin().indices().delete(new DeleteIndexRequest(indexName)).actionGet();
+        //graph.elasticService.client.admin().indices().delete(new DeleteIndexRequest(indexName)).actionGet();
         graph.close();
     }
 

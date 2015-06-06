@@ -5,9 +5,9 @@ import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.*;
-import org.elasticgremlin.elasticservice.*;
+import org.elasticgremlin.querying.QueryHandler;
+import org.elasticgremlin.elasticsearch.SimpleQueryHandler;
 import org.elasticgremlin.process.optimize.ElasticOptimizationStrategy;
-import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 
 import java.io.IOException;
 import java.util.*;
@@ -59,12 +59,16 @@ public class ElasticGraph implements Graph {
 
     private ElasticFeatures features = new ElasticFeatures();
     private final Configuration configuration;
-    public final ElasticService elasticService;
+    private QueryHandler queryHandler;
 
     public ElasticGraph(Configuration configuration) throws IOException {
-        this.configuration = configuration;
         configuration.setProperty(Graph.GRAPH, ElasticGraph.class.getName());
-        elasticService = new ElasticService(this, configuration);
+        this.configuration = configuration;
+        this.queryHandler = new SimpleQueryHandler(this, configuration);
+    }
+
+    public QueryHandler getQueryHandler() {
+        return queryHandler;
     }
 
     @Override
@@ -74,12 +78,12 @@ public class ElasticGraph implements Graph {
 
     @Override
     public String toString() {
-        return StringFactory.graphString(this, elasticService.toString());
+        return StringFactory.graphString(this, queryHandler.toString());
     }
 
     @Override
     public void close() {
-        elasticService.close();
+        queryHandler.close();
     }
 
     @Override
@@ -110,22 +114,26 @@ public class ElasticGraph implements Graph {
 
     @Override
     public Iterator<Vertex> vertices(Object... vertexIds) {
-        if(vertexIds != null && vertexIds.length > 1 && !vertexIds[0].getClass().equals(vertexIds[1].getClass())) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
-        if (vertexIds == null || vertexIds.length == 0) return elasticService.searchVertices(new Predicates());
-        //return elasticService.getVertices(null,null,vertexIds);
-        List<Vertex> vertices = new ArrayList<>();
-        for(Object id : vertexIds) {
-            if(id instanceof Vertex)
-                vertices.add((Vertex) id);
-            else vertices.add(new ElasticVertex(id, null, null, this, true));
+        if (vertexIds == null || vertexIds.length == 0) return queryHandler.vertices();
+        if(vertexIds.length > 1 && !vertexIds[0].getClass().equals(vertexIds[1].getClass())) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
+        if(vertexIds[0] instanceof Vertex) {
+            ArrayList<Vertex> list = new ArrayList();
+            for(int i = 0; i < vertexIds.length; i++) list.add((Vertex) vertexIds[i]);
+            return list.iterator();
         }
-        return vertices.iterator();
+        return queryHandler.vertices(vertexIds);
     }
 
     @Override
     public Iterator<Edge> edges(Object... edgeIds) {
-        if (edgeIds == null || edgeIds.length == 0) return elasticService.searchEdges(new Predicates(), null);
-        return elasticService.getEdges(null, null, edgeIds);
+        if (edgeIds == null || edgeIds.length == 0) return queryHandler.edges();
+        if(edgeIds.length > 1 && !edgeIds[0].getClass().equals(edgeIds[1].getClass())) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
+        if(edgeIds[0] instanceof Edge) {
+            ArrayList<Edge> list = new ArrayList();
+            for(int i = 0; i < edgeIds.length; i++) list.add((Edge) edgeIds[i]);
+            return list.iterator();
+        }
+        return queryHandler.edges(edgeIds);
     }
 
     @Override
@@ -133,14 +141,6 @@ public class ElasticGraph implements Graph {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
-
-        Vertex v = new ElasticVertex(idValue, label, keyValues, this, false);
-
-        try {
-            elasticService.addElement(v, true);
-        } catch (DocumentAlreadyExistsException ex) {
-            throw Graph.Exceptions.vertexWithIdAlreadyExists(idValue);
-        }
-        return v;
+        return queryHandler.addVertex(idValue, label, keyValues);
     }
 }
