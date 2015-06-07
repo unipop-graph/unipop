@@ -14,6 +14,8 @@ import java.util.*;
 
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.FeatureSupportTest$VertexPropertyFunctionalityTest", method = "shouldSupportNumericIdsIfNumericIdsAreGeneratedFromTheGraph",
         reason = "need to handle ids in VertexProperties")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.GraphTest", method = "shouldHaveExceptionConsistencyWhenFindVertexByIdThatIsNonExistentViaIterator",
+        reason = "We don't throw an exception when the vertex doesn't exist, because we support \"virtual vertices\"")
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest", method = "shouldReadWriteClassicToGryo",
         reason = "https://github.com/rmagen/elastic-gremlin/issues/52")
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest", method = "shouldMigrateGraphWithFloat",
@@ -65,12 +67,6 @@ public class ElasticGraph implements Graph {
         elasticService = new ElasticService(this, configuration);
     }
 
-    /*@Override
-    public <C extends TraversalSource> C traversal(TraversalSource.Builder<C> contextBuilder) {
-        return (C) contextBuilder.with(new ElasticGraphStepStrategy(elasticService)).create(this);
-    }*/
-
-
     @Override
     public Configuration configuration() {
         return this.configuration;
@@ -114,14 +110,14 @@ public class ElasticGraph implements Graph {
 
     @Override
     public Iterator<Vertex> vertices(Object... vertexIds) {
-        if(vertexIds.length > 1 && !vertexIds[0].getClass().equals(vertexIds[1].getClass())) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
+        if(vertexIds != null && vertexIds.length > 1 && !vertexIds[0].getClass().equals(vertexIds[1].getClass())) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
         if (vertexIds == null || vertexIds.length == 0) return elasticService.searchVertices(new Predicates());
         //return elasticService.getVertices(null,null,vertexIds);
         List<Vertex> vertices = new ArrayList<>();
         for(Object id : vertexIds) {
-            if(id instanceof Element)
-                id = ((Element)id).id();
-            vertices.add(new ElasticVertex(id, null, null, this, true));
+            if(id instanceof Vertex)
+                vertices.add((Vertex) id);
+            else vertices.add(new ElasticVertex(id, null, null, this, true));
         }
         return vertices.iterator();
     }

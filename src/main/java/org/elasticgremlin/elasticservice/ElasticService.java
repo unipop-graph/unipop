@@ -272,7 +272,9 @@ public class ElasticService {
             else if (direction == Direction.OUT)
                 boolFilter.must(FilterBuilders.termsFilter(ElasticEdge.OutId, vertexIds));
             else if (direction == Direction.BOTH)
-                boolFilter.should(FilterBuilders.termsFilter(ElasticEdge.InId, vertexIds), FilterBuilders.termsFilter(ElasticEdge.OutId, vertexIds));
+                boolFilter.must(FilterBuilders.orFilter(
+                    FilterBuilders.termsFilter(ElasticEdge.InId, vertexIds),
+                    FilterBuilders.termsFilter(ElasticEdge.OutId, vertexIds)));
         }
         else boolFilter.must(FilterBuilders.existsFilter(ElasticEdge.InId));
 
