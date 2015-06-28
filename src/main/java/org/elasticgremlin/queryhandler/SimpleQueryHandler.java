@@ -2,11 +2,9 @@ package org.elasticgremlin.queryhandler;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.elasticgremlin.elasticsearch.ElasticClientFactory;
-import org.elasticgremlin.elasticsearch.ElasticHelper;
-import org.elasticgremlin.elasticsearch.ElasticMutations;
+import org.elasticgremlin.elasticsearch.*;
 import org.elasticgremlin.queryhandler.edgedoc.DocEdgeHandler;
-import org.elasticgremlin.queryhandler.stardoc.StarHandler;
+import org.elasticgremlin.queryhandler.vertexdoc.DocVertexHandler;
 import org.elasticgremlin.structure.ElasticGraph;
 import org.elasticsearch.client.Client;
 
@@ -15,7 +13,7 @@ import java.util.Iterator;
 
 public class SimpleQueryHandler implements QueryHandler {
     private final DocEdgeHandler docEdgeHandler;
-    private final StarHandler elasticDocVertexHandler;
+    private final DocVertexHandler elasticDocVertexHandler;
     private final Client client;
     private final String indexName;
     private final ElasticMutations elasticMutations;
@@ -32,7 +30,7 @@ public class SimpleQueryHandler implements QueryHandler {
         ElasticHelper.createIndex(indexName, client);
         elasticMutations = new ElasticMutations(configuration, client);
         docEdgeHandler = new DocEdgeHandler(graph, client, elasticMutations, indexName, scrollSize, refresh);
-        elasticDocVertexHandler = new StarHandler(graph, client, elasticMutations, indexName, scrollSize, refresh);
+        elasticDocVertexHandler = new DocVertexHandler(graph, client, elasticMutations, indexName, scrollSize, refresh);
     }
 
     @Override
