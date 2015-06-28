@@ -66,12 +66,12 @@ public class ElasticHelper {
         baseVertices.forEach(vertex -> {
             List<Edge> vertexEdges = idToEdges.get(vertex.id());
             if (vertexEdges != null) {
-                vertex.addQueriedEdges(vertexEdges.iterator(), direction, edgeLabels, predicates);
+                vertex.addQueriedEdges(vertexEdges, direction, edgeLabels, predicates);
             }
             else {
                 vertexEdges = new ArrayList<>(0);
                 idToEdges.put(vertex.id(), vertexEdges);
-                vertex.addQueriedEdges(vertexEdges.iterator(), direction, edgeLabels, predicates);
+                vertex.addQueriedEdges(vertexEdges, direction, edgeLabels, predicates);
             }
         });
 

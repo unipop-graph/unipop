@@ -9,7 +9,7 @@ import java.util.*;
 public abstract class BaseVertex extends BaseElement implements Vertex {
 
     private List<Vertex> siblings;
-    private HashMap<EdgeQueryInfo, Iterator<Edge>> queriedEdges = new HashMap<>();
+    private HashMap<EdgeQueryInfo, List<Edge>> queriedEdges = new HashMap<>();
 
     protected BaseVertex(Object id, String label, ElasticGraph graph, Object[] keyValues) {
         super(id, label, graph, keyValues);
@@ -34,9 +34,9 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
     }
 
     public Iterator<Edge> edges(Direction direction, String[] edgeLabels, Predicates predicates) {
-        Iterator<Edge> edges = queriedEdges.get(new EdgeQueryInfo(direction, edgeLabels, predicates));
+        List<Edge> edges = queriedEdges.get(new EdgeQueryInfo(direction, edgeLabels, predicates));
         if (edges != null) {
-            return edges;
+            return edges.iterator();
         }
         return graph.getQueryHandler().edges(this, direction, edgeLabels, predicates);
     }
@@ -61,7 +61,7 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
         this.siblings = siblings;
     }
 
-    public void addQueriedEdges(Iterator<Edge> edges, Direction direction, String[] edgeLabels, Predicates predicates) {
+    public void addQueriedEdges(List<Edge> edges, Direction direction, String[] edgeLabels, Predicates predicates) {
         EdgeQueryInfo queryInfo = new EdgeQueryInfo(direction, edgeLabels, predicates);
         queriedEdges.put(queryInfo, edges);
     }
