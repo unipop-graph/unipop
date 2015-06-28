@@ -1,0 +1,18 @@
+Manifest-Version: 1.0
+Class-Path: asm-4.1.jar jts-1.12.jar ivy-2.3.0.jar hppc-0.7.1.jar jlin
+ e-2.11.jar uuid-3.4.0.jar log4j-1.2.17.jar grabbag-1.8.1.jar json-200
+ 90211.jar javatuples-1.2.jar jcabi-log-0.14.jar snakeyaml-1.15.jar as
+ m-commons-4.1.jar spatial4j-0.4.1.jar commons-lang-2.6.jar slf4j-api-
+ 1.7.12.jar antlr-runtime-3.5.jar groovy-sandbox-1.6.jar jackson-core-
+ 2.5.3.jar lucene-core-4.10.4.jar lucene-join-4.10.4.jar lucene-misc-4
+ .10.4.jar commons-lang3-3.3.1.jar elasticsearch-1.5.2.jar jcabi-manif
+ ests-1.1.jar lucene-memory-4.10.4.jar slf4j-log4j12-1.7.12.jar groovy
+ -all-2.4.1-indy.jar jcl-over-slf4j-1.7.12.jar lucene-queries-4.10.4.j
+ ar lucene-sandbox-4.10.4.jar lucene-spatial-4.10.4.jar lucene-suggest
+ -4.10.4.jar jackson-databind-2.5.3.jar lucene-grouping-4.10.4.jar jac
+ kson-annotations-2.5.0.jar lucene-highlighter-4.10.4.jar lucene-query
+ parser-4.10.4.jar commons-configuration-1.10.jar gremlin-core-3.0.0-S
+ NAPSHOT.jar gremlin-groovy-3.0.0-SNAPSHOT.jar gremlin-shaded-3.0.0-SN
+ APSHOT.jar lucene-analyzers-common-4.10.4.jar
+Main-Class: 
+
