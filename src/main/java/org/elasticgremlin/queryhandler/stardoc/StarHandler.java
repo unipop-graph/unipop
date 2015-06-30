@@ -149,7 +149,7 @@ public class StarHandler implements VertexHandler, EdgeHandler {
 
     private LazyGetter getLazyGetter() {
         if (defaultLazyGetter == null || !defaultLazyGetter.canRegister()) {
-            defaultLazyGetter = new LazyGetter(client, StarVertex::setVertexAndExternalSiblings);
+            defaultLazyGetter = new LazyGetter(client);
         }
         return defaultLazyGetter;
     }
@@ -157,7 +157,7 @@ public class StarHandler implements VertexHandler, EdgeHandler {
     private LazyGetter getLazyGetter(Direction direction) {
         LazyGetter lazyGetter = lazyGetters.get(direction);
         if (lazyGetter == null || !lazyGetter.canRegister()) {
-            lazyGetter = new LazyGetter(client, StarVertex::setVertexAndExternalSiblings);
+            lazyGetter = new LazyGetter(client);
             lazyGetters.put(direction,
                     lazyGetter);
         }

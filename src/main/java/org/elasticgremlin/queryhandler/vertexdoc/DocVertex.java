@@ -9,7 +9,7 @@ import org.elasticsearch.action.get.MultiGetItemResponse;
 import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
 
-public class DocVertex extends BaseVertex implements LazyGetter.LazyConsumer {
+public class DocVertex extends BaseVertex {
     private final ElasticMutations elasticMutations;
     private final String indexName;
     private org.elasticgremlin.elasticsearch.LazyGetter lazyGetter;
@@ -71,12 +71,5 @@ public class DocVertex extends BaseVertex implements LazyGetter.LazyConsumer {
     public <V> Iterator<VertexProperty<V>> properties(final String... propertyKeys) {
         if (lazyGetter != null) lazyGetter.execute();
         return super.properties(propertyKeys);
-    }
-
-    @Override
-    public void applyLazyFields(MultiGetItemResponse response) {
-        setLabel(response.getType());
-        response.getResponse().getSource().entrySet().forEach((field) ->
-                addPropertyLocal(field.getKey(), field.getValue()));
     }
 }

@@ -12,7 +12,7 @@ import org.elasticsearch.action.get.MultiGetItemResponse;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-public class StarVertex extends BaseVertex implements LazyGetter.LazyConsumer {
+public class StarVertex extends BaseVertex {
     private static final int EXTERNAL_VERTEX_BULK = 500;
     private final ElasticMutations elasticMutations;
     private final String indexName;

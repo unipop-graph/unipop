@@ -3,6 +3,7 @@ package org.elasticgremlin.structure;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.*;
 import org.elasticgremlin.queryhandler.Predicates;
+import org.elasticsearch.action.get.MultiGetItemResponse;
 
 import java.util.*;
 
@@ -64,6 +65,12 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
     public void addQueriedEdges(List<Edge> edges, Direction direction, String[] edgeLabels, Predicates predicates) {
         EdgeQueryInfo queryInfo = new EdgeQueryInfo(direction, edgeLabels, predicates);
         queriedEdges.put(queryInfo, edges);
+    }
+
+    public void applyLazyFields(MultiGetItemResponse response) {
+        setLabel(response.getType());
+        response.getResponse().getSource().entrySet().forEach((field) ->
+                addPropertyLocal(field.getKey(), field.getValue()));
     }
 
     public static Vertex vertexToVertex(Vertex originalVertex, Edge edge, Direction direction) {
