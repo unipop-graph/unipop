@@ -5,35 +5,35 @@ import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.*;
-import org.elasticgremlin.queryhandler.QueryHandler;
 import org.elasticgremlin.process.optimize.ElasticOptimizationStrategy;
-import org.elasticgremlin.queryhandler.SimpleQueryHandler;
+import org.elasticgremlin.queryhandler.*;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.FeatureSupportTest$VertexPropertyFunctionalityTest", method = "shouldSupportNumericIdsIfNumericIdsAreGeneratedFromTheGraph",
         reason = "need to handle ids in VertexProperties")
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.GraphTest", method = "shouldHaveExceptionConsistencyWhenFindVertexByIdThatIsNonExistentViaIterator",
         reason = "We don't throw an exception when the vertexdoc doesn't exist, because we support \"virtual vertices\"")
-@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest", method = "shouldReadWriteClassicToGryo",
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest$GraphSONTest", method = "shouldReadLegacyGraphSON",
+        reason = "https://github.com/rmagen/elastic-gremlin/issues/52")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest$GraphMLTest", method = "shouldReadGraphML",
+        reason = "https://github.com/rmagen/elastic-gremlin/issues/52")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest$GraphMLTest", method = "shouldReadGraphMLAnAllSupportedDataTypes",
+        reason = "https://github.com/rmagen/elastic-gremlin/issues/52")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest$GraphMLTest", method = "shouldReadGraphMLUnorderedElements",
+        reason = "https://github.com/rmagen/elastic-gremlin/issues/52")
+/*
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest", method = "shouldReadWriteClassic",
         reason = "https://github.com/rmagen/elastic-gremlin/issues/52")
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest", method = "shouldMigrateGraphWithFloat",
         reason = "https://github.com/rmagen/elastic-gremlin/issues/52")
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest", method = "shouldReadWriteClassicToGraphMLToFileWithHelpers",
         reason = "https://github.com/rmagen/elastic-gremlin/issues/52")
-@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest", method = "shouldReadGraphMLAnAllSupportedDataTypes",
-        reason = "https://github.com/rmagen/elastic-gremlin/issues/52")
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest", method = "shouldReadWriteVertexWithBOTHEdgesToGraphSONWithTypes",
         reason = "https://github.com/rmagen/elastic-gremlin/issues/52")
-@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest", method = "shouldReadGraphML",
-        reason = "https://github.com/rmagen/elastic-gremlin/issues/52")
-@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest", method = "shouldReadLegacyGraphSON",
-        reason = "https://github.com/rmagen/elastic-gremlin/issues/52")
-@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest", method = "shouldReadGraphMLUnorderedElements",
-        reason = "https://github.com/rmagen/elastic-gremlin/issues/52")
+*/
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest", method = "g_V_repeatXoutX_timesX8X_count",
         reason = "Takes too much time. https://github.com/rmagen/elastic-gremlin/issues/21")
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest", method = "g_V_repeatXoutX_timesX3X_count",

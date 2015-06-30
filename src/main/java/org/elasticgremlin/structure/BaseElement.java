@@ -30,11 +30,11 @@ public abstract class BaseElement implements Element{
 
     }
 
-    public <V> Property<V> addPropertyLocal(String key, V value) {
+    public Property addPropertyLocal(String key, Object value) {
         checkRemoved();
         if (shouldAddProperty(key)) {
             ElementHelper.validateProperty(key, value);
-            Property<V> property = createProperty(key, value);
+            Property property = createProperty(key, value);
             properties.put(key, property);
             return property;
         }
@@ -95,7 +95,7 @@ public abstract class BaseElement implements Element{
 
     protected abstract void innerRemoveProperty(Property property);
 
-    protected abstract <V> Property<V> createProperty(String key, V value);
+    protected abstract Property createProperty(String key, Object value);
 
     protected boolean shouldAddProperty(String key) {
         return !key.equals("label") && !key.equals("id");

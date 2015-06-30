@@ -4,8 +4,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.elasticgremlin.elasticsearch.*;
-import org.elasticgremlin.queryhandler.EdgeHandler;
-import org.elasticgremlin.queryhandler.Predicates;
+import org.elasticgremlin.queryhandler.*;
 import org.elasticgremlin.structure.*;
 import org.elasticsearch.action.get.*;
 import org.elasticsearch.client.Client;
@@ -34,8 +33,8 @@ public class DocEdgeHandler implements EdgeHandler {
 
     @Override
     public Iterator<Edge> edges() {
-        return new QueryIterator<>(FilterBuilders.existsFilter(DocEdge.InId), 0, scrollSize, Integer.MAX_VALUE, client, this::createEdge, null, refresh, indexName
-        );
+        return new QueryIterator<>(FilterBuilders.existsFilter(DocEdge.InId), 0, scrollSize, Integer.MAX_VALUE,
+                client, this::createEdge, refresh, indexName);
     }
 
     @Override
@@ -57,9 +56,8 @@ public class DocEdgeHandler implements EdgeHandler {
     public Iterator<Edge> edges(Predicates predicates) {
         BoolFilterBuilder boolFilter = ElasticHelper.createFilterBuilder(predicates.hasContainers);
         boolFilter.must(FilterBuilders.existsFilter(DocEdge.InId));
-        return new QueryIterator<>(boolFilter, 0, scrollSize, predicates.limitHigh - predicates.limitLow,
-                client, this::createEdge, null, refresh, indexName
-        );
+        return new QueryIterator<Edge>(boolFilter, 0, scrollSize, predicates.limitHigh - predicates.limitLow,
+                client, this::createEdge, refresh, indexName);
     }
 
     @Override
@@ -81,10 +79,9 @@ public class DocEdgeHandler implements EdgeHandler {
                     FilterBuilders.termsFilter(DocEdge.InId, vertexIds.toArray()),
                     FilterBuilders.termsFilter(DocEdge.OutId, vertexIds.toArray())));
 
-        QueryIterator<Edge> edgeSearchQuery = new QueryIterator<>(boolFilter, 0, scrollSize,
+        Iterator<Edge> edgeSearchQuery = new QueryIterator<>(boolFilter, 0, scrollSize,
                 predicates.limitHigh - predicates.limitLow, client,
-                this::createEdge, null, refresh, indexName
-        );
+                this::createEdge, refresh, indexName);
 
         Map<Object, List<Edge>> idToEdges = ElasticHelper.handleBulkEdgeResults(edgeSearchQuery,
                 vertices, direction, edgeLabels, predicates);
@@ -104,11 +101,15 @@ public class DocEdgeHandler implements EdgeHandler {
         return elasticEdge;
     }
 
-    private Edge createEdge(SearchHit hit) {
-        Map<String, Object> fields = hit.getSource();
-        BaseEdge edge = new DocEdge(hit.id(), hit.type(), fields.get(DocEdge.OutId), fields.get(DocEdge.OutLabel).toString(), fields.get(DocEdge.InId), fields.get(DocEdge.InLabel).toString(), null, graph, elasticMutations, indexName);
-        fields.entrySet().forEach((field) -> edge.addPropertyLocal(field.getKey(), field.getValue()));
-        return edge;
+    private Iterator<Edge> createEdge(Iterator<SearchHit> hits) {
+        ArrayList<Edge> edges = new ArrayList<>();
+        hits.forEachRemaining(hit -> {
+            Map<String, Object> fields = hit.getSource();
+            BaseEdge edge = new DocEdge(hit.getId(), hit.getType(), fields.get(DocEdge.OutId), fields.get(DocEdge.OutLabel).toString(), fields.get(DocEdge.InId), fields.get(DocEdge.InLabel).toString(), null, graph, elasticMutations, indexName);
+            fields.entrySet().forEach((field) -> edge.addPropertyLocal(field.getKey(), field.getValue()));
+            edges.add(edge);
+        });
+        return edges.iterator();
     }
 
     private Edge createEdge(GetResponse hit) {

@@ -93,14 +93,6 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
         }
     }
 
-    public static void setVertexSiblings(List<Vertex> siblings) {
-        for (Vertex vertex : siblings) {
-            if (!BaseVertex.class.isAssignableFrom(vertex.getClass())) {
-                return;
-            }
-            ((BaseVertex)vertex).setSiblings(siblings);
-        }
-    }
 
     @Override
     public <V> VertexProperty<V> property(String key, V value) {
@@ -135,7 +127,7 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
     @Override
     public void remove() {
         super.remove();
-        edges(Direction.BOTH).forEachRemaining(edge -> edge.remove());
+        edges(Direction.BOTH).forEachRemaining(Element::remove);
     }
 
     @Override

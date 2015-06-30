@@ -3,9 +3,7 @@ package org.elasticgremlin.structure;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
+import java.util.*;
 
 public abstract class BaseEdge extends BaseElement implements Edge {
 
@@ -18,7 +16,7 @@ public abstract class BaseEdge extends BaseElement implements Edge {
     }
 
     @Override
-    public <V> Property<V> createProperty(String key, V value) {
+    public  Property createProperty(String key, Object value) {
         return new BaseProperty<>(this, key, value);
     }
 
