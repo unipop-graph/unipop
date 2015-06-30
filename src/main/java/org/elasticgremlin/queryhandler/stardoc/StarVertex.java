@@ -123,7 +123,7 @@ public class StarVertex extends BaseVertex implements LazyGetter.LazyConsumer {
             }
         }
         if (!externalEdgeLabels.isEmpty()) {
-            return super.edges(direction, externalEdgeLabels.toArray(new String[externalEdgeLabels.size()]));
+            return super.edges(direction, externalEdgeLabels.toArray(new String[externalEdgeLabels.size()]), predicates);
         }
         else {
             return new ArrayList<Edge>(0).iterator();
