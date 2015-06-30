@@ -1,18 +1,18 @@
 package org.elasticgremlin.elastic;
 
 import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.io.FileUtils;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
-import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.*;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticgremlin.ElasticGraphGraphProvider;
 import org.elasticgremlin.elasticsearch.ElasticClientFactory;
 import org.elasticgremlin.structure.ElasticGraph;
 import org.junit.Test;
 
-import java.io.*;
+import java.io.IOException;
 import java.lang.reflect.Method;
+
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
 
 public class TemporaryTests {
     /*@Test
@@ -54,17 +54,13 @@ public class TemporaryTests {
     @Test
     @LoadGraphWith(LoadGraphWith.GraphData.MODERN)
     public void testToPassTests() throws IOException, NoSuchMethodException {
-        String path = new java.io.File( "." ).getCanonicalPath() + "\\data";
-        File file = new File(path);
-        FileUtils.deleteQuietly(file);
-
         BaseConfiguration config = new BaseConfiguration();
         config.addProperty("elasticsearch.cluster.name", "testgraph");
         String indexName = "graphtest14";
         config.addProperty("elasticsearch.index.name", indexName.toLowerCase());
         config.addProperty("elasticsearch.refresh", true);
         config.addProperty("elasticsearch.client", ElasticClientFactory.ClientType.NODE);
-        ElasticGraph graph = new ElasticGraph(config);
+        ElasticGraph graph = new ElasticGraph(config, null);
         graph.getQueryHandler().clearAllData();
         ElasticGraphGraphProvider elasticGraphProvider = new ElasticGraphGraphProvider();
         Method m = this.getClass().getMethod("testToPassTests");
@@ -73,7 +69,8 @@ public class TemporaryTests {
         GraphTraversalSource g = graph.traversal();
 
 
-        GraphTraversal<Vertex, Vertex> iter = g.V("4").both();
+
+        GraphTraversal iter = g.V().order().by(outE().count(), Order.decr);
         printTraversalForm(iter);
         //iter.profile().cap(TraversalMetrics.METRICS_KEY);
 

@@ -6,13 +6,13 @@ import com.spatial4j.core.shape.impl.PointImpl;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.elasticgremlin.elasticsearch.ElasticClientFactory;
-import org.elasticgremlin.elasticsearch.Geo;
+import org.elasticgremlin.elasticsearch.*;
 import org.elasticgremlin.structure.ElasticGraph;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.junit.*;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.IOException;
 import java.util.*;
@@ -37,7 +37,7 @@ public class SpatialStepTests {
         config.addProperty("elasticsearch.refresh", true);
         config.addProperty("elasticsearch.client", ElasticClientFactory.ClientType.NODE.toString());
 
-        graph = new ElasticGraph(config);
+        graph = new ElasticGraph(config, null);
 
         graph.getQueryHandler().clearAllData();
         //createGeoShapeMapping(graph.elasticService.client,DOCUMENT_TYPE);

@@ -22,7 +22,7 @@ public class ConfigurationTests {
         config.addProperty("elasticsearch.refresh", true);
         config.addProperty("elasticsearch.client", ElasticClientFactory.ClientType.NODE);
         config.addProperty("elasticsearch.upsert", true);
-        ElasticGraph graph = new ElasticGraph(config);
+        ElasticGraph graph = new ElasticGraph(config, null);
         graph.getQueryHandler().clearAllData();
 
         graph.addVertex(T.id, "1", "field", "a", "field2", "c");

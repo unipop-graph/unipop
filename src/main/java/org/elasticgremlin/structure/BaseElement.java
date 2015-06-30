@@ -6,7 +6,7 @@ import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import java.util.*;
 
 public abstract class BaseElement implements Element{
-    protected HashMap<String, Property> properties = new HashMap();
+    protected HashMap<String, Property> properties = new HashMap<>();
     protected final Object id;
     protected String label;
     protected final ElasticGraph graph;
@@ -84,7 +84,7 @@ public abstract class BaseElement implements Element{
         if (propertyKeys.length > 0)
             return properties.entrySet().stream().filter(entry -> ElementHelper.keyExists(entry.getKey(), propertyKeys)).map(x -> x.getValue()).iterator();
 
-        return (Iterator) properties.values().iterator();
+        return properties.values().iterator();
     }
 
 

@@ -3,9 +3,12 @@ package org.elasticgremlin.structure;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 
-import java.util.Iterator;
+import java.util.*;
 
 public abstract class BaseEdge extends BaseElement implements Edge {
+
+    protected Vertex inVertex;
+    protected Vertex outVertex;
 
     public BaseEdge(final Object id, final String label, Object[] keyValues, final ElasticGraph graph) {
         super(id, label, graph, keyValues);
@@ -13,23 +16,34 @@ public abstract class BaseEdge extends BaseElement implements Edge {
     }
 
     @Override
-    public Property createProperty(String key, Object value) {
-        return new BaseProperty(this, key, value);
+    public  Property createProperty(String key, Object value) {
+        return new BaseProperty<>(this, key, value);
     }
 
     @Override
     public <V> Property<V> property(String key, V value) {
         checkRemoved();
         ElementHelper.validateProperty(key, value);
-        BaseProperty vertexProperty = (BaseProperty) addPropertyLocal(key, value);
+        BaseProperty<V> vertexProperty = (BaseProperty<V>) addPropertyLocal(key, value);
         innerAddProperty(vertexProperty);
         return vertexProperty;
+    }
+
+    @Override
+    public Iterator<Vertex> vertices(Direction direction) {
+        checkRemoved();
+        ArrayList<Vertex> vertices = new ArrayList<>();
+        if(direction.equals(Direction.OUT) || direction.equals(Direction.BOTH))
+            vertices.add(outVertex);
+        if(direction.equals(Direction.IN) || direction.equals(Direction.BOTH))
+            vertices.add(inVertex);
+        return vertices.iterator();
     }
 
     protected abstract void innerAddProperty(BaseProperty vertexProperty);
 
     @Override
-    public Iterator<BaseProperty> properties(String... propertyKeys) {
+    public Iterator<Property> properties(String... propertyKeys) {
         checkRemoved();
         return innerPropertyIterator(propertyKeys);
     }

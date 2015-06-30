@@ -2,6 +2,11 @@ package org.elasticgremlin.elasticsearch;
 
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.elasticgremlin.queryhandler.Predicates;
+import org.elasticgremlin.structure.BaseVertex;
 import org.elasticsearch.action.admin.cluster.health.*;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.exists.indices.*;
@@ -14,8 +19,9 @@ import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.index.query.*;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.*;
 import java.util.function.BiPredicate;
+import java.util.function.Function;
 
 public class ElasticHelper {
 
@@ -36,6 +42,79 @@ public class ElasticHelper {
                     "', index '" + indexName + "'");
 
         }
+    }
+
+    public static Map<Object, List<Edge>> handleBulkEdgeResults(Iterator<Edge> edges, List<Vertex> vertices,
+                                                                Direction direction, String[] edgeLabels,
+                                                                Predicates predicates) {
+        Map<Direction, Function<Edge, Object[]>> directionToIdFunc = new HashMap<Direction, Function<Edge, Object[]>>() {{
+            put(Direction.IN, edge -> new Object[]{edge.inVertex().id()});
+            put(Direction.OUT, edge -> new Object[]{edge.outVertex().id()});
+            put(Direction.BOTH, edge -> new Object[]{edge.inVertex().id(), edge.outVertex().id()});
+        }};
+
+        Map<Object, List<Edge>> idToEdges = new HashMap<>();
+        edges.forEachRemaining(edge -> {
+            Object[] vertexIds = directionToIdFunc.get(direction).apply(edge);
+            for (Object vertexId : vertexIds) {
+                addEdgeToMap(idToEdges, edge, vertexId);
+            }
+        });
+
+        List<BaseVertex> baseVertices = extractBaseVertices(vertices);
+
+        baseVertices.forEach(vertex -> {
+            List<Edge> vertexEdges = idToEdges.get(vertex.id());
+            if (vertexEdges != null) {
+                vertex.addQueriedEdges(vertexEdges, direction, edgeLabels, predicates);
+            }
+            else {
+                vertexEdges = new ArrayList<>(0);
+                idToEdges.put(vertex.id(), vertexEdges);
+                vertex.addQueriedEdges(vertexEdges, direction, edgeLabels, predicates);
+            }
+        });
+
+        return idToEdges;
+    }
+
+    public static List<Vertex> getVerticesBulk(Vertex vertex) {
+        List<Vertex> vertices = new ArrayList<>();
+        if (BaseVertex.class.isAssignableFrom(vertex.getClass())) {
+            BaseVertex baseVertex = (BaseVertex) vertex;
+            List<Vertex> siblings = baseVertex.getSiblings();
+            if (siblings == null || siblings.isEmpty()) {
+                vertices.add(vertex);
+            }
+            else {
+                siblings.forEach(vertices::add);
+            }
+        }
+        else {
+            vertices.add(vertex);
+        }
+
+        return vertices;
+    }
+
+    private static List<BaseVertex> extractBaseVertices(List<Vertex> vertices) {
+        List<BaseVertex> baseVertices = new ArrayList<>();
+        vertices.forEach(vertex -> {
+            if (BaseVertex.class.isAssignableFrom(vertex.getClass())) {
+                baseVertices.add((BaseVertex) vertex);
+            }
+        });
+        return baseVertices;
+    }
+
+    private static void addEdgeToMap(Map<Object, List<Edge>> idToEdges, final Edge edge, Object vertexId) {
+        List<Edge> edges = idToEdges.get(vertexId);
+
+        if (edges == null) {
+            edges = new ArrayList<>();
+            idToEdges.put(vertexId, edges);
+        }
+        edges.add(edge);
     }
 
     public static BoolFilterBuilder createFilterBuilder(List<HasContainer> hasContainers) {

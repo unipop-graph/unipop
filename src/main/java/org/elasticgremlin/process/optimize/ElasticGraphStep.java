@@ -4,7 +4,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.elasticgremlin.querying.*;
+import org.elasticgremlin.queryhandler.*;
 
 import java.util.Iterator;
 

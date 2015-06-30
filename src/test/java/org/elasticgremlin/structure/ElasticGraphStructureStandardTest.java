@@ -8,5 +8,4 @@ import org.junit.runner.RunWith;
 @RunWith(StructureStandardSuite.class)
 @GraphProviderClass(provider = ElasticGraphGraphProvider.class, graph = ElasticGraph.class)
 public class ElasticGraphStructureStandardTest {
-
 }

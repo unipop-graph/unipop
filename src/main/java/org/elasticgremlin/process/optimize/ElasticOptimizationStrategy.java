@@ -3,12 +3,12 @@ package org.elasticgremlin.process.optimize;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.elasticgremlin.querying.Predicates;
+import org.apache.tinkerpop.gremlin.structure.*;
+import org.elasticgremlin.queryhandler.Predicates;
 import org.elasticgremlin.structure.ElasticGraph;
 
 public class ElasticOptimizationStrategy extends AbstractTraversalStrategy<TraversalStrategy.VendorOptimizationStrategy> {
@@ -32,13 +32,13 @@ public class ElasticOptimizationStrategy extends AbstractTraversalStrategy<Trave
             }
         });
 
-        /*TraversalHelper.getStepsOfClass(VertexStep.class, traversal).forEach(vertexStep -> {
+        TraversalHelper.getStepsOfClass(VertexStep.class, traversal).forEach(vertexStep -> {
             boolean returnVertex = vertexStep.getReturnClass().equals(Vertex.class);
             Predicates predicates = returnVertex ? new Predicates() : getPredicates(vertexStep, traversal);
 
-            ElasticVertexStep elasticVertexStep = new ElasticVertexStep(vertexStep, predicates, elasticGraph.getQueryHandler());
+            ElasticVertexStep elasticVertexStep = new ElasticVertexStep(vertexStep, predicates);
             TraversalHelper.replaceStep(vertexStep, elasticVertexStep, traversal);
-        });*/
+        });
     }
 
     private Predicates getPredicates(Step step, Traversal.Admin traversal){
@@ -49,25 +49,37 @@ public class ElasticOptimizationStrategy extends AbstractTraversalStrategy<Trave
             if(nextStep instanceof HasContainerHolder) {
                 HasContainerHolder hasContainerHolder = (HasContainerHolder) nextStep;
                 boolean skip = false;
-                for(HasContainer has : hasContainerHolder.getHasContainers())
+                /*for(HasContainer has : hasContainerHolder.getHasContainers())
                     if(has.getPredicate().getTraversals().size() > 0)
                         skip = true;
-
+                */
                 if(!skip) {
-                    hasContainerHolder.getHasContainers().forEach((has)-> predicates.hasContainers.add(has));
-                    nextStep.getLabels().forEach(label -> predicates.labels.add(label.toString()));
+                    hasContainerHolder.getHasContainers().forEach(predicates.hasContainers::add);
+                    collectLabels(predicates, nextStep);
                     traversal.removeStep(nextStep);
                 }
             }
-            else if(nextStep instanceof RangeGlobalStep){
+            else if(nextStep instanceof RangeGlobalStep) {
                 RangeGlobalStep rangeGlobalStep = (RangeGlobalStep) nextStep;
                 predicates.limitLow = rangeGlobalStep.getLowRange();
                 predicates.limitHigh = rangeGlobalStep.getHighRange();
+		collectLabels(predicates, nextStep);
                 traversal.removeStep(nextStep);
             }
+//            else if (nextStep instanceof WhereStep) {
+//                WhereStep whereStep = (WhereStep) nextStep;
+//                System.out.println(whereStep.);
+//                List<Traversal.Admin<Object, Object>> localChildren = whereStep.getLocalChildren();
+//                for (Traversal.Admin<Object, Object> whereTraversal : localChildren) {
+//                }
+//            }
             else return predicates;
 
-            nextStep  = nextStep.getNextStep();
+            nextStep = nextStep.getNextStep();
         }
+    }
+
+    private void collectLabels(Predicates predicates, Step<?, ?> step) {
+        step.getLabels().forEach(predicates.labels::add);
     }
 }
