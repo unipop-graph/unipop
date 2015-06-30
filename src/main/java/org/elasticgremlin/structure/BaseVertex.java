@@ -3,6 +3,7 @@ package org.elasticgremlin.structure;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.*;
 import org.elasticgremlin.queryhandler.Predicates;
+import org.elasticsearch.action.get.MultiGetItemResponse;
 
 import java.util.*;
 
@@ -66,6 +67,12 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
         queriedEdges.put(queryInfo, edges);
     }
 
+    public void applyLazyFields(MultiGetItemResponse response) {
+        setLabel(response.getType());
+        response.getResponse().getSource().entrySet().forEach((field) ->
+                addPropertyLocal(field.getKey(), field.getValue()));
+    }
+
     public static Vertex vertexToVertex(Vertex originalVertex, Edge edge, Direction direction) {
         switch (direction) {
             case OUT:
@@ -86,14 +93,6 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
         }
     }
 
-    public static void setVertexSiblings(List<Vertex> siblings) {
-        for (Vertex vertex : siblings) {
-            if (!BaseVertex.class.isAssignableFrom(vertex.getClass())) {
-                return;
-            }
-            ((BaseVertex)vertex).setSiblings(siblings);
-        }
-    }
 
     @Override
     public <V> VertexProperty<V> property(String key, V value) {
@@ -128,7 +127,7 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
     @Override
     public void remove() {
         super.remove();
-        edges(Direction.BOTH).forEachRemaining(edge -> edge.remove());
+        edges(Direction.BOTH).forEachRemaining(Element::remove);
     }
 
     @Override

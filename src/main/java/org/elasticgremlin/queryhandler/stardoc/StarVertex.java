@@ -12,17 +12,14 @@ import org.elasticsearch.action.get.MultiGetItemResponse;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-public class StarVertex extends BaseVertex implements LazyGetter.LazyConsumer {
-    private static final int EXTERNAL_VERTEX_BULK = 500;
+public class StarVertex extends BaseVertex {
     private final ElasticMutations elasticMutations;
     private final String indexName;
     private final EdgeMapping[] edgeMappings;
     private LazyGetter lazyGetter;
     private Set<InnerEdge> innerEdges;
 
-    public StarVertex(final Object id, final String label, Object[] keyValues, ElasticGraph graph,
-                      LazyGetter lazyGetter, ElasticMutations elasticMutations, String indexName,
-                      EdgeMapping[] edgeMappings) {
+    public StarVertex(final Object id, final String label, Object[] keyValues, ElasticGraph graph, LazyGetter lazyGetter, ElasticMutations elasticMutations, String indexName, EdgeMapping[] edgeMappings) {
         super(id, label, graph, keyValues);
         this.elasticMutations = elasticMutations;
         this.indexName = indexName;
@@ -44,9 +41,7 @@ public class StarVertex extends BaseVertex implements LazyGetter.LazyConsumer {
     protected void innerAddProperty(BaseVertexProperty vertexProperty) {
         try {
             elasticMutations.updateElement(this, indexName, null, false);
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
+        } catch (ExecutionException | InterruptedException e) {
             e.printStackTrace();
         }
     }
@@ -61,9 +56,7 @@ public class StarVertex extends BaseVertex implements LazyGetter.LazyConsumer {
     protected void innerRemoveProperty(Property property) {
         try {
             elasticMutations.updateElement(this, indexName, null, false);
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
+        } catch (ExecutionException | InterruptedException e) {
             e.printStackTrace();
         }
     }
@@ -145,42 +138,5 @@ public class StarVertex extends BaseVertex implements LazyGetter.LazyConsumer {
                     graph);
             this.innerEdges.add(innerEdge);
         }
-    }
-
-    /**
-     * Set vertices to be siblings of each other,
-     * and do the same to the vertices' external siblings
-     * @param siblings Set the external vertices of each of these vertices to be siblings
-     */
-    public static void setVertexAndExternalSiblings(List<Vertex> siblings) {
-        BaseVertex.setVertexSiblings(siblings);
-
-        // Make sure all vertices are of class StarVertex
-        List<Vertex> vertexSiblings = new ArrayList<>();
-        for (Vertex element : siblings) {
-            if (!StarVertex.class.isAssignableFrom(element.getClass())) continue;
-            vertexSiblings.add(element);
-        }
-
-        List<Vertex> externalVertexSiblings = new ArrayList<>();
-        for (Vertex vertex : vertexSiblings) {
-            // Add all external vertices to list
-            StarVertex starVertex = (StarVertex) vertex;
-            for (InnerEdge innerEdge : starVertex.innerEdges) {
-                switch (innerEdge.getMapping().getDirection()) {
-                    case IN:
-                        externalVertexSiblings.add(innerEdge.outVertex());
-                        break;
-                    case OUT:
-                        externalVertexSiblings.add(innerEdge.inVertex());
-                        break;
-                }
-            }
-            if (externalVertexSiblings.size() >= EXTERNAL_VERTEX_BULK) {
-                BaseVertex.setVertexSiblings(externalVertexSiblings);
-                externalVertexSiblings = new ArrayList<>();
-            }
-        }
-        BaseVertex.setVertexSiblings(externalVertexSiblings);
     }
 }

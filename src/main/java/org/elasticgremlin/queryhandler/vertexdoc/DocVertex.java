@@ -2,14 +2,12 @@ package org.elasticgremlin.queryhandler.vertexdoc;
 
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.elasticgremlin.elasticsearch.*;
-import org.elasticgremlin.elasticsearch.LazyGetter;
 import org.elasticgremlin.structure.*;
-import org.elasticsearch.action.get.MultiGetItemResponse;
 
-import java.util.Iterator;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-public class DocVertex extends BaseVertex implements LazyGetter.LazyConsumer {
+public class DocVertex extends BaseVertex {
     private final ElasticMutations elasticMutations;
     private final String indexName;
     private org.elasticgremlin.elasticsearch.LazyGetter lazyGetter;
@@ -35,10 +33,7 @@ public class DocVertex extends BaseVertex implements LazyGetter.LazyConsumer {
         try {
             elasticMutations.updateElement(this, indexName, null, false);
         }
-        catch (ExecutionException e) {
-            e.printStackTrace();
-        }
-        catch (InterruptedException e) {
+        catch (ExecutionException | InterruptedException e) {
             e.printStackTrace();
         }
     }
@@ -54,10 +49,7 @@ public class DocVertex extends BaseVertex implements LazyGetter.LazyConsumer {
         try {
             elasticMutations.updateElement(this, indexName, null, false);
         }
-        catch (ExecutionException e) {
-            e.printStackTrace();
-        }
-        catch (InterruptedException e) {
+        catch (ExecutionException | InterruptedException e) {
             e.printStackTrace();
         }
     }
@@ -71,12 +63,5 @@ public class DocVertex extends BaseVertex implements LazyGetter.LazyConsumer {
     public <V> Iterator<VertexProperty<V>> properties(final String... propertyKeys) {
         if (lazyGetter != null) lazyGetter.execute();
         return super.properties(propertyKeys);
-    }
-
-    @Override
-    public void applyLazyFields(MultiGetItemResponse response) {
-        setLabel(response.getType());
-        response.getResponse().getSource().entrySet().forEach((field) ->
-                addPropertyLocal(field.getKey(), field.getValue()));
     }
 }

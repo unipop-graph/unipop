@@ -2,14 +2,10 @@ package org.elasticgremlin.queryhandler.stardoc;
 
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.elasticgremlin.elasticsearch.*;
-import org.elasticgremlin.queryhandler.EdgeHandler;
-import org.elasticgremlin.queryhandler.Predicates;
-import org.elasticgremlin.queryhandler.VertexHandler;
-import org.elasticgremlin.structure.*;
+import org.elasticgremlin.queryhandler.*;
+import org.elasticgremlin.structure.ElasticGraph;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.index.query.BoolFilterBuilder;
-import org.elasticsearch.index.query.FilterBuilders;
-import org.elasticsearch.index.query.OrFilterBuilder;
+import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.SearchHit;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
@@ -58,9 +54,11 @@ public class StarHandler implements VertexHandler, EdgeHandler {
     @Override
     public Iterator<Vertex> vertices(Object[] vertexIds) {
         List<Vertex> vertices = new ArrayList<>();
-        for (Object id : vertexIds)
-            vertices.add(new StarVertex(id, null, null, graph, getLazyGetter(), elasticMutations, getDefaultIndex(), edgeMappings));
-        StarVertex.setVertexAndExternalSiblings(vertices);
+        for (Object id : vertexIds) {
+            StarVertex vertex = new StarVertex(id, null, null, graph, getLazyGetter(), elasticMutations, getDefaultIndex(), edgeMappings);
+            vertex.setSiblings(vertices);
+            vertices.add(vertex);
+        }
         return vertices.iterator();
     }
 
@@ -68,9 +66,7 @@ public class StarHandler implements VertexHandler, EdgeHandler {
     public Iterator<Vertex> vertices(Predicates predicates) {
         BoolFilterBuilder boolFilter = ElasticHelper.createFilterBuilder(predicates.hasContainers);
         return new QueryIterator<>(boolFilter, 0, scrollSize, predicates.limitHigh - predicates.limitLow,
-                client, this::createVertex, StarVertex::setVertexAndExternalSiblings,
-                refresh, getIndices(predicates)
-        );
+                client, this::createVertex, refresh, indices);
     }
 
     @Override
@@ -117,8 +113,7 @@ public class StarHandler implements VertexHandler, EdgeHandler {
         }
 
         QueryIterator<Vertex> vertexSearchQuery = new QueryIterator<>(boolFilter, 0, scrollSize,
-                predicates.limitHigh - predicates.limitLow, client, this::createVertex,
-                StarVertex::setVertexAndExternalSiblings, refresh, getIndices(predicates));
+                predicates.limitHigh - predicates.limitLow, client, this::createVertex, refresh, indices);
 
         Iterator<Edge> edgeResults = new EdgeResults(vertexSearchQuery, direction, edgeLabels);
 
@@ -139,17 +134,13 @@ public class StarHandler implements VertexHandler, EdgeHandler {
         throw new NotImplementedException();
     }
 
-    protected String[] getIndices(Predicates predicates) {
-        return this.indices;
-    }
-
     protected String getDefaultIndex() {
         return this.indices[0];
     }
 
     private LazyGetter getLazyGetter() {
         if (defaultLazyGetter == null || !defaultLazyGetter.canRegister()) {
-            defaultLazyGetter = new LazyGetter(client, StarVertex::setVertexAndExternalSiblings);
+            defaultLazyGetter = new LazyGetter(client);
         }
         return defaultLazyGetter;
     }
@@ -157,30 +148,33 @@ public class StarHandler implements VertexHandler, EdgeHandler {
     private LazyGetter getLazyGetter(Direction direction) {
         LazyGetter lazyGetter = lazyGetters.get(direction);
         if (lazyGetter == null || !lazyGetter.canRegister()) {
-            lazyGetter = new LazyGetter(client, StarVertex::setVertexAndExternalSiblings);
+            lazyGetter = new LazyGetter(client);
             lazyGetters.put(direction,
                     lazyGetter);
         }
         return lazyGetter;
     }
 
-    private Vertex createVertex(SearchHit searchHitFields) {
-        StarVertex vertexWithInnerEdges = new StarVertex(searchHitFields.id(),
-                searchHitFields.getType(), null, graph, null, elasticMutations,
-                searchHitFields.getIndex(), edgeMappings);
-        vertexWithInnerEdges.setFields(searchHitFields.getSource());
-        return vertexWithInnerEdges;
+    private Iterator<Vertex> createVertex(Iterator<SearchHit> hits) {
+        ArrayList<Vertex> vertices = new ArrayList<>();
+        hits.forEachRemaining(hit -> {
+            StarVertex vertex = new StarVertex(hit.id(), hit.getType(), null, graph, null, elasticMutations, hit.getIndex(), edgeMappings);
+            vertex.setFields(hit.getSource());
+            vertex.setSiblings(vertices);
+            vertices.add(vertex);
+        });
+        return vertices.iterator();
     }
 
     private static class EdgeResults implements Iterator<Edge> {
 
         public Iterator<Edge> edges;
 
-        private QueryIterator<Vertex> vertexSearchQuery;
+        private Iterator<Vertex> vertexSearchQuery;
         private Direction direction;
         private String[] edgeLabels;
 
-        public EdgeResults(QueryIterator<Vertex> vertexSearchQuery, Direction direction, String... edgeLabels) {
+        public EdgeResults(Iterator<Vertex> vertexSearchQuery, Direction direction, String... edgeLabels) {
             this.vertexSearchQuery = vertexSearchQuery;
             this.direction = direction;
             this.edgeLabels = edgeLabels;
