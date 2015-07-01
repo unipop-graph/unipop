@@ -10,6 +10,7 @@ import org.elasticgremlin.elasticsearch.*;
 import org.elasticgremlin.structure.ElasticGraph;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.junit.*;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
@@ -38,9 +39,9 @@ public class SpatialStepTests {
         config.addProperty("elasticsearch.client", ElasticClientFactory.ClientType.NODE.toString());
 
         graph = new ElasticGraph(config, null);
-
         graph.getQueryHandler().clearAllData();
-        //createGeoShapeMapping(graph.elasticService.client,DOCUMENT_TYPE);
+        TransportClient client = ElasticClientFactory.createTransportClient(CLUSTER_NAME, "127.0.0.1:9300");
+        createGeoShapeMapping(client,DOCUMENT_TYPE);
     }
 
     @Test
