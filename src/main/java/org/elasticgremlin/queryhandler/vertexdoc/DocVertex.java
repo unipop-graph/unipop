@@ -2,11 +2,9 @@ package org.elasticgremlin.queryhandler.vertexdoc;
 
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.elasticgremlin.elasticsearch.*;
-import org.elasticgremlin.elasticsearch.LazyGetter;
 import org.elasticgremlin.structure.*;
-import org.elasticsearch.action.get.MultiGetItemResponse;
 
-import java.util.Iterator;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 public class DocVertex extends BaseVertex {
@@ -35,10 +33,7 @@ public class DocVertex extends BaseVertex {
         try {
             elasticMutations.updateElement(this, indexName, null, false);
         }
-        catch (ExecutionException e) {
-            e.printStackTrace();
-        }
-        catch (InterruptedException e) {
+        catch (ExecutionException | InterruptedException e) {
             e.printStackTrace();
         }
     }
@@ -54,10 +49,7 @@ public class DocVertex extends BaseVertex {
         try {
             elasticMutations.updateElement(this, indexName, null, false);
         }
-        catch (ExecutionException e) {
-            e.printStackTrace();
-        }
-        catch (InterruptedException e) {
+        catch (ExecutionException | InterruptedException e) {
             e.printStackTrace();
         }
     }

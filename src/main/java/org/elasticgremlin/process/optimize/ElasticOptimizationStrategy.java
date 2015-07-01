@@ -5,11 +5,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.elasticgremlin.queryhandler.Predicates;
 import org.elasticgremlin.structure.ElasticGraph;
 
@@ -51,10 +49,10 @@ public class ElasticOptimizationStrategy extends AbstractTraversalStrategy<Trave
             if(nextStep instanceof HasContainerHolder) {
                 HasContainerHolder hasContainerHolder = (HasContainerHolder) nextStep;
                 boolean skip = false;
-                for(HasContainer has : hasContainerHolder.getHasContainers())
+                /*for(HasContainer has : hasContainerHolder.getHasContainers())
                     if(has.getPredicate().getTraversals().size() > 0)
                         skip = true;
-
+                */
                 if(!skip) {
                     hasContainerHolder.getHasContainers().forEach(predicates.hasContainers::add);
                     collectLabels(predicates, nextStep);

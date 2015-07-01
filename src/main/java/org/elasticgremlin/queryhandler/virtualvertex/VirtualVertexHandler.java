@@ -31,7 +31,6 @@ public class VirtualVertexHandler implements VertexHandler {
         ArrayList<Vertex> vertices = new ArrayList<>();
         for(Object id : vertexIds)
             vertices.add(new VirtualVertex(id, label, graph, null));
-        BaseVertex.setVertexSiblings(vertices);
         return vertices.iterator();
     }
 

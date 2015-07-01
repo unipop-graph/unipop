@@ -1,35 +1,29 @@
 package org.elasticgremlin.elasticsearch;
 
-import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.index.query.FilterBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.SearchHit;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.function.Consumer;
+import java.util.*;
 import java.util.function.Function;
 
 public class QueryIterator<E extends Element> implements Iterator<E> {
 
     private SearchResponse scrollResponse;
     private long allowedRemaining;
-    private final Function<SearchHit, E> convertFunc;
-    private final Consumer<List<E>> siblingsFunc;
+    private final Function<Iterator<SearchHit>, Iterator<E>> convertFunc;
     private Client client;
     private Iterator<E> hits;
 
     public QueryIterator(FilterBuilder filter, int startFrom, int scrollSize, long maxSize, Client client,
-                         Function<SearchHit, E> convertFunc, Consumer<List<E>> siblingsFunc,
+                         Function<Iterator<SearchHit>, Iterator<E>> convertFunc,
                          Boolean refresh, String... indices) {
         this.client = client;
         this.allowedRemaining = maxSize;
         this.convertFunc = convertFunc;
-        this.siblingsFunc = siblingsFunc;
 
         if (refresh) client.admin().indices().prepareRefresh(indices).execute().actionGet();
         scrollResponse = client.prepareSearch(indices)
@@ -39,7 +33,7 @@ public class QueryIterator<E extends Element> implements Iterator<E> {
                 .setSize(maxSize < scrollSize ? (int) maxSize : scrollSize)
                 .execute().actionGet();
 
-        getNextHits();
+        hits = convertFunc.apply(scrollResponse.getHits().iterator());
     }
 
     @Override
@@ -48,7 +42,7 @@ public class QueryIterator<E extends Element> implements Iterator<E> {
         if(hits.hasNext()) return true;
         
         scrollResponse = client.prepareSearchScroll(scrollResponse.getScrollId()).setScroll(new TimeValue(600000)).execute().actionGet();
-        getNextHits();
+        hits = convertFunc.apply(scrollResponse.getHits().iterator());
         return hits.hasNext();
     }
 
@@ -56,14 +50,5 @@ public class QueryIterator<E extends Element> implements Iterator<E> {
     public E next() {
         allowedRemaining--;
         return hits.next();
-    }
-
-    private void getNextHits() {
-        List<E> nextHits = new ArrayList<>();
-        scrollResponse.getHits().iterator().forEachRemaining(hit -> nextHits.add(convertFunc.apply(hit)));
-        if (siblingsFunc != null) {
-            siblingsFunc.accept(nextHits);
-        }
-        hits = nextHits.iterator();
     }
 }
