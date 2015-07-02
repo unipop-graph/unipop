@@ -1,4 +1,4 @@
-package org.elasticgremlin.queryhandler.stardoc;
+package org.elasticgremlin.queryhandler.elasticsearch.stardoc;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
 

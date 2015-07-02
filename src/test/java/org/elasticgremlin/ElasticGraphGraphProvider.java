@@ -4,7 +4,7 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.FileUtils;
 import org.apache.tinkerpop.gremlin.*;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.elasticgremlin.elasticsearch.ElasticClientFactory;
+import org.elasticgremlin.queryhandler.elasticsearch.helpers.ElasticClientFactory;
 import org.elasticgremlin.structure.*;
 import org.elasticsearch.action.admin.cluster.health.*;
 import org.elasticsearch.action.admin.indices.mapping.delete.DeleteMappingResponse;

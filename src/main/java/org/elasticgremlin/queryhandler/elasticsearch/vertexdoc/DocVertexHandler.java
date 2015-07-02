@@ -1,10 +1,8 @@
-package org.elasticgremlin.queryhandler.vertexdoc;
+package org.elasticgremlin.queryhandler.elasticsearch.vertexdoc;
 
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.elasticgremlin.elasticsearch.*;
-import org.elasticgremlin.elasticsearch.LazyGetter;
-import org.elasticgremlin.elasticsearch.QueryIterator;
-import org.elasticgremlin.queryhandler.edgedoc.DocEdge;
+import org.elasticgremlin.queryhandler.elasticsearch.helpers.*;
+import org.elasticgremlin.queryhandler.elasticsearch.edgedoc.DocEdge;
 import org.elasticgremlin.queryhandler.*;
 import org.elasticgremlin.structure.*;
 import org.elasticsearch.client.Client;

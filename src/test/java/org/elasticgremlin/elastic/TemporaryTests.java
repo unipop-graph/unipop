@@ -2,54 +2,17 @@ package org.elasticgremlin.elastic;
 
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
-import org.apache.tinkerpop.gremlin.process.traversal.*;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.*;
 import org.elasticgremlin.ElasticGraphGraphProvider;
-import org.elasticgremlin.elasticsearch.ElasticClientFactory;
+import org.elasticgremlin.queryhandler.elasticsearch.helpers.ElasticClientFactory;
 import org.elasticgremlin.structure.ElasticGraph;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
 
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
-
 public class TemporaryTests {
-    /*@Test
-    @FeatureRequirementSet(FeatureRequirementSet.Package.SIMPLE)
-    public void shouldPersistDataOnClose() throws Exception {
-        final GraphProvider graphProvider = new ElasticGraphGraphProvider();
-        Graph graph = graphProvider.standardTestGraph(this.getClass(), "shouldPersistDataOnClose");;
-
-        final Vertex v = graph.addVertex();
-        final Vertex u = graph.addVertex();
-        if (graph.features().edge().properties().supportsStringValues()) {
-            v.property("name", "marko");
-            u.property("name", "pavel");
-        }
-
-        final Edge e = v.addEdge(graphProvider.convertLabel("collaborator"), u);
-        if (graph.features().edge().properties().supportsStringValues())
-            e.property("location", "internet");
-
-        graph.close();
-
-        final Graph reopenedGraph = graphProvider.standardTestGraph(this.getClass(), "shouldPersistDataOnClose");
-
-        if (graph.features().vertex().properties().supportsStringValues()) {
-            reopenedGraph.vertices().forEachRemaining(vertex -> {
-                assertTrue(vertex.property("name").value().equals("marko") || vertex.property("name").value().equals("pavel"));
-            });
-        }
-
-        reopenedGraph.edges().forEachRemaining(edge -> {
-            assertEquals(graphProvider.convertId("collaborator"), edge.label());
-            if (graph.features().edge().properties().supportsStringValues())
-                assertEquals("internet", edge.property("location").value());
-        });
-
-        graphProvider.clear(reopenedGraph, graphProvider.standardGraphConfiguration(this.getClass(), "shouldPersistDataOnClose"));
-    }*/
 
     @Test
     @LoadGraphWith(LoadGraphWith.GraphData.MODERN)
@@ -70,8 +33,7 @@ public class TemporaryTests {
 
 
 
-        GraphTraversal iter = g.V().order().by(outE().count(), Order.decr);
-        printTraversalForm(iter);
+        GraphTraversal iter = g.V().drop();
         //iter.profile().cap(TraversalMetrics.METRICS_KEY);
 
         System.out.println("iter = " + iter);

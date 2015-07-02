@@ -1,4 +1,4 @@
-package org.elasticgremlin.elasticsearch;
+package org.elasticgremlin.queryhandler.elasticsearch.helpers;
 
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticgremlin.queryhandler.Predicates;
+import org.elasticgremlin.queryhandler.elasticsearch.Geo;
 import org.elasticgremlin.structure.BaseVertex;
 import org.elasticsearch.action.admin.cluster.health.*;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;

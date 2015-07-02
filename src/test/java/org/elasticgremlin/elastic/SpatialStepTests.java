@@ -6,13 +6,13 @@ import com.spatial4j.core.shape.impl.PointImpl;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.elasticgremlin.elasticsearch.*;
+import org.elasticgremlin.queryhandler.elasticsearch.*;
+import org.elasticgremlin.queryhandler.elasticsearch.helpers.ElasticClientFactory;
 import org.elasticgremlin.structure.ElasticGraph;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.junit.*;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.IOException;
 import java.util.*;

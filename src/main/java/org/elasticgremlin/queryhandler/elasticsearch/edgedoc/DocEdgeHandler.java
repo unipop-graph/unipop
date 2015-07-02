@@ -1,10 +1,10 @@
-package org.elasticgremlin.queryhandler.edgedoc;
+package org.elasticgremlin.queryhandler.elasticsearch.edgedoc;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.elasticgremlin.elasticsearch.*;
 import org.elasticgremlin.queryhandler.*;
+import org.elasticgremlin.queryhandler.elasticsearch.helpers.*;
 import org.elasticgremlin.structure.*;
 import org.elasticsearch.action.get.*;
 import org.elasticsearch.client.Client;

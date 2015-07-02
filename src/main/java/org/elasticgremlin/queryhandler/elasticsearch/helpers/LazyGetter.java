@@ -1,4 +1,4 @@
-package org.elasticgremlin.elasticsearch;
+package org.elasticgremlin.queryhandler.elasticsearch.helpers;
 
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticgremlin.structure.BaseVertex;
@@ -43,8 +43,10 @@ public class LazyGetter {
 
         MultiGetResponse multiGetItemResponses = client.multiGet(multiGetRequest).actionGet();
         multiGetItemResponses.forEach(response -> {
-            GetResponse getResponse = response.getResponse();
-            if (getResponse == null || !getResponse.isExists()) return;
+            if (response.isFailed() || !response.getResponse().isExists()) {
+                System.out.println(response.getFailure().getMessage());
+                return;
+            }
             List<BaseVertex> vertices = idToVertices.get(response.getId());
             if (vertices == null) return;
             vertices.forEach(vertex -> vertex.applyLazyFields(response));
