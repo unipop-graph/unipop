@@ -1,4 +1,4 @@
-package org.elasticgremlin.elasticsearch;
+package org.elasticgremlin.queryhandler.elasticsearch.helpers;
 
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.elasticsearch.action.search.SearchResponse;

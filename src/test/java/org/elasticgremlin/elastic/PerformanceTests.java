@@ -2,7 +2,7 @@ package org.elasticgremlin.elastic;
 
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.elasticgremlin.elasticsearch.*;
+import org.elasticgremlin.queryhandler.elasticsearch.helpers.*;
 import org.elasticgremlin.structure.ElasticGraph;
 import org.junit.Test;
 

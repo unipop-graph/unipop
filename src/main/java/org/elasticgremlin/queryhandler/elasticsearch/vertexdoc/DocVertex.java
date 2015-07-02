@@ -1,7 +1,7 @@
-package org.elasticgremlin.queryhandler.vertexdoc;
+package org.elasticgremlin.queryhandler.elasticsearch.vertexdoc;
 
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.elasticgremlin.elasticsearch.*;
+import org.elasticgremlin.queryhandler.elasticsearch.helpers.*;
 import org.elasticgremlin.structure.*;
 
 import java.util.*;
@@ -10,7 +10,7 @@ import java.util.concurrent.ExecutionException;
 public class DocVertex extends BaseVertex {
     private final ElasticMutations elasticMutations;
     private final String indexName;
-    private org.elasticgremlin.elasticsearch.LazyGetter lazyGetter;
+    private LazyGetter lazyGetter;
 
     public DocVertex(final Object id, final String label, Object[] keyValues, ElasticGraph graph, LazyGetter lazyGetter, ElasticMutations elasticMutations, String indexName) {
         super(id, label, graph, keyValues);

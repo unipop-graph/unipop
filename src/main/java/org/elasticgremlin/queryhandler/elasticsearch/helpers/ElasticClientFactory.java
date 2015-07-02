@@ -1,4 +1,4 @@
-package org.elasticgremlin.elasticsearch;
+package org.elasticgremlin.queryhandler.elasticsearch.helpers;
 
 import org.apache.commons.configuration.Configuration;
 import org.elasticsearch.client.Client;

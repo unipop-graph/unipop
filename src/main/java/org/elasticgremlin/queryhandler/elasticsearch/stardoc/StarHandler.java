@@ -1,8 +1,8 @@
-package org.elasticgremlin.queryhandler.stardoc;
+package org.elasticgremlin.queryhandler.elasticsearch.stardoc;
 
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.elasticgremlin.elasticsearch.*;
 import org.elasticgremlin.queryhandler.*;
+import org.elasticgremlin.queryhandler.elasticsearch.helpers.*;
 import org.elasticgremlin.structure.ElasticGraph;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.*;

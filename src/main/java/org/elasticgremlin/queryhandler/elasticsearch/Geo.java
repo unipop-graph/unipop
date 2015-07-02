@@ -1,4 +1,4 @@
-package org.elasticgremlin.elasticsearch;
+package org.elasticgremlin.queryhandler.elasticsearch;
 
 import com.spatial4j.core.shape.*;
 import org.apache.tinkerpop.gremlin.process.traversal.P;

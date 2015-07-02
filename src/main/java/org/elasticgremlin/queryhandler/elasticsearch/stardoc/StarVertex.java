@@ -1,9 +1,9 @@
-package org.elasticgremlin.queryhandler.stardoc;
+package org.elasticgremlin.queryhandler.elasticsearch.stardoc;
 
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.elasticgremlin.elasticsearch.ElasticMutations;
-import org.elasticgremlin.elasticsearch.LazyGetter;
+import org.elasticgremlin.queryhandler.elasticsearch.helpers.ElasticMutations;
+import org.elasticgremlin.queryhandler.elasticsearch.helpers.LazyGetter;
 import org.elasticgremlin.queryhandler.Predicates;
 import org.elasticgremlin.structure.*;
 import org.elasticsearch.action.get.GetResponse;

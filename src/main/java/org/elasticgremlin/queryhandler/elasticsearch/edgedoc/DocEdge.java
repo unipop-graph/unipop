@@ -1,8 +1,8 @@
-package org.elasticgremlin.queryhandler.edgedoc;
+package org.elasticgremlin.queryhandler.elasticsearch.edgedoc;
 
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
-import org.elasticgremlin.elasticsearch.ElasticMutations;
+import org.elasticgremlin.queryhandler.elasticsearch.helpers.ElasticMutations;
 import org.elasticgremlin.structure.*;
 
 import java.util.*;

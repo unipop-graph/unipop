@@ -1,10 +1,11 @@
-package org.elasticgremlin.queryhandler;
+package org.elasticgremlin.queryhandler.elasticsearch;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.elasticgremlin.elasticsearch.*;
-import org.elasticgremlin.queryhandler.edgedoc.DocEdgeHandler;
-import org.elasticgremlin.queryhandler.vertexdoc.DocVertexHandler;
+import org.elasticgremlin.queryhandler.*;
+import org.elasticgremlin.queryhandler.elasticsearch.edgedoc.DocEdgeHandler;
+import org.elasticgremlin.queryhandler.elasticsearch.helpers.*;
+import org.elasticgremlin.queryhandler.elasticsearch.vertexdoc.DocVertexHandler;
 import org.elasticgremlin.structure.ElasticGraph;
 import org.elasticsearch.client.Client;
 
@@ -17,14 +18,12 @@ public class SimpleQueryHandler implements QueryHandler {
     private final Client client;
     private final String indexName;
     private final ElasticMutations elasticMutations;
-    private final boolean refresh;
-    private final int scrollSize;
 
 
     public SimpleQueryHandler(ElasticGraph graph, Configuration configuration) throws IOException {
         indexName = configuration.getString("elasticsearch.index.name", "graph");
-        this.refresh = configuration.getBoolean("elasticsearch.refresh", false);
-        this.scrollSize = configuration.getInt("elasticsearch.scrollSize", 100);
+        boolean refresh = configuration.getBoolean("elasticsearch.refresh", false);
+        int scrollSize = configuration.getInt("elasticsearch.scrollSize", 500);
 
         client = ElasticClientFactory.create(configuration);
         ElasticHelper.createIndex(indexName, client);

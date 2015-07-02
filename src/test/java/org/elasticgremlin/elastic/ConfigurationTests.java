@@ -3,7 +3,7 @@ package org.elasticgremlin.elastic;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.elasticgremlin.elasticsearch.ElasticClientFactory;
+import org.elasticgremlin.queryhandler.elasticsearch.helpers.ElasticClientFactory;
 import org.elasticgremlin.structure.ElasticGraph;
 import org.junit.Test;
 

@@ -67,6 +67,10 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
         queriedEdges.put(queryInfo, edges);
     }
 
+    public void removeEdge(Edge edge) {
+        queriedEdges.forEach((edgeQueryInfo, edges) -> edges.remove(edge));
+    }
+
     public void applyLazyFields(MultiGetItemResponse response) {
         setLabel(response.getType());
         response.getResponse().getSource().entrySet().forEach((field) ->

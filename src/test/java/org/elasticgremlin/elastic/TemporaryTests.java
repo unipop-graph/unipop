@@ -2,17 +2,15 @@ package org.elasticgremlin.elastic;
 
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
-import org.apache.tinkerpop.gremlin.process.traversal.*;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.*;
 import org.elasticgremlin.ElasticGraphGraphProvider;
-import org.elasticgremlin.elasticsearch.ElasticClientFactory;
+import org.elasticgremlin.queryhandler.elasticsearch.helpers.ElasticClientFactory;
 import org.elasticgremlin.structure.ElasticGraph;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
-
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
 
 public class TemporaryTests {
 
@@ -33,7 +31,7 @@ public class TemporaryTests {
         elasticGraphProvider.loadGraphData(graph, loadGraphWiths[0], this.getClass(), m.getName());
         GraphTraversalSource g = graph.traversal();
 
-        GraphTraversal iter = g.V().order().by(outE().count(), Order.decr);
+        GraphTraversal iter = g.V().drop();
         printTraversalForm(iter);
         //iter.profile().cap(TraversalMetrics.METRICS_KEY);
 

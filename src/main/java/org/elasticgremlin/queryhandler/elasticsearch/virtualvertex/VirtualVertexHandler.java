@@ -1,4 +1,4 @@
-package org.elasticgremlin.queryhandler.virtualvertex;
+package org.elasticgremlin.queryhandler.elasticsearch.virtualvertex;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -34,7 +34,7 @@ public class VirtualVertexHandler implements VertexHandler {
     @Override
     public Iterator<Vertex> vertices(Object[] vertexIds) {
         ArrayList<Vertex> vertices = new ArrayList<>();
-        for (Object id : vertexIds) {
+        for(Object id : vertexIds) {
             BaseVertex vertex = new VirtualVertex(id, label, graph, null);
             vertices.add(vertex);
             vertex.setSiblings(vertices);
