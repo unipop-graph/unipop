@@ -1,4 +1,4 @@
-package org.elasticgremlin.process;
+package org.elasticgremlin.simpleQueryHandler.java;
 
 import org.apache.tinkerpop.gremlin.GraphProviderClass;
 import org.elasticgremlin.ElasticGraphGraphProvider;

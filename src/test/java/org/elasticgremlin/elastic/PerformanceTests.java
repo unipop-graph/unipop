@@ -6,7 +6,6 @@ import org.elasticgremlin.elasticsearch.*;
 import org.elasticgremlin.structure.ElasticGraph;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.Iterator;
 
 public class PerformanceTests {
@@ -16,7 +15,7 @@ public class PerformanceTests {
 
 
     @Test
-    public void profile() throws IOException {
+    public void profile() throws InstantiationException {
         BaseConfiguration config = new BaseConfiguration();
         config.addProperty("elasticsearch.cluster.name", "test");
         config.addProperty("elasticsearch.index.name", "graph");
@@ -24,7 +23,7 @@ public class PerformanceTests {
         config.addProperty("elasticsearch.client", ElasticClientFactory.ClientType.NODE);
 
         startWatch("graph initalization");
-        ElasticGraph graph = new ElasticGraph(config, null);
+        ElasticGraph graph = new ElasticGraph(config);
         stopWatch("graph initalization");
         graph.getQueryHandler().clearAllData();
 

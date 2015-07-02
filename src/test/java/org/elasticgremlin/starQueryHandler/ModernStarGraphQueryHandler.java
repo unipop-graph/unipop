@@ -1,4 +1,4 @@
-package org.elasticgremlin.testimpl;
+package org.elasticgremlin.starQueryHandler;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
@@ -26,20 +26,18 @@ public class ModernStarGraphQueryHandler implements QueryHandler {
     private static final String PERSON = "person";
     private static final String SOFTWARE = "software";
 
-    private final StarHandler starHandler;
-    private final DocVertexHandler docVertexHandler;
-    private final Client client;
-    private final String indexName;
-    private final ElasticMutations elasticMutations;
-    private final boolean refresh;
-    private final int scrollSize;
-
+    private StarHandler starHandler;
+    private DocVertexHandler docVertexHandler;
+    private Client client;
+    private String indexName;
+    private ElasticMutations elasticMutations;
     private Map<String, VertexHandler> vertexHandlers;
 
-    public ModernStarGraphQueryHandler(ElasticGraph graph, Configuration configuration) throws IOException {
+    @Override
+    public void init(ElasticGraph graph, Configuration configuration) throws IOException {
         this.indexName = configuration.getString("elasticsearch.index.name", "graph");
-        this.refresh = configuration.getBoolean("elasticsearch.refresh", false);
-        this.scrollSize = configuration.getInt("elasticsearch.scrollSize", 100);
+        boolean refresh = configuration.getBoolean("elasticsearch.refresh", false);
+        int scrollSize = configuration.getInt("elasticsearch.scrollSize", 100);
 
         this.client = ElasticClientFactory.create(configuration);
         ElasticHelper.createIndex(indexName, client);
@@ -123,6 +121,7 @@ public class ModernStarGraphQueryHandler implements QueryHandler {
     public Vertex addVertex(Object id, String label, Object[] properties) {
         return vertexHandlers.get(label).addVertex(id, label, properties);
     }
+
 
     @Override
     public void close() {

@@ -12,16 +12,16 @@ import java.io.IOException;
 import java.util.Iterator;
 
 public class SimpleQueryHandler implements QueryHandler {
-    private final DocEdgeHandler docEdgeHandler;
-    private final DocVertexHandler elasticDocVertexHandler;
-    private final Client client;
-    private final String indexName;
-    private final ElasticMutations elasticMutations;
-    private final boolean refresh;
-    private final int scrollSize;
+    private DocEdgeHandler docEdgeHandler;
+    private DocVertexHandler elasticDocVertexHandler;
+    private Client client;
+    private String indexName;
+    private ElasticMutations elasticMutations;
+    private boolean refresh;
+    private int scrollSize;
 
-
-    public SimpleQueryHandler(ElasticGraph graph, Configuration configuration) throws IOException {
+    @Override
+    public void init(ElasticGraph graph, Configuration configuration) throws IOException {
         indexName = configuration.getString("elasticsearch.index.name", "graph");
         this.refresh = configuration.getBoolean("elasticsearch.refresh", false);
         this.scrollSize = configuration.getInt("elasticsearch.scrollSize", 100);

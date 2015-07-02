@@ -7,22 +7,20 @@ import org.elasticgremlin.elasticsearch.ElasticClientFactory;
 import org.elasticgremlin.structure.ElasticGraph;
 import org.junit.Test;
 
-import java.io.IOException;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 public class ConfigurationTests {
 
     @Test
-    public void upsertConfiguration() throws IOException {
+    public void upsertConfiguration() throws  InstantiationException {
         BaseConfiguration config = new BaseConfiguration();
         config.addProperty("elasticsearch.cluster.name", "test");
         config.addProperty("elasticsearch.index.name", "graph10");
         config.addProperty("elasticsearch.refresh", true);
         config.addProperty("elasticsearch.client", ElasticClientFactory.ClientType.NODE);
         config.addProperty("elasticsearch.upsert", true);
-        ElasticGraph graph = new ElasticGraph(config, null);
+        ElasticGraph graph = new ElasticGraph(config);
         graph.getQueryHandler().clearAllData();
 
         graph.addVertex(T.id, "1", "field", "a", "field2", "c");

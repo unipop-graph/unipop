@@ -18,14 +18,14 @@ public class TemporaryTests {
 
     @Test
     @LoadGraphWith(LoadGraphWith.GraphData.MODERN)
-    public void testToPassTests() throws IOException, NoSuchMethodException {
+    public void testToPassTests() throws IOException, NoSuchMethodException, InstantiationException {
         BaseConfiguration config = new BaseConfiguration();
         config.addProperty("elasticsearch.cluster.name", "testgraph");
         String indexName = "graphtest14";
         config.addProperty("elasticsearch.index.name", indexName.toLowerCase());
         config.addProperty("elasticsearch.refresh", true);
         config.addProperty("elasticsearch.client", ElasticClientFactory.ClientType.NODE);
-        ElasticGraph graph = new ElasticGraph(config, null);
+        ElasticGraph graph = new ElasticGraph(config);
         graph.getQueryHandler().clearAllData();
         ElasticGraphGraphProvider elasticGraphProvider = new ElasticGraphGraphProvider();
         Method m = this.getClass().getMethod("testToPassTests");
