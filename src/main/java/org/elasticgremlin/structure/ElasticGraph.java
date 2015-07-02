@@ -9,9 +9,7 @@ import org.elasticgremlin.process.optimize.ElasticOptimizationStrategy;
 import org.elasticgremlin.queryhandler.*;
 import org.elasticgremlin.queryhandler.elasticsearch.SimpleQueryHandler;
 
-import java.io.IOException;
 import java.util.*;
-import java.util.function.BiFunction;
 
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.FeatureSupportTest$VertexPropertyFunctionalityTest", method = "shouldSupportNumericIdsIfNumericIdsAreGeneratedFromTheGraph",
         reason = "need to handle ids in VertexProperties")
@@ -55,20 +53,27 @@ public class ElasticGraph implements Graph {
     }
 
     //for testSuite
-    public static ElasticGraph open(final Configuration configuration) throws IOException {
-        return new ElasticGraph(configuration, null);
+    public static ElasticGraph open(final Configuration configuration) throws InstantiationException {
+        return new ElasticGraph(configuration);
     }
 
     private ElasticFeatures features = new ElasticFeatures();
     private final Configuration configuration;
     private QueryHandler queryHandler;
 
-    public ElasticGraph(Configuration configuration, BiFunction<ElasticGraph, Configuration, QueryHandler> createQueryHandler) throws IOException {
-        configuration.setProperty(Graph.GRAPH, ElasticGraph.class.getName());
-        this.configuration = configuration;
-        if(createQueryHandler == null)
-            this.queryHandler = new SimpleQueryHandler(this, configuration);
-        else this.queryHandler = createQueryHandler.apply(this, configuration);
+    public ElasticGraph(Configuration configuration) throws InstantiationException {
+        try {
+            configuration.setProperty(Graph.GRAPH, ElasticGraph.class.getName());
+            this.configuration = configuration;
+            String queryHandlerName = configuration.getString("queryHandler");
+            if(queryHandlerName != null) this.queryHandler = (QueryHandler)Class.forName(queryHandlerName).newInstance();
+            else this.queryHandler = new SimpleQueryHandler();
+            this.getQueryHandler().init(this, configuration);
+        } catch(Exception ex) {
+            InstantiationException instantiationException = new InstantiationException();
+            instantiationException.addSuppressed(ex);
+            throw instantiationException;
+        }
     }
 
     public QueryHandler getQueryHandler() {

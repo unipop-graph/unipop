@@ -31,14 +31,14 @@ public class SpatialStepTests {
     String DOCUMENT_TYPE = "geo_item";
     ElasticGraph graph;
     @Before
-    public void startUp() throws IOException {
+    public void startUp() throws InstantiationException, IOException {
         BaseConfiguration config = new BaseConfiguration();
         config.addProperty("elasticsearch.cluster.name", CLUSTER_NAME);
         config.addProperty("elasticsearch.index.name", INDEX_NAME);
         config.addProperty("elasticsearch.refresh", true);
         config.addProperty("elasticsearch.client", ElasticClientFactory.ClientType.NODE.toString());
 
-        graph = new ElasticGraph(config, null);
+        graph = new ElasticGraph(config);
         graph.getQueryHandler().clearAllData();
         TransportClient client = ElasticClientFactory.createTransportClient(CLUSTER_NAME, "127.0.0.1:9300");
         createGeoShapeMapping(client,DOCUMENT_TYPE);

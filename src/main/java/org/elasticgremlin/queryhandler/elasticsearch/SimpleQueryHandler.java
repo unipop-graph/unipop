@@ -13,14 +13,15 @@ import java.io.IOException;
 import java.util.Iterator;
 
 public class SimpleQueryHandler implements QueryHandler {
-    private final DocEdgeHandler docEdgeHandler;
-    private final DocVertexHandler elasticDocVertexHandler;
-    private final Client client;
-    private final String indexName;
-    private final ElasticMutations elasticMutations;
 
+    private DocEdgeHandler docEdgeHandler;
+    private DocVertexHandler elasticDocVertexHandler;
+    private Client client;
+    private String indexName;
+    private ElasticMutations elasticMutations;
 
-    public SimpleQueryHandler(ElasticGraph graph, Configuration configuration) throws IOException {
+    @Override
+    public void init(ElasticGraph graph, Configuration configuration) throws IOException {
         indexName = configuration.getString("elasticsearch.index.name", "graph");
         boolean refresh = configuration.getBoolean("elasticsearch.refresh", false);
         int scrollSize = configuration.getInt("elasticsearch.scrollSize", 500);
