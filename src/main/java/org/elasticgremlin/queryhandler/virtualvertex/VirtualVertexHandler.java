@@ -1,4 +1,4 @@
-package org.elasticgremlin.queryhandler.elasticsearch.virtualvertex;
+package org.elasticgremlin.queryhandler.virtualvertex;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;

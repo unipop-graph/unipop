@@ -17,18 +17,16 @@ public class SimpleQueryHandler implements QueryHandler {
     private DocEdgeHandler docEdgeHandler;
     private DocVertexHandler elasticDocVertexHandler;
     private Client client;
-    private String indexName;
-    private ElasticMutations elasticMutations;
 
     @Override
     public void init(ElasticGraph graph, Configuration configuration) throws IOException {
-        indexName = configuration.getString("elasticsearch.index.name", "graph");
+        String indexName = configuration.getString("elasticsearch.index.name", "graph");
         boolean refresh = configuration.getBoolean("elasticsearch.refresh", false);
         int scrollSize = configuration.getInt("elasticsearch.scrollSize", 500);
 
         client = ElasticClientFactory.create(configuration);
         ElasticHelper.createIndex(indexName, client);
-        elasticMutations = new ElasticMutations(configuration, client);
+        ElasticMutations elasticMutations = new ElasticMutations(configuration, client);
         docEdgeHandler = new DocEdgeHandler(graph, client, elasticMutations, indexName, scrollSize, refresh);
         elasticDocVertexHandler = new DocVertexHandler(graph, client, elasticMutations, indexName, scrollSize, refresh);
     }

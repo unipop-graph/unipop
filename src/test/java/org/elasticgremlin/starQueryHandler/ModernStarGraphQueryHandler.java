@@ -21,19 +21,17 @@ public class ModernStarGraphQueryHandler implements QueryHandler {
     private StarHandler starHandler;
     private DocVertexHandler docVertexHandler;
     private Client client;
-    private String indexName;
-    private ElasticMutations elasticMutations;
     private Map<String, VertexHandler> vertexHandlers;
 
     @Override
     public void init(ElasticGraph graph, Configuration configuration) throws IOException {
-        this.indexName = configuration.getString("elasticsearch.index.name", "graph");
+        String indexName = configuration.getString("elasticsearch.index.name", "graph");
         boolean refresh = configuration.getBoolean("elasticsearch.refresh", false);
         int scrollSize = configuration.getInt("elasticsearch.scrollSize", 100);
 
         this.client = ElasticClientFactory.create(configuration);
         ElasticHelper.createIndex(indexName, client);
-        this.elasticMutations = new ElasticMutations(configuration, client);
+        ElasticMutations elasticMutations = new ElasticMutations(configuration, client);
 
         this.docVertexHandler = new DocVertexHandler(graph, client, elasticMutations, indexName, scrollSize, refresh);
         this.starHandler = new StarHandler(graph, client, elasticMutations, indexName, scrollSize, refresh,
