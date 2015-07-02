@@ -120,11 +120,6 @@ public class ModernStarGraphQueryHandler implements QueryHandler {
         client.close();
     }
 
-    @Override
-    public void clearAllData() {
-        elasticMutations.clearAllData(new String[]{indexName});
-    }
-
     private Iterator<Vertex> testPredicatesLocal(Predicates predicates, Iterator<Vertex> vertices) {
         List<Vertex> passedVertices = new ArrayList<>();
         vertices.forEachRemaining(vertex -> {

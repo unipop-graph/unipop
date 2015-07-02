@@ -3,13 +3,11 @@ package org.elasticgremlin.queryhandler.elasticsearch.helpers;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.elasticgremlin.structure.BaseElement;
-import org.elasticsearch.action.bulk.*;
-import org.elasticsearch.action.delete.*;
-import org.elasticsearch.action.deletebyquery.DeleteByQueryResponse;
-import org.elasticsearch.action.index.*;
-import org.elasticsearch.action.update.*;
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.delete.DeleteRequestBuilder;
+import org.elasticsearch.action.index.IndexRequestBuilder;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.index.query.QueryBuilders;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -56,10 +54,5 @@ public class ElasticMutations {
         DeleteRequestBuilder deleteRequestBuilder = client.prepareDelete(index, element.label(), element.id().toString()).setRouting(routing);
         if(bulk) bulkRequest.add(deleteRequestBuilder);
         else deleteRequestBuilder.execute().actionGet();
-    }
-
-    public DeleteByQueryResponse clearAllData(String[] indices) {
-        return client.prepareDeleteByQuery(indices)
-                .setQuery(QueryBuilders.matchAllQuery()).execute().actionGet();
     }
 }

@@ -1,54 +1,45 @@
 package org.elasticgremlin.elastic;
 
-import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
-import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.*;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.elasticgremlin.ElasticGraphGraphProvider;
-import org.elasticgremlin.queryhandler.elasticsearch.helpers.ElasticClientFactory;
-import org.elasticgremlin.structure.ElasticGraph;
-import org.junit.Test;
+import org.junit.*;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
+import java.util.concurrent.ExecutionException;
 
 public class TemporaryTests {
 
-    @Test
-    @LoadGraphWith(LoadGraphWith.GraphData.MODERN)
-    public void testToPassTests() throws IOException, NoSuchMethodException, InstantiationException {
-        BaseConfiguration config = new BaseConfiguration();
-        config.addProperty("elasticsearch.cluster.name", "testgraph");
-        String indexName = "graphtest14";
-        config.addProperty("elasticsearch.index.name", indexName.toLowerCase());
-        config.addProperty("elasticsearch.refresh", true);
-        config.addProperty("elasticsearch.client", ElasticClientFactory.ClientType.NODE);
-        ElasticGraph graph = new ElasticGraph(config);
-        graph.getQueryHandler().clearAllData();
+    private Graph graph;
+    private GraphTraversalSource g;
+
+    @Before
+    public void startUp() throws InstantiationException, IOException, ExecutionException, InterruptedException {
         ElasticGraphGraphProvider elasticGraphProvider = new ElasticGraphGraphProvider();
-        Method m = this.getClass().getMethod("testToPassTests");
-        LoadGraphWith[] loadGraphWiths = m.getAnnotationsByType(LoadGraphWith.class);
-        elasticGraphProvider.loadGraphData(graph, loadGraphWiths[0], this.getClass(), m.getName());
-        GraphTraversalSource g = graph.traversal();
+        final Configuration configuration = elasticGraphProvider.newGraphConfiguration("testGraph", this.getClass(), "testToPassTests", LoadGraphWith.GraphData.MODERN);
+        this.graph = elasticGraphProvider.openTestGraph(configuration);
+        this.g = graph.traversal();
+    }
 
+    @Test
+    public void g_V_Drop() throws Exception {
         GraphTraversal iter = g.V().drop();
-        printTraversalForm(iter);
-        //iter.profile().cap(TraversalMetrics.METRICS_KEY);
+        check(iter);
+    }
 
-        System.out.println("iter = " + iter);
-        while(iter.hasNext()){
-            Object next = iter.next();
+    private void check(GraphTraversal traversal) {
+        System.out.println("pre-strategy:" + traversal);
+        traversal.hasNext();
+        System.out.println("post-strategy:" + traversal);
+
+        //traversal.profile().cap(TraversalMetrics.METRICS_KEY);
+
+        while(traversal.hasNext()){
+            Object next = traversal.next();
             String s = next.toString();
             System.out.println("s = " + s);
         }
-
-        //graph.elasticService.client.admin().indices().delete(new DeleteIndexRequest(indexName)).actionGet();
-        graph.close();
-    }
-
-    public void printTraversalForm(final Traversal traversal) {
-        System.out.println("   pre-strategy:" + traversal);
-        traversal.hasNext();
-        System.out.println("  post-strategy:" + traversal);
     }
 }

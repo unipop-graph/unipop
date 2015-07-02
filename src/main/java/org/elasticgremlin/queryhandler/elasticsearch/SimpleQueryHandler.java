@@ -87,9 +87,4 @@ public class SimpleQueryHandler implements QueryHandler {
     public void close() {
         client.close();
     }
-
-    @Override
-    public void clearAllData() {
-        elasticMutations.clearAllData(new String[]{indexName});
-    }
 }

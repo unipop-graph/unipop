@@ -11,6 +11,9 @@ import org.elasticgremlin.structure.BaseVertex;
 import org.elasticsearch.action.admin.cluster.health.*;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.exists.indices.*;
+import org.elasticsearch.action.admin.indices.mapping.delete.DeleteMappingResponse;
+import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
+import org.elasticsearch.action.deletebyquery.DeleteByQueryResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.geo.builders.ShapeBuilder;
 import org.elasticsearch.common.settings.*;
@@ -43,6 +46,22 @@ public class ElasticHelper {
                     "', index '" + indexName + "'");
 
         }
+    }
+
+    public static DeleteByQueryResponse clearIndex(Client client, String indexName){
+        DeleteByQueryResponse indexDeleteByQueryResponses = client.prepareDeleteByQuery(indexName).setQuery(QueryBuilders.matchAllQuery()).execute().actionGet();
+
+        GetMappingsResponse getMappingsResponse = client.admin().indices().prepareGetMappings(indexName).execute().actionGet();
+        ArrayList<String> mappings = new ArrayList();
+        getMappingsResponse.getMappings().forEach(map -> {
+            map.value.forEach(map2 -> mappings.add(map2.value.type()));
+        });
+
+        if(mappings.size() > 0) {
+            DeleteMappingResponse deleteMappingResponse = client.admin().indices().prepareDeleteMapping(indexName).setType(mappings.toArray(new String[mappings.size()])).execute().actionGet();
+        }
+
+        return indexDeleteByQueryResponses;
     }
 
     public static Map<Object, List<Edge>> handleBulkEdgeResults(Iterator<Edge> edges, List<Vertex> vertices,

@@ -3,20 +3,20 @@ package org.elasticgremlin.elastic;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.impl.PointImpl;
-import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.commons.configuration.Configuration;
+import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.elasticgremlin.queryhandler.elasticsearch.*;
-import org.elasticgremlin.queryhandler.elasticsearch.helpers.ElasticClientFactory;
-import org.elasticgremlin.structure.ElasticGraph;
+import org.elasticgremlin.ElasticGraphGraphProvider;
+import org.elasticgremlin.queryhandler.elasticsearch.Geo;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.junit.*;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import static org.junit.Assert.assertEquals;
@@ -29,20 +29,17 @@ public class SpatialStepTests {
     String CLUSTER_NAME = "testscluster";
     String INDEX_NAME = "geo_index";
     String DOCUMENT_TYPE = "geo_item";
-    ElasticGraph graph;
-    @Before
-    public void startUp() throws InstantiationException, IOException {
-        BaseConfiguration config = new BaseConfiguration();
-        config.addProperty("elasticsearch.cluster.name", CLUSTER_NAME);
-        config.addProperty("elasticsearch.index.name", INDEX_NAME);
-        config.addProperty("elasticsearch.refresh", true);
-        config.addProperty("elasticsearch.client", ElasticClientFactory.ClientType.NODE.toString());
+    Graph graph;
 
-        graph = new ElasticGraph(config);
-        graph.getQueryHandler().clearAllData();
-        TransportClient client = ElasticClientFactory.createTransportClient(CLUSTER_NAME, "127.0.0.1:9300");
-        createGeoShapeMapping(client,DOCUMENT_TYPE);
+    @Before
+    public void startUp() throws InstantiationException, IOException, ExecutionException, InterruptedException {
+        ElasticGraphGraphProvider elasticGraphProvider = new ElasticGraphGraphProvider();
+        final Configuration configuration = elasticGraphProvider.newGraphConfiguration("testGraph", this.getClass(), "spatialTests", LoadGraphWith.GraphData.MODERN);
+        this.graph = elasticGraphProvider.openTestGraph(configuration);
+
+        createGeoShapeMapping(elasticGraphProvider.getClient(),DOCUMENT_TYPE);
     }
+
 
     @Test
     public void geoPointPolygonsIntersectionTest() throws IOException {

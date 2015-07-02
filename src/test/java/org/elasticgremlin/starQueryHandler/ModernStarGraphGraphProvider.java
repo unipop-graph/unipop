@@ -6,10 +6,12 @@ import org.elasticgremlin.ElasticGraphGraphProvider;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 public class ModernStarGraphGraphProvider extends ElasticGraphGraphProvider {
 
-    public ModernStarGraphGraphProvider() throws IOException {
+
+    public ModernStarGraphGraphProvider() throws IOException, ExecutionException, InterruptedException {
     }
 
     @Override

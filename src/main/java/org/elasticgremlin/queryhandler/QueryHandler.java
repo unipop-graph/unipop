@@ -11,6 +11,4 @@ public interface QueryHandler extends VertexHandler, EdgeHandler {
     void init(ElasticGraph graph, Configuration configuration) throws IOException;
 
     void close();
-
-    void clearAllData();
 }

@@ -4,19 +4,17 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.FileUtils;
 import org.apache.tinkerpop.gremlin.*;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.elasticgremlin.queryhandler.elasticsearch.helpers.ElasticClientFactory;
+import org.elasticgremlin.queryhandler.elasticsearch.helpers.*;
 import org.elasticgremlin.structure.*;
-import org.elasticsearch.action.admin.cluster.health.*;
-import org.elasticsearch.action.admin.indices.mapping.delete.DeleteMappingResponse;
-import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.node.*;
+import org.elasticsearch.node.Node;
 
 import java.io.*;
+import java.net.ServerSocket;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 
 /**
  * @author Stephen Mallette (http://stephen.genoprime.com)
@@ -34,53 +32,67 @@ public class ElasticGraphGraphProvider extends AbstractGraphProvider {
         add(BaseVertexProperty.class);
     }};
 
-    Node node;
-    Client client;
+    private final int port;
+    private final Node node;
+    private final Client client;
 
-    public ElasticGraphGraphProvider() throws IOException {
+    public ElasticGraphGraphProvider() throws IOException, ExecutionException, InterruptedException {
         System.setProperty("build.dir", System.getProperty("user.dir") + "\\build");
+
         String path = new java.io.File( "." ).getCanonicalPath() + "\\data";
         File file = new File(path);
         FileUtils.deleteQuietly(file);
-        Settings settings = NodeBuilder.nodeBuilder().settings().put("script.groovy.sandbox.enabled", true).put("script.disable_dynamic", false).build();
-        node = NodeBuilder.nodeBuilder().settings(settings).client(false).clusterName(CLUSTER_NAME).build();
-        node.start();
+
+        this.port = findFreePort();
+
+        node = ElasticClientFactory.createNode(CLUSTER_NAME, false, port);
         client = node.client();
-        final ClusterHealthRequest clusterHealthRequest = new ClusterHealthRequest().timeout(TimeValue.timeValueSeconds(10)).waitForYellowStatus();
-        final ClusterHealthResponse clusterHealth = client.admin().cluster().health(clusterHealthRequest).actionGet();
-        if (clusterHealth.isTimedOut()) {
-            System.out.print(clusterHealth.getStatus());
+
+        final ClusterHealthResponse clusterHealth = client.admin().cluster().prepareHealth().setTimeout(TimeValue.timeValueSeconds(10)).setWaitForGreenStatus().execute().get();
+        if (clusterHealth.isTimedOut()) System.out.print(clusterHealth.getStatus());
+    }
+
+    private static int findFreePort() {
+        ServerSocket socket = null;
+        try {
+            socket = new ServerSocket(0);
+            socket.setReuseAddress(true);
+            int port = socket.getLocalPort();
+            try {
+                socket.close();
+            } catch (IOException e) {
+                // Ignore IOException on close()
+            }
+            return port;
+        } catch (IOException e) {
+        } finally {
+            if (socket != null) {
+                try {
+                    socket.close();
+                } catch (IOException e) {
+                }
+            }
         }
+        throw new IllegalStateException("Could not find a free TCP/IP port to start embedded Jetty HTTP Server on");
     }
 
     @Override
     public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName, LoadGraphWith.GraphData loadGraphWith) {
-        System.out.println("graphName: " + graphName);
         return new HashMap<String, Object>() {{
             put(Graph.GRAPH, ElasticGraph.class.getName());
             put("elasticsearch.cluster.name", CLUSTER_NAME);
             put("elasticsearch.index.name",graphName.toLowerCase());
             put("elasticsearch.refresh", true);
             put("elasticsearch.client", ElasticClientFactory.ClientType.TRANSPORT_CLIENT.toString());
+            put("elasticsearch.cluster.address", "127.0.0.1:" + port);
         }};
     }
 
     @Override
     public void clear(final Graph g, final Configuration configuration) throws Exception {
         if (g != null) {
-            //don't use elasticGraph.elasticService.clearAllData(), because sometimes the graph is closed before clear
             String indexName = configuration.getString("elasticsearch.index.name");
-            client.prepareDeleteByQuery(indexName).setQuery(QueryBuilders.matchAllQuery()).execute().actionGet();
-
-            GetMappingsResponse getMappingsResponse = client.admin().indices().prepareGetMappings(indexName).execute().actionGet();
-            ArrayList<String> mappings = new ArrayList();
-            getMappingsResponse.getMappings().forEach(map -> {
-                map.value.forEach(map2 -> mappings.add(map2.value.type()));
-            });
-
-            if(mappings.size() > 0) {
-                DeleteMappingResponse deleteMappingResponse = client.admin().indices().prepareDeleteMapping(indexName).setType(mappings.toArray(new String[mappings.size()])).execute().actionGet();
-            }
+            ElasticHelper.clearIndex(client, indexName);
             g.close();
         }
     }
@@ -93,5 +105,9 @@ public class ElasticGraphGraphProvider extends AbstractGraphProvider {
     @Override
     public Object convertId(Object id, Class<? extends Element> c) {
         return id.toString();
+    }
+
+    public Client getClient() {
+        return client;
     }
 }

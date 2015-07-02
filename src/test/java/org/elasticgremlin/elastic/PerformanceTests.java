@@ -1,76 +1,35 @@
 package org.elasticgremlin.elastic;
 
-import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.commons.configuration.Configuration;
+import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.elasticgremlin.queryhandler.elasticsearch.helpers.*;
-import org.elasticgremlin.structure.ElasticGraph;
-import org.junit.Test;
+import org.elasticgremlin.ElasticGraphGraphProvider;
+import org.elasticgremlin.queryhandler.elasticsearch.helpers.TimingAccessor;
+import org.junit.*;
 
+import java.io.IOException;
 import java.util.Iterator;
+import java.util.concurrent.ExecutionException;
 
 public class PerformanceTests {
 
     TimingAccessor sw = new TimingAccessor();
+    private Graph graph;
 
-
-
-    @Test
-    public void profile() throws InstantiationException {
-        BaseConfiguration config = new BaseConfiguration();
-        config.addProperty("elasticsearch.cluster.name", "test");
-        config.addProperty("elasticsearch.index.name", "graph");
-        config.addProperty("elasticsearch.refresh", true);
-        config.addProperty("elasticsearch.client", ElasticClientFactory.ClientType.NODE);
-
-        startWatch("graph initalization");
-        ElasticGraph graph = new ElasticGraph(config);
-        stopWatch("graph initalization");
-        graph.getQueryHandler().clearAllData();
-
-        startWatch("add vertices");
-        int count = 10000;
-        for(int i = 0; i < count; i++)
-            graph.addVertex();
-        stopWatch("add vertices");
-
-        startWatch("vertex iterator");
-        Iterator<Vertex> vertexIterator = graph.vertices();
-        stopWatch("vertex iterator");
-
-        startWatch("add edges");
-        vertexIterator.forEachRemaining(v -> v.addEdge("bla", v));
-        stopWatch("add edges");
-
-        startWatch("edge iterator");
-        Iterator<Edge> edgeIterator = graph.edges();
-        stopWatch("edge iterator");
-
-        sw.print();
-        System.out.println("-----");
-        graph.close();
+    @Before
+    public void startUp() throws InstantiationException, IOException, ExecutionException, InterruptedException {
+        ElasticGraphGraphProvider elasticGraphProvider = new ElasticGraphGraphProvider();
+        final Configuration configuration = elasticGraphProvider.newGraphConfiguration("testGraph", this.getClass(), "performanceTests", LoadGraphWith.GraphData.MODERN);
+        this.graph = elasticGraphProvider.openTestGraph(configuration);
     }
 
-    /*@Test
-    public void batchLoad() throws IOException {
-        BaseConfiguration config = new BaseConfiguration();
-        config.addProperty("elasticsearch.cluster.name", "test");
-        config.addProperty("elasticsearch.index.name", "graph");
-        config.addProperty("elasticsearch.refresh", true);
-        config.addProperty("elasticsearch.batch", true);
-        config.addProperty("elasticsearch.client", ElasticService.ClientType.NODE);
-
-        startWatch("graph initalization");
-        ElasticGraph graph = new ElasticGraph(config);
-        stopWatch("graph initalization");
-        graph.elasticService.clearAllData();
-
+    @Test
+    public void profile() {
         startWatch("add vertices");
         int count = 10000;
         for(int i = 0; i < count; i++)
             graph.addVertex();
-        graph.commit();
         stopWatch("add vertices");
-
 
         startWatch("vertex iterator");
         Iterator<Vertex> vertexIterator = graph.vertices();
@@ -78,7 +37,6 @@ public class PerformanceTests {
 
         startWatch("add edges");
         vertexIterator.forEachRemaining(v -> v.addEdge("bla", v));
-        graph.commit();
         stopWatch("add edges");
 
         startWatch("edge iterator");
@@ -87,8 +45,8 @@ public class PerformanceTests {
 
         sw.print();
         System.out.println("-----");
-        graph.close();
-    }*/
+    }
+
 
     private void stopWatch(String s) {
         sw.timer(s).stop();
