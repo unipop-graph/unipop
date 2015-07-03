@@ -7,7 +7,7 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.*;
 import org.elasticgremlin.process.optimize.ElasticOptimizationStrategy;
 import org.elasticgremlin.queryhandler.*;
-import org.elasticgremlin.queryhandler.elasticsearch.SimpleQueryHandler;
+import org.elasticgremlin.queryhandler.SimpleQueryHandler;
 
 import java.util.*;
 
@@ -79,6 +79,8 @@ public class ElasticGraph implements Graph {
     public QueryHandler getQueryHandler() {
         return queryHandler;
     }
+
+    public void commit() { queryHandler.commit(); }
 
     @Override
     public Configuration configuration() {

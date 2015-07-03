@@ -1,6 +1,5 @@
 package org.elasticgremlin.queryhandler.elasticsearch.helpers;
 
-import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.elasticgremlin.structure.BaseElement;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
@@ -14,12 +13,10 @@ import java.util.concurrent.ExecutionException;
 
 public class ElasticMutations {
 
-    private boolean bulk;
     private Client client;
     private BulkRequestBuilder bulkRequest;
 
-    public ElasticMutations(Configuration configuration, Client client) {
-        this.bulk = configuration.getBoolean("elasticsearch.bulk", false);
+    public ElasticMutations(Boolean bulk, Client client) {
         if(bulk) bulkRequest = client.prepareBulk();
         this.client = client;
     }
@@ -27,7 +24,7 @@ public class ElasticMutations {
     public void addElement(Element element, String index, String routing,  boolean create) {
         IndexRequestBuilder indexRequest = client.prepareIndex(index, element.label(), element.id().toString())
                 .setSource(propertiesMap(element)).setRouting(routing).setCreate(create);
-        if(bulk) bulkRequest.add(indexRequest);
+        if(bulkRequest != null) bulkRequest.add(indexRequest);
         else indexRequest.execute().actionGet();
     }
 
@@ -45,14 +42,20 @@ public class ElasticMutations {
                 .doc(propertiesMap(element)).routing(routing);
         if(upsert)
             updateRequest.detectNoop(true).docAsUpsert(true);
-        if(bulk) bulkRequest.add(updateRequest);
+        if(bulkRequest != null) bulkRequest.add(updateRequest);
         else client.update(updateRequest).actionGet();
     }
 
 
     public void deleteElement(Element element, String index, String routing) {
         DeleteRequestBuilder deleteRequestBuilder = client.prepareDelete(index, element.label(), element.id().toString()).setRouting(routing);
-        if(bulk) bulkRequest.add(deleteRequestBuilder);
+        if(bulkRequest != null) bulkRequest.add(deleteRequestBuilder);
         else deleteRequestBuilder.execute().actionGet();
+    }
+
+    public void commit() {
+        if(bulkRequest == null) return;
+        bulkRequest.execute().actionGet();
+        bulkRequest = client.prepareBulk();
     }
 }

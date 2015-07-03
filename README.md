@@ -51,7 +51,9 @@ The elasticsearch nodes' address. The format is: "ip1:port1,ip2:port2,...".
 - `elasticsearch.refresh` (Default: true) <br>
 Whether to refresh the ES index before every search. Useful for testing.
 - `elasticsearch.index.name` (Default: "graph")<br>
-The elasticsearch index. For use together with DefaultIndexProvider.
+The name of the elasticsearch index.
+- `elasticsearch.bulk` (Default: false) <br>
+Cache all mutations in-memory and execute them in bulk when calling `ElasticGraph.commit()`.
 
 And most importantly you can costumize the ES Index's Mappings to best fit your data. You can use ES's own APIs to do it. elastic-gremlin will automatically utilize your indices as best as he can.
 
@@ -61,8 +63,9 @@ In addition to index mappings, ES offers many other ways to optimize your querie
 - Model your documents in [different ways](https://www.elastic.co/guide/en/elasticsearch/guide/current/modeling-your-data.html)
 - and your [indices](https://www.elastic.co/guide/en/elasticsearch/guide/current/time-based.html)
 - [routing](https://www.elastic.co/blog/customizing-your-document-routing)
-- bulk queries together
-- and more...
+- batch together queries 
+- upsert documents
+- and any other ES feature that could help optimize your use-case...
 
 Implement `QueryHandler` to use a customized schema that works best for your data. <br>
 We still don't have enough documentation on this, but you can take a look at the implementations of `SimpleQueryHandler` and `ModernGraphQueryHandler`

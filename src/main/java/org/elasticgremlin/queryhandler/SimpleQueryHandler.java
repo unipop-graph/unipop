@@ -1,8 +1,7 @@
-package org.elasticgremlin.queryhandler.elasticsearch;
+package org.elasticgremlin.queryhandler;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.elasticgremlin.queryhandler.*;
 import org.elasticgremlin.queryhandler.elasticsearch.edgedoc.DocEdgeHandler;
 import org.elasticgremlin.queryhandler.elasticsearch.helpers.*;
 import org.elasticgremlin.queryhandler.elasticsearch.vertexdoc.DocVertexHandler;
@@ -17,18 +16,27 @@ public class SimpleQueryHandler implements QueryHandler {
     private DocEdgeHandler docEdgeHandler;
     private DocVertexHandler elasticDocVertexHandler;
     private Client client;
+    private ElasticMutations elasticMutations;
 
     @Override
     public void init(ElasticGraph graph, Configuration configuration) throws IOException {
         String indexName = configuration.getString("elasticsearch.index.name", "graph");
         boolean refresh = configuration.getBoolean("elasticsearch.refresh", false);
         int scrollSize = configuration.getInt("elasticsearch.scrollSize", 500);
+        boolean bulk = configuration.getBoolean("elasticsearch.bulk", false);
 
         client = ElasticClientFactory.create(configuration);
         ElasticHelper.createIndex(indexName, client);
-        ElasticMutations elasticMutations = new ElasticMutations(configuration, client);
+        elasticMutations = new ElasticMutations(bulk, client);
         docEdgeHandler = new DocEdgeHandler(graph, client, elasticMutations, indexName, scrollSize, refresh);
         elasticDocVertexHandler = new DocVertexHandler(graph, client, elasticMutations, indexName, scrollSize, refresh);
+    }
+
+    @Override
+    public void commit() { elasticMutations.commit(); }
+    @Override
+    public void close() {
+        client.close();
     }
 
     @Override
@@ -81,8 +89,4 @@ public class SimpleQueryHandler implements QueryHandler {
         return elasticDocVertexHandler.addVertex(id, label, properties);
     }
 
-    @Override
-    public void close() {
-        client.close();
-    }
 }

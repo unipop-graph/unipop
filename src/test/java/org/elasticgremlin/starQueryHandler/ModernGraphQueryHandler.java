@@ -22,6 +22,7 @@ public class ModernGraphQueryHandler implements QueryHandler {
     private DocVertexHandler docVertexHandler;
     private Client client;
     private Map<String, VertexHandler> vertexHandlers;
+    private ElasticMutations elasticMutations;
 
     @Override
     public void init(ElasticGraph graph, Configuration configuration) throws IOException {
@@ -31,7 +32,7 @@ public class ModernGraphQueryHandler implements QueryHandler {
 
         this.client = ElasticClientFactory.create(configuration);
         ElasticHelper.createIndex(indexName, client);
-        ElasticMutations elasticMutations = new ElasticMutations(configuration, client);
+        elasticMutations = new ElasticMutations(false, client);
 
         this.docVertexHandler = new DocVertexHandler(graph, client, elasticMutations, indexName, scrollSize, refresh);
         this.starHandler = new StarHandler(graph, client, elasticMutations, indexName, scrollSize, refresh,
@@ -42,6 +43,9 @@ public class ModernGraphQueryHandler implements QueryHandler {
         this.vertexHandlers.put(PERSON, starHandler);
         this.vertexHandlers.put(SOFTWARE, docVertexHandler);
     }
+
+    @Override
+    public void commit() { elasticMutations.commit(); }
 
     @Override
     public Iterator<Edge> edges() {
