@@ -14,7 +14,7 @@ You can also utilize this ability to query existing data that you've loaded into
 - **Aggregations** (Coming Soon) <br>
 Aggregation traversals (e.g. g.V().count()) can benefit greatly from ES's [Aggregation module](https://www.elastic.co/guide/en/elasticsearch/reference/1.x/search-aggregations.html)
 
-
+<br>
 ## Getting Started!
 1. clone & build [Tinkerpop 3.0.0-SNAPSHOT](https://github.com/apache/incubator-tinkerpop/tree/master)
 2. clone & build elastic-gremlin
@@ -31,10 +31,10 @@ Aggregation traversals (e.g. g.V().count()) can benefit greatly from ES's [Aggre
     ```
 4. Or just use the Gremlin Server or Gremlin Console.
 
-
+<br>
 ##Confiuration
 
-####Basic
+###Basic
 Basic usage of elastic-gremlin creates or uses an existing ES index, with each Vertex and Edge contained in its own document.
 You can customize some of the behaviour:
 
@@ -58,7 +58,7 @@ Cache all mutations in-memory and execute them in bulk when calling `ElasticGrap
 And most importantly you can costumize the ES Index's Mappings to best fit your data. You can use ES's own APIs to do it. elastic-gremlin will automatically utilize your indices as best as he can.
 
 
-####Advanced
+###Advanced
 In addition to index mappings, ES offers many other ways to optimize your queries.
 - Model your documents in [different ways](https://www.elastic.co/guide/en/elasticsearch/guide/current/modeling-your-data.html) (Nested Objects, Parent-Child Relationship, etc)
 - and your [indices](https://www.elastic.co/guide/en/elasticsearch/guide/current/time-based.html)
