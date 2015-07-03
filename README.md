@@ -37,9 +37,9 @@ You can customize some of the behaviour:
 
 - `elasticsearch.client` (Default: "NODE") <br>
    The client type used to connect to elasticsearch. 
-  - NODE - Sets up a local elasticsearch node and runs against it. elastic-gremlin defaults to NODE, so you can get up and running as quickly as possible.
-  - TRANSPORT_CLIENT - connects to an existing node.
-  - NODE_CLIENT - An optimized way to connect to an ES cluster. 
+  - `NODE` Sets up a local elasticsearch node and runs against it. elastic-gremlin defaults to NODE, so you can get up and running as quickly as possible.
+  - `TRANSPORT_CLIENT` Connects to an existing ES node.
+  - `NODE_CLIENT` An optimized way to connect to an ES cluster. 
 For more information read [here](http://www.elastic.co/guide/en/elasticsearch/client/java-api/current/client.html)
 - `elasticsearch.cluster.name`(Default: "elasticsearch")<br>
 The elasticsearch cluster's name.
