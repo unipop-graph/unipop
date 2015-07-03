@@ -35,19 +35,19 @@ Aggregation traversals (e.g. g.V().count()) can benefit greatly from ES's [Aggre
 Basic usage of elastic-gremlin creates or uses an existing ES index, with each Vertex and Edge contained in its own document.
 You can customize some of the behaviour:
 
--`elasticsearch.client` (Default: "NODE") <br>
+- `elasticsearch.client` (Default: "NODE") <br>
    The client type used to connect to elasticsearch. 
-  -NODE Sets up a local elasticsearch node and runs against it. elastic-gremlin defaults to NODE, so you can get up and running as quickly as possible.
-  -TRANSPORT_CLIENT connects to an existing node.
-  -NODE_CLIENT An optimized way to connect to an ES cluster. 
+  - NODE Sets - up a local elasticsearch node and runs against it. elastic-gremlin defaults to NODE, so you can get up and running as quickly as possible.
+  - TRANSPORT_CLIENT - connects to an existing node.
+  - NODE_CLIENT - An optimized way to connect to an ES cluster. 
 For more information read [here](http://www.elastic.co/guide/en/elasticsearch/client/java-api/current/client.html)
--`elasticsearch.cluster.name`(Default: "elasticsearch")<br>
+- `elasticsearch.cluster.name`(Default: "elasticsearch")<br>
 The elasticsearch cluster's name.
--`elasticsearch.cluster.address` (Default: "127.0.0.1:9300") <br>
+- `elasticsearch.cluster.address` (Default: "127.0.0.1:9300") <br>
 The elasticsearch nodes' address. The format is: "ip1:port1,ip2:port2,...".
--`elasticsearch.refresh` (Default: true) <br>
+- `elasticsearch.refresh` (Default: true) <br>
 Whether to refresh the ES index before every search. Useful for testing.
--`elasticsearch.index.name` (Default: "graph")
+- `elasticsearch.index.name` (Default: "graph")
 The elasticsearch index. For use together with DefaultIndexProvider.
 
 
