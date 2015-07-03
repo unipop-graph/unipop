@@ -2,7 +2,8 @@
 
 [TinkerPop 3](http://tinkerpop.incubator.apache.org/docs/3.0.0-SNAPSHOT/) implementation on Elasticsearch backend. You should read up on Tinkerpop before you use elastic-gremlin.
 
-### Features   
+## Features   
+---
 - **Scalable** <br> 
    elastic-gremlin utilizes ES's great scale-out capabilities. What that basically means is that your graph can spread out to many nodes, enabling more data while retaining good performance.⋅We also provide a way to choose the ES indices and routing parameters to better optimize for your specific use-case (See IndexProvider).
 - **Indexing** <br>
@@ -13,7 +14,8 @@ You can also utilize this ability to query existing data in ElasticSearch, mappi
 - **Aggregations** (Coming Soon) <br>
 Aggregation traversals (e.g. g.V().count()) can benefit greatly from ES's [Aggregation module](https://www.elastic.co/guide/en/elasticsearch/reference/1.x/search-aggregations.html)
 
-### Getting Started!
+
+## Getting Started!
 1. clone & build [Tinkerpop 3.0.0-SNAPSHOT](https://github.com/apache/incubator-tinkerpop/tree/master)
 2. clone & build elastic-gremlin
     
@@ -29,7 +31,8 @@ Aggregation traversals (e.g. g.V().count()) can benefit greatly from ES's [Aggre
     ```
 4. Or just use the Gremlin Server or Gremlin Console.
 
-###Confiuration
+
+##Confiuration
 
 ####Basic
 Basic usage of elastic-gremlin creates or uses an existing ES index, with each Vertex and Edge contained in its own document.
