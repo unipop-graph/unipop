@@ -3,7 +3,6 @@
 [TinkerPop 3](http://tinkerpop.incubator.apache.org/docs/3.0.0-SNAPSHOT/) implementation on Elasticsearch backend. You should read up on Tinkerpop before you use elastic-gremlin.
 
 ## Features   
----
 - **Scalable** <br> 
    elastic-gremlin utilizes ES's great scale-out capabilities. What that basically means is that your graph can spread out to many nodes, enabling more data while retaining good performance.⋅We also provide a way to choose the ES indices and routing parameters to better optimize for your specific use-case (See IndexProvider).
 - **Indexing** <br>
