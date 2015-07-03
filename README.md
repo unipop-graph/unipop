@@ -6,11 +6,11 @@
 - **Scalable** <br> 
    Using ElasticSearch's scale-out capabilities we can spread out our graph to many nodes, enabling more data while retaining good performance.
 - **Indexing** <br>
-We utilise ES's great indexing abilities. Either let elastic-gremlin automaticaly create them, or cofigure the mappings for your specific needs. <br> 
+We utilise ES's great indexing capabilities. Either let elastic-gremlin automaticaly create them, or cofigure the mappings for your specific needs. <br> 
 You can index Text (including analyzers), Numbers, Dates, Geo (just use the Geo predicate in a 'has' clause), etc..
 - **Custom Schema** <br>
-You can customize the way your data is stored, enabling you to optimize it for your most common querying needs. Get the most out of ES by using its different [Data Models](https://www.elastic.co/guide/en/elasticsearch/guide/current/modeling-your-data.html) for your specific needs (Nested Objects, Parent-Child Relationship, etc).<br>
-You can also utilize this ability to query existing data in ElasticSearch, mapping it with vertex-edge relationships.
+ES offers many different ways to customize the way your data is stored, enabling you to optimize it for your specific querying needs. We give you the power to use all these features and get the most out of your ES cluster.<br>
+You can also utilize this ability to query existing data that you've loaded into ElasticSearch, by mapping the data to vertex-edge relationships of different kinds.
 - **Aggregations** (Coming Soon) <br>
 Aggregation traversals (e.g. g.V().count()) can benefit greatly from ES's [Aggregation module](https://www.elastic.co/guide/en/elasticsearch/reference/1.x/search-aggregations.html)
 
@@ -60,7 +60,7 @@ And most importantly you can costumize the ES Index's Mappings to best fit your 
 
 ####Advanced
 In addition to index mappings, ES offers many other ways to optimize your queries.
-- Model your documents in [different ways](https://www.elastic.co/guide/en/elasticsearch/guide/current/modeling-your-data.html)
+- Model your documents in [different ways](https://www.elastic.co/guide/en/elasticsearch/guide/current/modeling-your-data.html) (Nested Objects, Parent-Child Relationship, etc)
 - and your [indices](https://www.elastic.co/guide/en/elasticsearch/guide/current/time-based.html)
 - [routing](https://www.elastic.co/blog/customizing-your-document-routing)
 - batch together queries 
