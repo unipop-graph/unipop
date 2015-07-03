@@ -47,7 +47,7 @@ The elasticsearch cluster's name.
 The elasticsearch nodes' address. The format is: "ip1:port1,ip2:port2,...".
 - `elasticsearch.refresh` (Default: true) <br>
 Whether to refresh the ES index before every search. Useful for testing.
-- `elasticsearch.index.name` (Default: "graph")
+- `elasticsearch.index.name` (Default: "graph")<br>
 The elasticsearch index. For use together with DefaultIndexProvider.
 
 
