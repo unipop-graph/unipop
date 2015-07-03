@@ -2,8 +2,6 @@
 
 [TinkerPop 3](http://tinkerpop.incubator.apache.org/docs/3.0.0-SNAPSHOT/) implementation on Elasticsearch backend. You should read up on Tinkerpop before you use elastic-gremlin.
 
----
-
 ### Features   
 - **Scalable** <br> 
    elastic-gremlin utilizes ES's great scale-out capabilities. What that basically means is that your graph can spread out to many nodes, enabling more data while retaining good performance.⋅We also provide a way to choose the ES indices and routing parameters to better optimize for your specific use-case (See IndexProvider).
@@ -14,8 +12,6 @@ You can customize the way your data is stored, enabling you to optimize it to yo
 You can also utilize this ability to query existing data in ElasticSearch, mapping it to with vertex-edge relationships.
 - **Aggregations** (Coming Soon) <br>
 Aggregation traversals (e.g. g.V().count()) can benefit greatly from ES's [Aggregation module](https://www.elastic.co/guide/en/elasticsearch/reference/1.x/search-aggregations.html)
-
----
 
 ### Getting Started!
 1. clone & build [Tinkerpop 3.0.0-SNAPSHOT](https://github.com/apache/incubator-tinkerpop/tree/master)
@@ -32,8 +28,6 @@ Aggregation traversals (e.g. g.V().count()) can benefit greatly from ES's [Aggre
     g.addV();
     ```
 4. Or just use the Gremlin Server or Gremlin Console.
-5. 
----
 
 ###Confiuration
 
@@ -61,7 +55,7 @@ The elasticsearch index. For use together with DefaultIndexProvider.
 Implement `QueryHandler` to use a customized schema that fits best to your data. <br>
 We still don't have enough documentation on this, but you can take a look at the implementations of `SimpleQueryHandler` and `ModernGraphQueryHandler`
 
----
+
 
 You're welcome to send us any comments or questions (rmagen@gmail.com)
 
