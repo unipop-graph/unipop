@@ -4,12 +4,13 @@
 
 ## Features   
 - **Scalable** <br> 
-   elastic-gremlin utilizes ES's great scale-out capabilities. What that basically means is that your graph can spread out to many nodes, enabling more data while retaining good performance.⋅We also provide a way to choose the ES indices and routing parameters to better optimize for your specific use-case (See IndexProvider).
+   Using ElasticSearch's scale-out capabilities we can spread out our graph to many nodes, enabling more data while retaining good performance.
 - **Indexing** <br>
-We utilise ES's great indexing abilities. Either let elastic-gremlin automaticaly create them, or cofigure the mappings for your specific needs. You can index all kinds of things: Text (including analyzers), Numbers, Dates, Geo (just use the Geo predicate in a 'has' clause)
+We utilise ES's great indexing abilities. Either let elastic-gremlin automaticaly create them, or cofigure the mappings for your specific needs. <br> 
+You can index Text (including analyzers), Numbers, Dates, Geo (just use the Geo predicate in a 'has' clause), etc..
 - **Custom Schema** <br>
-You can customize the way your data is stored, enabling you to optimize it to your most common querying needs. Get the most out of ES by using its different Data Models for your specific needs (Nested Objects, Parent-Child Relationship, etc).<br>
-You can also utilize this ability to query existing data in ElasticSearch, mapping it to with vertex-edge relationships.
+You can customize the way your data is stored, enabling you to optimize it for your most common querying needs. Get the most out of ES by using its different [Data Models](https://www.elastic.co/guide/en/elasticsearch/guide/current/modeling-your-data.html) for your specific needs (Nested Objects, Parent-Child Relationship, etc).<br>
+You can also utilize this ability to query existing data in ElasticSearch, mapping it with vertex-edge relationships.
 - **Aggregations** (Coming Soon) <br>
 Aggregation traversals (e.g. g.V().count()) can benefit greatly from ES's [Aggregation module](https://www.elastic.co/guide/en/elasticsearch/reference/1.x/search-aggregations.html)
 
@@ -52,8 +53,17 @@ Whether to refresh the ES index before every search. Useful for testing.
 - `elasticsearch.index.name` (Default: "graph")<br>
 The elasticsearch index. For use together with DefaultIndexProvider.
 
+And most importantly you can costumize the ES Index's Mappings to best fit your data. You can use ES's own APIs to do it. elastic-gremlin will automatically utilize your indices as best as he can.
+
 
 ####Advanced
+In addition to the index mappings, ES offers many other ways to optimize your queries.
+- Model your documents in [different ways](https://www.elastic.co/guide/en/elasticsearch/guide/current/modeling-your-data.html)
+- and your [indices](https://www.elastic.co/guide/en/elasticsearch/guide/current/time-based.html)
+- [routing](https://www.elastic.co/blog/customizing-your-document-routing)
+- bulk queries together
+- and more...
+
 Implement `QueryHandler` to use a customized schema that works best for your data. <br>
 We still don't have enough documentation on this, but you can take a look at the implementations of `SimpleQueryHandler` and `ModernGraphQueryHandler`
 
