@@ -57,7 +57,7 @@ And most importantly you can costumize the ES Index's Mappings to best fit your 
 
 
 ####Advanced
-In addition to the index mappings, ES offers many other ways to optimize your queries.
+In addition to index mappings, ES offers many other ways to optimize your queries.
 - Model your documents in [different ways](https://www.elastic.co/guide/en/elasticsearch/guide/current/modeling-your-data.html)
 - and your [indices](https://www.elastic.co/guide/en/elasticsearch/guide/current/time-based.html)
 - [routing](https://www.elastic.co/blog/customizing-your-document-routing)
