@@ -13,7 +13,7 @@ import org.elasticsearch.client.Client;
 import java.io.IOException;
 import java.util.*;
 
-public class ModernStarGraphQueryHandler implements QueryHandler {
+public class ModernGraphQueryHandler implements QueryHandler {
 
     private static final String PERSON = "person";
     private static final String SOFTWARE = "software";
