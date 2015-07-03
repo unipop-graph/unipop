@@ -37,7 +37,7 @@ You can customize some of the behaviour:
 
 - `elasticsearch.client` (Default: "NODE") <br>
    The client type used to connect to elasticsearch. 
-  - NODE Sets - up a local elasticsearch node and runs against it. elastic-gremlin defaults to NODE, so you can get up and running as quickly as possible.
+  - NODE - Sets up a local elasticsearch node and runs against it. elastic-gremlin defaults to NODE, so you can get up and running as quickly as possible.
   - TRANSPORT_CLIENT - connects to an existing node.
   - NODE_CLIENT - An optimized way to connect to an ES cluster. 
 For more information read [here](http://www.elastic.co/guide/en/elasticsearch/client/java-api/current/client.html)
@@ -52,7 +52,7 @@ The elasticsearch index. For use together with DefaultIndexProvider.
 
 
 ####Advanced
-Implement `QueryHandler` to use a customized schema that fits best to your data. <br>
+Implement `QueryHandler` to use a customized schema that works best for your data. <br>
 We still don't have enough documentation on this, but you can take a look at the implementations of `SimpleQueryHandler` and `ModernGraphQueryHandler`
 
 
