@@ -6,7 +6,7 @@
 - **Scalable** <br> 
    Using ElasticSearch's scale-out capabilities we can spread out our graph to many nodes, enabling more data while retaining good performance.
 - **Indexing** <br>
-We utilise ES's great indexing capabilities. Either let elastic-gremlin automaticaly create them, or cofigure the mappings for your specific needs. <br> 
+We utilise ES's great indexing capabilities. Either let elastic-gremlin automatically create them, or configure the mappings for your specific needs. <br> 
 You can index Text (including analyzers), Numbers, Dates, Geo (just use the Geo predicate in a 'has' clause), etc..
 - **Custom Schema** <br>
 ES offers many different ways to customize the way your data is stored, enabling you to optimize it for your specific querying needs. We give you the power to use all these features and get the most out of your ES cluster.<br>
@@ -55,7 +55,7 @@ The name of the elasticsearch index.
 - `elasticsearch.bulk` (Default: false) <br>
 Cache all mutations in-memory and execute them in bulk when calling `ElasticGraph.commit()`.
 
-And most importantly you can costumize the ES Index's Mappings to best fit your data. You can use ES's own APIs to do it. elastic-gremlin will automatically utilize your indices as best as he can.
+And most importantly you can customize the ES Index's Mappings to best fit your data. You can use ES's own APIs to do it. elastic-gremlin will automatically utilize your indices as best as he can.
 
 
 ###Advanced
