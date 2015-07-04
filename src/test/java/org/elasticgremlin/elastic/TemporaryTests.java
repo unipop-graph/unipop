@@ -2,6 +2,7 @@ package org.elasticgremlin.elastic;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.*;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.elasticgremlin.ElasticGraphGraphProvider;
@@ -9,6 +10,9 @@ import org.junit.*;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
+
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.has;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
 
 public class TemporaryTests {
 
@@ -25,7 +29,7 @@ public class TemporaryTests {
 
     @Test
     public void g_V_Drop() throws Exception {
-        GraphTraversal iter = g.V().drop();
+        GraphTraversal iter =  g.V().and(has("age", P.gt(27)), outE().count().is(P.gte(2l))).values("name");
         check(iter);
     }
 
