@@ -2,7 +2,6 @@ package org.elasticgremlin.process.optimize;
 
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
-import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
@@ -48,31 +47,17 @@ public class ElasticOptimizationStrategy extends AbstractTraversalStrategy<Trave
         while(true) {
             if(nextStep instanceof HasContainerHolder) {
                 HasContainerHolder hasContainerHolder = (HasContainerHolder) nextStep;
-                boolean skip = false;
-                /*for(HasContainer has : hasContainerHolder.getHasContainers())
-                    if(has.getPredicate().getTraversals().size() > 0)
-                        skip = true;
-                */
-                if(!skip) {
-                    hasContainerHolder.getHasContainers().forEach(predicates.hasContainers::add);
-                    collectLabels(predicates, nextStep);
-                    traversal.removeStep(nextStep);
-                }
+                hasContainerHolder.getHasContainers().forEach(predicates.hasContainers::add);
+                collectLabels(predicates, nextStep);
+                traversal.removeStep(nextStep);
             }
-            else if(nextStep instanceof RangeGlobalStep) {
+            /*else if(nextStep instanceof RangeGlobalStep) {
                 RangeGlobalStep rangeGlobalStep = (RangeGlobalStep) nextStep;
                 predicates.limitLow = rangeGlobalStep.getLowRange();
                 predicates.limitHigh = rangeGlobalStep.getHighRange();
-		collectLabels(predicates, nextStep);
-                traversal.removeStep(nextStep);
-            }
-//            else if (nextStep instanceof WhereStep) {
-//                WhereStep whereStep = (WhereStep) nextStep;
-//                System.out.println(whereStep.);
-//                List<Traversal.Admin<Object, Object>> localChildren = whereStep.getLocalChildren();
-//                for (Traversal.Admin<Object, Object> whereTraversal : localChildren) {
-//                }
-//            }
+		        collectLabels(predicates, nextStep);
+                traversal.removeStep(rangeGlobalStep);
+            }*/
             else return predicates;
 
             nextStep = nextStep.getNextStep();
