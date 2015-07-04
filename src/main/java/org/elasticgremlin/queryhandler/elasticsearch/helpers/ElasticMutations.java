@@ -11,10 +11,11 @@ import org.elasticsearch.client.Client;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-public class ElasticMutations {
+public class ElasticMutations implements RevisionHolder {
 
     private Client client;
     private BulkRequestBuilder bulkRequest;
+    private int revision = 0;
 
     public ElasticMutations(Boolean bulk, Client client) {
         if(bulk) bulkRequest = client.prepareBulk();
@@ -26,6 +27,7 @@ public class ElasticMutations {
                 .setSource(propertiesMap(element)).setRouting(routing).setCreate(create);
         if(bulkRequest != null) bulkRequest.add(indexRequest);
         else indexRequest.execute().actionGet();
+        revision++;
     }
 
     private Map propertiesMap(Element element) {
@@ -44,6 +46,7 @@ public class ElasticMutations {
             updateRequest.detectNoop(true).docAsUpsert(true);
         if(bulkRequest != null) bulkRequest.add(updateRequest);
         else client.update(updateRequest).actionGet();
+        revision++;
     }
 
 
@@ -51,11 +54,17 @@ public class ElasticMutations {
         DeleteRequestBuilder deleteRequestBuilder = client.prepareDelete(index, element.label(), element.id().toString()).setRouting(routing);
         if(bulkRequest != null) bulkRequest.add(deleteRequestBuilder);
         else deleteRequestBuilder.execute().actionGet();
+        revision++;
     }
 
     public void commit() {
         if(bulkRequest == null) return;
         bulkRequest.execute().actionGet();
         bulkRequest = client.prepareBulk();
+    }
+
+    @Override
+    public int getRevision() {
+        return revision;
     }
 }

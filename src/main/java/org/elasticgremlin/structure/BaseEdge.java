@@ -55,12 +55,12 @@ public abstract class BaseEdge extends BaseElement implements Edge {
     }
 
     protected void notifyVertices() {
-        ArrayList<BaseVertex> vertices = new ArrayList<>(2);
-        if (inVertex != null && BaseVertex.class.isAssignableFrom(inVertex.getClass())) {
-            vertices.add((BaseVertex) inVertex);
+        ArrayList<CachedEdgesVertex> vertices = new ArrayList<>(2);
+        if (inVertex != null && CachedEdgesVertex.class.isAssignableFrom(inVertex.getClass())) {
+            vertices.add((CachedEdgesVertex) inVertex);
         }
-        if (outVertex != null && BaseVertex.class.isAssignableFrom(outVertex.getClass())) {
-            vertices.add((BaseVertex) outVertex);
+        if (outVertex != null && CachedEdgesVertex.class.isAssignableFrom(outVertex.getClass())) {
+            vertices.add((CachedEdgesVertex) outVertex);
         }
         vertices.forEach(vertex -> vertex.removeEdge(this));
     }

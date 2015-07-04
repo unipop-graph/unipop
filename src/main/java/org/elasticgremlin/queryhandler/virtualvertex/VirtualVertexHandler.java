@@ -1,16 +1,10 @@
 package org.elasticgremlin.queryhandler.virtualvertex;
 
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.elasticgremlin.queryhandler.Predicates;
-import org.elasticgremlin.queryhandler.VertexHandler;
-import org.elasticgremlin.structure.BaseVertex;
-import org.elasticgremlin.structure.ElasticGraph;
+import org.apache.tinkerpop.gremlin.structure.*;
+import org.elasticgremlin.queryhandler.*;
+import org.elasticgremlin.structure.*;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public class VirtualVertexHandler implements VertexHandler {
 

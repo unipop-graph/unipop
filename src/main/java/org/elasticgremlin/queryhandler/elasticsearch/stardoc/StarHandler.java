@@ -3,7 +3,7 @@ package org.elasticgremlin.queryhandler.elasticsearch.stardoc;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.elasticgremlin.queryhandler.*;
 import org.elasticgremlin.queryhandler.elasticsearch.helpers.*;
-import org.elasticgremlin.structure.ElasticGraph;
+import org.elasticgremlin.structure.*;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.SearchHit;
@@ -96,7 +96,7 @@ public class StarHandler implements VertexHandler, EdgeHandler {
 
     @Override
     public Iterator<Edge> edges(Vertex vertex, Direction direction, String[] edgeLabels, Predicates predicates) {
-        List<Vertex> vertices = ElasticHelper.getVerticesBulk(vertex);
+        List<Vertex> vertices = CachedEdgesVertex.getVerticesBulk(vertex);
         List<Object> vertexIds = new ArrayList<>(vertices.size());
         vertices.forEach(singleVertex -> vertexIds.add(singleVertex.id()));
 
@@ -117,8 +117,7 @@ public class StarHandler implements VertexHandler, EdgeHandler {
 
         Iterator<Edge> edgeResults = new EdgeResults(vertexSearchQuery, direction, edgeLabels);
 
-        Map<Object, List<Edge>> idToEdges = ElasticHelper.handleBulkEdgeResults(edgeResults, vertices,
-                direction, edgeLabels, predicates);
+        Map<Object, List<Edge>> idToEdges = CachedEdgesVertex.handleBulkEdgeResults(edgeResults, vertices, direction, edgeLabels, predicates);
 
         return idToEdges.get(vertex.id()).iterator();
     }

@@ -62,7 +62,7 @@ public class DocEdgeHandler implements EdgeHandler {
 
     @Override
     public Iterator<Edge> edges(Vertex vertex, Direction direction, String[] edgeLabels, Predicates predicates) {
-        List<Vertex> vertices = ElasticHelper.getVerticesBulk(vertex);
+        List<Vertex> vertices = CachedEdgesVertex.getVerticesBulk(vertex);
         List<Object> vertexIds = new ArrayList<>(vertices.size());
         vertices.forEach(singleVertex -> vertexIds.add(singleVertex.id()));
 
@@ -83,7 +83,7 @@ public class DocEdgeHandler implements EdgeHandler {
                 predicates.limitHigh - predicates.limitLow, client,
                 this::createEdge, refresh, indexName);
 
-        Map<Object, List<Edge>> idToEdges = ElasticHelper.handleBulkEdgeResults(edgeSearchQuery,
+        Map<Object, List<Edge>> idToEdges = CachedEdgesVertex.handleBulkEdgeResults(edgeSearchQuery,
                 vertices, direction, edgeLabels, predicates);
 
         return idToEdges.get(vertex.id()).iterator();

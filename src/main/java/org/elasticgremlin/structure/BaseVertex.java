@@ -10,7 +10,6 @@ import java.util.*;
 public abstract class BaseVertex extends BaseElement implements Vertex {
 
     private List<Vertex> siblings;
-    private HashMap<EdgeQueryInfo, List<Edge>> queriedEdges = new HashMap<>();
 
     protected BaseVertex(Object id, String label, ElasticGraph graph, Object[] keyValues) {
         super(id, label, graph, keyValues);
@@ -35,10 +34,6 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
     }
 
     public Iterator<Edge> edges(Direction direction, String[] edgeLabels, Predicates predicates) {
-        List<Edge> edges = queriedEdges.get(new EdgeQueryInfo(direction, edgeLabels, predicates));
-        if (edges != null) {
-            return edges.iterator();
-        }
         return graph.getQueryHandler().edges(this, direction, edgeLabels, predicates);
     }
 
@@ -62,13 +57,8 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
         this.siblings = siblings;
     }
 
-    public void addQueriedEdges(List<Edge> edges, Direction direction, String[] edgeLabels, Predicates predicates) {
-        EdgeQueryInfo queryInfo = new EdgeQueryInfo(direction, edgeLabels, predicates);
-        queriedEdges.put(queryInfo, edges);
-    }
-
-    public void removeEdge(Edge edge) {
-        queriedEdges.forEach((edgeQueryInfo, edges) -> edges.remove(edge));
+    public List<Vertex> getSiblings() {
+        return siblings;
     }
 
     public void applyLazyFields(MultiGetItemResponse response) {
@@ -148,60 +138,5 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
     @Override
     protected void checkRemoved() {
         if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, this.id);
-    }
-
-    public List<Vertex> getSiblings() {
-        return siblings;
-    }
-
-    private static class EdgeQueryInfo {
-        private Direction direction;
-        private String[] edgeLabels;
-        private Predicates predicates;
-
-        public EdgeQueryInfo(Direction direction, String[] edgeLabels, Predicates predicates) {
-            this.direction = direction;
-            this.edgeLabels = edgeLabels;
-            this.predicates = predicates;
-        }
-
-        public Direction getDirection() {
-            return direction;
-        }
-
-        public String[] getEdgeLabels() {
-            return edgeLabels;
-        }
-
-        public Predicates getPredicates() {
-            return predicates;
-        }
-
-        // region equals and hashCode
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            EdgeQueryInfo that = (EdgeQueryInfo) o;
-
-            if (direction != that.direction) return false;
-            if (!Arrays.equals(edgeLabels, that.edgeLabels)) return false;
-            if (predicates == null) return that.predicates == null;
-
-            return predicates.equals(that.predicates);
-        }
-
-        @Override
-        public int hashCode() {
-            int result = direction != null ? direction.hashCode() : 0;
-            result = 31 * result + (edgeLabels != null ? Arrays.hashCode(edgeLabels) : 0);
-            result = 31 * result + (predicates != null ? predicates.hashCode() : 0);
-            return result;
-        }
-
-
-        // endregion
     }
 }

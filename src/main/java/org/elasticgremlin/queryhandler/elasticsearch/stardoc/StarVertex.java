@@ -2,8 +2,7 @@ package org.elasticgremlin.queryhandler.elasticsearch.stardoc;
 
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.elasticgremlin.queryhandler.elasticsearch.helpers.ElasticMutations;
-import org.elasticgremlin.queryhandler.elasticsearch.helpers.LazyGetter;
+import org.elasticgremlin.queryhandler.elasticsearch.helpers.*;
 import org.elasticgremlin.queryhandler.Predicates;
 import org.elasticgremlin.structure.*;
 import org.elasticsearch.action.get.GetResponse;
@@ -12,7 +11,7 @@ import org.elasticsearch.action.get.MultiGetItemResponse;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-public class StarVertex extends BaseVertex {
+public class StarVertex extends CachedEdgesVertex {
     private final ElasticMutations elasticMutations;
     private final String indexName;
     private final EdgeMapping[] edgeMappings;
@@ -20,7 +19,7 @@ public class StarVertex extends BaseVertex {
     private Set<InnerEdge> innerEdges;
 
     public StarVertex(final Object id, final String label, Object[] keyValues, ElasticGraph graph, LazyGetter lazyGetter, ElasticMutations elasticMutations, String indexName, EdgeMapping[] edgeMappings) {
-        super(id, label, graph, keyValues);
+        super(id, label, graph, keyValues, elasticMutations);
         this.elasticMutations = elasticMutations;
         this.indexName = indexName;
         this.edgeMappings = edgeMappings;

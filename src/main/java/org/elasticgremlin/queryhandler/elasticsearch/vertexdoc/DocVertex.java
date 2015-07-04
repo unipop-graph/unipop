@@ -7,13 +7,13 @@ import org.elasticgremlin.structure.*;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-public class DocVertex extends BaseVertex {
+public class DocVertex extends CachedEdgesVertex {
     private final ElasticMutations elasticMutations;
     private final String indexName;
     private LazyGetter lazyGetter;
 
     public DocVertex(final Object id, final String label, Object[] keyValues, ElasticGraph graph, LazyGetter lazyGetter, ElasticMutations elasticMutations, String indexName) {
-        super(id, label, graph, keyValues);
+        super(id, label, graph, keyValues, elasticMutations);
         this.elasticMutations = elasticMutations;
         this.indexName = indexName;
         if (lazyGetter != null) {
