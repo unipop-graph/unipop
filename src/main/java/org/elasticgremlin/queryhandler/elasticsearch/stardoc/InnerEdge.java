@@ -14,7 +14,12 @@ public class InnerEdge extends BaseEdge {
     private final EdgeMapping mapping;
 
     public InnerEdge(EdgeMapping mapping, StarVertex holdingVertex, Vertex externalVertex, Object[] keyValues, ElasticGraph graph) {
-        super(externalVertex.toString() + holdingVertex.id().toString(), mapping.getLabel(), keyValues, graph);
+        this(externalVertex.toString() + holdingVertex.id().toString(),
+                mapping, holdingVertex, externalVertex, keyValues, graph);
+    }
+
+    public InnerEdge(Object edgeId, EdgeMapping mapping, StarVertex holdingVertex, Vertex externalVertex, Object[] keyValues, ElasticGraph graph) {
+        super(edgeId, mapping.getLabel(), keyValues, graph);
         this.mapping = mapping;
         inVertex = mapping.getDirection().equals(Direction.IN) ? holdingVertex : externalVertex;
         outVertex = mapping.getDirection().equals(Direction.OUT) ? holdingVertex : externalVertex;
