@@ -1,13 +1,16 @@
 package org.elasticgremlin.queryhandler.elasticsearch.stardoc;
 
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.elasticgremlin.queryhandler.*;
 import org.elasticgremlin.queryhandler.elasticsearch.helpers.*;
+import org.elasticgremlin.structure.BaseVertex;
 import org.elasticgremlin.structure.ElasticGraph;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.SearchHit;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.*;
 
@@ -48,7 +51,8 @@ public class StarHandler implements VertexHandler, EdgeHandler {
 
     @Override
     public Iterator<Vertex> vertices() {
-        throw new NotImplementedException();
+        Predicates predicates = new Predicates();
+        return vertices(predicates);
     }
 
     @Override
@@ -76,22 +80,40 @@ public class StarHandler implements VertexHandler, EdgeHandler {
 
     @Override
     public Vertex addVertex(Object id, String label, Object[] properties) {
-        throw new NotImplementedException();
+        String index = getIndex(properties);
+        Vertex v = new StarVertex(id, label, properties, graph, null, elasticMutations, index, edgeMappings);
+
+        try {
+            elasticMutations.addElement(v, index, null, true);
+        } catch (DocumentAlreadyExistsException ex) {
+            throw Graph.Exceptions.vertexWithIdAlreadyExists(id);
+        }
+        return v;
     }
 
     @Override
     public Iterator<Edge> edges() {
-        throw new NotImplementedException();
+        return edges(new Predicates());
     }
 
     @Override
     public Iterator<Edge> edges(Object[] edgeIds) {
-        throw new NotImplementedException();
+        Predicates predicates = new Predicates();
+        predicates.hasContainers.add(new HasContainer(T.id.getAccessor(), P.within(edgeIds)));
+        return edges(predicates);
     }
 
     @Override
     public Iterator<Edge> edges(Predicates predicates) {
-        throw new NotImplementedException();
+        Iterator<Vertex> vertices = vertices();
+        List<Edge> edges = new ArrayList<>();
+        vertices.forEachRemaining(vertex -> {
+            ((BaseVertex) vertex).edges(Direction.IN, new String[0], predicates).forEachRemaining(edges::add);
+            ((BaseVertex) vertex).edges(Direction.OUT, new String[0], predicates).forEachRemaining(edges::add);
+            ((BaseVertex) vertex).edges(Direction.BOTH, new String[0], predicates).forEachRemaining(edges::add);
+        });
+
+        return edges.iterator();
     }
 
     @Override
@@ -131,11 +153,72 @@ public class StarHandler implements VertexHandler, EdgeHandler {
 
     @Override
     public Edge addEdge(Object edgeId, String label, Vertex outV, Vertex inV, Object[] properties) {
-        throw new NotImplementedException();
+        boolean out = shouldContainEdge(outV, Direction.OUT, label, properties);
+        boolean in = shouldContainEdge(inV, Direction.IN, label, properties);
+        StarVertex containerVertex;
+        Vertex otherVertex;
+        if (out) {
+            containerVertex = (StarVertex) outV;
+            otherVertex = inV;
+        }
+        else if (in) {
+            containerVertex = (StarVertex) inV;
+            otherVertex = outV;
+        }
+        else {
+            // Neither the in nor the out vertices can contain the edge
+            // (Either their mapping is incompatible or they are not of typeStarVertex)
+            return null;
+        }
+
+        List<Object> keyValues = new ArrayList<>();
+        containerVertex.properties().forEachRemaining(property -> {
+            keyValues.add(property.key());
+            keyValues.add(property.value());
+        });
+
+        EdgeMapping mapping = getEdgeMapping(label, out ? Direction.OUT : Direction.IN);
+        containerVertex.addInnerEdge(mapping, edgeId, label, otherVertex, keyValues.toArray());
+
+        Predicates predicates = new Predicates();
+        predicates.hasContainers.add(new HasContainer(T.id.getAccessor(), P.within(edgeId)));
+        return containerVertex.edges(mapping.getDirection(), new String[]{label}, predicates).next();
+    }
+
+    private EdgeMapping getEdgeMapping(String label, Direction direction) {
+        for (EdgeMapping mapping : edgeMappings) {
+            if (mapping.getLabel().equals(label) && mapping.getDirection().equals(direction)) {
+                return mapping;
+            }
+        }
+        return null;
+    }
+
+    protected boolean shouldContainEdge(Vertex vertex, Direction direction, String edgeLabel, Object[] edgeProperties) {
+        if (!StarVertex.class.isAssignableFrom(vertex.getClass())) {
+            return false;
+        }
+        StarVertex starVertex = (StarVertex) vertex;
+        EdgeMapping[] mappings = starVertex.getEdgeMappings();
+        for (int i = 0; i < mappings.length; i++) {
+            EdgeMapping mapping = mappings[i];
+            // TODO: Check option of implementing EdgeMapping.equals method
+            if (i >= edgeMappings.length || !equals(mapping, edgeMappings[i])) {
+                return false;
+            }
+            if (mapping.getDirection().equals(direction) && mapping.getLabel().equals(edgeLabel)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     protected String getDefaultIndex() {
         return this.indices[0];
+    }
+
+    protected String getIndex(Object[] properties) {
+        return getDefaultIndex();
     }
 
     private LazyGetter getLazyGetter() {
@@ -164,6 +247,13 @@ public class StarHandler implements VertexHandler, EdgeHandler {
             vertices.add(vertex);
         });
         return vertices.iterator();
+    }
+
+    private boolean equals(EdgeMapping mapping, EdgeMapping otherMapping) {
+        return mapping.getDirection().equals(otherMapping.getDirection()) &&
+                mapping.getLabel().equals(otherMapping.getLabel()) &&
+                mapping.getExternalVertexField().equals(otherMapping.getExternalVertexField()) &&
+                mapping.getExternalVertexLabel().equals(otherMapping.getExternalVertexLabel());
     }
 
     private static class EdgeResults implements Iterator<Edge> {
