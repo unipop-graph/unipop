@@ -21,20 +21,23 @@ public class DocEdgeHandler implements EdgeHandler {
     private final String indexName;
     private final int scrollSize;
     private final boolean refresh;
+    private TimingAccessor timing;
 
-    public DocEdgeHandler(ElasticGraph graph, Client client, ElasticMutations elasticMutations, String indexName, int scrollSize, boolean refresh) {
+    public DocEdgeHandler(ElasticGraph graph, Client client, ElasticMutations elasticMutations, String indexName,
+                          int scrollSize, boolean refresh, TimingAccessor timing) {
         this.graph = graph;
         this.client = client;
         this.elasticMutations = elasticMutations;
         this.indexName = indexName;
         this.scrollSize = scrollSize;
         this.refresh = refresh;
+        this.timing = timing;
     }
 
     @Override
     public Iterator<Edge> edges() {
         return new QueryIterator<>(FilterBuilders.existsFilter(DocEdge.InId), 0, scrollSize, Integer.MAX_VALUE,
-                client, this::createEdge, refresh, indexName);
+                client, this::createEdge, refresh, timing, indexName);
     }
 
     @Override
@@ -57,7 +60,7 @@ public class DocEdgeHandler implements EdgeHandler {
         BoolFilterBuilder boolFilter = ElasticHelper.createFilterBuilder(predicates.hasContainers);
         boolFilter.must(FilterBuilders.existsFilter(DocEdge.InId));
         return new QueryIterator<Edge>(boolFilter, 0, scrollSize, predicates.limitHigh - predicates.limitLow,
-                client, this::createEdge, refresh, indexName);
+                client, this::createEdge, refresh, timing, indexName);
     }
 
     @Override
@@ -81,7 +84,7 @@ public class DocEdgeHandler implements EdgeHandler {
 
         Iterator<Edge> edgeSearchQuery = new QueryIterator<>(boolFilter, 0, scrollSize,
                 predicates.limitHigh - predicates.limitLow, client,
-                this::createEdge, refresh, indexName);
+                this::createEdge, refresh, timing, indexName);
 
         Map<Object, List<Edge>> idToEdges = ElasticHelper.handleBulkEdgeResults(edgeSearchQuery,
                 vertices, direction, edgeLabels, predicates);

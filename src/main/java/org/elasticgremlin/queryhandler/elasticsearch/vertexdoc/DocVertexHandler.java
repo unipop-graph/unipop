@@ -20,23 +20,26 @@ public class DocVertexHandler implements VertexHandler {
     private String indexName;
     private final int scrollSize;
     private final boolean refresh;
+    private TimingAccessor timing;
     private Map<Direction, LazyGetter> lazyGetters;
     private LazyGetter defaultLazyGetter;
 
-    public DocVertexHandler(ElasticGraph graph, Client client, ElasticMutations elasticMutations, String indexName, int scrollSize, boolean refresh) {
+    public DocVertexHandler(ElasticGraph graph, Client client, ElasticMutations elasticMutations, String indexName,
+                            int scrollSize, boolean refresh, TimingAccessor timing) {
         this.graph = graph;
         this.client = client;
         this.elasticMutations = elasticMutations;
         this.indexName = indexName;
         this.scrollSize = scrollSize;
         this.refresh = refresh;
-        lazyGetters = new HashMap<>();
+        this.timing = timing;
+        this.lazyGetters = new HashMap<>();
     }
 
     @Override
     public Iterator<Vertex> vertices() {
         return new QueryIterator<>(FilterBuilders.missingFilter(DocEdge.InId), 0, scrollSize,
-                Integer.MAX_VALUE, client, this::createVertex, refresh, indexName);
+                Integer.MAX_VALUE, client, this::createVertex, refresh, timing, indexName);
     }
 
     @Override
@@ -55,8 +58,7 @@ public class DocVertexHandler implements VertexHandler {
         BoolFilterBuilder boolFilter = ElasticHelper.createFilterBuilder(predicates.hasContainers);
         boolFilter.must(FilterBuilders.missingFilter(DocEdge.InId));
         return new QueryIterator<>(boolFilter, 0, scrollSize, predicates.limitHigh - predicates.limitLow,
-                client, this::createVertex, refresh, indexName
-        );
+                client, this::createVertex, refresh, timing, indexName);
     }
 
     @Override
@@ -78,7 +80,7 @@ public class DocVertexHandler implements VertexHandler {
 
     private LazyGetter getLazyGetter() {
         if (defaultLazyGetter == null || !defaultLazyGetter.canRegister()) {
-            defaultLazyGetter = new LazyGetter(client);
+            defaultLazyGetter = new LazyGetter(client, timing);
         }
         return defaultLazyGetter;
     }
@@ -86,7 +88,7 @@ public class DocVertexHandler implements VertexHandler {
     private LazyGetter getLazyGetter(Direction direction) {
         LazyGetter lazyGetter = lazyGetters.get(direction);
         if (lazyGetter == null || !lazyGetter.canRegister()) {
-            lazyGetter = new LazyGetter(client);
+            lazyGetter = new LazyGetter(client, timing);
             lazyGetters.put(direction,
                     lazyGetter);
         }

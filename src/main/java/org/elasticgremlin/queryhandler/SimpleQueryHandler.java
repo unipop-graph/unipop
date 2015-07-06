@@ -17,6 +17,7 @@ public class SimpleQueryHandler implements QueryHandler {
     private DocVertexHandler elasticDocVertexHandler;
     private Client client;
     private ElasticMutations elasticMutations;
+    private TimingAccessor timing;
 
     @Override
     public void init(ElasticGraph graph, Configuration configuration) throws IOException {
@@ -28,8 +29,9 @@ public class SimpleQueryHandler implements QueryHandler {
         client = ElasticClientFactory.create(configuration);
         ElasticHelper.createIndex(indexName, client);
         elasticMutations = new ElasticMutations(bulk, client);
-        docEdgeHandler = new DocEdgeHandler(graph, client, elasticMutations, indexName, scrollSize, refresh);
-        elasticDocVertexHandler = new DocVertexHandler(graph, client, elasticMutations, indexName, scrollSize, refresh);
+        timing = new TimingAccessor();
+        docEdgeHandler = new DocEdgeHandler(graph, client, elasticMutations, indexName, scrollSize, refresh, timing);
+        elasticDocVertexHandler = new DocVertexHandler(graph, client, elasticMutations, indexName, scrollSize, refresh, timing);
     }
 
     @Override
@@ -89,4 +91,8 @@ public class SimpleQueryHandler implements QueryHandler {
         return elasticDocVertexHandler.addVertex(id, label, properties);
     }
 
+    @Override
+    public void printStats() {
+        timing.print();
+    }
 }

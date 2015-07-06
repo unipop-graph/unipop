@@ -21,30 +21,27 @@ public class StarHandler implements VertexHandler, EdgeHandler {
     private ElasticMutations elasticMutations;
     private final int scrollSize;
     private final boolean refresh;
+    private TimingAccessor timing;
     private EdgeMapping[] edgeMappings;
     private Map<Direction, LazyGetter> lazyGetters;
     private LazyGetter defaultLazyGetter;
 
     protected String[] indices;
 
-    public StarHandler(ElasticGraph graph, Client client, ElasticMutations elasticMutations, String indexName, int scrollSize, boolean refresh, EdgeMapping... edgeMappings) {
-        this.graph = graph;
-        this.client = client;
-        this.elasticMutations = elasticMutations;
-        this.indices = new String[]{indexName};
-        this.scrollSize = scrollSize;
-        this.refresh = refresh;
-        this.edgeMappings = edgeMappings;
-        this.lazyGetters = new HashMap<>();
+    public StarHandler(ElasticGraph graph, Client client, ElasticMutations elasticMutations, String indexName,
+                       int scrollSize, boolean refresh, TimingAccessor timing, EdgeMapping... edgeMappings) {
+        this(graph, client, elasticMutations, new String[] {indexName}, scrollSize, refresh, timing, edgeMappings);
     }
 
-    public StarHandler(ElasticGraph graph, Client client, ElasticMutations elasticMutations, String[] indices, int scrollSize, boolean refresh, EdgeMapping... edgeMappings) {
+    public StarHandler(ElasticGraph graph, Client client, ElasticMutations elasticMutations, String[] indices,
+                       int scrollSize, boolean refresh, TimingAccessor timing, EdgeMapping... edgeMappings) {
         this.graph = graph;
         this.client = client;
         this.elasticMutations = elasticMutations;
         this.indices = indices;
         this.scrollSize = scrollSize;
         this.refresh = refresh;
+        this.timing = timing;
         this.edgeMappings = edgeMappings;
         this.lazyGetters = new HashMap<>();
     }
@@ -70,7 +67,7 @@ public class StarHandler implements VertexHandler, EdgeHandler {
     public Iterator<Vertex> vertices(Predicates predicates) {
         BoolFilterBuilder boolFilter = ElasticHelper.createFilterBuilder(predicates.hasContainers);
         return new QueryIterator<>(boolFilter, 0, scrollSize, predicates.limitHigh - predicates.limitLow,
-                client, this::createVertex, refresh, indices);
+                client, this::createVertex, refresh, timing, indices);
     }
 
     @Override
@@ -135,7 +132,7 @@ public class StarHandler implements VertexHandler, EdgeHandler {
         }
 
         QueryIterator<Vertex> vertexSearchQuery = new QueryIterator<>(boolFilter, 0, scrollSize,
-                predicates.limitHigh - predicates.limitLow, client, this::createVertex, refresh, indices);
+                predicates.limitHigh - predicates.limitLow, client, this::createVertex, refresh, timing, indices);
 
         Iterator<Edge> edgeResults = new EdgeResults(vertexSearchQuery, direction, edgeLabels);
 
@@ -223,7 +220,7 @@ public class StarHandler implements VertexHandler, EdgeHandler {
 
     private LazyGetter getLazyGetter() {
         if (defaultLazyGetter == null || !defaultLazyGetter.canRegister()) {
-            defaultLazyGetter = new LazyGetter(client);
+            defaultLazyGetter = new LazyGetter(client, timing);
         }
         return defaultLazyGetter;
     }
@@ -231,7 +228,7 @@ public class StarHandler implements VertexHandler, EdgeHandler {
     private LazyGetter getLazyGetter(Direction direction) {
         LazyGetter lazyGetter = lazyGetters.get(direction);
         if (lazyGetter == null || !lazyGetter.canRegister()) {
-            lazyGetter = new LazyGetter(client);
+            lazyGetter = new LazyGetter(client, timing);
             lazyGetters.put(direction,
                     lazyGetter);
         }
