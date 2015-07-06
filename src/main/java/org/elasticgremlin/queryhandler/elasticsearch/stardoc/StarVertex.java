@@ -139,4 +139,26 @@ public class StarVertex extends BaseVertex {
             this.innerEdges.add(innerEdge);
         }
     }
+
+    public InnerEdge addInnerEdge(EdgeMapping mapping, Object edgeId, String label, Vertex externalVertex,
+                                  Object[] properties) {
+        boolean mappingExists = false;
+        for (EdgeMapping edgeMapping : edgeMappings) {
+            if (mapping.equals(edgeMapping)) {
+                mappingExists = true;
+            }
+        }
+        if (!mappingExists) {
+            return null;
+        }
+
+        property(mapping.getExternalVertexField(), externalVertex.id());
+        InnerEdge edge = new InnerEdge(edgeId, mapping, this, externalVertex, properties, graph);
+        this.innerEdges.add(edge);
+        return edge;
+    }
+
+    public EdgeMapping[] getEdgeMappings() {
+        return edgeMappings;
+    }
 }
