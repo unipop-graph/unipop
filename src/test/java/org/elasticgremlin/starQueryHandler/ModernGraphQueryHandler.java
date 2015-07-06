@@ -33,9 +33,9 @@ public class ModernGraphQueryHandler implements QueryHandler {
 
         this.client = ElasticClientFactory.create(configuration);
         ElasticHelper.createIndex(indexName, client);
-        elasticMutations = new ElasticMutations(false, client);
 
         timing = new TimingAccessor();
+        elasticMutations = new ElasticMutations(false, client, timing);
         this.docVertexHandler = new DocVertexHandler(graph, client, elasticMutations, indexName, scrollSize, refresh, timing);
         this.starHandler = new StarHandler(graph, client, elasticMutations, indexName, scrollSize, refresh, timing,
                 new BasicEdgeMapping("knows", "person", Direction.OUT, "knows-fk"), new BasicEdgeMapping("created", "software", Direction.OUT, "created-fk"));
