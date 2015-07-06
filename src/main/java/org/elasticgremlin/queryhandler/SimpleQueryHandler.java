@@ -28,8 +28,9 @@ public class SimpleQueryHandler implements QueryHandler {
 
         client = ElasticClientFactory.create(configuration);
         ElasticHelper.createIndex(indexName, client);
-        elasticMutations = new ElasticMutations(bulk, client);
+
         timing = new TimingAccessor();
+        elasticMutations = new ElasticMutations(bulk, client, timing);
         docEdgeHandler = new DocEdgeHandler(graph, client, elasticMutations, indexName, scrollSize, refresh, timing);
         elasticDocVertexHandler = new DocVertexHandler(graph, client, elasticMutations, indexName, scrollSize, refresh, timing);
     }
