@@ -20,28 +20,31 @@ public class DocVertexHandler implements VertexHandler {
     private String indexName;
     private final int scrollSize;
     private final boolean refresh;
+    private TimingAccessor timing;
     private Map<Direction, LazyGetter> lazyGetters;
     private LazyGetter defaultLazyGetter;
 
-    public DocVertexHandler(ElasticGraph graph, Client client, ElasticMutations elasticMutations, String indexName, int scrollSize, boolean refresh) {
+    public DocVertexHandler(ElasticGraph graph, Client client, ElasticMutations elasticMutations, String indexName,
+                            int scrollSize, boolean refresh, TimingAccessor timing) {
         this.graph = graph;
         this.client = client;
         this.elasticMutations = elasticMutations;
         this.indexName = indexName;
         this.scrollSize = scrollSize;
         this.refresh = refresh;
-        lazyGetters = new HashMap<>();
+        this.timing = timing;
+        this.lazyGetters = new HashMap<>();
     }
 
     @Override
-    public Iterator<Vertex> vertices() {
+    public Iterator<BaseVertex> vertices() {
         return new QueryIterator<>(FilterBuilders.missingFilter(DocEdge.InId), 0, scrollSize,
-                Integer.MAX_VALUE, client, this::createVertex, refresh, indexName);
+                Integer.MAX_VALUE, client, this::createVertex, refresh, timing, indexName);
     }
 
     @Override
-    public Iterator<Vertex> vertices(Object[] vertexIds) {
-        List<Vertex> vertices = new ArrayList<>();
+    public Iterator<BaseVertex> vertices(Object[] vertexIds) {
+        List<BaseVertex> vertices = new ArrayList<>();
         for(Object id : vertexIds){
             DocVertex vertex = new DocVertex(id, null, null, graph, getLazyGetter(), elasticMutations, indexName);
             vertex.setSiblings(vertices);
@@ -51,22 +54,21 @@ public class DocVertexHandler implements VertexHandler {
     }
 
     @Override
-    public Iterator<Vertex> vertices(Predicates predicates) {
+    public Iterator<BaseVertex> vertices(Predicates predicates) {
         BoolFilterBuilder boolFilter = ElasticHelper.createFilterBuilder(predicates.hasContainers);
         boolFilter.must(FilterBuilders.missingFilter(DocEdge.InId));
         return new QueryIterator<>(boolFilter, 0, scrollSize, predicates.limitHigh - predicates.limitLow,
-                client, this::createVertex, refresh, indexName
-        );
+                client, this::createVertex, refresh, timing, indexName);
     }
 
     @Override
-    public Vertex vertex(Object vertexId, String vertexLabel, Edge edge, Direction direction) {
+    public BaseVertex vertex(Object vertexId, String vertexLabel, Edge edge, Direction direction) {
         return new DocVertex(vertexId,vertexLabel, null ,graph,getLazyGetter(direction), elasticMutations, indexName);
     }
 
     @Override
-    public Vertex addVertex(Object id, String label, Object[] properties) {
-        Vertex v = new DocVertex(id, label, properties, graph, null, elasticMutations, indexName);
+    public BaseVertex addVertex(Object id, String label, Object[] properties) {
+        BaseVertex v = new DocVertex(id, label, properties, graph, null, elasticMutations, indexName);
 
         try {
             elasticMutations.addElement(v, indexName, null, true);
@@ -78,7 +80,7 @@ public class DocVertexHandler implements VertexHandler {
 
     private LazyGetter getLazyGetter() {
         if (defaultLazyGetter == null || !defaultLazyGetter.canRegister()) {
-            defaultLazyGetter = new LazyGetter(client);
+            defaultLazyGetter = new LazyGetter(client, timing);
         }
         return defaultLazyGetter;
     }
@@ -86,15 +88,15 @@ public class DocVertexHandler implements VertexHandler {
     private LazyGetter getLazyGetter(Direction direction) {
         LazyGetter lazyGetter = lazyGetters.get(direction);
         if (lazyGetter == null || !lazyGetter.canRegister()) {
-            lazyGetter = new LazyGetter(client);
+            lazyGetter = new LazyGetter(client, timing);
             lazyGetters.put(direction,
                     lazyGetter);
         }
         return lazyGetter;
     }
 
-    private Iterator<Vertex> createVertex(Iterator<SearchHit> hits) {
-        ArrayList<Vertex> vertices = new ArrayList<>();
+    private Iterator<BaseVertex> createVertex(Iterator<SearchHit> hits) {
+        ArrayList<BaseVertex> vertices = new ArrayList<>();
         hits.forEachRemaining(hit -> {
             BaseVertex vertex = new DocVertex(hit.id(), hit.getType(), null, graph, null, elasticMutations, indexName);
             vertex.setSiblings(vertices);

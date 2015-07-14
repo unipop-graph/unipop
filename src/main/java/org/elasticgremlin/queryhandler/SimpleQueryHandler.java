@@ -5,11 +5,11 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import org.elasticgremlin.queryhandler.elasticsearch.edgedoc.DocEdgeHandler;
 import org.elasticgremlin.queryhandler.elasticsearch.helpers.*;
 import org.elasticgremlin.queryhandler.elasticsearch.vertexdoc.DocVertexHandler;
-import org.elasticgremlin.structure.ElasticGraph;
+import org.elasticgremlin.structure.*;
 import org.elasticsearch.client.Client;
 
 import java.io.IOException;
-import java.util.Iterator;
+import java.util.*;
 
 public class SimpleQueryHandler implements QueryHandler {
 
@@ -17,6 +17,7 @@ public class SimpleQueryHandler implements QueryHandler {
     private DocVertexHandler elasticDocVertexHandler;
     private Client client;
     private ElasticMutations elasticMutations;
+    private TimingAccessor timing;
 
     @Override
     public void init(ElasticGraph graph, Configuration configuration) throws IOException {
@@ -27,9 +28,11 @@ public class SimpleQueryHandler implements QueryHandler {
 
         client = ElasticClientFactory.create(configuration);
         ElasticHelper.createIndex(indexName, client);
-        elasticMutations = new ElasticMutations(bulk, client);
-        docEdgeHandler = new DocEdgeHandler(graph, client, elasticMutations, indexName, scrollSize, refresh);
-        elasticDocVertexHandler = new DocVertexHandler(graph, client, elasticMutations, indexName, scrollSize, refresh);
+
+        timing = new TimingAccessor();
+        elasticMutations = new ElasticMutations(bulk, client, timing);
+        docEdgeHandler = new DocEdgeHandler(graph, client, elasticMutations, indexName, scrollSize, refresh, timing);
+        elasticDocVertexHandler = new DocVertexHandler(graph, client, elasticMutations, indexName, scrollSize, refresh, timing);
     }
 
     @Override
@@ -55,8 +58,8 @@ public class SimpleQueryHandler implements QueryHandler {
     }
 
     @Override
-    public Iterator<Edge> edges(Vertex vertex, Direction direction, String[] edgeLabels, Predicates predicates) {
-        return docEdgeHandler.edges(vertex, direction, edgeLabels, predicates);
+    public Map<BaseVertex, List<Edge>> edges(Iterator<BaseVertex> vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
+        return docEdgeHandler.edges(vertices, direction, edgeLabels, predicates);
     }
 
     @Override
@@ -65,28 +68,32 @@ public class SimpleQueryHandler implements QueryHandler {
     }
 
     @Override
-    public Iterator<Vertex> vertices() {
+    public Iterator<BaseVertex> vertices() {
         return elasticDocVertexHandler.vertices();
     }
 
     @Override
-    public Iterator<Vertex> vertices(Object[] vertexIds) {
+    public Iterator<BaseVertex> vertices(Object[] vertexIds) {
         return elasticDocVertexHandler.vertices(vertexIds);
     }
 
     @Override
-    public Iterator<Vertex> vertices(Predicates predicates) {
+    public Iterator<BaseVertex> vertices(Predicates predicates) {
         return elasticDocVertexHandler.vertices(predicates);
     }
 
     @Override
-    public Vertex vertex(Object vertexId, String vertexLabel, Edge edge, Direction direction) {
+    public BaseVertex vertex(Object vertexId, String vertexLabel, Edge edge, Direction direction) {
         return elasticDocVertexHandler.vertex(vertexId, vertexLabel, edge, direction);
     }
 
     @Override
-    public Vertex addVertex(Object id, String label, Object[] properties) {
+    public BaseVertex addVertex(Object id, String label, Object[] properties) {
         return elasticDocVertexHandler.addVertex(id, label, properties);
     }
 
+    @Override
+    public void printStats() {
+        timing.print();
+    }
 }

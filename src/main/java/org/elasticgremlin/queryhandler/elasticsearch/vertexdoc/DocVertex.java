@@ -7,7 +7,7 @@ import org.elasticgremlin.structure.*;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-public class DocVertex extends CachedEdgesVertex {
+public class DocVertex extends BaseVertex {
     private final ElasticMutations elasticMutations;
     private final String indexName;
     private LazyGetter lazyGetter;

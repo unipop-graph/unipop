@@ -21,26 +21,29 @@ public class DocEdgeHandler implements EdgeHandler {
     private final String indexName;
     private final int scrollSize;
     private final boolean refresh;
+    private TimingAccessor timing;
 
-    public DocEdgeHandler(ElasticGraph graph, Client client, ElasticMutations elasticMutations, String indexName, int scrollSize, boolean refresh) {
+    public DocEdgeHandler(ElasticGraph graph, Client client, ElasticMutations elasticMutations, String indexName,
+                          int scrollSize, boolean refresh, TimingAccessor timing) {
         this.graph = graph;
         this.client = client;
         this.elasticMutations = elasticMutations;
         this.indexName = indexName;
         this.scrollSize = scrollSize;
         this.refresh = refresh;
+        this.timing = timing;
     }
 
     @Override
     public Iterator<Edge> edges() {
         return new QueryIterator<>(FilterBuilders.existsFilter(DocEdge.InId), 0, scrollSize, Integer.MAX_VALUE,
-                client, this::createEdge, refresh, indexName);
+                client, this::createEdge, refresh, timing, indexName);
     }
 
     @Override
     public Iterator<Edge> edges(Object[] ids) {
         MultiGetRequest request = new MultiGetRequest().refresh(refresh);
-        for (int i = 0; i < ids.length; i++) request.add(indexName, null, ids[i].toString());
+        for (Object id : ids) request.add(indexName, null, id.toString());
         MultiGetResponse responses = client.multiGet(request).actionGet();
 
         ArrayList<Edge> elements = new ArrayList<>(ids.length);
@@ -56,42 +59,47 @@ public class DocEdgeHandler implements EdgeHandler {
     public Iterator<Edge> edges(Predicates predicates) {
         BoolFilterBuilder boolFilter = ElasticHelper.createFilterBuilder(predicates.hasContainers);
         boolFilter.must(FilterBuilders.existsFilter(DocEdge.InId));
-        return new QueryIterator<Edge>(boolFilter, 0, scrollSize, predicates.limitHigh - predicates.limitLow,
-                client, this::createEdge, refresh, indexName);
+        return new QueryIterator<>(boolFilter, 0, scrollSize, predicates.limitHigh - predicates.limitLow,
+                client, this::createEdge, refresh, timing, indexName);
     }
 
     @Override
-    public Iterator<Edge> edges(Vertex vertex, Direction direction, String[] edgeLabels, Predicates predicates) {
-        List<Vertex> vertices = CachedEdgesVertex.getVerticesBulk(vertex);
-        List<Object> vertexIds = new ArrayList<>(vertices.size());
-        vertices.forEach(singleVertex -> vertexIds.add(singleVertex.id()));
+    public Map<BaseVertex, List<Edge>> edges(Iterator<BaseVertex> vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
+        Map<Object, Vertex> idToVertex = new HashMap<>();
+        vertices.forEachRemaining(singleVertex -> idToVertex.put(singleVertex.id(), singleVertex));
 
         if (edgeLabels != null && edgeLabels.length > 0)
             predicates.hasContainers.add(new HasContainer(T.label.getAccessor(), P.within(edgeLabels)));
 
+        Iterator<Object> vertexIds = idToVertex.keySet().iterator();
         BoolFilterBuilder boolFilter = ElasticHelper.createFilterBuilder(predicates.hasContainers);
         if (direction == Direction.IN)
-            boolFilter.must(FilterBuilders.termsFilter(DocEdge.InId, vertexIds.toArray()));
+            boolFilter.must(FilterBuilders.termsFilter(DocEdge.InId, vertexIds));
         else if (direction == Direction.OUT)
-            boolFilter.must(FilterBuilders.termsFilter(DocEdge.OutId, vertexIds.toArray()));
+            boolFilter.must(FilterBuilders.termsFilter(DocEdge.OutId, vertexIds));
         else if (direction == Direction.BOTH)
             boolFilter.must(FilterBuilders.orFilter(
-                    FilterBuilders.termsFilter(DocEdge.InId, vertexIds.toArray()),
-                    FilterBuilders.termsFilter(DocEdge.OutId, vertexIds.toArray())));
+                    FilterBuilders.termsFilter(DocEdge.InId, vertexIds),
+                    FilterBuilders.termsFilter(DocEdge.OutId, vertexIds)));
 
-        Iterator<Edge> edgeSearchQuery = new QueryIterator<>(boolFilter, 0, scrollSize,
-                predicates.limitHigh - predicates.limitLow, client,
-                this::createEdge, refresh, indexName);
+        QueryIterator<Edge> edgeQueryIterator = new QueryIterator<>(boolFilter, 0, scrollSize, predicates.limitHigh - predicates.limitLow, client, this::createEdge , refresh, timing, indexName);
 
-        Map<Object, List<Edge>> idToEdges = CachedEdgesVertex.handleBulkEdgeResults(edgeSearchQuery,
-                vertices, direction, edgeLabels, predicates);
+        Map<BaseVertex, List<Edge>> results = new HashMap<>();
+        edgeQueryIterator.forEachRemaining(edge -> edge.vertices(direction.opposite()).forEachRemaining(vertex -> {
+            List<Edge> resultEdges = results.get(vertex);
+            if (resultEdges == null) {
+                resultEdges = new ArrayList<>();
+                results.put((BaseVertex) vertex, resultEdges);
+            }
+            resultEdges.add(edge);
+        }));
 
-        return idToEdges.get(vertex.id()).iterator();
+        return results;
     }
 
     @Override
     public Edge addEdge(Object edgeId, String label, Vertex outV, Vertex inV, Object[] properties) {
-        DocEdge elasticEdge = new DocEdge(edgeId, label, outV.id(), outV.label(), inV.id(), inV.label(), properties, graph, elasticMutations, indexName);
+        DocEdge elasticEdge = new DocEdge(edgeId, label, properties, outV, inV,graph, elasticMutations, indexName);
         try {
             elasticMutations.addElement(elasticEdge, indexName, null, true);
         }
@@ -105,7 +113,9 @@ public class DocEdgeHandler implements EdgeHandler {
         ArrayList<Edge> edges = new ArrayList<>();
         hits.forEachRemaining(hit -> {
             Map<String, Object> fields = hit.getSource();
-            BaseEdge edge = new DocEdge(hit.getId(), hit.getType(), fields.get(DocEdge.OutId), fields.get(DocEdge.OutLabel).toString(), fields.get(DocEdge.InId), fields.get(DocEdge.InLabel).toString(), null, graph, elasticMutations, indexName);
+            BaseVertex outVertex = graph.getQueryHandler().vertex(fields.get(DocEdge.OutId), fields.get(DocEdge.OutLabel).toString(), null, Direction.OUT);
+            BaseVertex inVertex = graph.getQueryHandler().vertex(fields.get(DocEdge.InId), fields.get(DocEdge.InLabel).toString(), null, Direction.IN);
+            BaseEdge edge = new DocEdge(hit.getId(), hit.getType(), null, outVertex, inVertex, graph, elasticMutations, indexName);
             fields.entrySet().forEach((field) -> edge.addPropertyLocal(field.getKey(), field.getValue()));
             edges.add(edge);
         });
@@ -114,7 +124,9 @@ public class DocEdgeHandler implements EdgeHandler {
 
     private Edge createEdge(GetResponse hit) {
         Map<String, Object> fields = hit.getSource();
-        BaseEdge edge = new DocEdge(hit.getId(), hit.getType(), fields.get(DocEdge.OutId), fields.get(DocEdge.OutLabel).toString(), fields.get(DocEdge.InId), fields.get(DocEdge.InLabel).toString(), null, graph, elasticMutations, indexName);
+        BaseVertex outVertex = graph.getQueryHandler().vertex(fields.get(DocEdge.OutId), fields.get(DocEdge.OutLabel).toString(), null, Direction.OUT);
+        BaseVertex inVertex = graph.getQueryHandler().vertex(fields.get(DocEdge.InId), fields.get(DocEdge.InLabel).toString(), null, Direction.IN);
+        BaseEdge edge = new DocEdge(hit.getId(), hit.getType(), null, outVertex, inVertex, graph, elasticMutations, indexName);
         fields.entrySet().forEach((field) -> edge.addPropertyLocal(field.getKey(), field.getValue()));
         return edge;
     }

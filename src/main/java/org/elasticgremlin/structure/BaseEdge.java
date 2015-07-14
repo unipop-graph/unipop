@@ -10,8 +10,10 @@ public abstract class BaseEdge extends BaseElement implements Edge {
     protected Vertex inVertex;
     protected Vertex outVertex;
 
-    public BaseEdge(final Object id, final String label, Object[] keyValues, final ElasticGraph graph) {
+    public BaseEdge(final Object id, final String label, Object[] keyValues, Vertex outVertex, Vertex inVertex, final ElasticGraph graph) {
         super(id, label, graph, keyValues);
+        this.outVertex = outVertex;
+        this.inVertex = inVertex;
         ElementHelper.validateLabel(label);
     }
 
@@ -46,23 +48,6 @@ public abstract class BaseEdge extends BaseElement implements Edge {
     public Iterator<Property> properties(String... propertyKeys) {
         checkRemoved();
         return innerPropertyIterator(propertyKeys);
-    }
-
-    @Override
-    public void remove() {
-        notifyVertices();
-        super.remove();
-    }
-
-    protected void notifyVertices() {
-        ArrayList<CachedEdgesVertex> vertices = new ArrayList<>(2);
-        if (inVertex != null && CachedEdgesVertex.class.isAssignableFrom(inVertex.getClass())) {
-            vertices.add((CachedEdgesVertex) inVertex);
-        }
-        if (outVertex != null && CachedEdgesVertex.class.isAssignableFrom(outVertex.getClass())) {
-            vertices.add((CachedEdgesVertex) outVertex);
-        }
-        vertices.forEach(vertex -> vertex.removeEdge(this));
     }
 
     @Override

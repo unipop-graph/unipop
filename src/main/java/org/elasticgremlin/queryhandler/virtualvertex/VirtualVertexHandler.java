@@ -12,7 +12,7 @@ public class VirtualVertexHandler implements VertexHandler {
 
     private ElasticGraph graph;
     private String label;
-    private List<Vertex> vertices;
+    private List<BaseVertex> vertices;
 
     public VirtualVertexHandler(ElasticGraph graph, String label) {
         this.graph = graph;
@@ -37,12 +37,12 @@ public class VirtualVertexHandler implements VertexHandler {
     }
 
     @Override
-    public Iterator<Vertex> vertices(Predicates predicates) {
+    public Iterator<BaseVertex> vertices(Predicates predicates) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Vertex vertex(Object vertexId, String vertexLabel, Edge edge, Direction direction) {
+    public BaseVertex vertex(Object vertexId, String vertexLabel, Edge edge, Direction direction) {
         checkBulk();
         BaseVertex vertex = new VirtualVertex(vertexId, vertexLabel, graph, null);
         vertex.setSiblings(vertices);
@@ -57,7 +57,7 @@ public class VirtualVertexHandler implements VertexHandler {
     }
 
     @Override
-    public Vertex addVertex(Object id, String label, Object[] properties) {
+    public BaseVertex addVertex(Object id, String label, Object[] properties) {
         throw new UnsupportedOperationException();
     }
 }

@@ -23,6 +23,7 @@ public class ModernGraphQueryHandler implements QueryHandler {
     private Client client;
     private Map<String, VertexHandler> vertexHandlers;
     private ElasticMutations elasticMutations;
+    private TimingAccessor timing;
 
     @Override
     public void init(ElasticGraph graph, Configuration configuration) throws IOException {
@@ -32,12 +33,12 @@ public class ModernGraphQueryHandler implements QueryHandler {
 
         this.client = ElasticClientFactory.create(configuration);
         ElasticHelper.createIndex(indexName, client);
-        elasticMutations = new ElasticMutations(false, client);
 
-        this.docVertexHandler = new DocVertexHandler(graph, client, elasticMutations, indexName, scrollSize, refresh);
-        this.starHandler = new StarHandler(graph, client, elasticMutations, indexName, scrollSize, refresh,
-                new BasicEdgeMapping("knows", "person", Direction.OUT, "knows-fk"),
-                new BasicEdgeMapping("created", "software", Direction.OUT, "created-fk"));
+        timing = new TimingAccessor();
+        elasticMutations = new ElasticMutations(false, client, timing);
+        this.docVertexHandler = new DocVertexHandler(graph, client, elasticMutations, indexName, scrollSize, refresh, timing);
+        this.starHandler = new StarHandler(graph, client, elasticMutations, indexName, scrollSize, refresh, timing,
+                new BasicEdgeMapping("knows", "person", Direction.OUT, "knows-fk"), new BasicEdgeMapping("created", "software", Direction.OUT, "created-fk"));
 
         this.vertexHandlers = new HashMap<>();
         this.vertexHandlers.put(PERSON, starHandler);
@@ -116,6 +117,10 @@ public class ModernGraphQueryHandler implements QueryHandler {
         return vertexHandlers.get(label).addVertex(id, label, properties);
     }
 
+    @Override
+    public void printStats() {
+        timing.print();
+    }
 
     @Override
     public void close() {

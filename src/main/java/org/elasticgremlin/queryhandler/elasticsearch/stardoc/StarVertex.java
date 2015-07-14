@@ -11,7 +11,7 @@ import org.elasticsearch.action.get.MultiGetItemResponse;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-public class StarVertex extends CachedEdgesVertex {
+public class StarVertex extends BaseVertex {
     private final ElasticMutations elasticMutations;
     private final String indexName;
     private final EdgeMapping[] edgeMappings;
@@ -114,28 +114,38 @@ public class StarVertex extends CachedEdgesVertex {
                 externalEdgeLabels.add(label);
             }
         }
-        if (!externalEdgeLabels.isEmpty()) {
+        if (!externalEdgeLabels.isEmpty())
             return super.edges(direction, externalEdgeLabels.toArray(new String[externalEdgeLabels.size()]), predicates);
-        }
-        else {
-            return new ArrayList<Edge>(0).iterator();
-        }
+
+        else return new ArrayList<Edge>(0).iterator();
     }
 
     public void setFields(Map<String, Object> entries){
         entries.entrySet().forEach(field -> {
             if(field.getValue() != null) addPropertyLocal(field.getKey(), field.getValue());
         });
-        for(EdgeMapping mapping : edgeMappings){
-            Object externalVertexId = mapping.getExternalVertexId(entries);
-            if(externalVertexId == null) continue;
-            Vertex externalVertex = graph.getQueryHandler().vertex(externalVertexId,
-                    mapping.getExternalVertexLabel(), null, mapping.getDirection().opposite());
-            Object[] keyValues = mapping.getProperties(entries);
-            InnerEdge innerEdge = new InnerEdge(mapping, this, externalVertex,
-                    keyValues,
-                    graph);
-            this.innerEdges.add(innerEdge);
+
+    }
+
+    public InnerEdge addInnerEdge(EdgeMapping mapping, Object edgeId, String label, Vertex externalVertex,
+                                  Object[] properties) {
+        boolean mappingExists = false;
+        for (EdgeMapping edgeMapping : edgeMappings) {
+            if (mapping.equals(edgeMapping)) {
+                mappingExists = true;
+            }
         }
+        if (!mappingExists) {
+            return null;
+        }
+
+        property(mapping.getExternalVertexField(), externalVertex.id());
+        InnerEdge edge = new InnerEdge(edgeId, mapping, this, externalVertex, properties, graph);
+        this.innerEdges.add(edge);
+        return edge;
+    }
+
+    public EdgeMapping[] getEdgeMappings() {
+        return edgeMappings;
     }
 }

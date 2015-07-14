@@ -2,9 +2,7 @@ package org.elasticgremlin.queryhandler.elasticsearch.helpers;
 
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
-import org.apache.tinkerpop.gremlin.structure.*;
 import org.elasticgremlin.queryhandler.elasticsearch.Geo;
-import org.elasticgremlin.structure.*;
 import org.elasticsearch.action.admin.cluster.health.*;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.exists.indices.*;
@@ -59,12 +57,6 @@ public class ElasticHelper {
 
         return indexDeleteByQueryResponses;
     }
-
-
-
-
-
-
 
     public static BoolFilterBuilder createFilterBuilder(List<HasContainer> hasContainers) {
         BoolFilterBuilder boolFilter = FilterBuilders.boolFilter();

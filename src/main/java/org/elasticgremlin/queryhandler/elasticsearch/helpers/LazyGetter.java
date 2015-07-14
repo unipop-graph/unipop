@@ -1,6 +1,5 @@
 package org.elasticgremlin.queryhandler.elasticsearch.helpers;
 
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticgremlin.structure.BaseVertex;
 import org.elasticsearch.action.get.*;
 import org.elasticsearch.client.Client;
@@ -11,13 +10,15 @@ public class LazyGetter {
 
     private static final int MAX_LAZY_GET = 1000;
     private Client client;
+    private TimingAccessor timing;
     private boolean executed = false;
     private MultiGetRequest multiGetRequest = new MultiGetRequest();
     private HashMap<String, List<BaseVertex>> idToVertices = new HashMap();
-    private List<Vertex> vertices = new ArrayList<>();
+    private List<BaseVertex> vertices = new ArrayList<>();
 
-    public LazyGetter(Client client) {
+    public LazyGetter(Client client, TimingAccessor timing) {
         this.client = client;
+        this.timing = timing;
     }
 
     public Boolean canRegister() {
@@ -41,7 +42,10 @@ public class LazyGetter {
     public void execute() {
         if (executed) return;
 
+        timing.start("lazyMultiGet");
         MultiGetResponse multiGetItemResponses = client.multiGet(multiGetRequest).actionGet();
+        timing.stop("lazyMultiGet");
+
         multiGetItemResponses.forEach(response -> {
             if (response.isFailed() || !response.getResponse().isExists()) {
                 System.out.println(response.getFailure().getMessage());

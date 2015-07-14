@@ -5,7 +5,7 @@ import org.elasticgremlin.structure.*;
 
 public class VirtualVertex extends BaseVertex {
     protected VirtualVertex(Object id, String label, ElasticGraph graph, Object[] keyValues) {
-        super(id, label, graph, keyValues);
+        super(id, label, graph, keyValues, null);
     }
 
     @Override

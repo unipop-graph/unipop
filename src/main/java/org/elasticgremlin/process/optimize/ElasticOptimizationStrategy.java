@@ -2,6 +2,7 @@ package org.elasticgremlin.process.optimize;
 
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
@@ -51,13 +52,13 @@ public class ElasticOptimizationStrategy extends AbstractTraversalStrategy<Trave
                 collectLabels(predicates, nextStep);
                 traversal.removeStep(nextStep);
             }
-            /*else if(nextStep instanceof RangeGlobalStep) {
-                RangeGlobalStep rangeGlobalStep = (RangeGlobalStep) nextStep;
+            else if(nextStep instanceof RangeGlobalStep) {
+                /*RangeGlobalStep rangeGlobalStep = (RangeGlobalStep) nextStep;
                 predicates.limitLow = rangeGlobalStep.getLowRange();
                 predicates.limitHigh = rangeGlobalStep.getHighRange();
 		        collectLabels(predicates, nextStep);
-                traversal.removeStep(rangeGlobalStep);
-            }*/
+                traversal.removeStep(rangeGlobalStep);*/
+            }
             else return predicates;
 
             nextStep = nextStep.getNextStep();

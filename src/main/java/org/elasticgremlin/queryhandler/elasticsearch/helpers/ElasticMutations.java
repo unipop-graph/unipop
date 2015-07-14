@@ -11,14 +11,16 @@ import org.elasticsearch.client.Client;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-public class ElasticMutations implements RevisionHolder {
+public class ElasticMutations {
 
+    private final TimingAccessor timing;
     private Client client;
     private BulkRequestBuilder bulkRequest;
     private int revision = 0;
 
-    public ElasticMutations(Boolean bulk, Client client) {
+    public ElasticMutations(Boolean bulk, Client client, TimingAccessor timing) {
         if(bulk) bulkRequest = client.prepareBulk();
+        this.timing = timing;
         this.client = client;
     }
 
@@ -58,12 +60,12 @@ public class ElasticMutations implements RevisionHolder {
     }
 
     public void commit() {
-        if(bulkRequest == null) return;
+        if (bulkRequest == null) return;
+        timing.start("bulk");
         bulkRequest.execute().actionGet();
-        bulkRequest = client.prepareBulk();
+        timing.stop("bulk");
     }
 
-    @Override
     public int getRevision() {
         return revision;
     }
