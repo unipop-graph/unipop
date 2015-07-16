@@ -106,7 +106,7 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
 
     @Override
     public Edge addEdge(final String label, final Vertex vertex, final Object... keyValues) {
-        if (null == vertex) throw Graph.Exceptions.argumentCanNotBeNull("vertexdoc");
+        if (null == vertex) throw Graph.Exceptions.argumentCanNotBeNull("vertex");
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         checkRemoved();
         Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
@@ -141,10 +141,11 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
         List<Edge> edges = queriedEdges.get(queryInfo);
         if (edges != null)  return edges.iterator();
 
-        Map<BaseVertex, List<Edge>> vertexToEdge = graph.getQueryHandler().edges(siblings.iterator(), direction, edgeLabels, predicates);
+        Map<Object, List<Edge>> vertexToEdge = graph.getQueryHandler().edges(siblings.iterator(), direction, edgeLabels, predicates);
         siblings.forEach(sibling -> sibling.addQueriedEdges(queryInfo, vertexToEdge.get(sibling.id())));
 
-        return vertexToEdge.get(this.id()).iterator();
+        List<Edge> thisEdges = vertexToEdge.get(this.id());
+        return thisEdges != null ? thisEdges.iterator() : Collections.emptyIterator();
     }
 
     private void addQueriedEdges(EdgeQueryInfo queryInfo, List<Edge> edges) {

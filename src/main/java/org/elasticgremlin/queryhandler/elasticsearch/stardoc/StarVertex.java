@@ -140,7 +140,9 @@ public class StarVertex extends BaseVertex {
         }
 
         property(mapping.getExternalVertexField(), externalVertex.id());
-        InnerEdge edge = new InnerEdge(edgeId, mapping, this, externalVertex, properties, graph);
+        Vertex inVertex = mapping.getDirection().equals(Direction.IN) ? this : externalVertex;
+        Vertex outVertex = mapping.getDirection().equals(Direction.OUT) ? this : externalVertex;
+        InnerEdge edge = new InnerEdge(edgeId, mapping, outVertex, inVertex, properties, graph);
         this.innerEdges.add(edge);
         return edge;
     }

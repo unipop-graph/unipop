@@ -14,7 +14,7 @@ public abstract class BaseElement implements Element{
 
     public BaseElement(final Object id, final String label, ElasticGraph graph, Object[] keyValues) {
         this.graph = graph;
-        this.id = id != null ? id : new com.eaio.uuid.UUID().toString();
+        this.id = id != null ? id.toString() : new com.eaio.uuid.UUID().toString();
         this.label = label;
         if(keyValues != null) ElementHelper.legalPropertyKeyValueArray(keyValues);
 

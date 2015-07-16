@@ -58,7 +58,7 @@ public class SimpleQueryHandler implements QueryHandler {
     }
 
     @Override
-    public Map<BaseVertex, List<Edge>> edges(Iterator<BaseVertex> vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
+    public Map<Object, List<Edge>> edges(Iterator<BaseVertex> vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
         return docEdgeHandler.edges(vertices, direction, edgeLabels, predicates);
     }
 
@@ -68,17 +68,17 @@ public class SimpleQueryHandler implements QueryHandler {
     }
 
     @Override
-    public Iterator<BaseVertex> vertices() {
+    public Iterator<Vertex> vertices() {
         return elasticDocVertexHandler.vertices();
     }
 
     @Override
-    public Iterator<BaseVertex> vertices(Object[] vertexIds) {
+    public Iterator<? extends Vertex> vertices(Object[] vertexIds) {
         return elasticDocVertexHandler.vertices(vertexIds);
     }
 
     @Override
-    public Iterator<BaseVertex> vertices(Predicates predicates) {
+    public Iterator<Vertex> vertices(Predicates predicates) {
         return elasticDocVertexHandler.vertices(predicates);
     }
 

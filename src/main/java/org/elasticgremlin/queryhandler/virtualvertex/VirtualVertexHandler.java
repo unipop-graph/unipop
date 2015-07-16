@@ -1,5 +1,6 @@
 package org.elasticgremlin.queryhandler.virtualvertex;
 
+import com.fasterxml.jackson.databind.util.ArrayIterator;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.elasticgremlin.queryhandler.*;
 import org.elasticgremlin.structure.*;
@@ -27,17 +28,17 @@ public class VirtualVertexHandler implements VertexHandler {
 
     @Override
     public Iterator<Vertex> vertices(Object[] vertexIds) {
-        ArrayList<Vertex> vertices = new ArrayList<>();
+        ArrayList<BaseVertex> vertices = new ArrayList<>();
         for(Object id : vertexIds) {
             BaseVertex vertex = new VirtualVertex(id, label, graph, null);
             vertices.add(vertex);
             vertex.setSiblings(vertices);
         }
-        return vertices.iterator();
+        return new ArrayIterator<>((Vertex[]) vertices.toArray()).iterator();
     }
 
     @Override
-    public Iterator<BaseVertex> vertices(Predicates predicates) {
+    public Iterator<Vertex> vertices(Predicates predicates) {
         throw new UnsupportedOperationException();
     }
 

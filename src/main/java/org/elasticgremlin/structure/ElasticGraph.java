@@ -122,14 +122,14 @@ public class ElasticGraph implements Graph {
 
     @Override
     public Iterator<Vertex> vertices(Object... vertexIds) {
-        if (vertexIds == null || vertexIds.length == 0) return queryHandler.vertices();
+        if (vertexIds == null || vertexIds.length == 0) return (Iterator<Vertex>) queryHandler.vertices();
         if(vertexIds.length > 1 && !vertexIds[0].getClass().equals(vertexIds[1].getClass())) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
         if(vertexIds[0] instanceof Vertex) {
             ArrayList<Vertex> list = new ArrayList();
             for(int i = 0; i < vertexIds.length; i++) list.add((Vertex) vertexIds[i]);
             return list.iterator();
         }
-        return queryHandler.vertices(vertexIds);
+        return (Iterator<Vertex>) queryHandler.vertices(vertexIds);
     }
 
     @Override

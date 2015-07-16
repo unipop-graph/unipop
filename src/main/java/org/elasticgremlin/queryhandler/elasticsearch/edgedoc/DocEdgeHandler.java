@@ -64,14 +64,14 @@ public class DocEdgeHandler implements EdgeHandler {
     }
 
     @Override
-    public Map<BaseVertex, List<Edge>> edges(Iterator<BaseVertex> vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
+    public Map<Object, List<Edge>> edges(Iterator<BaseVertex> vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
         Map<Object, Vertex> idToVertex = new HashMap<>();
         vertices.forEachRemaining(singleVertex -> idToVertex.put(singleVertex.id(), singleVertex));
 
         if (edgeLabels != null && edgeLabels.length > 0)
             predicates.hasContainers.add(new HasContainer(T.label.getAccessor(), P.within(edgeLabels)));
 
-        Iterator<Object> vertexIds = idToVertex.keySet().iterator();
+        Object[] vertexIds = idToVertex.keySet().toArray();
         BoolFilterBuilder boolFilter = ElasticHelper.createFilterBuilder(predicates.hasContainers);
         if (direction == Direction.IN)
             boolFilter.must(FilterBuilders.termsFilter(DocEdge.InId, vertexIds));
@@ -84,12 +84,12 @@ public class DocEdgeHandler implements EdgeHandler {
 
         QueryIterator<Edge> edgeQueryIterator = new QueryIterator<>(boolFilter, 0, scrollSize, predicates.limitHigh - predicates.limitLow, client, this::createEdge , refresh, timing, indexName);
 
-        Map<BaseVertex, List<Edge>> results = new HashMap<>();
-        edgeQueryIterator.forEachRemaining(edge -> edge.vertices(direction.opposite()).forEachRemaining(vertex -> {
-            List<Edge> resultEdges = results.get(vertex);
+        Map<Object, List<Edge>> results = new HashMap<>();
+        edgeQueryIterator.forEachRemaining(edge -> edge.vertices(direction).forEachRemaining(vertex -> {
+            List<Edge> resultEdges = results.get(vertex.id());
             if (resultEdges == null) {
                 resultEdges = new ArrayList<>();
-                results.put((BaseVertex) vertex, resultEdges);
+                results.put(vertex.id(), resultEdges);
             }
             resultEdges.add(edge);
         }));

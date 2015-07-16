@@ -1,9 +1,9 @@
 package org.elasticgremlin.queryhandler.elasticsearch.vertexdoc;
 
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.elasticgremlin.queryhandler.elasticsearch.helpers.*;
-import org.elasticgremlin.queryhandler.elasticsearch.edgedoc.DocEdge;
 import org.elasticgremlin.queryhandler.*;
+import org.elasticgremlin.queryhandler.elasticsearch.edgedoc.DocEdge;
+import org.elasticgremlin.queryhandler.elasticsearch.helpers.*;
 import org.elasticgremlin.structure.*;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
@@ -37,16 +37,16 @@ public class DocVertexHandler implements VertexHandler {
     }
 
     @Override
-    public Iterator<BaseVertex> vertices() {
+    public Iterator<Vertex> vertices() {
         return new QueryIterator<>(FilterBuilders.missingFilter(DocEdge.InId), 0, scrollSize,
                 Integer.MAX_VALUE, client, this::createVertex, refresh, timing, indexName);
     }
 
     @Override
-    public Iterator<BaseVertex> vertices(Object[] vertexIds) {
+    public Iterator<? extends Vertex> vertices(Object[] vertexIds) {
         List<BaseVertex> vertices = new ArrayList<>();
         for(Object id : vertexIds){
-            DocVertex vertex = new DocVertex(id, null, null, graph, getLazyGetter(), elasticMutations, indexName);
+            DocVertex vertex = new DocVertex(id.toString(), null, null, graph, getLazyGetter(), elasticMutations, indexName);
             vertex.setSiblings(vertices);
             vertices.add(vertex);
         }
@@ -54,7 +54,7 @@ public class DocVertexHandler implements VertexHandler {
     }
 
     @Override
-    public Iterator<BaseVertex> vertices(Predicates predicates) {
+    public Iterator<Vertex> vertices(Predicates predicates) {
         BoolFilterBuilder boolFilter = ElasticHelper.createFilterBuilder(predicates.hasContainers);
         boolFilter.must(FilterBuilders.missingFilter(DocEdge.InId));
         return new QueryIterator<>(boolFilter, 0, scrollSize, predicates.limitHigh - predicates.limitLow,
@@ -95,7 +95,7 @@ public class DocVertexHandler implements VertexHandler {
         return lazyGetter;
     }
 
-    private Iterator<BaseVertex> createVertex(Iterator<SearchHit> hits) {
+    private Iterator<? extends Vertex> createVertex(Iterator<SearchHit> hits) {
         ArrayList<BaseVertex> vertices = new ArrayList<>();
         hits.forEachRemaining(hit -> {
             BaseVertex vertex = new DocVertex(hit.id(), hit.getType(), null, graph, null, elasticMutations, indexName);
