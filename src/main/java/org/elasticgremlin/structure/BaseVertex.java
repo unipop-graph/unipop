@@ -2,6 +2,7 @@ package org.elasticgremlin.structure;
 
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.*;
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.elasticgremlin.queryhandler.Predicates;
 import org.elasticgremlin.queryhandler.elasticsearch.helpers.ElasticMutations;
 import org.elasticsearch.action.get.MultiGetItemResponse;
@@ -17,7 +18,6 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
     protected BaseVertex(Object id, String label, ElasticGraph graph, Object[] keyValues, ElasticMutations elasticMutations) {
         super(id, label, graph, keyValues);
         this.elasticMutations = elasticMutations;
-        this.siblings = null;
     }
 
     @Override
@@ -141,7 +141,9 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
         List<Edge> edges = queriedEdges.get(queryInfo);
         if (edges != null)  return edges.iterator();
 
-        Map<Object, List<Edge>> vertexToEdge = graph.getQueryHandler().edges(siblings.iterator(), direction, edgeLabels, predicates);
+        Iterator<BaseVertex> vertices = siblings == null ? IteratorUtils.asIterator(this) : siblings.iterator();
+
+        Map<Object, List<Edge>> vertexToEdge = graph.getQueryHandler().edges(vertices, direction, edgeLabels, predicates);
         siblings.forEach(sibling -> sibling.addQueriedEdges(queryInfo, vertexToEdge.get(sibling.id())));
 
         List<Edge> thisEdges = vertexToEdge.get(this.id());
