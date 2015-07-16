@@ -95,6 +95,8 @@ public class ElasticGraphGraphProvider extends AbstractGraphProvider {
             ElasticHelper.clearIndex(client, indexName);
             g.close();
         }
+        if(g instanceof ElasticGraph)
+            ((ElasticGraph)g).getQueryHandler().printStats();
     }
 
     @Override

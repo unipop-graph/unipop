@@ -1,9 +1,9 @@
 package org.elasticgremlin.queryhandler.elasticsearch.vertexdoc;
 
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.elasticgremlin.queryhandler.elasticsearch.helpers.*;
-import org.elasticgremlin.queryhandler.elasticsearch.edgedoc.DocEdge;
 import org.elasticgremlin.queryhandler.*;
+import org.elasticgremlin.queryhandler.elasticsearch.edgedoc.DocEdge;
+import org.elasticgremlin.queryhandler.elasticsearch.helpers.*;
 import org.elasticgremlin.structure.*;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
@@ -43,10 +43,10 @@ public class DocVertexHandler implements VertexHandler {
     }
 
     @Override
-    public Iterator<Vertex> vertices(Object[] vertexIds) {
-        List<Vertex> vertices = new ArrayList<>();
+    public Iterator<? extends Vertex> vertices(Object[] vertexIds) {
+        List<BaseVertex> vertices = new ArrayList<>();
         for(Object id : vertexIds){
-            DocVertex vertex = new DocVertex(id, null, null, graph, getLazyGetter(), elasticMutations, indexName);
+            DocVertex vertex = new DocVertex(id.toString(), null, null, graph, getLazyGetter(), elasticMutations, indexName);
             vertex.setSiblings(vertices);
             vertices.add(vertex);
         }
@@ -62,13 +62,13 @@ public class DocVertexHandler implements VertexHandler {
     }
 
     @Override
-    public Vertex vertex(Object vertexId, String vertexLabel, Edge edge, Direction direction) {
+    public BaseVertex vertex(Object vertexId, String vertexLabel, Edge edge, Direction direction) {
         return new DocVertex(vertexId,vertexLabel, null ,graph,getLazyGetter(direction), elasticMutations, indexName);
     }
 
     @Override
-    public Vertex addVertex(Object id, String label, Object[] properties) {
-        Vertex v = new DocVertex(id, label, properties, graph, null, elasticMutations, indexName);
+    public BaseVertex addVertex(Object id, String label, Object[] properties) {
+        BaseVertex v = new DocVertex(id, label, properties, graph, null, elasticMutations, indexName);
 
         try {
             elasticMutations.addElement(v, indexName, null, true);
@@ -95,8 +95,8 @@ public class DocVertexHandler implements VertexHandler {
         return lazyGetter;
     }
 
-    private Iterator<Vertex> createVertex(Iterator<SearchHit> hits) {
-        ArrayList<Vertex> vertices = new ArrayList<>();
+    private Iterator<? extends Vertex> createVertex(Iterator<SearchHit> hits) {
+        ArrayList<BaseVertex> vertices = new ArrayList<>();
         hits.forEachRemaining(hit -> {
             BaseVertex vertex = new DocVertex(hit.id(), hit.getType(), null, graph, null, elasticMutations, indexName);
             vertex.setSiblings(vertices);

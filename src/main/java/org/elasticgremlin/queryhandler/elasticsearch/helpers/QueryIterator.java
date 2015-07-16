@@ -14,13 +14,13 @@ public class QueryIterator<E extends Element> implements Iterator<E> {
 
     private SearchResponse scrollResponse;
     private long allowedRemaining;
-    private final Function<Iterator<SearchHit>, Iterator<E>> convertFunc;
+    private final Function<Iterator<SearchHit>, Iterator<? extends E>> convertFunc;
     private TimingAccessor timing;
     private Client client;
-    private Iterator<E> hits;
+    private Iterator<? extends E> hits;
 
     public QueryIterator(FilterBuilder filter, int startFrom, int scrollSize, long maxSize, Client client,
-                         Function<Iterator<SearchHit>, Iterator<E>> convertFunc,
+                         Function<Iterator<SearchHit>, Iterator<? extends E>> convertFunc,
                          Boolean refresh, TimingAccessor timing, String... indices) {
         this.client = client;
         this.allowedRemaining = maxSize;

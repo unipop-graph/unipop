@@ -1,7 +1,7 @@
 package org.elasticgremlin.structure;
 
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
+import org.apache.tinkerpop.gremlin.structure.util.*;
 
 import java.util.*;
 
@@ -10,8 +10,10 @@ public abstract class BaseEdge extends BaseElement implements Edge {
     protected Vertex inVertex;
     protected Vertex outVertex;
 
-    public BaseEdge(final Object id, final String label, Object[] keyValues, final ElasticGraph graph) {
+    public BaseEdge(final Object id, final String label, Object[] keyValues, Vertex outVertex, Vertex inVertex, final ElasticGraph graph) {
         super(id, label, graph, keyValues);
+        this.outVertex = outVertex;
+        this.inVertex = inVertex;
         ElementHelper.validateLabel(label);
     }
 
@@ -49,24 +51,12 @@ public abstract class BaseEdge extends BaseElement implements Edge {
     }
 
     @Override
-    public void remove() {
-        notifyVertices();
-        super.remove();
-    }
-
-    protected void notifyVertices() {
-        ArrayList<BaseVertex> vertices = new ArrayList<>(2);
-        if (inVertex != null && BaseVertex.class.isAssignableFrom(inVertex.getClass())) {
-            vertices.add((BaseVertex) inVertex);
-        }
-        if (outVertex != null && BaseVertex.class.isAssignableFrom(outVertex.getClass())) {
-            vertices.add((BaseVertex) outVertex);
-        }
-        vertices.forEach(vertex -> vertex.removeEdge(this));
+    protected void checkRemoved() {
+        if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Edge.class, this.id);
     }
 
     @Override
-    protected void checkRemoved() {
-        if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Edge.class, this.id);
+    public String toString() {
+        return StringFactory.edgeString(this);
     }
 }

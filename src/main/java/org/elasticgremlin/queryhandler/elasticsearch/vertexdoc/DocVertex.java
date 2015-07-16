@@ -13,7 +13,7 @@ public class DocVertex extends BaseVertex {
     private LazyGetter lazyGetter;
 
     public DocVertex(final Object id, final String label, Object[] keyValues, ElasticGraph graph, LazyGetter lazyGetter, ElasticMutations elasticMutations, String indexName) {
-        super(id, label, graph, keyValues);
+        super(id, label, graph, keyValues, elasticMutations);
         this.elasticMutations = elasticMutations;
         this.indexName = indexName;
         if (lazyGetter != null) {

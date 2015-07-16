@@ -1,6 +1,5 @@
 package org.elasticgremlin.queryhandler.elasticsearch.helpers;
 
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticgremlin.structure.BaseVertex;
 import org.elasticsearch.action.get.*;
 import org.elasticsearch.client.Client;
@@ -15,7 +14,7 @@ public class LazyGetter {
     private boolean executed = false;
     private MultiGetRequest multiGetRequest = new MultiGetRequest();
     private HashMap<String, List<BaseVertex>> idToVertices = new HashMap();
-    private List<Vertex> vertices = new ArrayList<>();
+    private List<BaseVertex> vertices = new ArrayList<>();
 
     public LazyGetter(Client client, TimingAccessor timing) {
         this.client = client;

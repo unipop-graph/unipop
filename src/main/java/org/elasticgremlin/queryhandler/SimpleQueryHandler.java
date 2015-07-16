@@ -5,11 +5,11 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import org.elasticgremlin.queryhandler.elasticsearch.edgedoc.DocEdgeHandler;
 import org.elasticgremlin.queryhandler.elasticsearch.helpers.*;
 import org.elasticgremlin.queryhandler.elasticsearch.vertexdoc.DocVertexHandler;
-import org.elasticgremlin.structure.ElasticGraph;
+import org.elasticgremlin.structure.*;
 import org.elasticsearch.client.Client;
 
 import java.io.IOException;
-import java.util.Iterator;
+import java.util.*;
 
 public class SimpleQueryHandler implements QueryHandler {
 
@@ -58,8 +58,8 @@ public class SimpleQueryHandler implements QueryHandler {
     }
 
     @Override
-    public Iterator<Edge> edges(Vertex vertex, Direction direction, String[] edgeLabels, Predicates predicates) {
-        return docEdgeHandler.edges(vertex, direction, edgeLabels, predicates);
+    public Map<Object, List<Edge>> edges(Iterator<BaseVertex> vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
+        return docEdgeHandler.edges(vertices, direction, edgeLabels, predicates);
     }
 
     @Override
@@ -73,7 +73,7 @@ public class SimpleQueryHandler implements QueryHandler {
     }
 
     @Override
-    public Iterator<Vertex> vertices(Object[] vertexIds) {
+    public Iterator<? extends Vertex> vertices(Object[] vertexIds) {
         return elasticDocVertexHandler.vertices(vertexIds);
     }
 
@@ -83,12 +83,12 @@ public class SimpleQueryHandler implements QueryHandler {
     }
 
     @Override
-    public Vertex vertex(Object vertexId, String vertexLabel, Edge edge, Direction direction) {
+    public BaseVertex vertex(Object vertexId, String vertexLabel, Edge edge, Direction direction) {
         return elasticDocVertexHandler.vertex(vertexId, vertexLabel, edge, direction);
     }
 
     @Override
-    public Vertex addVertex(Object id, String label, Object[] properties) {
+    public BaseVertex addVertex(Object id, String label, Object[] properties) {
         return elasticDocVertexHandler.addVertex(id, label, properties);
     }
 

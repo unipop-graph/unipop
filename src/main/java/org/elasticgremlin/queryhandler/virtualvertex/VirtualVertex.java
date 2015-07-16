@@ -1,13 +1,11 @@
 package org.elasticgremlin.queryhandler.virtualvertex;
 
 import org.apache.tinkerpop.gremlin.structure.Property;
-import org.elasticgremlin.structure.BaseVertex;
-import org.elasticgremlin.structure.BaseVertexProperty;
-import org.elasticgremlin.structure.ElasticGraph;
+import org.elasticgremlin.structure.*;
 
 public class VirtualVertex extends BaseVertex {
     protected VirtualVertex(Object id, String label, ElasticGraph graph, Object[] keyValues) {
-        super(id, label, graph, keyValues);
+        super(id, label, graph, keyValues, null);
     }
 
     @Override

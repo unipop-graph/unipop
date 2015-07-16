@@ -7,7 +7,7 @@ import org.elasticgremlin.queryhandler.*;
 import org.elasticgremlin.queryhandler.elasticsearch.helpers.*;
 import org.elasticgremlin.queryhandler.elasticsearch.stardoc.*;
 import org.elasticgremlin.queryhandler.elasticsearch.vertexdoc.DocVertexHandler;
-import org.elasticgremlin.structure.ElasticGraph;
+import org.elasticgremlin.structure.*;
 import org.elasticsearch.client.Client;
 
 import java.io.IOException;
@@ -64,8 +64,8 @@ public class ModernGraphQueryHandler implements QueryHandler {
     }
 
     @Override
-    public Iterator<Edge> edges(Vertex vertex, Direction direction, String[] edgeLabels, Predicates predicates) {
-        return starHandler.edges(vertex, direction, edgeLabels, predicates);
+    public Map<Object, List<Edge>> edges(Iterator<BaseVertex> vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
+        return starHandler.edges(vertices, direction, edgeLabels, predicates);
     }
 
     @Override
@@ -74,26 +74,26 @@ public class ModernGraphQueryHandler implements QueryHandler {
     }
 
     @Override
-    public Iterator<Vertex> vertices() {
-        final Iterator<Vertex> starVertices = starHandler.vertices();
+    public Iterator<? extends Vertex> vertices() {
+        final Iterator<Vertex> starVertices = (Iterator<Vertex>) starHandler.vertices();
         final Iterator<Vertex> docVertices = docVertexHandler.vertices();
 
         return new ConcatIterator<>(starVertices, docVertices);
     }
 
     @Override
-    public Iterator<Vertex> vertices(Object[] vertexIds) {
-        final Iterator<Vertex> starVertices = starHandler.vertices(vertexIds);
-        final Iterator<Vertex> docVertices = docVertexHandler.vertices(vertexIds);
+    public Iterator<? extends Vertex> vertices(Object[] vertexIds) {
+        final Iterator<Vertex> starVertices = (Iterator<Vertex>) starHandler.vertices(vertexIds);
+        final Iterator<Vertex> docVertices = (Iterator<Vertex>) docVertexHandler.vertices(vertexIds);
 
         return new ConcatIterator<>(starVertices, docVertices);
     }
 
     @Override
-    public Iterator<Vertex> vertices(Predicates predicates) {
+    public Iterator<? extends Vertex> vertices(Predicates predicates) {
         String label = extractLabel(predicates.hasContainers);
         if (label == null) {
-            Iterator<Vertex> vertices = vertices();
+            Iterator<? extends Vertex> vertices = vertices();
             return testPredicatesLocal(predicates, vertices);
         }
 
@@ -102,10 +102,10 @@ public class ModernGraphQueryHandler implements QueryHandler {
 
 
     @Override
-    public Vertex vertex(Object vertexId, String vertexLabel, Edge edge, Direction direction) {
+    public BaseVertex vertex(Object vertexId, String vertexLabel, Edge edge, Direction direction) {
         if (vertexLabel == null) {
-            Vertex starVertex = starHandler.vertex(vertexId, vertexLabel, edge, direction);
-            Vertex docVertex = docVertexHandler.vertex(vertexId, vertexLabel, edge, direction);
+            BaseVertex starVertex = starHandler.vertex(vertexId, vertexLabel, edge, direction);
+            BaseVertex docVertex = docVertexHandler.vertex(vertexId, vertexLabel, edge, direction);
             return starVertex == null ? docVertex : starVertex ;
         }
 
@@ -113,7 +113,7 @@ public class ModernGraphQueryHandler implements QueryHandler {
     }
 
     @Override
-    public Vertex addVertex(Object id, String label, Object[] properties) {
+    public BaseVertex addVertex(Object id, String label, Object[] properties) {
         return vertexHandlers.get(label).addVertex(id, label, properties);
     }
 
@@ -127,7 +127,7 @@ public class ModernGraphQueryHandler implements QueryHandler {
         client.close();
     }
 
-    private Iterator<Vertex> testPredicatesLocal(Predicates predicates, Iterator<Vertex> vertices) {
+    private Iterator<Vertex> testPredicatesLocal(Predicates predicates, Iterator<? extends Vertex> vertices) {
         List<Vertex> passedVertices = new ArrayList<>();
         vertices.forEachRemaining(vertex -> {
             boolean passed = true;

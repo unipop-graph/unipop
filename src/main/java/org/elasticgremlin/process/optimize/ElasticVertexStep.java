@@ -2,8 +2,7 @@ package org.elasticgremlin.process.optimize;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.elasticgremlin.queryhandler.Predicates;
 import org.elasticgremlin.structure.BaseVertex;
 
@@ -23,7 +22,7 @@ public class ElasticVertexStep<E extends Element> extends VertexStep<E> {
     @Override
     protected Iterator<E> flatMap(Traverser.Admin<Vertex> traverser) {
         Vertex vertex = traverser.get();
-        if (!(BaseVertex.class.isAssignableFrom(vertex.getClass()))) return super.flatMap(traverser);
+        if (!(vertex instanceof BaseVertex)) return super.flatMap(traverser);
         BaseVertex baseVertex = (BaseVertex) vertex;
 
         if (Vertex.class.isAssignableFrom(this.getReturnClass()))

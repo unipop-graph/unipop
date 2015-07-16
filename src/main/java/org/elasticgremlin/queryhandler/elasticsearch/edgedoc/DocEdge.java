@@ -1,11 +1,10 @@
 package org.elasticgremlin.queryhandler.elasticsearch.edgedoc;
 
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.elasticgremlin.queryhandler.elasticsearch.helpers.ElasticMutations;
 import org.elasticgremlin.structure.*;
 
-import java.util.*;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 public class DocEdge extends BaseEdge {
@@ -17,34 +16,18 @@ public class DocEdge extends BaseEdge {
     private final ElasticMutations elasticMutations;
     private final String indexName;
 
-    public String inId;
-    public String outId;
-    public String inLabel;
-    public String outLabel;
 
-    public DocEdge(final Object id, final String label, Object outId, String outLabel, Object inId, String inLabel, Object[] keyValues, final ElasticGraph graph, ElasticMutations elasticMutations, String indexName) {
-        super(id, label, keyValues, graph);
+    public DocEdge(final Object id, final String label, Object[] keyValues, Vertex outV, Vertex inV, final ElasticGraph graph, ElasticMutations elasticMutations, String indexName) {
+        super(id, label, keyValues, outV, inV, graph);
         this.elasticMutations = elasticMutations;
         this.indexName = indexName;
-        ElementHelper.validateLabel(outLabel);
-        ElementHelper.validateLabel(inLabel);
-
-        this.inId = inId.toString();
-        this.inLabel = inLabel;
-        this.outLabel = outLabel;
-        this.outId = outId.toString();
-
-        this.inVertex = graph.getQueryHandler().vertex(this.inId, this.inLabel, this, Direction.IN);
-        this.outVertex = graph.getQueryHandler().vertex(this.outId, this.outLabel, this, Direction.OUT);
     }
 
     @Override
     protected void innerRemoveProperty(Property property) {
         try {
             elasticMutations.updateElement(this, indexName, null, false);
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
+        } catch (ExecutionException | InterruptedException e) {
             e.printStackTrace();
         }
     }
@@ -60,18 +43,12 @@ public class DocEdge extends BaseEdge {
     }
 
     @Override
-    public String toString()
-    {
-        return "e[" + this.id() +"]["+this.outId+"-"+this.label +"->"+ this.inId+"]";
-    }
-
-    @Override
     public Map<String, Object> allFields() {
         Map<String, Object> map = super.allFields();
-        map.put(DocEdge.InId, inId);
-        map.put(DocEdge.OutId, outId);
-        map.put(DocEdge.InLabel, inLabel);
-        map.put(DocEdge.OutLabel, outLabel);
+        map.put(DocEdge.InId, inVertex.id());
+        map.put(DocEdge.OutId, outVertex.id());
+        map.put(DocEdge.InLabel, inVertex.label());
+        map.put(DocEdge.OutLabel, outVertex.label());
         return map;
     }
 
@@ -79,9 +56,7 @@ public class DocEdge extends BaseEdge {
     protected void innerAddProperty(BaseProperty vertexProperty) {
         try {
             elasticMutations.updateElement(this, indexName, null, false);
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
+        } catch (ExecutionException | InterruptedException e) {
             e.printStackTrace();
         }
     }

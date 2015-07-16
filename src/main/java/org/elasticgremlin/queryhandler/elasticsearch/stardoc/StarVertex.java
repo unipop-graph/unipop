@@ -2,8 +2,7 @@ package org.elasticgremlin.queryhandler.elasticsearch.stardoc;
 
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.elasticgremlin.queryhandler.elasticsearch.helpers.ElasticMutations;
-import org.elasticgremlin.queryhandler.elasticsearch.helpers.LazyGetter;
+import org.elasticgremlin.queryhandler.elasticsearch.helpers.*;
 import org.elasticgremlin.queryhandler.Predicates;
 import org.elasticgremlin.structure.*;
 import org.elasticsearch.action.get.GetResponse;
@@ -20,7 +19,7 @@ public class StarVertex extends BaseVertex {
     private Set<InnerEdge> innerEdges;
 
     public StarVertex(final Object id, final String label, Object[] keyValues, ElasticGraph graph, LazyGetter lazyGetter, ElasticMutations elasticMutations, String indexName, EdgeMapping[] edgeMappings) {
-        super(id, label, graph, keyValues);
+        super(id, label, graph, keyValues, elasticMutations);
         this.elasticMutations = elasticMutations;
         this.indexName = indexName;
         this.edgeMappings = edgeMappings;
@@ -115,29 +114,17 @@ public class StarVertex extends BaseVertex {
                 externalEdgeLabels.add(label);
             }
         }
-        if (!externalEdgeLabels.isEmpty()) {
+        if (!externalEdgeLabels.isEmpty())
             return super.edges(direction, externalEdgeLabels.toArray(new String[externalEdgeLabels.size()]), predicates);
-        }
-        else {
-            return new ArrayList<Edge>(0).iterator();
-        }
+
+        else return new ArrayList<Edge>(0).iterator();
     }
 
     public void setFields(Map<String, Object> entries){
         entries.entrySet().forEach(field -> {
             if(field.getValue() != null) addPropertyLocal(field.getKey(), field.getValue());
         });
-        for(EdgeMapping mapping : edgeMappings){
-            Object externalVertexId = mapping.getExternalVertexId(entries);
-            if(externalVertexId == null) continue;
-            Vertex externalVertex = graph.getQueryHandler().vertex(externalVertexId,
-                    mapping.getExternalVertexLabel(), null, mapping.getDirection().opposite());
-            Object[] keyValues = mapping.getProperties(entries);
-            InnerEdge innerEdge = new InnerEdge(mapping, this, externalVertex,
-                    keyValues,
-                    graph);
-            this.innerEdges.add(innerEdge);
-        }
+
     }
 
     public InnerEdge addInnerEdge(EdgeMapping mapping, Object edgeId, String label, Vertex externalVertex,
@@ -153,7 +140,9 @@ public class StarVertex extends BaseVertex {
         }
 
         property(mapping.getExternalVertexField(), externalVertex.id());
-        InnerEdge edge = new InnerEdge(edgeId, mapping, this, externalVertex, properties, graph);
+        Vertex inVertex = mapping.getDirection().equals(Direction.IN) ? this : externalVertex;
+        Vertex outVertex = mapping.getDirection().equals(Direction.OUT) ? this : externalVertex;
+        InnerEdge edge = new InnerEdge(edgeId, mapping, outVertex, inVertex, properties, graph);
         this.innerEdges.add(edge);
         return edge;
     }

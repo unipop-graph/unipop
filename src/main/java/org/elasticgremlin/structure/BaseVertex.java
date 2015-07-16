@@ -2,19 +2,22 @@ package org.elasticgremlin.structure;
 
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.*;
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.elasticgremlin.queryhandler.Predicates;
+import org.elasticgremlin.queryhandler.elasticsearch.helpers.ElasticMutations;
 import org.elasticsearch.action.get.MultiGetItemResponse;
 
 import java.util.*;
 
 public abstract class BaseVertex extends BaseElement implements Vertex {
 
-    private List<Vertex> siblings;
+    private final ElasticMutations elasticMutations;
     private HashMap<EdgeQueryInfo, List<Edge>> queriedEdges = new HashMap<>();
+    protected List<BaseVertex> siblings;
 
-    protected BaseVertex(Object id, String label, ElasticGraph graph, Object[] keyValues) {
+    protected BaseVertex(Object id, String label, ElasticGraph graph, Object[] keyValues, ElasticMutations elasticMutations) {
         super(id, label, graph, keyValues);
-        this.siblings = null;
+        this.elasticMutations = elasticMutations;
     }
 
     @Override
@@ -34,14 +37,6 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
         return edges(direction, edgeLabels, new Predicates());
     }
 
-    public Iterator<Edge> edges(Direction direction, String[] edgeLabels, Predicates predicates) {
-        List<Edge> edges = queriedEdges.get(new EdgeQueryInfo(direction, edgeLabels, predicates));
-        if (edges != null) {
-            return edges.iterator();
-        }
-        return graph.getQueryHandler().edges(this, direction, edgeLabels, predicates);
-    }
-
     @Override
     public Iterator<Vertex> vertices(Direction direction, String... edgeLabels) {
         return vertices(direction, edgeLabels, new Predicates());
@@ -58,17 +53,8 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
         return vertices.iterator();
     }
 
-    public void setSiblings(List<Vertex> siblings) {
+    public void setSiblings(List<BaseVertex> siblings) {
         this.siblings = siblings;
-    }
-
-    public void addQueriedEdges(List<Edge> edges, Direction direction, String[] edgeLabels, Predicates predicates) {
-        EdgeQueryInfo queryInfo = new EdgeQueryInfo(direction, edgeLabels, predicates);
-        queriedEdges.put(queryInfo, edges);
-    }
-
-    public void removeEdge(Edge edge) {
-        queriedEdges.forEach((edgeQueryInfo, edges) -> edges.remove(edge));
     }
 
     public void applyLazyFields(MultiGetItemResponse response) {
@@ -120,7 +106,7 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
 
     @Override
     public Edge addEdge(final String label, final Vertex vertex, final Object... keyValues) {
-        if (null == vertex) throw Graph.Exceptions.argumentCanNotBeNull("vertexdoc");
+        if (null == vertex) throw Graph.Exceptions.argumentCanNotBeNull("vertex");
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         checkRemoved();
         Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
@@ -150,19 +136,35 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
         if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, this.id);
     }
 
-    public List<Vertex> getSiblings() {
-        return siblings;
+    public Iterator<Edge> edges(Direction direction, String[] edgeLabels, Predicates predicates) {
+        EdgeQueryInfo queryInfo = new EdgeQueryInfo(direction, edgeLabels, predicates, elasticMutations.getRevision());
+        List<Edge> edges = queriedEdges.get(queryInfo);
+        if (edges != null)  return edges.iterator();
+
+        Iterator<BaseVertex> vertices = siblings == null ? IteratorUtils.asIterator(this) : siblings.iterator();
+
+        Map<Object, List<Edge>> vertexToEdge = graph.getQueryHandler().edges(vertices, direction, edgeLabels, predicates);
+        siblings.forEach(sibling -> sibling.addQueriedEdges(queryInfo, vertexToEdge.get(sibling.id())));
+
+        List<Edge> thisEdges = vertexToEdge.get(this.id());
+        return thisEdges != null ? thisEdges.iterator() : Collections.emptyIterator();
+    }
+
+    private void addQueriedEdges(EdgeQueryInfo queryInfo, List<Edge> edges) {
+        queriedEdges.put(queryInfo, edges);
     }
 
     private static class EdgeQueryInfo {
         private Direction direction;
         private String[] edgeLabels;
         private Predicates predicates;
+        private int revision;
 
-        public EdgeQueryInfo(Direction direction, String[] edgeLabels, Predicates predicates) {
+        public EdgeQueryInfo(Direction direction, String[] edgeLabels, Predicates predicates, int revision) {
             this.direction = direction;
             this.edgeLabels = edgeLabels;
             this.predicates = predicates;
+            this.revision = revision;
         }
 
         public Direction getDirection() {
@@ -186,18 +188,19 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
 
             EdgeQueryInfo that = (EdgeQueryInfo) o;
 
+            if (revision != that.revision) return false;
             if (direction != that.direction) return false;
             if (!Arrays.equals(edgeLabels, that.edgeLabels)) return false;
-            if (predicates == null) return that.predicates == null;
-
             return predicates.equals(that.predicates);
+
         }
 
         @Override
         public int hashCode() {
-            int result = direction != null ? direction.hashCode() : 0;
-            result = 31 * result + (edgeLabels != null ? Arrays.hashCode(edgeLabels) : 0);
-            result = 31 * result + (predicates != null ? predicates.hashCode() : 0);
+            int result = direction.hashCode();
+            result = 31 * result + Arrays.hashCode(edgeLabels);
+            result = 31 * result + predicates.hashCode();
+            result = 31 * result + revision;
             return result;
         }
 

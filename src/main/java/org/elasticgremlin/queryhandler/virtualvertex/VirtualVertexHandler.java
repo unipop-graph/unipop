@@ -1,16 +1,11 @@
 package org.elasticgremlin.queryhandler.virtualvertex;
 
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.elasticgremlin.queryhandler.Predicates;
-import org.elasticgremlin.queryhandler.VertexHandler;
-import org.elasticgremlin.structure.BaseVertex;
-import org.elasticgremlin.structure.ElasticGraph;
+import com.fasterxml.jackson.databind.util.ArrayIterator;
+import org.apache.tinkerpop.gremlin.structure.*;
+import org.elasticgremlin.queryhandler.*;
+import org.elasticgremlin.structure.*;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public class VirtualVertexHandler implements VertexHandler {
 
@@ -18,7 +13,7 @@ public class VirtualVertexHandler implements VertexHandler {
 
     private ElasticGraph graph;
     private String label;
-    private List<Vertex> vertices;
+    private List<BaseVertex> vertices;
 
     public VirtualVertexHandler(ElasticGraph graph, String label) {
         this.graph = graph;
@@ -33,13 +28,13 @@ public class VirtualVertexHandler implements VertexHandler {
 
     @Override
     public Iterator<Vertex> vertices(Object[] vertexIds) {
-        ArrayList<Vertex> vertices = new ArrayList<>();
+        ArrayList<BaseVertex> vertices = new ArrayList<>();
         for(Object id : vertexIds) {
             BaseVertex vertex = new VirtualVertex(id, label, graph, null);
             vertices.add(vertex);
             vertex.setSiblings(vertices);
         }
-        return vertices.iterator();
+        return new ArrayIterator<>((Vertex[]) vertices.toArray()).iterator();
     }
 
     @Override
@@ -48,7 +43,7 @@ public class VirtualVertexHandler implements VertexHandler {
     }
 
     @Override
-    public Vertex vertex(Object vertexId, String vertexLabel, Edge edge, Direction direction) {
+    public BaseVertex vertex(Object vertexId, String vertexLabel, Edge edge, Direction direction) {
         checkBulk();
         BaseVertex vertex = new VirtualVertex(vertexId, vertexLabel, graph, null);
         vertex.setSiblings(vertices);
@@ -63,7 +58,7 @@ public class VirtualVertexHandler implements VertexHandler {
     }
 
     @Override
-    public Vertex addVertex(Object id, String label, Object[] properties) {
+    public BaseVertex addVertex(Object id, String label, Object[] properties) {
         throw new UnsupportedOperationException();
     }
 }
