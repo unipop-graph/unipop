@@ -1,7 +1,7 @@
 package org.elasticgremlin.structure;
 
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
+import org.apache.tinkerpop.gremlin.structure.util.*;
 
 import java.util.*;
 
@@ -53,5 +53,10 @@ public abstract class BaseEdge extends BaseElement implements Edge {
     @Override
     protected void checkRemoved() {
         if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Edge.class, this.id);
+    }
+
+    @Override
+    public String toString() {
+        return StringFactory.edgeString(this);
     }
 }
