@@ -17,7 +17,9 @@ Aggregation traversals (e.g. g.V().count()) can benefit greatly from ES's [Aggre
 <br>
 ## Getting Started!
 1. clone & build elastic-gremlin
+
     ```git clone https://github.com/rmagen/elastic-gremlin.git```
+    
     ```mvn clean install -Dmaven.test.skip=true```
     
 2. Create an ElasticGraph:
