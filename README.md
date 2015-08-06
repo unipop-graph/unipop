@@ -16,11 +16,11 @@ Aggregation traversals (e.g. g.V().count()) can benefit greatly from ES's [Aggre
 
 <br>
 ## Getting Started!
-1. clone & build [Tinkerpop 3.0.0-SNAPSHOT](https://github.com/apache/incubator-tinkerpop/tree/master)
-2. clone & build elastic-gremlin
-    
+1. clone & build elastic-gremlin
+    ```git clone https://github.com/rmagen/elastic-gremlin.git```
     ```mvn clean install -Dmaven.test.skip=true```
-3. Create an ElasticGraph:
+    
+2. Create an ElasticGraph:
    
     ```java
     BaseConfiguration config = new BaseConfiguration();
@@ -29,7 +29,7 @@ Aggregation traversals (e.g. g.V().count()) can benefit greatly from ES's [Aggre
     GraphTraversalSource g = graph.traversal();
     g.addV();
     ```
-4. Or just use the Gremlin Server or Gremlin Console.
+3. Or just use the Gremlin Server or Gremlin Console.
 
 <br>
 ##Confiuration
