@@ -64,7 +64,7 @@ public class ModernGraphQueryHandler implements QueryHandler {
     }
 
     @Override
-    public Map<Object, List<Edge>> edges(Iterator<BaseVertex> vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
+    public Map<Object, Set<Edge>> edges(Iterator<BaseVertex> vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
         return starHandler.edges(vertices, direction, edgeLabels, predicates);
     }
 

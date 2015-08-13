@@ -9,6 +9,6 @@ public interface EdgeHandler {
     Iterator<Edge> edges();
     Iterator<Edge> edges(Object[] edgeIds);
     public Iterator<Edge> edges(Predicates predicates);
-    public Map<Object, List<Edge>> edges(Iterator<BaseVertex> vertices, Direction direction, String[] edgeLabels, Predicates predicates);
+    public Map<Object, Set<Edge>> edges(Iterator<BaseVertex> vertices, Direction direction, String[] edgeLabels, Predicates predicates);
     public Edge addEdge(Object edgeId, String label,Vertex outV, Vertex inV, Object[] properties);
 }

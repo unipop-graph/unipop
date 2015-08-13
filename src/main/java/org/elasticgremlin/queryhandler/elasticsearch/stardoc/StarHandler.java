@@ -115,7 +115,7 @@ public class StarHandler implements VertexHandler, EdgeHandler {
     }
 
     @Override
-    public Map<Object, List<Edge>> edges(Iterator<BaseVertex> vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
+    public Map<Object, Set<Edge>> edges(Iterator<BaseVertex> vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
         List<Object> vertexIds = new ArrayList<>();
         vertices.forEachRemaining(singleVertex -> vertexIds.add(singleVertex.id()));
 
@@ -135,13 +135,13 @@ public class StarHandler implements VertexHandler, EdgeHandler {
                 predicates.limitHigh - predicates.limitLow, client, this::createVertex, refresh, timing, indices);
 
 
-        Map<Object, List<Edge>> results = new HashMap<>();
+        Map<Object, Set<Edge>> results = new HashMap<>();
         vertexSearchQuery.forEachRemaining(otherVertex ->
                 otherVertex.edges(direction, edgeLabels).forEachRemaining(edge -> {
                     Vertex vertex = BaseVertex.vertexToVertex(otherVertex, edge, direction);
-                    List<Edge> resultEdges = results.get(vertex.id());
+                    Set<Edge> resultEdges = results.get(vertex.id());
                     if (resultEdges == null) {
-                        resultEdges = new ArrayList<>();
+                        resultEdges = new HashSet<>();
                         results.put(vertex.id(), resultEdges);
                     }
                     resultEdges.add(edge);

@@ -52,7 +52,8 @@ public abstract class BaseEdge extends BaseElement implements Edge {
 
     @Override
     protected void checkRemoved() {
-        if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Edge.class, this.id);
+        if (this.removed)
+            throw Element.Exceptions.elementAlreadyRemoved(Edge.class, this.id);
     }
 
     @Override

@@ -12,7 +12,7 @@ import java.util.*;
 public abstract class BaseVertex extends BaseElement implements Vertex {
 
     private final ElasticMutations elasticMutations;
-    private HashMap<EdgeQueryInfo, List<Edge>> queriedEdges = new HashMap<>();
+    private HashMap<EdgeQueryInfo, Set<Edge>> queriedEdges = new HashMap<>();
     protected List<BaseVertex> siblings;
 
     protected BaseVertex(Object id, String label, ElasticGraph graph, Object[] keyValues, ElasticMutations elasticMutations) {
@@ -117,7 +117,10 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
     @Override
     public void remove() {
         super.remove();
-        edges(Direction.BOTH).forEachRemaining(Element::remove);
+        Iterator<Edge> edges = edges(Direction.BOTH);
+        edges.forEachRemaining(edge-> {
+            edge.remove();
+        });
     }
 
     @Override
@@ -138,19 +141,19 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
 
     public Iterator<Edge> edges(Direction direction, String[] edgeLabels, Predicates predicates) {
         EdgeQueryInfo queryInfo = new EdgeQueryInfo(direction, edgeLabels, predicates, elasticMutations.getRevision());
-        List<Edge> edges = queriedEdges.get(queryInfo);
+        Set<Edge> edges = queriedEdges.get(queryInfo);
         if (edges != null)  return edges.iterator();
 
-        Iterator<BaseVertex> vertices = siblings == null ? IteratorUtils.asIterator(this) : siblings.iterator();
+        List<BaseVertex> vertices = siblings == null ? IteratorUtils.asList(this) : siblings;
 
-        Map<Object, List<Edge>> vertexToEdge = graph.getQueryHandler().edges(vertices, direction, edgeLabels, predicates);
-        siblings.forEach(sibling -> sibling.addQueriedEdges(queryInfo, vertexToEdge.get(sibling.id())));
+        Map<Object, Set<Edge>> vertexToEdge = graph.getQueryHandler().edges(vertices.iterator(), direction, edgeLabels, predicates);
+        vertices.forEach( vertex -> vertex.addQueriedEdges(queryInfo, vertexToEdge.get(vertex.id())));
 
-        List<Edge> thisEdges = vertexToEdge.get(this.id());
+        Set<Edge> thisEdges = vertexToEdge.get(this.id());
         return thisEdges != null ? thisEdges.iterator() : Collections.emptyIterator();
     }
 
-    private void addQueriedEdges(EdgeQueryInfo queryInfo, List<Edge> edges) {
+    private void addQueriedEdges(EdgeQueryInfo queryInfo, Set<Edge> edges) {
         queriedEdges.put(queryInfo, edges);
     }
 

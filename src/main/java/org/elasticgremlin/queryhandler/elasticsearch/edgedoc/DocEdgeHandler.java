@@ -64,7 +64,7 @@ public class DocEdgeHandler implements EdgeHandler {
     }
 
     @Override
-    public Map<Object, List<Edge>> edges(Iterator<BaseVertex> vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
+    public Map<Object, Set<Edge>> edges(Iterator<BaseVertex> vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
         Map<Object, Vertex> idToVertex = new HashMap<>();
         vertices.forEachRemaining(singleVertex -> idToVertex.put(singleVertex.id(), singleVertex));
 
@@ -84,11 +84,11 @@ public class DocEdgeHandler implements EdgeHandler {
 
         QueryIterator<Edge> edgeQueryIterator = new QueryIterator<>(boolFilter, 0, scrollSize, predicates.limitHigh - predicates.limitLow, client, this::createEdge , refresh, timing, indexName);
 
-        Map<Object, List<Edge>> results = new HashMap<>();
+        Map<Object, Set<Edge>> results = new HashMap<>();
         edgeQueryIterator.forEachRemaining(edge -> edge.vertices(direction).forEachRemaining(vertex -> {
-            List<Edge> resultEdges = results.get(vertex.id());
+            Set<Edge> resultEdges = results.get(vertex.id());
             if (resultEdges == null) {
-                resultEdges = new ArrayList<>();
+                resultEdges = new HashSet<>();
                 results.put(vertex.id(), resultEdges);
             }
             resultEdges.add(edge);
