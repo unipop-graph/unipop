@@ -132,6 +132,7 @@ public class StarHandler implements VertexHandler, EdgeHandler {
 
         //return new QueryIterator(boolFilter, 0, scrollSize,
         //        predicates.limitHigh - predicates.limitLow, client, this::createVertex, refresh, timing, indices);
+        return null;
     }
 
     public static boolean contains(String[] edgeLabels, String label) {
