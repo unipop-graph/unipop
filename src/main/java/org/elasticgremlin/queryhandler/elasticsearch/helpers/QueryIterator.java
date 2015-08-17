@@ -14,13 +14,13 @@ public class QueryIterator<E extends Element> implements Iterator<E> {
 
     private SearchResponse scrollResponse;
     private long allowedRemaining;
-    private final Function<Iterator<SearchHit>, Iterator<? extends E>> convertFunc;
+    private final Function<SearchHit,? extends E> convertFunc;
     private TimingAccessor timing;
     private Client client;
-    private Iterator<? extends E> hits;
+    private Iterator<SearchHit> hits;
 
     public QueryIterator(FilterBuilder filter, int startFrom, int scrollSize, long maxSize, Client client,
-                         Function<Iterator<SearchHit>, Iterator<? extends E>> convertFunc,
+                         Function<SearchHit,? extends E> convertFunc,
                          Boolean refresh, TimingAccessor timing, String... indices) {
         this.client = client;
         this.allowedRemaining = maxSize;
@@ -28,16 +28,16 @@ public class QueryIterator<E extends Element> implements Iterator<E> {
         this.timing = timing;
 
         if (refresh) client.admin().indices().prepareRefresh(indices).execute().actionGet();
-        this.timing.start("scroll");
+        this.timing.start("query");
         scrollResponse = client.prepareSearch(indices)
                 .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), filter))
                 .setFrom(startFrom)
                 .setScroll(new TimeValue(60000))
                 .setSize(maxSize < scrollSize ? (int) maxSize : scrollSize)
                 .execute().actionGet();
-        this.timing.stop("scroll");
 
-        hits = convertFunc.apply(scrollResponse.getHits().iterator());
+        hits = scrollResponse.getHits().iterator();
+        this.timing.stop("query");
     }
 
     @Override
@@ -47,9 +47,8 @@ public class QueryIterator<E extends Element> implements Iterator<E> {
 
         timing.start("scroll");
         scrollResponse = client.prepareSearchScroll(scrollResponse.getScrollId()).setScroll(new TimeValue(600000)).execute().actionGet();
+        hits = scrollResponse.getHits().iterator();
         timing.stop("scroll");
-
-        hits = convertFunc.apply(scrollResponse.getHits().iterator());
 
         return hits.hasNext();
     }
@@ -57,6 +56,6 @@ public class QueryIterator<E extends Element> implements Iterator<E> {
     @Override
     public E next() {
         allowedRemaining--;
-        return hits.next();
+        return convertFunc.apply(hits.next());
     }
 }

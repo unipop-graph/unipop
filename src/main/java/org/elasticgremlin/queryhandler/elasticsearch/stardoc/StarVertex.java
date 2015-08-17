@@ -19,7 +19,7 @@ public class StarVertex extends BaseVertex {
     private Set<InnerEdge> innerEdges;
 
     public StarVertex(final Object id, final String label, Object[] keyValues, ElasticGraph graph, LazyGetter lazyGetter, ElasticMutations elasticMutations, String indexName, EdgeMapping[] edgeMappings) {
-        super(id, label, graph, keyValues, elasticMutations);
+        super(id, label, graph, keyValues);
         this.elasticMutations = elasticMutations;
         this.indexName = indexName;
         this.edgeMappings = edgeMappings;

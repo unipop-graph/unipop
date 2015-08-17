@@ -36,7 +36,7 @@ public class ElasticOptimizationStrategy extends AbstractTraversalStrategy<Trave
             boolean returnVertex = vertexStep.getReturnClass().equals(Vertex.class);
             Predicates predicates = returnVertex ? new Predicates() : getPredicates(vertexStep, traversal);
 
-            ElasticVertexStep elasticVertexStep = new ElasticVertexStep(vertexStep, predicates);
+            ElasticVertexStep elasticVertexStep = new ElasticVertexStep(vertexStep, predicates, elasticGraph.getQueryHandler());
             TraversalHelper.replaceStep(vertexStep, elasticVertexStep, traversal);
         });
     }
@@ -49,15 +49,15 @@ public class ElasticOptimizationStrategy extends AbstractTraversalStrategy<Trave
             if(nextStep instanceof HasContainerHolder) {
                 HasContainerHolder hasContainerHolder = (HasContainerHolder) nextStep;
                 hasContainerHolder.getHasContainers().forEach(predicates.hasContainers::add);
-                collectLabels(predicates, nextStep);
                 traversal.removeStep(nextStep);
+                if(collectLabels(predicates, nextStep)) return predicates;
             }
             else if(nextStep instanceof RangeGlobalStep) {
                 /*RangeGlobalStep rangeGlobalStep = (RangeGlobalStep) nextStep;
                 predicates.limitLow = rangeGlobalStep.getLowRange();
                 predicates.limitHigh = rangeGlobalStep.getHighRange();
-		        collectLabels(predicates, nextStep);
-                traversal.removeStep(rangeGlobalStep);*/
+                traversal.removeStep(rangeGlobalStep);
+                if(collectLabels(predicates, nextStep)) return predicates;*/
             }
             else return predicates;
 
@@ -65,7 +65,8 @@ public class ElasticOptimizationStrategy extends AbstractTraversalStrategy<Trave
         }
     }
 
-    private void collectLabels(Predicates predicates, Step<?, ?> step) {
+    private boolean collectLabels(Predicates predicates, Step<?, ?> step) {
         step.getLabels().forEach(predicates.labels::add);
+        return step.getLabels().size() > 0;
     }
 }

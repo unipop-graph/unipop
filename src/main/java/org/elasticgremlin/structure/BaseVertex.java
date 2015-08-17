@@ -4,20 +4,14 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.*;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.elasticgremlin.queryhandler.Predicates;
-import org.elasticgremlin.queryhandler.elasticsearch.helpers.ElasticMutations;
 import org.elasticsearch.action.get.MultiGetItemResponse;
 
 import java.util.*;
 
 public abstract class BaseVertex extends BaseElement implements Vertex {
 
-    private final ElasticMutations elasticMutations;
-    private HashMap<EdgeQueryInfo, Set<Edge>> queriedEdges = new HashMap<>();
-    protected List<BaseVertex> siblings;
-
-    protected BaseVertex(Object id, String label, ElasticGraph graph, Object[] keyValues, ElasticMutations elasticMutations) {
+    protected BaseVertex(Object id, String label, ElasticGraph graph, Object[] keyValues) {
         super(id, label, graph, keyValues);
-        this.elasticMutations = elasticMutations;
     }
 
     @Override
@@ -53,10 +47,6 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
         return vertices.iterator();
     }
 
-    public void setSiblings(List<BaseVertex> siblings) {
-        this.siblings = siblings;
-    }
-
     public void applyLazyFields(MultiGetItemResponse response) {
         setLabel(response.getType());
         response.getResponse().getSource().entrySet().forEach((field) ->
@@ -82,7 +72,6 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
                 throw new IllegalArgumentException(direction.toString());
         }
     }
-
 
     @Override
     public <V> VertexProperty<V> property(String key, V value) {
@@ -140,74 +129,6 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
     }
 
     public Iterator<Edge> edges(Direction direction, String[] edgeLabels, Predicates predicates) {
-        EdgeQueryInfo queryInfo = new EdgeQueryInfo(direction, edgeLabels, predicates, elasticMutations.getRevision());
-        Set<Edge> edges = queriedEdges.get(queryInfo);
-        if (edges != null)  return edges.iterator();
-
-        List<BaseVertex> vertices = siblings == null ? IteratorUtils.asList(this) : siblings;
-
-        Map<Object, Set<Edge>> vertexToEdge = graph.getQueryHandler().edges(vertices.iterator(), direction, edgeLabels, predicates);
-        vertices.forEach( vertex -> vertex.addQueriedEdges(queryInfo, vertexToEdge.get(vertex.id())));
-
-        Set<Edge> thisEdges = vertexToEdge.get(this.id());
-        return thisEdges != null ? thisEdges.iterator() : Collections.emptyIterator();
-    }
-
-    private void addQueriedEdges(EdgeQueryInfo queryInfo, Set<Edge> edges) {
-        queriedEdges.put(queryInfo, edges);
-    }
-
-    private static class EdgeQueryInfo {
-        private Direction direction;
-        private String[] edgeLabels;
-        private Predicates predicates;
-        private int revision;
-
-        public EdgeQueryInfo(Direction direction, String[] edgeLabels, Predicates predicates, int revision) {
-            this.direction = direction;
-            this.edgeLabels = edgeLabels;
-            this.predicates = predicates;
-            this.revision = revision;
-        }
-
-        public Direction getDirection() {
-            return direction;
-        }
-
-        public String[] getEdgeLabels() {
-            return edgeLabels;
-        }
-
-        public Predicates getPredicates() {
-            return predicates;
-        }
-
-        // region equals and hashCode
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            EdgeQueryInfo that = (EdgeQueryInfo) o;
-
-            if (revision != that.revision) return false;
-            if (direction != that.direction) return false;
-            if (!Arrays.equals(edgeLabels, that.edgeLabels)) return false;
-            return predicates.equals(that.predicates);
-
-        }
-
-        @Override
-        public int hashCode() {
-            int result = direction.hashCode();
-            result = 31 * result + Arrays.hashCode(edgeLabels);
-            result = 31 * result + predicates.hashCode();
-            result = 31 * result + revision;
-            return result;
-        }
-
-
-        // endregion
+        return graph.getQueryHandler().edges(IteratorUtils.asIterator(this), direction, edgeLabels, predicates);
     }
 }

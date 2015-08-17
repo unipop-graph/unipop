@@ -56,7 +56,6 @@ public class StarHandler implements VertexHandler, EdgeHandler {
         List<BaseVertex> vertices = new ArrayList<>();
         for (Object id : vertexIds) {
             StarVertex vertex = new StarVertex(id, null, null, graph, getLazyGetter(), elasticMutations, getDefaultIndex(), edgeMappings);
-            vertex.setSiblings(vertices);
             vertices.add(vertex);
         }
         return vertices.iterator();
@@ -115,7 +114,7 @@ public class StarHandler implements VertexHandler, EdgeHandler {
     }
 
     @Override
-    public Map<Object, Set<Edge>> edges(Iterator<BaseVertex> vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
+    public Iterator<Edge> edges(Iterator<Vertex> vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
         List<Object> vertexIds = new ArrayList<>();
         vertices.forEachRemaining(singleVertex -> vertexIds.add(singleVertex.id()));
 
@@ -131,23 +130,8 @@ public class StarHandler implements VertexHandler, EdgeHandler {
             boolFilter.must(mappingFilter);
         }
 
-        QueryIterator<Vertex> vertexSearchQuery = new QueryIterator<>(boolFilter, 0, scrollSize,
-                predicates.limitHigh - predicates.limitLow, client, this::createVertex, refresh, timing, indices);
-
-
-        Map<Object, Set<Edge>> results = new HashMap<>();
-        vertexSearchQuery.forEachRemaining(otherVertex ->
-                otherVertex.edges(direction, edgeLabels).forEachRemaining(edge -> {
-                    Vertex vertex = BaseVertex.vertexToVertex(otherVertex, edge, direction);
-                    Set<Edge> resultEdges = results.get(vertex.id());
-                    if (resultEdges == null) {
-                        resultEdges = new HashSet<>();
-                        results.put(vertex.id(), resultEdges);
-                    }
-                    resultEdges.add(edge);
-        }));
-
-        return results;
+        //return new QueryIterator(boolFilter, 0, scrollSize,
+        //        predicates.limitHigh - predicates.limitLow, client, this::createVertex, refresh, timing, indices);
     }
 
     public static boolean contains(String[] edgeLabels, String label) {
@@ -243,15 +227,10 @@ public class StarHandler implements VertexHandler, EdgeHandler {
         return lazyGetter;
     }
 
-    private Iterator<? extends Vertex> createVertex(Iterator<SearchHit> hits) {
-        ArrayList<BaseVertex> vertices = new ArrayList<>();
-        hits.forEachRemaining(hit -> {
-            StarVertex vertex = new StarVertex(hit.id(), hit.getType(), null, graph, null, elasticMutations, hit.getIndex(), edgeMappings);
-            vertex.setFields(hit.getSource());
-            vertex.setSiblings(vertices);
-            vertices.add(vertex);
-        });
-        return vertices.iterator();
+    private Vertex createVertex(SearchHit hit) {
+        StarVertex vertex = new StarVertex(hit.id(), hit.getType(), null, graph, null, elasticMutations, hit.getIndex(), edgeMappings);
+        vertex.setFields(hit.getSource());
+        return vertex;
     }
 
     private boolean equals(EdgeMapping mapping, EdgeMapping otherMapping) {

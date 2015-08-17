@@ -14,7 +14,6 @@ public class LazyGetter {
     private boolean executed = false;
     private MultiGetRequest multiGetRequest = new MultiGetRequest();
     private HashMap<String, List<BaseVertex>> idToVertices = new HashMap();
-    private List<BaseVertex> vertices = new ArrayList<>();
 
     public LazyGetter(Client client, TimingAccessor timing) {
         this.client = client;
@@ -35,8 +34,6 @@ public class LazyGetter {
         }
         vertices.add(v);
 
-        this.vertices.add(v);
-        v.setSiblings(this.vertices);
     }
 
     public void execute() {

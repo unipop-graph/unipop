@@ -47,7 +47,6 @@ public class DocVertexHandler implements VertexHandler {
         List<BaseVertex> vertices = new ArrayList<>();
         for(Object id : vertexIds){
             DocVertex vertex = new DocVertex(id.toString(), null, null, graph, getLazyGetter(), elasticMutations, indexName);
-            vertex.setSiblings(vertices);
             vertices.add(vertex);
         }
         return vertices.iterator();
@@ -95,14 +94,9 @@ public class DocVertexHandler implements VertexHandler {
         return lazyGetter;
     }
 
-    private Iterator<? extends Vertex> createVertex(Iterator<SearchHit> hits) {
-        ArrayList<BaseVertex> vertices = new ArrayList<>();
-        hits.forEachRemaining(hit -> {
-            BaseVertex vertex = new DocVertex(hit.id(), hit.getType(), null, graph, null, elasticMutations, indexName);
-            vertex.setSiblings(vertices);
-            hit.getSource().entrySet().forEach((field) -> vertex.addPropertyLocal(field.getKey(), field.getValue()));
-            vertices.add(vertex);
-        });
-        return vertices.iterator();
+    private Vertex createVertex(SearchHit hit) {
+        BaseVertex vertex = new DocVertex(hit.id(), hit.getType(), null, graph, null, elasticMutations, indexName);
+        hit.getSource().entrySet().forEach((field) -> vertex.addPropertyLocal(field.getKey(), field.getValue()));
+        return vertex;
     }
 }

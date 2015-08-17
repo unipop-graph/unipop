@@ -64,7 +64,7 @@ public class DocEdgeHandler implements EdgeHandler {
     }
 
     @Override
-    public Map<Object, Set<Edge>> edges(Iterator<BaseVertex> vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
+    public Iterator<Edge> edges(Iterator<Vertex> vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
         Map<Object, Vertex> idToVertex = new HashMap<>();
         vertices.forEachRemaining(singleVertex -> idToVertex.put(singleVertex.id(), singleVertex));
 
@@ -82,19 +82,7 @@ public class DocEdgeHandler implements EdgeHandler {
                     FilterBuilders.termsFilter(DocEdge.InId, vertexIds),
                     FilterBuilders.termsFilter(DocEdge.OutId, vertexIds)));
 
-        QueryIterator<Edge> edgeQueryIterator = new QueryIterator<>(boolFilter, 0, scrollSize, predicates.limitHigh - predicates.limitLow, client, this::createEdge , refresh, timing, indexName);
-
-        Map<Object, Set<Edge>> results = new HashMap<>();
-        edgeQueryIterator.forEachRemaining(edge -> edge.vertices(direction).forEachRemaining(vertex -> {
-            Set<Edge> resultEdges = results.get(vertex.id());
-            if (resultEdges == null) {
-                resultEdges = new HashSet<>();
-                results.put(vertex.id(), resultEdges);
-            }
-            resultEdges.add(edge);
-        }));
-
-        return results;
+        return new QueryIterator<>(boolFilter, 0, scrollSize, predicates.limitHigh - predicates.limitLow, client, this::createEdge , refresh, timing, indexName);
     }
 
     @Override
@@ -109,17 +97,13 @@ public class DocEdgeHandler implements EdgeHandler {
         return elasticEdge;
     }
 
-    private Iterator<Edge> createEdge(Iterator<SearchHit> hits) {
-        ArrayList<Edge> edges = new ArrayList<>();
-        hits.forEachRemaining(hit -> {
-            Map<String, Object> fields = hit.getSource();
-            BaseVertex outVertex = graph.getQueryHandler().vertex(fields.get(DocEdge.OutId), fields.get(DocEdge.OutLabel).toString(), null, Direction.OUT);
-            BaseVertex inVertex = graph.getQueryHandler().vertex(fields.get(DocEdge.InId), fields.get(DocEdge.InLabel).toString(), null, Direction.IN);
-            BaseEdge edge = new DocEdge(hit.getId(), hit.getType(), null, outVertex, inVertex, graph, elasticMutations, indexName);
-            fields.entrySet().forEach((field) -> edge.addPropertyLocal(field.getKey(), field.getValue()));
-            edges.add(edge);
-        });
-        return edges.iterator();
+    private Edge createEdge(SearchHit hit) {
+        Map<String, Object> fields = hit.getSource();
+        BaseVertex outVertex = graph.getQueryHandler().vertex(fields.get(DocEdge.OutId), fields.get(DocEdge.OutLabel).toString(), null, Direction.OUT);
+        BaseVertex inVertex = graph.getQueryHandler().vertex(fields.get(DocEdge.InId), fields.get(DocEdge.InLabel).toString(), null, Direction.IN);
+        BaseEdge edge = new DocEdge(hit.getId(), hit.getType(), null, outVertex, inVertex, graph, elasticMutations, indexName);
+        fields.entrySet().forEach((field) -> edge.addPropertyLocal(field.getKey(), field.getValue()));
+        return edge;
     }
 
     private Edge createEdge(GetResponse hit) {
