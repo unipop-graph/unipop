@@ -2,9 +2,10 @@ package org.elasticgremlin.elastic;
 
 import org.apache.tinkerpop.gremlin.*;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.*;
 import org.elasticgremlin.ElasticGraphGraphProvider;
-import org.junit.*;
+import org.elasticgremlin.process.optimize.ForceFeedStep;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
@@ -30,6 +31,16 @@ public class TemporaryTests extends AbstractGremlinTest {
     @LoadGraphWith(MODERN)
     public void get_g_VX1X_out_hasIdX2X() {
         GraphTraversal traversal =   g.V("1").out().hasId("2");
+        check(traversal);
+    }
+
+    @Test
+    @LoadGraphWith(MODERN)
+    public void g_V_repeat() {
+        GraphTraversal traversal = g.V();
+        traversal.asAdmin().addStep(new ForceFeedStep(traversal.asAdmin()));
+        traversal.repeat(__.out()).times(1);
+        //GraphTraversal traversal = g.V().out();
         check(traversal);
     }
 
