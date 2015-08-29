@@ -3,6 +3,7 @@ package org.elasticgremlin.elastic;
 import org.apache.tinkerpop.gremlin.*;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.*;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticgremlin.ElasticGraphGraphProvider;
 import org.elasticgremlin.process.optimize.ForceFeedStep;
 import org.junit.Test;
@@ -12,6 +13,7 @@ import java.util.concurrent.ExecutionException;
 
 import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.has;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.out;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
 
 public class TemporaryTests extends AbstractGremlinTest {
@@ -30,16 +32,14 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void get_g_VX1X_out_hasIdX2X() {
-        GraphTraversal traversal =   g.V("1").out().hasId("2");
+        GraphTraversal traversal =   g.V().barrier().coalesce(out());
         check(traversal);
     }
 
     @Test
     @LoadGraphWith(MODERN)
     public void g_V_repeat() {
-        GraphTraversal traversal = g.V();
-        traversal.asAdmin().addStep(new ForceFeedStep(traversal.asAdmin()));
-        traversal.repeat(__.out()).times(1);
+        GraphTraversal<Vertex, Vertex> traversal = g.V().repeat(out()).times(1);
         //GraphTraversal traversal = g.V().out();
         check(traversal);
     }

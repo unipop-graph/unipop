@@ -2,6 +2,7 @@ package org.elasticgremlin.process.optimize;
 
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
@@ -24,6 +25,12 @@ public class ElasticOptimizationStrategy extends AbstractTraversalStrategy<Trave
         if(!(graph instanceof ElasticGraph)) return;
         ElasticGraph elasticGraph = (ElasticGraph) graph;
 
+
+        TraversalHelper.getStepsOfClass(RepeatStep.class, traversal).forEach(repeatStep -> {
+            RepeatBulkStep repeatBulkStep = new RepeatBulkStep<>(traversal, repeatStep);
+            TraversalHelper.replaceStep(repeatStep, repeatBulkStep, traversal);
+        });
+
         TraversalHelper.getStepsOfClass(GraphStep.class, traversal).forEach(graphStep -> {
             if(graphStep.getIds().length == 0) {
                 Predicates predicates = getPredicates(graphStep, traversal);
@@ -39,6 +46,7 @@ public class ElasticOptimizationStrategy extends AbstractTraversalStrategy<Trave
             ElasticVertexStep elasticVertexStep = new ElasticVertexStep(vertexStep, predicates, elasticGraph.getQueryHandler());
             TraversalHelper.replaceStep(vertexStep, elasticVertexStep, traversal);
         });
+
     }
 
     private Predicates getPredicates(Step step, Traversal.Admin traversal){

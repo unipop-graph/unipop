@@ -13,10 +13,18 @@ public class ForceFeedStep extends AbstractStep {
     }
 
     @Override
-    protected Traverser processNextStart() throws NoSuchElementException {
-        if(starts.hasNext()) {
-            this.getNextStep().addStarts(this.starts);
-        }
+    public Traverser next() {
+        this.getNextStep().addStarts(this.starts);
         return EmptyTraverser.instance();
+    }
+
+    @Override
+    public boolean hasNext() {
+        return starts.hasNext();
+    }
+
+    @Override
+    protected Traverser processNextStart() throws NoSuchElementException {
+        return null;
     }
 }
