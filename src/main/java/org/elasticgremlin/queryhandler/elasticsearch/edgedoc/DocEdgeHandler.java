@@ -50,7 +50,7 @@ public class DocEdgeHandler implements EdgeHandler {
         for (MultiGetItemResponse getResponse : responses) {
             GetResponse response = getResponse.getResponse();
             if (!response.isExists()) throw Graph.Exceptions.elementNotFound(Edge.class, response.getId());
-            elements.add(createEdge(response));
+            elements.add(createEdge(response.getId(), response.getType(), response.getSource()));
         }
         return elements.iterator();
     }
@@ -98,19 +98,13 @@ public class DocEdgeHandler implements EdgeHandler {
     }
 
     private Edge createEdge(SearchHit hit) {
-        Map<String, Object> fields = hit.getSource();
-        BaseVertex outVertex = graph.getQueryHandler().vertex(fields.get(DocEdge.OutId), fields.get(DocEdge.OutLabel).toString(), null, Direction.OUT);
-        BaseVertex inVertex = graph.getQueryHandler().vertex(fields.get(DocEdge.InId), fields.get(DocEdge.InLabel).toString(), null, Direction.IN);
-        BaseEdge edge = new DocEdge(hit.getId(), hit.getType(), null, outVertex, inVertex, graph, elasticMutations, indexName);
-        fields.entrySet().forEach((field) -> edge.addPropertyLocal(field.getKey(), field.getValue()));
-        return edge;
+        return createEdge(hit.id(), hit.getType(), hit.getSource());
     }
 
-    private Edge createEdge(GetResponse hit) {
-        Map<String, Object> fields = hit.getSource();
+    private Edge createEdge(String id, String label, Map<String, Object> fields) {
         BaseVertex outVertex = graph.getQueryHandler().vertex(fields.get(DocEdge.OutId), fields.get(DocEdge.OutLabel).toString(), null, Direction.OUT);
         BaseVertex inVertex = graph.getQueryHandler().vertex(fields.get(DocEdge.InId), fields.get(DocEdge.InLabel).toString(), null, Direction.IN);
-        BaseEdge edge = new DocEdge(hit.getId(), hit.getType(), null, outVertex, inVertex, graph, elasticMutations, indexName);
+        BaseEdge edge = new DocEdge(id, label, null, outVertex, inVertex, graph, elasticMutations, indexName);
         fields.entrySet().forEach((field) -> edge.addPropertyLocal(field.getKey(), field.getValue()));
         return edge;
     }

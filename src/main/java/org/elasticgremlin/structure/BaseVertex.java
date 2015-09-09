@@ -129,6 +129,12 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
     }
 
     public Iterator<Edge> edges(Direction direction, String[] edgeLabels, Predicates predicates) {
+        Iterator<Edge> cachedEdges = cachedEdges(direction, edgeLabels, predicates);
+        if(cachedEdges != null) return cachedEdges;
         return graph.getQueryHandler().edges(IteratorUtils.asIterator(this), direction, edgeLabels, predicates);
+    }
+
+    public Iterator<Edge> cachedEdges(Direction direction, String[] edgeLabels, Predicates predicates) {
+        return null;
     }
 }

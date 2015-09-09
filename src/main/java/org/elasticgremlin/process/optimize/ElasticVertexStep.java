@@ -48,28 +48,51 @@ public class ElasticVertexStep<E extends Element> extends AbstractStep<Vertex, E
     }
 
     private Iterator<Traverser<E>> query(List<Traverser.Admin<Vertex>> traversers) {
-        Set<Vertex> vertexIds = new HashSet<>();
-        traversers.forEach(traverser->vertexIds.add(traverser.get()));
-        Iterator<Edge> edgeIterator = queryHandler.edges(vertexIds.iterator(), direction, edgeLabels, predicates);
+        ResultsContainer results = new ResultsContainer();
+        Set<Vertex> queryVertices = new HashSet<>();
 
-        Map<Object, ArrayList<E>> idToResults = new HashMap<>();
-        edgeIterator.forEachRemaining(edge -> edge.vertices(direction).forEachRemaining(vertex -> {
-            ArrayList<E> list = idToResults.get(vertex.id());
-            if(list == null || !(list instanceof List)) {
-                list = new ArrayList();
-                idToResults.put(vertex.id(), list);
+        traversers.forEach(traverser -> {
+            Vertex vertex = traverser.get();
+            if (vertex instanceof BaseVertex) {
+                Iterator<Edge> edgeIterator = ((BaseVertex) vertex).cachedEdges(direction, edgeLabels, predicates);
+                if (edgeIterator != null) {
+                    results.addResults(edgeIterator);
+                    return;
+                }
             }
-            Element element = !Vertex.class.equals(returnClass) ? edge : BaseVertex.vertexToVertex(vertex, edge, direction);
-            list.add((E) element);
-        }));
+            queryVertices.add(vertex);
+        });
+
+        Iterator<Edge> edgeIterator = queryHandler.edges(queryVertices.iterator(), direction, edgeLabels, predicates);
+        results.addResults(edgeIterator);
 
         List<Traverser<E>> returnTraversers = new ArrayList<>();
         traversers.forEach(traverser -> {
-            ArrayList<E> list = idToResults.get(traverser.get().id().toString());
+            ArrayList<E> list = results.get(traverser.get().id().toString());
             if (list != null) for (E element : list)
                 returnTraversers.add(traverser.split(element, this));
         });
         return returnTraversers.iterator();
+    }
+
+    private class ResultsContainer {
+        Map<Object, ArrayList<E>> idToResults = new HashMap<>();
+
+        public void addResults(Iterator<Edge> edgeIterator) {
+            edgeIterator.forEachRemaining(edge -> edge.vertices(direction).forEachRemaining(vertex -> {
+                ArrayList<E> list = idToResults.get(vertex.id());
+                if (list == null || !(list instanceof List)) {
+                    list = new ArrayList();
+                    idToResults.put(vertex.id(), list);
+                }
+                Element element = !Vertex.class.equals(returnClass) ? edge : BaseVertex.vertexToVertex(vertex, edge, direction);
+                list.add((E) element);
+            }));
+        }
+
+        public ArrayList<E> get(String key) {
+            return idToResults.get(key);
+        }
     }
 
     @Override

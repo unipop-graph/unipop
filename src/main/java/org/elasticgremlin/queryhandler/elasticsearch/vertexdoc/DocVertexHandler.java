@@ -14,22 +14,22 @@ import java.util.*;
 
 public class DocVertexHandler implements VertexHandler {
 
-    private ElasticGraph graph;
-    private Client client;
-    private ElasticMutations elasticMutations;
-    private String indexName;
-    private final int scrollSize;
-    private final boolean refresh;
-    private TimingAccessor timing;
+    protected ElasticGraph graph;
+    protected Client client;
+    protected ElasticMutations elasticMutations;
+    protected final int scrollSize;
+    protected final boolean refresh;
+    protected TimingAccessor timing;
+    private String defaultIndex;
     private Map<Direction, LazyGetter> lazyGetters;
     private LazyGetter defaultLazyGetter;
 
-    public DocVertexHandler(ElasticGraph graph, Client client, ElasticMutations elasticMutations, String indexName,
+    public DocVertexHandler(ElasticGraph graph, Client client, ElasticMutations elasticMutations, String defaultIndex,
                             int scrollSize, boolean refresh, TimingAccessor timing) {
         this.graph = graph;
         this.client = client;
         this.elasticMutations = elasticMutations;
-        this.indexName = indexName;
+        this.defaultIndex = defaultIndex;
         this.scrollSize = scrollSize;
         this.refresh = refresh;
         this.timing = timing;
@@ -39,14 +39,14 @@ public class DocVertexHandler implements VertexHandler {
     @Override
     public Iterator<Vertex> vertices() {
         return new QueryIterator<>(FilterBuilders.missingFilter(DocEdge.InId), 0, scrollSize,
-                Integer.MAX_VALUE, client, this::createVertex, refresh, timing, indexName);
+                Integer.MAX_VALUE, client, this::createVertex, refresh, timing, getDefaultIndex());
     }
 
     @Override
     public Iterator<? extends Vertex> vertices(Object[] vertexIds) {
         List<BaseVertex> vertices = new ArrayList<>();
         for(Object id : vertexIds){
-            DocVertex vertex = new DocVertex(id.toString(), null, null, graph, getLazyGetter(), elasticMutations, indexName);
+            DocVertex vertex = createVertex(id.toString(), null, null, getLazyGetter());
             vertices.add(vertex);
         }
         return vertices.iterator();
@@ -57,20 +57,20 @@ public class DocVertexHandler implements VertexHandler {
         BoolFilterBuilder boolFilter = ElasticHelper.createFilterBuilder(predicates.hasContainers);
         boolFilter.must(FilterBuilders.missingFilter(DocEdge.InId));
         return new QueryIterator<>(boolFilter, 0, scrollSize, predicates.limitHigh - predicates.limitLow,
-                client, this::createVertex, refresh, timing, indexName);
+                client, this::createVertex, refresh, timing, getDefaultIndex());
     }
 
     @Override
     public BaseVertex vertex(Object vertexId, String vertexLabel, Edge edge, Direction direction) {
-        return new DocVertex(vertexId,vertexLabel, null ,graph,getLazyGetter(direction), elasticMutations, indexName);
+        return createVertex(vertexId,vertexLabel, null, getLazyGetter(direction));
     }
 
     @Override
     public BaseVertex addVertex(Object id, String label, Object[] properties) {
-        BaseVertex v = new DocVertex(id, label, properties, graph, null, elasticMutations, indexName);
+        BaseVertex v = createVertex(id, label, properties, getLazyGetter());
 
         try {
-            elasticMutations.addElement(v, indexName, null, true);
+            elasticMutations.addElement(v, getIndex(properties), null, true);
         } catch (DocumentAlreadyExistsException ex) {
             throw Graph.Exceptions.vertexWithIdAlreadyExists(id);
         }
@@ -94,9 +94,22 @@ public class DocVertexHandler implements VertexHandler {
         return lazyGetter;
     }
 
-    private Vertex createVertex(SearchHit hit) {
-        BaseVertex vertex = new DocVertex(hit.id(), hit.getType(), null, graph, null, elasticMutations, indexName);
+    protected DocVertex createVertex(Object id, String label, Object[] keyValues, LazyGetter lazyGetter) {
+        return new DocVertex(id, label, keyValues, graph, lazyGetter, elasticMutations, getIndex(keyValues));
+    }
+
+    protected Vertex createVertex(SearchHit hit) {
+        BaseVertex vertex = createVertex(hit.id(), hit.getType(), null, getLazyGetter());
         hit.getSource().entrySet().forEach((field) -> vertex.addPropertyLocal(field.getKey(), field.getValue()));
         return vertex;
     }
+
+    protected String getDefaultIndex() {
+        return this.defaultIndex;
+    }
+
+    protected String getIndex(Object[] properties) {
+        return getDefaultIndex();
+    }
+
 }
