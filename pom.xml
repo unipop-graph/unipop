@@ -5,7 +5,7 @@
     <artifactId>elastic-gremlin</artifactId>
     <version>0.1.0</version>
     <properties>
-        <tinkerpop.version>3.0.0-incubating</tinkerpop.version>
+        <tinkerpop.version>3.0.1-incubating</tinkerpop.version>
         <elasticsearch.version>1.5.2</elasticsearch.version>
     </properties>
     <dependencies>
