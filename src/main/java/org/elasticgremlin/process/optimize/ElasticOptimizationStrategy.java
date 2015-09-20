@@ -21,19 +21,14 @@ public class ElasticOptimizationStrategy extends AbstractTraversalStrategy<Trave
     @Override
     public void apply(Traversal.Admin<?, ?> traversal) {
         if(traversal.getEngine().isComputer()) return;
+
         Graph graph = traversal.getGraph().get();
         if(!(graph instanceof ElasticGraph)) return;
         ElasticGraph elasticGraph = (ElasticGraph) graph;
 
-
-        TraversalHelper.getStepsOfClass(RepeatStep.class, traversal).forEach(repeatStep -> {
-            RepeatBulkStep repeatBulkStep = new RepeatBulkStep<>(traversal, repeatStep);
-            TraversalHelper.replaceStep(repeatStep, repeatBulkStep, traversal);
-        });
-
         TraversalHelper.getStepsOfClass(GraphStep.class, traversal).forEach(graphStep -> {
             if(graphStep.getIds().length == 0) {
-                Predicates predicates = getPredicates(graphStep, traversal);
+                Predicates predicates = getPredicates(graphStep);
                 final ElasticGraphStep<?> elasticGraphStep = new ElasticGraphStep<>(graphStep, predicates, elasticGraph.getQueryHandler());
                 TraversalHelper.replaceStep(graphStep, (Step) elasticGraphStep, traversal);
             }
@@ -41,7 +36,7 @@ public class ElasticOptimizationStrategy extends AbstractTraversalStrategy<Trave
 
         TraversalHelper.getStepsOfClass(VertexStep.class, traversal).forEach(vertexStep -> {
             boolean returnVertex = vertexStep.getReturnClass().equals(Vertex.class);
-            Predicates predicates = returnVertex ? new Predicates() : getPredicates(vertexStep, traversal);
+            Predicates predicates = returnVertex ? new Predicates() : getPredicates(vertexStep);
 
             ElasticVertexStep elasticVertexStep = new ElasticVertexStep(vertexStep, predicates, elasticGraph.getQueryHandler());
             TraversalHelper.replaceStep(vertexStep, elasticVertexStep, traversal);
@@ -49,32 +44,29 @@ public class ElasticOptimizationStrategy extends AbstractTraversalStrategy<Trave
 
     }
 
-    private Predicates getPredicates(Step step, Traversal.Admin traversal){
+    private Predicates getPredicates(Step step){
         Predicates predicates = new Predicates();
+        predicates.labels = step.getLabels();
         Step<?, ?> nextStep = step.getNextStep();
 
-        while(true) {
+        while(predicates.labels.size() == 0) {
             if(nextStep instanceof HasContainerHolder) {
                 HasContainerHolder hasContainerHolder = (HasContainerHolder) nextStep;
                 hasContainerHolder.getHasContainers().forEach(predicates.hasContainers::add);
-                traversal.removeStep(nextStep);
-                if(collectLabels(predicates, nextStep)) return predicates;
+                predicates.labels = nextStep.getLabels();
+                nextStep.getTraversal().removeStep(nextStep);
             }
             else if(nextStep instanceof RangeGlobalStep) {
-                /*RangeGlobalStep rangeGlobalStep = (RangeGlobalStep) nextStep;
+                RangeGlobalStep rangeGlobalStep = (RangeGlobalStep) nextStep;
                 predicates.limitLow = rangeGlobalStep.getLowRange();
                 predicates.limitHigh = rangeGlobalStep.getHighRange();
-                traversal.removeStep(rangeGlobalStep);
-                if(collectLabels(predicates, nextStep)) return predicates;*/
+                predicates.labels = nextStep.getLabels();
+                nextStep.getTraversal().removeStep(nextStep);
             }
-            else return predicates;
+            else break;
 
             nextStep = nextStep.getNextStep();
         }
-    }
-
-    private boolean collectLabels(Predicates predicates, Step<?, ?> step) {
-        step.getLabels().forEach(predicates.labels::add);
-        return step.getLabels().size() > 0;
+        return predicates;
     }
 }
