@@ -6,11 +6,8 @@ import org.elasticgremlin.queryhandler.elasticsearch.helpers.*;
 import org.elasticgremlin.queryhandler.Predicates;
 import org.elasticgremlin.queryhandler.elasticsearch.vertexdoc.DocVertex;
 import org.elasticgremlin.structure.*;
-import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.action.get.MultiGetItemResponse;
 
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 
 public class StarVertex extends DocVertex {
     private Set<InnerEdge> innerEdges;
@@ -19,9 +16,6 @@ public class StarVertex extends DocVertex {
         super(id, label, keyValues, graph, lazyGetter, elasticMutations, indexName);
         innerEdges = new HashSet<>();
     }
-
-
-
 
     @Override
     public Iterator<Edge> cachedEdges(Direction direction, String[] edgeLabels, Predicates predicates) {

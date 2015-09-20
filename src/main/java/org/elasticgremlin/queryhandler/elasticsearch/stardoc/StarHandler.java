@@ -2,25 +2,24 @@ package org.elasticgremlin.queryhandler.elasticsearch.stardoc;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.elasticgremlin.queryhandler.EdgeHandler;
 import org.elasticgremlin.queryhandler.Predicates;
-import org.elasticgremlin.queryhandler.VertexHandler;
 import org.elasticgremlin.queryhandler.elasticsearch.helpers.*;
 import org.elasticgremlin.queryhandler.elasticsearch.vertexdoc.DocVertex;
 import org.elasticgremlin.queryhandler.elasticsearch.vertexdoc.DocVertexHandler;
 import org.elasticgremlin.structure.BaseVertex;
 import org.elasticgremlin.structure.ElasticGraph;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.elasticsearch.index.query.BoolFilterBuilder;
 import org.elasticsearch.index.query.FilterBuilders;
 import org.elasticsearch.index.query.OrFilterBuilder;
 import org.elasticsearch.search.SearchHit;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 public class StarHandler extends DocVertexHandler implements EdgeHandler {
 
@@ -101,8 +100,6 @@ public class StarHandler extends DocVertexHandler implements EdgeHandler {
         };
     }
 
-
-
     public static boolean contains(String[] edgeLabels, String label) {
         for (String edgeLabel : edgeLabels)
             if (edgeLabel.equals(label)) return true;
@@ -125,7 +122,6 @@ public class StarHandler extends DocVertexHandler implements EdgeHandler {
         //TODO
         return null;
     }
-
 
     private EdgeMapping getEdgeMapping(String label, Direction direction) {
         for (EdgeMapping mapping : edgeMappings) {

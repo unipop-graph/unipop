@@ -5,15 +5,15 @@ import java.util.Map;
 
 public interface EdgeMapping {
 
-    public String getExternalVertexField();
+    String getExternalVertexField();
 
-    public Direction getDirection();
+    Direction getDirection();
 
-    public Object[] getProperties(Map<String, Object> entries);
+    Object[] getProperties(Map<String, Object> entries);
 
-    public String getLabel() ;
+    String getLabel() ;
 
-    public String getExternalVertexLabel() ;
+    String getExternalVertexLabel() ;
 
-    public Object getExternalVertexId(Map<String, Object> entries);
+    Object getExternalVertexId(Map<String, Object> entries);
 }
