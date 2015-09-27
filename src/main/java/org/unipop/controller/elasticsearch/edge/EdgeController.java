@@ -62,7 +62,7 @@ public class EdgeController implements org.unipop.controller.EdgeController {
     }
 
     @Override
-    public Iterator<Edge> edges(Iterator<Vertex> vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
+    public Iterator<Edge> edges(Iterator<Vertex> vertices, Direction direction, String[] edgeLabels, Predicates predicates, MutableMetrics metrics) {
         Map<Object, Vertex> idToVertex = new HashMap<>();
         vertices.forEachRemaining(singleVertex -> idToVertex.put(singleVertex.id(), singleVertex));
 

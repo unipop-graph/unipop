@@ -55,7 +55,7 @@ public class StarController extends VertexController implements EdgeController {
     }
 
     @Override
-    public Iterator<Edge> edges(Iterator<Vertex> vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
+    public Iterator<Edge> edges(Iterator<Vertex> vertices, Direction direction, String[] edgeLabels, Predicates predicates, MutableMetrics metrics) {
         List<Object> vertexIds = new ArrayList<>();
         vertices.forEachRemaining(singleVertex -> vertexIds.add(singleVertex.id()));
 

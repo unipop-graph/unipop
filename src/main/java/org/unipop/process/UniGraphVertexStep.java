@@ -1,6 +1,8 @@
 package org.unipop.process;
 
+import org.apache.commons.lang.time.StopWatch;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.*;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
@@ -41,51 +43,38 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
 
     @Override
     protected Traverser<E> processNextStart() {
-        if (!results.hasNext() && starts.hasNext()) {
-            List<Traverser.Admin<Vertex>> traversers = new ArrayList<>();
-            for(int i=0; i < 100 && starts.hasNext(); i++)
-                traversers.add(starts.next());
-            results = query(traversers);
-        }
+        if (!results.hasNext() && starts.hasNext())
+            results = query(starts);
+
         if(results.hasNext())
             return results.next();
-        else throw FastNoSuchElementException.instance();
+
+        throw FastNoSuchElementException.instance();
     }
 
-    private Iterator<Traverser<E>> query(List<Traverser.Admin<Vertex>> traversers) {
+    private Iterator<Traverser<E>> query(Iterator<Traverser.Admin<Vertex>> traversers) {
         ResultsContainer results = new ResultsContainer();
-        Set<Vertex> queryVertices = new HashSet<>();
-
-        traversers.forEach(traverser -> {
-            Vertex vertex = traverser.get();
-            if (vertex instanceof BaseVertex) {
-                Iterator<Edge> edgeIterator = ((BaseVertex) vertex).cachedEdges(direction, edgeLabels, predicates);
-                if (edgeIterator != null) {
-                    results.addResults(edgeIterator);
-                    return;
-                }
-            }
-            queryVertices.add(vertex);
-        });
-
+        List<Traverser.Admin<Vertex>> copyTraversers = new ArrayList<>();
         Map<EdgeController, List<Vertex>> handlers = new HashMap<>();
 
-        queryVertices.forEach(vertex -> {
+        traversers.forEachRemaining(traverser -> {
+            Vertex vertex = traverser.get();
             EdgeController edgeController = controllerProvider.getEdgeHandler(vertex, direction, edgeLabels, predicates);
             List<Vertex> vertices = handlers.get(edgeController);
-            if(vertices == null){
+            if (vertices == null) {
                 vertices = new ArrayList<>();
                 handlers.put(edgeController, vertices);
             }
             vertices.add(vertex);
+            copyTraversers.add(traverser);
         });
 
         handlers.entrySet().forEach(entry ->
-                results.addResults(entry.getKey().edges(predicates, metrics)));
+                results.addResults(entry.getKey().edges(entry.getValue().iterator(), direction, edgeLabels, predicates, metrics)));
 
 
         List<Traverser<E>> returnTraversers = new ArrayList<>();
-        traversers.forEach(traverser -> {
+        copyTraversers.forEach(traverser -> {
             ArrayList<E> list = results.get(traverser.get().id().toString());
             if (list != null) for (E element : list)
                 returnTraversers.add(traverser.split(element, this));
