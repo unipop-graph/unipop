@@ -74,7 +74,7 @@ public class VertexController implements org.unipop.controller.VertexController 
 
     private LazyGetter getLazyGetter() {
         if (defaultLazyGetter == null || !defaultLazyGetter.canRegister()) {
-            defaultLazyGetter = new LazyGetter(client, timing);
+            defaultLazyGetter = new LazyGetter(client, timing, refresh);
         }
         return defaultLazyGetter;
     }
@@ -82,7 +82,7 @@ public class VertexController implements org.unipop.controller.VertexController 
     private LazyGetter getLazyGetter(Direction direction) {
         LazyGetter lazyGetter = lazyGetters.get(direction);
         if (lazyGetter == null || !lazyGetter.canRegister()) {
-            lazyGetter = new LazyGetter(client, timing);
+            lazyGetter = new LazyGetter(client, timing, refresh);
             lazyGetters.put(direction,
                     lazyGetter);
         }

@@ -12,16 +12,17 @@ public class LazyGetter {
     private Client client;
     private TimingAccessor timing;
     private boolean executed = false;
-    private MultiGetRequest multiGetRequest = new MultiGetRequest();
+    private MultiGetRequestBuilder multiGetRequest;
     private HashMap<String, List<BaseVertex>> idToVertices = new HashMap();
 
-    public LazyGetter(Client client, TimingAccessor timing) {
+    public LazyGetter(Client client, TimingAccessor timing, boolean refresh) {
         this.client = client;
         this.timing = timing;
+        this.multiGetRequest = client.prepareMultiGet().setRefresh(refresh);
     }
 
     public Boolean canRegister() {
-        return !executed && multiGetRequest.getItems().size() < MAX_LAZY_GET;
+        return !executed && idToVertices.keySet().size() < MAX_LAZY_GET;
     }
 
     public void register(BaseVertex v, String indexName) {
@@ -33,14 +34,13 @@ public class LazyGetter {
             idToVertices.put(v.id().toString(), vertices);
         }
         vertices.add(v);
-
     }
 
     public void execute() {
         if (executed) return;
 
         timing.start("lazyMultiGet");
-        MultiGetResponse multiGetItemResponses = client.multiGet(multiGetRequest).actionGet();
+        MultiGetResponse multiGetItemResponses = multiGetRequest.execute().actionGet();
         timing.stop("lazyMultiGet");
 
         multiGetItemResponses.forEach(response -> {
