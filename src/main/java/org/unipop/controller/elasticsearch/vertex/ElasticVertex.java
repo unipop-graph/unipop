@@ -18,7 +18,7 @@ public class ElasticVertex extends BaseVertex {
         this.indexName = indexName;
         if (lazyGetter != null) {
             this.lazyGetter = lazyGetter;
-            lazyGetter.register(this, this.indexName);
+            lazyGetter.register(this, label, this.indexName);
         }
     }
 
