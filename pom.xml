@@ -5,8 +5,8 @@
     <artifactId>elastic-gremlin</artifactId>
     <version>0.1.0</version>
     <properties>
-        <tinkerpop.version>3.0.0-SNAPSHOT</tinkerpop.version>
-        <elasticsearch.version>1.5.2</elasticsearch.version>
+        <tinkerpop.version>3.0.1-incubating</tinkerpop.version>
+        <elasticsearch.version>1.7.2</elasticsearch.version>
     </properties>
     <dependencies>
         <dependency>
@@ -31,6 +31,12 @@
             <version>${tinkerpop.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.tinkerpop</groupId>
+            <artifactId>tinkergraph-gremlin</artifactId>
+            <version>${tinkerpop.version}</version>
+        </dependency>
+
 
         <dependency>
             <groupId>org.elasticsearch</groupId>
@@ -52,6 +58,12 @@
                     <artifactId>xercesImpl</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-collections4</artifactId>
+            <version>4.0</version>
         </dependency>
         <dependency>
             <groupId>com.github.stephenc.eaio-uuid</groupId>
