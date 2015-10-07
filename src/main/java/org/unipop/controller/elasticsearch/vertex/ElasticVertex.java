@@ -24,7 +24,7 @@ public class ElasticVertex extends BaseVertex {
 
     @Override
     public String label() {
-        if (this.label == null && lazyGetter != null) lazyGetter.execute();
+        if (this.label == null) checkLazy();
         return super.label();
     }
 
@@ -40,7 +40,7 @@ public class ElasticVertex extends BaseVertex {
 
     @Override
     public <V> VertexProperty<V> property(final String key) {
-        if (lazyGetter != null) lazyGetter.execute();
+        checkLazy();
         return super.property(key);
     }
 
@@ -56,7 +56,11 @@ public class ElasticVertex extends BaseVertex {
 
     @Override
     public <V> Iterator<VertexProperty<V>> properties(final String... propertyKeys) {
-        if (lazyGetter != null) lazyGetter.execute();
+        checkLazy();
         return super.properties(propertyKeys);
+    }
+
+    private void checkLazy() {
+        if (lazyGetter != null && properties.size() == 0) lazyGetter.execute();
     }
 }
