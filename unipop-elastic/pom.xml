@@ -1,15 +1,60 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project>
     <modelVersion>4.0.0</modelVersion>
-    <groupId>unipop</groupId>
-    <artifactId>unipop</artifactId>
-    <version>0.1</version>
-    <packaging>pom</packaging>
-    <name>Unipop</name>
-    <modules>
-        <module>unipop-core</module>
-        <module>unipop-elastic</module>
-    </modules>
+    <parent>
+        <artifactId>unipop</artifactId>
+        <groupId>unipop</groupId>
+        <version>0.1</version>
+    </parent>
+    <artifactId>unipop-elastic</artifactId>
+    <name>Unipop :: Elasticsearch Controllers</name>
+    <properties>
+        <elasticsearch.version>1.7.2</elasticsearch.version>
+    </properties>
+    <dependencies>
+        <dependency>
+            <groupId>unipop</groupId>
+            <artifactId>unipop-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.elasticsearch</groupId>
+            <artifactId>elasticsearch</artifactId>
+            <version>${elasticsearch.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.spatial4j</groupId>
+            <artifactId>spatial4j</artifactId>
+            <version>0.4.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.vividsolutions</groupId>
+            <artifactId>jts</artifactId>
+            <version>1.12</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>xerces</groupId>
+                    <artifactId>xercesImpl</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-collections4</artifactId>
+            <version>4.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.stephenc.eaio-uuid</groupId>
+            <artifactId>uuid</artifactId>
+            <version>3.4.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20090211</version>
+        </dependency>
+    </dependencies>
     <build>
         <directory>${basedir}/target</directory>
         <pluginManagement>
