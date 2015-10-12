@@ -38,19 +38,9 @@
             <version>${tinkerpop.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-collections4</artifactId>
-            <version>4.0</version>
-        </dependency>
-        <dependency>
             <groupId>com.github.stephenc.eaio-uuid</groupId>
             <artifactId>uuid</artifactId>
             <version>3.4.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.json</groupId>
-            <artifactId>json</artifactId>
-            <version>20090211</version>
         </dependency>
     </dependencies>
     <build>
