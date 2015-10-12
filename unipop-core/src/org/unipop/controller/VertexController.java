@@ -8,7 +8,7 @@ import java.util.Iterator;
 
 public interface VertexController {
     Iterator<Vertex> vertices(Object[] ids);
-    Iterator<? extends Vertex> vertices(Predicates predicates, MutableMetrics metrics);
-    BaseVertex vertex(Object vertexId, String vertexLabel, Direction direction);
+    Iterator<Vertex> vertices(Predicates predicates, MutableMetrics metrics);
+    BaseVertex vertex(Edge edge, Direction direction, Object vertexId, String vertexLabel);
     BaseVertex addVertex(Object id, String label, Object[] properties);
 }
