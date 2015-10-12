@@ -7,13 +7,9 @@ import java.util.*;
 
 public abstract class BaseEdge extends BaseElement implements Edge {
 
-    protected Vertex inVertex;
-    protected Vertex outVertex;
 
-    public BaseEdge(final Object id, final String label, Object[] keyValues, Vertex outVertex, Vertex inVertex, final UniGraph graph) {
+    public BaseEdge(final Object id, final String label, Object[] keyValues, final UniGraph graph) {
         super(id, label, graph, keyValues);
-        this.outVertex = outVertex;
-        this.inVertex = inVertex;
         ElementHelper.validateLabel(label);
     }
 
@@ -31,16 +27,7 @@ public abstract class BaseEdge extends BaseElement implements Edge {
         return vertexProperty;
     }
 
-    @Override
-    public Iterator<Vertex> vertices(Direction direction) {
-        checkRemoved();
-        ArrayList<Vertex> vertices = new ArrayList<>();
-        if(direction.equals(Direction.OUT) || direction.equals(Direction.BOTH))
-            vertices.add(outVertex);
-        if(direction.equals(Direction.IN) || direction.equals(Direction.BOTH))
-            vertices.add(inVertex);
-        return vertices.iterator();
-    }
+
 
     protected abstract void innerAddProperty(BaseProperty vertexProperty);
 

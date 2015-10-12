@@ -5,12 +5,14 @@ import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.unipop.structure.*;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+import java.util.Iterator;
+
 public class InnerEdge extends BaseEdge {
 
     private final EdgeMapping mapping;
 
     public InnerEdge(Object edgeId, EdgeMapping mapping, Vertex outVertex, Vertex inVertex, Object[] keyValues, UniGraph graph) {
-        super(edgeId, mapping.getLabel(), keyValues, outVertex, inVertex, graph);
+        super(edgeId, mapping.getLabel(), keyValues, graph);
         this.mapping = mapping;
     }
 
@@ -36,5 +38,10 @@ public class InnerEdge extends BaseEdge {
 
     public EdgeMapping getMapping() {
         return mapping;
+    }
+
+    @Override
+    public Iterator<Vertex> vertices(Direction direction) {
+        return null;
     }
 }

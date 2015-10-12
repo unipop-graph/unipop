@@ -29,10 +29,10 @@ public class UniGraphStartStep<E extends Element> extends GraphStep<E> {
     }
 
     private Iterator<? extends Vertex> vertices() {
-        return controllerProvider.getVertexHandler(predicates).vertices(predicates, metrics);
+        return controllerProvider.vertices(predicates, metrics);
     }
 
     private Iterator<? extends Edge> edges() {
-         return controllerProvider.getEdgeHandler(predicates).edges(predicates, metrics);
+         return controllerProvider.edges(predicates, metrics);
     }
 }

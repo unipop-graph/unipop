@@ -67,7 +67,7 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
         checkRemoved();
         Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
 
-        return graph.getControllerProvider().addEdge(idValue, label, this, vertex, keyValues).addEdge(idValue, label, this, vertex, keyValues);
+        return graph.getControllerProvider().addEdge(idValue, label, this, vertex, keyValues);
     }
 
     @Override

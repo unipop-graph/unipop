@@ -1,9 +1,15 @@
 package org.unipop.elastic.controller.edge;
 
+import org.apache.commons.lang3.tuple.Pair;
+import org.elasticsearch.common.collect.Iterators;
+import org.elasticsearch.common.collect.Iterators2;
+import org.elasticsearch.common.collect.Lists;
 import org.unipop.elastic.helpers.ElasticMutations;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.unipop.structure.*;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
@@ -15,12 +21,34 @@ public class ElasticEdge extends BaseEdge {
     public static String InLabel = "inLabel";
     private final ElasticMutations elasticMutations;
     private final String indexName;
+    protected Vertex inVertex;
+    protected Vertex outVertex;
 
-
-    public ElasticEdge(final Object id, final String label, Object[] keyValues, Vertex outV, Vertex inV, final UniGraph graph, ElasticMutations elasticMutations, String indexName) {
-        super(id, label, keyValues, outV, inV, graph);
+    public ElasticEdge(String id, String label, Object[] properties, Object outVid, String outVlabel, Object inVid, String inVlabel, UniGraph graph, ElasticMutations elasticMutations, String indexName) {
+        super(id, label, properties, graph);
         this.elasticMutations = elasticMutations;
         this.indexName = indexName;
+
+        this.outVertex = graph.getControllerProvider().vertex(this, Direction.OUT, outVid, outVlabel);
+        this.inVertex = graph.getControllerProvider().vertex(this, Direction.IN, inVid, inVlabel);
+    }
+
+    public ElasticEdge(Object edgeId, String label, Object[] properties, Vertex outV, Vertex inV, UniGraph graph, ElasticMutations elasticMutations, String indexName) {
+        super(edgeId, label, properties, graph);
+
+        this.elasticMutations = elasticMutations;
+        this.indexName = indexName;
+
+        this.outVertex = outV;
+        this.inVertex = inV;
+    }
+
+    @Override
+    public Iterator<Vertex> vertices(Direction direction) {
+        checkRemoved();
+        if(direction.equals(Direction.OUT)) return Iterators.singletonIterator(outVertex);
+        if(direction.equals(Direction.IN)) return Iterators.singletonIterator(inVertex);
+        return Lists.newArrayList(outVertex, inVertex).iterator();
     }
 
     @Override

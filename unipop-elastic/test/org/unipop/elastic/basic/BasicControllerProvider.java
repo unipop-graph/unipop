@@ -1,6 +1,7 @@
 package org.unipop.elastic.basic;
 
 import org.apache.commons.configuration.Configuration;
+import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -15,9 +16,11 @@ import org.unipop.elastic.helpers.ElasticClientFactory;
 import org.unipop.elastic.helpers.ElasticHelper;
 import org.unipop.elastic.helpers.ElasticMutations;
 import org.unipop.elastic.helpers.TimingAccessor;
+import org.unipop.structure.BaseVertex;
 import org.unipop.structure.UniGraph;
 
 import java.io.IOException;
+import java.util.Iterator;
 
 public class BasicControllerProvider implements ControllerProvider {
 
@@ -52,47 +55,47 @@ public class BasicControllerProvider implements ControllerProvider {
     }
 
     @Override
-    public VertexController getVertexHandler(Object[] ids) {
-        return vertexController;
-    }
-
-    @Override
-    public VertexController getVertexHandler(Predicates predicates) {
-        return vertexController;
-    }
-
-    @Override
-    public VertexController getVertexHandler(Object vertexId, String vertexLabel, Edge edge, Direction direction) {
-        return vertexController;
-    }
-
-    @Override
-    public VertexController addVertex(Object id, String label, Object[] properties) {
-        return vertexController;
-    }
-
-    @Override
-    public EdgeController getEdgeHandler(Object[] ids) {
-        return edgeController;
-    }
-
-    @Override
-    public EdgeController getEdgeHandler(Predicates predicates) {
-        return edgeController;
-    }
-
-    @Override
-    public EdgeController getEdgeHandler(Vertex vertex, Direction direction, String[] edgeLabels, Predicates predicates) {
-        return edgeController;
-    }
-
-    @Override
-    public EdgeController addEdge(Object edgeId, String label, Vertex outV, Vertex inV, Object[] properties) {
-        return edgeController;
-    }
-
-    @Override
     public void printStats() {
         timing.print();
+    }
+
+    @Override
+    public Iterator<Edge> edges(Object[] ids) {
+        return edgeController.edges(ids);
+    }
+
+    @Override
+    public Iterator<Edge> edges(Predicates predicates, MutableMetrics metrics) {
+        return edgeController.edges(predicates, metrics);
+    }
+
+    @Override
+    public Iterator<Edge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, MutableMetrics metrics) {
+        return edgeController.edges(vertices, direction, edgeLabels, predicates, metrics);
+    }
+
+    @Override
+    public Edge addEdge(Object edgeId, String label, Vertex outV, Vertex inV, Object[] properties) {
+        return edgeController.addEdge(edgeId, label, outV, inV, properties);
+    }
+
+    @Override
+    public Iterator<Vertex> vertices(Object[] ids) {
+        return vertexController.vertices(ids);
+    }
+
+    @Override
+    public Iterator<Vertex> vertices(Predicates predicates, MutableMetrics metrics) {
+        return vertexController.vertices(predicates, metrics);
+    }
+
+    @Override
+    public BaseVertex vertex(Edge edge, Direction direction, Object vertexId, String vertexLabel) {
+        return vertexController.vertex(edge, direction, vertexId, vertexLabel);
+    }
+
+    @Override
+    public BaseVertex addVertex(Object id, String label, Object[] properties) {
+        return vertexController.addVertex(id, label, properties);
     }
 }
