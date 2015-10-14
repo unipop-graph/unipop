@@ -48,12 +48,10 @@ public abstract class GraphSchemaControllerProvider implements ControllerProvide
     }
 
     @Override
-    public BaseVertex vertex(Edge edge, Direction direction, Object vertexId, String vertexLabel) {
-        Edge schemaEdge = edge.<Edge>property(schemaElement).value();
-        Vertex schemaVertex = schemaEdge.vertices(direction).next(); //only supposed to get 1 vertex
-        BaseVertex result = schemaVertex.<VertexController>property(controller).value().vertex(edge, direction, vertexId, vertexLabel);
-        result.property(schemaElement, schemaVertex);
-        return result;
+    public BaseVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
+        return g.V().hasLabel(vertexLabel).as(schemaElement)
+            .<VertexController>values(controller).map(controller -> controller.get().vertex(direction, vertexId, vertexLabel))
+            .property(schemaElement, schemaElement).next(); //only supposed to get 1
     }
 
     @Override
@@ -65,7 +63,7 @@ public abstract class GraphSchemaControllerProvider implements ControllerProvide
     }
 
     private VertexController getController(Vertex schemaVertex) {
-        return schemaVertex.value(schemaElement);
+        return schemaVertex.value(controller);
     }
 
     @Override
@@ -107,8 +105,7 @@ public abstract class GraphSchemaControllerProvider implements ControllerProvide
     @Override
     public BaseEdge addEdge(Object edgeId, String label, Vertex outV, Vertex inV, Object[] properties) {
         return g.E().hasLabel(label).as(schemaElement)
-                .where(outV().label().is(outV.label()))
-                .where(inV().label().is(inV.label()))
+                .where(outV().label().is(outV.label()).and().inV().label().is(inV.label()))
                 .<EdgeController>values(controller).map(controller -> controller.get().addEdge(edgeId, label, outV, inV, properties))
                 .property(schemaElement, select(schemaElement)) //save schema as property
                 .next();

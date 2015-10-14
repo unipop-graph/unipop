@@ -43,7 +43,7 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
     @Override
     public <V> VertexProperty<V> property(String key, V value) {
         checkRemoved();
-        ElementHelper.validateProperty(key, value);
+        if(!Graph.Hidden.isHidden(key)) ElementHelper.validateProperty(key, value);
         BaseVertexProperty vertexProperty = (BaseVertexProperty) addPropertyLocal(key, value);
         innerAddProperty(vertexProperty);
         return vertexProperty;
@@ -67,7 +67,8 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
         checkRemoved();
         Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
 
-        return graph.getControllerProvider().addEdge(idValue, label, this, vertex, keyValues);
+        BaseEdge edge = graph.getControllerProvider().addEdge(idValue, label, this, vertex, keyValues);
+        return edge;
     }
 
     @Override

@@ -115,7 +115,9 @@ public abstract class BaseElement implements Element{
 
     public Map<String, Object> allFields() {
         Map<String, Object> map = new HashMap<>();
-        properties.forEach((key, value) -> map.put(key, value.value()));
+        properties.forEach((key, value) -> {
+            if(!Graph.Hidden.isHidden(key)) map.put(key, value.value());
+        });
         return map;
     }
 

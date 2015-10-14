@@ -2,7 +2,6 @@ package org.unipop.elastic.controller.star;
 
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.elasticsearch.client.Client;
@@ -19,9 +18,7 @@ import org.unipop.structure.BaseEdge;
 import org.unipop.structure.BaseVertex;
 import org.unipop.structure.UniGraph;
 
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 
 public class StarController extends ElasticVertexController implements EdgeController {
 
@@ -125,7 +122,7 @@ public class StarController extends ElasticVertexController implements EdgeContr
     }
 
     @Override
-    public BaseVertex vertex(Edge edge, Direction direction, Object vertexId, String vertexLabel) {
+    public BaseVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
         return null;
     }
 }

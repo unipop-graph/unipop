@@ -12,7 +12,7 @@ public class InnerEdge extends BaseEdge {
     private final EdgeMapping mapping;
 
     public InnerEdge(Object edgeId, EdgeMapping mapping, Vertex outVertex, Vertex inVertex, Object[] keyValues, UniGraph graph) {
-        super(edgeId, mapping.getLabel(), keyValues, graph);
+        super(edgeId, mapping.getLabel(), keyValues, outVertex, inVertex, graph);
         this.mapping = mapping;
     }
 
@@ -38,10 +38,5 @@ public class InnerEdge extends BaseEdge {
 
     public EdgeMapping getMapping() {
         return mapping;
-    }
-
-    @Override
-    public Iterator<Vertex> vertices(Direction direction) {
-        return null;
     }
 }

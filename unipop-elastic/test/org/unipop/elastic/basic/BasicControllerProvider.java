@@ -3,7 +3,6 @@ package org.unipop.elastic.basic;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticsearch.client.Client;
 import org.unipop.controller.EdgeController;
@@ -91,8 +90,8 @@ public class BasicControllerProvider implements ControllerProvider {
     }
 
     @Override
-    public BaseVertex vertex(Edge edge, Direction direction, Object vertexId, String vertexLabel) {
-        return vertexController.vertex(edge, direction, vertexId, vertexLabel);
+    public BaseVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
+        return vertexController.vertex(direction, vertexId, vertexLabel);
     }
 
     @Override

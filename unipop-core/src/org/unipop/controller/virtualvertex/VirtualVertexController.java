@@ -37,7 +37,7 @@ public class VirtualVertexController implements VertexController {
     }
 
     @Override
-    public BaseVertex vertex(Edge edge, Direction direction, Object vertexId, String vertexLabel) {
+    public BaseVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
         return new VirtualVertex(vertexId, vertexLabel, graph, null);
     }
 

@@ -39,7 +39,7 @@ public class ElasticMutations {
 
         Map<String, Object> map = new HashMap<>();
         element.properties().forEachRemaining(property -> {
-            if(!Graph.Hidden.isHidden(property.key())) map.put(property.key(), property.value());
+            map.put(property.key(), property.value());
         });
         return map;
     }
