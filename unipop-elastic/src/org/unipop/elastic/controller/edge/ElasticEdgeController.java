@@ -65,14 +65,13 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
     }
 
     @Override
-    public Iterator<Edge> edges(Iterator<Vertex> vertices, Direction direction, String[] edgeLabels, Predicates predicates, MutableMetrics metrics) {
-        Map<Object, Vertex> idToVertex = new HashMap<>();
-        vertices.forEachRemaining(singleVertex -> idToVertex.put(singleVertex.id(), singleVertex));
+    public Iterator<Edge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, MutableMetrics metrics) {
+        Object[] vertexIds = new Object[vertices.length];
+        for(int i = 0; i < vertices.length; i++) vertexIds[i] = vertices[i].id();
 
         if (edgeLabels != null && edgeLabels.length > 0)
             predicates.hasContainers.add(new HasContainer(T.label.getAccessor(), P.within(edgeLabels)));
 
-        Object[] vertexIds = idToVertex.keySet().toArray();
         BoolFilterBuilder boolFilter = ElasticHelper.createFilterBuilder(predicates.hasContainers);
         if (direction == Direction.IN)
             boolFilter.must(FilterBuilders.termsFilter(ElasticEdge.InId, vertexIds));
@@ -103,11 +102,8 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
     }
 
     private Edge createEdge(String id, String label, Map<String, Object> fields) {
-        BaseVertex outVertex = graph.getControllerProvider().getVertexHandler(fields.get(ElasticEdge.OutId), fields.get(ElasticEdge.OutLabel).toString(), null, Direction.OUT)
-                .vertex(fields.get(ElasticEdge.OutId), fields.get(ElasticEdge.OutLabel).toString(), Direction.OUT);
-        BaseVertex inVertex = graph.getControllerProvider().getVertexHandler(fields.get(ElasticEdge.InId), fields.get(ElasticEdge.InLabel).toString(), null, Direction.IN)
-                .vertex(fields.get(ElasticEdge.InId), fields.get(ElasticEdge.InLabel).toString(), Direction.IN);
-        BaseEdge edge = new ElasticEdge(id, label, null, outVertex, inVertex, graph, elasticMutations, indexName);
+        BaseEdge edge = new ElasticEdge(id, label, null, fields.get(ElasticEdge.OutId), fields.get(ElasticEdge.OutLabel).toString(),
+                fields.get(ElasticEdge.InId), fields.get(ElasticEdge.InLabel).toString(),  graph, elasticMutations, indexName);
         fields.entrySet().forEach((field) -> edge.addPropertyLocal(field.getKey(), field.getValue()));
         return edge;
     }

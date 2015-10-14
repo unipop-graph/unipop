@@ -1,17 +1,27 @@
 package org.unipop.elastic.custom;
 
 import org.apache.commons.configuration.Configuration;
+import org.apache.tinkerpop.gremlin.structure.T;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticsearch.client.Client;
+import org.unipop.controller.EdgeController;
+import org.unipop.controller.VertexController;
 import org.unipop.controllerprovider.GraphSchemaControllerProvider;
+import org.unipop.elastic.controller.edge.ElasticEdgeController;
+import org.unipop.elastic.controller.vertex.ElasticVertexController;
 import org.unipop.elastic.helpers.ElasticClientFactory;
 import org.unipop.elastic.helpers.ElasticHelper;
+import org.unipop.elastic.helpers.ElasticMutations;
 import org.unipop.elastic.helpers.TimingAccessor;
 import org.unipop.structure.UniGraph;
 
 import java.io.IOException;
 
 public class ModernGraphControllerProvider extends GraphSchemaControllerProvider {
+    private EdgeController edgeController;
+    private VertexController vertexController;
     private Client client;
+    private ElasticMutations elasticMutations;
     private TimingAccessor timing;
 
     @Override
@@ -25,26 +35,26 @@ public class ModernGraphControllerProvider extends GraphSchemaControllerProvider
         ElasticHelper.createIndex(indexName, client);
 
         timing = new TimingAccessor();
-        //elasticMutations = new ElasticMutations(bulk, client, timing);
-        //docEdgeHandler = new ElasticEdgeController(graph, client, elasticMutations, indexName, scrollSize, refresh, timing);
-        //elasticDocVertexHandler = new ElasticVertexController(graph, client, elasticMutations, indexName, scrollSize, refresh, timing);
+        elasticMutations = new ElasticMutations(bulk, client, timing);
+        edgeController = new ElasticEdgeController(graph, client, elasticMutations, indexName, scrollSize, refresh, timing);
+        vertexController = new ElasticVertexController(graph, client, elasticMutations, indexName, scrollSize, refresh, timing);
 
-       // this.schema.addVertex(T.label, "person", U.controller, )
-
+        Vertex person = schema.addVertex(T.label, "person", controller, vertexController);
+        person.addEdge("knows", person, controller, edgeController);
+        Vertex software = schema.addVertex(T.label, "software", controller, vertexController);
+        person.addEdge("created", software, controller, edgeController);
     }
 
     @Override
-    public void commit() {
-
-    }
+    public void commit() { elasticMutations.commit(); }
 
     @Override
     public void printStats() {
-
+        timing.print();
     }
 
     @Override
     public void close() {
-
+        client.close();
     }
 }

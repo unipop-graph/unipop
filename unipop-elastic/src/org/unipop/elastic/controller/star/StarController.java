@@ -55,16 +55,16 @@ public class StarController extends ElasticVertexController implements EdgeContr
     }
 
     @Override
-    public Iterator<Edge> edges(Iterator<Vertex> vertices, Direction direction, String[] edgeLabels, Predicates predicates, MutableMetrics metrics) {
-        List<Object> vertexIds = new ArrayList<>();
-        vertices.forEachRemaining(singleVertex -> vertexIds.add(singleVertex.id()));
+    public Iterator<Edge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, MutableMetrics metrics) {
+        Object[] vertexIds = new Object[vertices.length];
+        for(int i = 0; i < vertices.length; i++) vertexIds[i] = vertices[i];
 
         BoolFilterBuilder boolFilter = ElasticHelper.createFilterBuilder(predicates.hasContainers);
         OrFilterBuilder mappingFilter = FilterBuilders.orFilter();
         boolean empty = true;
         for (EdgeMapping mapping : edgeMappings) {
             if (edgeLabels != null && edgeLabels.length > 0 && !contains(edgeLabels, mapping.getLabel())) continue;
-            mappingFilter.add(FilterBuilders.termsFilter(mapping.getExternalVertexField(), vertexIds.toArray()));
+            mappingFilter.add(FilterBuilders.termsFilter(mapping.getExternalVertexField(), vertexIds));
             empty = false;
         }
         if (!empty) {
@@ -120,6 +120,11 @@ public class StarController extends ElasticVertexController implements EdgeContr
                 return mapping;
             }
         }
+        return null;
+    }
+
+    @Override
+    public BaseVertex vertex(Edge edge, Direction direction, Object vertexId, String vertexLabel) {
         return null;
     }
 }

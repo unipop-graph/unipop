@@ -134,7 +134,7 @@ public class UniGraph implements Graph {
 
         if (ids.length > 1 && !ids[0].getClass().equals(ids[1].getClass())) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
         if (Vertex.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator(ids);
-        else return controllerProvider.getVertexHandler(ids).vertices(ids);
+        else return controllerProvider.vertices(ids);
     }
 
     @Override
@@ -143,7 +143,7 @@ public class UniGraph implements Graph {
 
         if (ids.length > 1 && !ids[0].getClass().equals(ids[1].getClass())) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
         if (Edge.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator(ids);
-        return controllerProvider.getEdgeHandler(ids).edges(ids);
+        return controllerProvider.edges(ids);
     }
 
     @Override
@@ -151,6 +151,6 @@ public class UniGraph implements Graph {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
-        return controllerProvider.addVertex(idValue, label, keyValues).addVertex(idValue, label, keyValues);
+        return controllerProvider.addVertex(idValue, label, keyValues);
     }
 }

@@ -56,7 +56,7 @@ public class ElasticVertexController implements VertexController {
     }
 
     @Override
-    public BaseVertex vertex(Object vertexId, String vertexLabel, Direction direction) {
+    public BaseVertex vertex(Edge edge, Direction direction, Object vertexId, String vertexLabel) {
         return createVertex(vertexId,vertexLabel, null, getLazyGetter(direction));
     }
 

@@ -12,21 +12,10 @@ import org.unipop.structure.UniGraph;
 
 import java.io.IOException;
 
-public interface ControllerProvider {
+public interface ControllerProvider extends VertexController, EdgeController {
 
     void init(UniGraph graph, Configuration configuration) throws IOException;
     void commit();
     void printStats();
     void close();
-
-    VertexController getVertexHandler(Object[] ids);
-    VertexController getVertexHandler(Predicates predicates);
-    VertexController getVertexHandler(Object vertexId, String vertexLabel, Edge edge, Direction direction);
-    VertexController addVertex(Object id, String label, Object[] properties);
-
-    EdgeController getEdgeHandler(Object[] ids);
-    EdgeController getEdgeHandler(Predicates predicates);
-    EdgeController getEdgeHandler(Vertex vertex, Direction direction, String[] edgeLabels, Predicates predicates);
-    EdgeController addEdge(Object edgeId, String label,Vertex outV, Vertex inV, Object[] properties);
-
 }
