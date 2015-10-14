@@ -19,8 +19,8 @@ public class ElasticStarVertex extends ElasticVertex {
     }
 
     @Override
-    public Iterator<Edge> cachedEdges(Direction direction, String[] edgeLabels, Predicates predicates) {
-        ArrayList<Edge> edges = new ArrayList<>();
+    public Iterator<BaseEdge> cachedEdges(Direction direction, String[] edgeLabels, Predicates predicates) {
+        ArrayList<BaseEdge> edges = new ArrayList<>();
         innerEdges.forEach(edge -> {
             EdgeMapping mapping = edge.getMapping();
             if(mapping.getDirection().equals(direction) &&

@@ -42,12 +42,12 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
     }
 
     @Override
-    public Iterator<Edge> edges(Object[] ids) {
+    public Iterator<BaseEdge> edges(Object[] ids) {
         MultiGetRequest request = new MultiGetRequest().refresh(refresh);
         for (Object id : ids) request.add(indexName, null, id.toString());
         MultiGetResponse responses = client.multiGet(request).actionGet();
 
-        ArrayList<Edge> elements = new ArrayList<>(ids.length);
+        ArrayList<BaseEdge> elements = new ArrayList<>(ids.length);
         for (MultiGetItemResponse getResponse : responses) {
             GetResponse response = getResponse.getResponse();
             if (!response.isExists()) throw Graph.Exceptions.elementNotFound(Edge.class, response.getId());
@@ -57,7 +57,7 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
     }
 
     @Override
-    public Iterator<Edge> edges(Predicates predicates, MutableMetrics metrics) {
+    public Iterator<BaseEdge> edges(Predicates predicates, MutableMetrics metrics) {
         BoolFilterBuilder boolFilter = ElasticHelper.createFilterBuilder(predicates.hasContainers);
         boolFilter.must(FilterBuilders.existsFilter(ElasticEdge.InId));
         return new QueryIterator<>(boolFilter, 0, scrollSize, predicates.limitHigh - predicates.limitLow,
@@ -65,7 +65,7 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
     }
 
     @Override
-    public Iterator<Edge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, MutableMetrics metrics) {
+    public Iterator<BaseEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, MutableMetrics metrics) {
         Object[] vertexIds = new Object[vertices.length];
         for(int i = 0; i < vertices.length; i++) vertexIds[i] = vertices[i].id();
 
@@ -86,7 +86,7 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
     }
 
     @Override
-    public Edge addEdge(Object edgeId, String label, Vertex outV, Vertex inV, Object[] properties) {
+    public BaseEdge addEdge(Object edgeId, String label, Vertex outV, Vertex inV, Object[] properties) {
         ElasticEdge elasticEdge = new ElasticEdge(edgeId, label, properties, outV, inV,graph, elasticMutations, indexName);
         try {
             elasticMutations.addElement(elasticEdge, indexName, null, true);
@@ -97,11 +97,11 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
         return elasticEdge;
     }
 
-    private Edge createEdge(SearchHit hit) {
+    private BaseEdge createEdge(SearchHit hit) {
         return createEdge(hit.id(), hit.getType(), hit.getSource());
     }
 
-    private Edge createEdge(String id, String label, Map<String, Object> fields) {
+    private BaseEdge createEdge(String id, String label, Map<String, Object> fields) {
         BaseEdge edge = new ElasticEdge(id, label, null, fields.get(ElasticEdge.OutId), fields.get(ElasticEdge.OutLabel).toString(),
                 fields.get(ElasticEdge.InId), fields.get(ElasticEdge.InLabel).toString(),  graph, elasticMutations, indexName);
         fields.entrySet().forEach((field) -> edge.addPropertyLocal(field.getKey(), field.getValue()));

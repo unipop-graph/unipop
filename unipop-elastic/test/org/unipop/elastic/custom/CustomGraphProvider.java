@@ -18,7 +18,7 @@ public class CustomGraphProvider extends ElasticGraphProvider {
     @Override
     public Configuration newGraphConfiguration(String graphName, Class<?> test, String testMethodName, Map<String, Object> configurationOverrides, LoadGraphWith.GraphData loadGraphWith) {
         Configuration configuration = super.newGraphConfiguration(graphName, test, testMethodName, configurationOverrides, loadGraphWith);
-        if(loadGraphWith.equals(LoadGraphWith.GraphData.MODERN))
+        if(loadGraphWith != null && loadGraphWith.equals(LoadGraphWith.GraphData.MODERN))
             configuration.setProperty("controllerProvider", ModernGraphControllerProvider.class.getName());
         else configuration.setProperty("controllerProvider", BasicControllerProvider.class.getName());
         return configuration;

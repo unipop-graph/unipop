@@ -15,6 +15,7 @@ import org.unipop.controller.Predicates;
 import org.unipop.elastic.controller.vertex.ElasticVertex;
 import org.unipop.elastic.controller.vertex.ElasticVertexController;
 import org.unipop.elastic.helpers.*;
+import org.unipop.structure.BaseEdge;
 import org.unipop.structure.BaseVertex;
 import org.unipop.structure.UniGraph;
 
@@ -44,18 +45,18 @@ public class StarController extends ElasticVertexController implements EdgeContr
     }
 
     @Override
-    public Iterator<Edge> edges(Object[] ids) {
+    public Iterator<BaseEdge> edges(Object[] ids) {
         return null;
     }
 
     @Override
-    public Iterator<Edge> edges(Predicates predicates, MutableMetrics metrics) {
+    public Iterator<BaseEdge> edges(Predicates predicates, MutableMetrics metrics) {
         //TODO
         return null;
     }
 
     @Override
-    public Iterator<Edge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, MutableMetrics metrics) {
+    public Iterator<BaseEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, MutableMetrics metrics) {
         Object[] vertexIds = new Object[vertices.length];
         for(int i = 0; i < vertices.length; i++) vertexIds[i] = vertices[i];
 
@@ -74,8 +75,8 @@ public class StarController extends ElasticVertexController implements EdgeContr
         QueryIterator<BaseVertex> results = new QueryIterator<>(boolFilter, 0, scrollSize,
                 predicates.limitHigh - predicates.limitLow, client, this::createVertex, refresh, timing, getDefaultIndex());
 
-        return new Iterator<Edge>() {
-            public Iterator<Edge> currentIterator = EmptyIterator.instance();
+        return new Iterator<BaseEdge>() {
+            public Iterator<BaseEdge> currentIterator = EmptyIterator.instance();
 
             @Override
             public boolean hasNext() {
@@ -83,7 +84,7 @@ public class StarController extends ElasticVertexController implements EdgeContr
             }
 
             @Override
-            public Edge next() {
+            public BaseEdge next() {
                 if(!currentIterator.hasNext())
                     currentIterator = results.next().cachedEdges(direction, edgeLabels, predicates);
                 return currentIterator.next();
@@ -98,7 +99,7 @@ public class StarController extends ElasticVertexController implements EdgeContr
     }
 
     @Override
-    public Edge addEdge(Object edgeId, String label, Vertex outV, Vertex inV, Object[] properties) {
+    public BaseEdge addEdge(Object edgeId, String label, Vertex outV, Vertex inV, Object[] properties) {
 
 //        EdgeMapping mapping = getEdgeMapping(label, Direction.OUT );
 //        if(mapping != null)

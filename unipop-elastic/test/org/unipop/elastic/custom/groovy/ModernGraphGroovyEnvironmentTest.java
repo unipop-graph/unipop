@@ -1,4 +1,4 @@
-package org.unipop.elastic.custom.java;
+package org.unipop.elastic.custom.groovy;
 
 import org.apache.tinkerpop.gremlin.GraphProviderClass;
 import org.apache.tinkerpop.gremlin.groovy.GroovyEnvironmentSuite;

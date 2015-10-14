@@ -95,7 +95,7 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
         if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, this.id);
     }
 
-    public Iterator<Edge> cachedEdges(Direction direction, String[] edgeLabels, Predicates predicates) {
+    public Iterator<BaseEdge> cachedEdges(Direction direction, String[] edgeLabels, Predicates predicates) {
         return null;
     }
 }

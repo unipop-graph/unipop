@@ -11,6 +11,8 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.unipop.controllerprovider.ControllerProvider;
+import org.unipop.structure.BaseEdge;
+import org.unipop.structure.BaseVertex;
 
 import java.util.*;
 
@@ -53,14 +55,16 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
     private Iterator<Traverser<E>> query(Iterator<Traverser.Admin<Vertex>> traversers) {
         ResultsContainer results = new ResultsContainer();
         List<Traverser.Admin<Vertex>> copyTraversers = new ArrayList<>();
-        List<Vertex> vertices = new ArrayList<>();
+        List<BaseVertex> vertices = new ArrayList<>();
 
-        traversers.forEachRemaining(traverser -> {
-            vertices.add(traverser.get());
+        while(traversers.hasNext() && vertices.size() <= 100)
+        {
+            Traverser.Admin<Vertex> traverser = traversers.next();
+            vertices.add((BaseVertex) traverser.get());
             copyTraversers.add(traverser);
-        });
+        }
 
-        results.addResults(controllerProvider.edges(vertices.toArray(new Vertex[0]), direction, edgeLabels,predicates, metrics));
+        results.addResults(controllerProvider.edges(vertices.toArray(new BaseVertex[0]), direction, edgeLabels,predicates, metrics));
 
         List<Traverser<E>> returnTraversers = new ArrayList<>();
         copyTraversers.forEach(traverser -> {
@@ -74,7 +78,7 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
     private class ResultsContainer {
         Map<Object, ArrayList<E>> idToResults = new HashMap<>();
 
-        public void addResults(Iterator<Edge> edgeIterator) {
+        public void addResults(Iterator<BaseEdge> edgeIterator) {
             edgeIterator.forEachRemaining(edge -> edge.vertices(direction).forEachRemaining(vertex -> {
                 ArrayList<E> list = idToResults.get(vertex.id());
                 if (list == null || !(list instanceof List)) {

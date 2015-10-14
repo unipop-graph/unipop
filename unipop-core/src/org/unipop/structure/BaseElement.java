@@ -33,7 +33,8 @@ public abstract class BaseElement implements Element{
     public Property addPropertyLocal(String key, Object value) {
         checkRemoved();
         if (shouldAddProperty(key)) {
-            ElementHelper.validateProperty(key, value);
+            if(!Graph.Hidden.isHidden(key))
+                ElementHelper.validateProperty(key, value);
             Property property = createProperty(key, value);
             properties.put(key, property);
             return property;

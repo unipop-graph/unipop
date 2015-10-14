@@ -2,27 +2,28 @@ package org.unipop.controllerprovider;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.BulkSet;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
-import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
+import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.unipop.controller.EdgeController;
 import org.unipop.controller.Predicates;
 import org.unipop.controller.VertexController;
+import org.unipop.structure.BaseEdge;
 import org.unipop.structure.BaseVertex;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
 
 public abstract class GraphSchemaControllerProvider implements ControllerProvider {
 
-    protected String controller = "~controller";
+    protected String controller = "controller";
     protected String schemaElement = "~schemaElement";
     private final GraphTraversalSource g;
     protected TinkerGraph schema;
@@ -33,17 +34,17 @@ public abstract class GraphSchemaControllerProvider implements ControllerProvide
     }
 
     @Override
-    public Iterator<Vertex> vertices(Object[] ids) {
+    public Iterator<BaseVertex> vertices(Object[] ids) {
         return g.V().as(schemaElement).<VertexController>values(controller) //get all controllers
-                .<Vertex>flatMap(controller -> controller.get().vertices(ids)) // get vertices
-                .sideEffect(vertex -> vertex.get().property(schemaElement, select(schemaElement))); //save schema as property
+                .<BaseVertex>flatMap(controller -> controller.get().vertices(ids)) // get vertices
+                .property(schemaElement, select(schemaElement)); //save schema as property
     }
 
     @Override
-    public Iterator<Vertex> vertices(Predicates predicates, MutableMetrics metrics) {
+    public Iterator<BaseVertex> vertices(Predicates predicates, MutableMetrics metrics) {
         return g.V().as(schemaElement).<VertexController>values(controller) //get all controllers
-                .<Vertex>flatMap(controller -> controller.get().vertices(predicates, metrics)) //get vertices
-                .sideEffect(vertex -> vertex.get().property(schemaElement, select(schemaElement))); //save schema as property
+                .<BaseVertex>flatMap(controller -> controller.get().vertices(predicates, metrics)) //get vertices
+                .property(schemaElement, select(schemaElement)); //save schema as property
     }
 
     @Override
@@ -57,48 +58,59 @@ public abstract class GraphSchemaControllerProvider implements ControllerProvide
 
     @Override
     public BaseVertex addVertex(Object id, String label, Object[] properties) {
-        return g.V().as(schemaElement).hasLabel(label).<VertexController>values(controller) //get controller
-            .<BaseVertex>map(controller -> controller.get().addVertex(id, label, properties)) //add vertex
-            .sideEffect(vertex -> vertex.get().property(schemaElement, select(schemaElement))) //save schema as property
+        return g.V().as(schemaElement).hasLabel(label) //get controller
+            .<BaseVertex>map(schemaVertex -> getController(schemaVertex.get()).addVertex(id, label, properties)) //add vertex
+            .property(schemaElement, select(schemaElement))
             .next(); //only supposed to get 1 vertex
     }
 
+    private VertexController getController(Vertex schemaVertex) {
+        return schemaVertex.value(schemaElement);
+    }
+
     @Override
-    public Iterator<Edge> edges(Object[] ids) {
+    public Iterator<BaseEdge> edges(Object[] ids) {
         return g.E().as(schemaElement).<EdgeController>values(controller) //get all controllers
-                .<Edge>flatMap(controller -> controller.get().edges(ids)) // get edges
-                .sideEffect(edge -> edge.get().property(schemaElement, select(schemaElement))); //save schema as property
+                .<BaseEdge>flatMap(controller -> controller.get().edges(ids)) // get edges
+                .property(schemaElement, select(schemaElement)); //save schema as property
     }
 
     @Override
-    public Iterator<Edge> edges(Predicates predicates, MutableMetrics metrics) {
+    public Iterator<BaseEdge> edges(Predicates predicates, MutableMetrics metrics) {
         return g.E().as(schemaElement).<EdgeController>values(controller) //get all controllers
-                .<Edge>flatMap(controller -> controller.get().edges(predicates, metrics)) //get edges
-                .sideEffect(edge -> edge.get().property(schemaElement, select(schemaElement))); //save schema as property
+                .<BaseEdge>flatMap(controller -> controller.get().edges(predicates, metrics)) //get edges
+                .property(schemaElement, select(schemaElement)); //save schema as property
     }
 
     @Override
-    public Iterator<Edge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, MutableMetrics metrics) {
-        return inject(vertices).group().by(schemaElement).<Map.Entry<Vertex, Iterator<Vertex>>>unfold() //group by schema
-                .flatMap(entry -> getEdgeSchema(entry.get(), direction, edgeLabels)).as("pair")
-                .flatMap(pair -> pair.get().getKey().<EdgeController>value(controller).edges(pair.get().getValue(), direction, edgeLabels, predicates, metrics))
-                .sideEffect(edge -> edge.get().property(schemaElement, select("pair").map(pair-> ((Pair<Edge, Vertex[]>)pair.get())))); //save schema as property
+    public Iterator<BaseEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, MutableMetrics metrics) {
+        return inject(vertices).group().by(schemaElement).<BulkSet<Vertex>>mapValues() //group by schema
+                .flatMap(bulkVertices -> getEdgeSchema(bulkVertices.get(), direction, edgeLabels)).as("pair")
+                .flatMap(pair -> pair.get().getKey().<EdgeController>value(controller).edges(pair.get().getValue(), direction, edgeLabels, predicates, metrics)).as("edge")
+                .<Pair<Edge, Vertex[]>>select("pair").map(pair -> pair.get().getKey()).as(schemaElement)
+                .<BaseEdge>select("edge").property(schemaElement, select(schemaElement));
     }
 
-    private Iterator<Pair<Edge, Vertex[]>> getEdgeSchema(Map.Entry<Vertex, Iterator<Vertex>> entry, Direction direction, String[] edgeLabels){
+    private Iterator<Pair<Edge, Vertex[]>> getEdgeSchema(BulkSet<Vertex> vertices, Direction direction, String[] edgeLabels){
+        if(vertices.size() == 0) return EmptyIterator.instance();
+
+        Vertex[] arrayVertices = new Vertex[vertices.size()];
+        Iterator<Vertex> vertexIterator = vertices.iterator();
+        for(int i = 0; i < arrayVertices.length; i++)
+            arrayVertices[i] = vertexIterator.next();
+
         List<Pair<Edge, Vertex[]>> result = new ArrayList<>();
-        Vertex[] vertices = (Vertex[]) IteratorUtils.list(entry.getValue()).toArray();
-        entry.getKey().edges(direction, edgeLabels).forEachRemaining(edge -> result.add(Pair.of(edge, vertices)));
+        arrayVertices[0].<Vertex>property(schemaElement).value().edges(direction, edgeLabels).forEachRemaining(edge -> result.add(Pair.of(edge, arrayVertices)));
         return result.iterator();
     }
 
     @Override
-    public Edge addEdge(Object edgeId, String label, Vertex outV, Vertex inV, Object[] properties) {
+    public BaseEdge addEdge(Object edgeId, String label, Vertex outV, Vertex inV, Object[] properties) {
         return g.E().hasLabel(label).as(schemaElement)
                 .where(outV().label().is(outV.label()))
                 .where(inV().label().is(inV.label()))
                 .<EdgeController>values(controller).map(controller -> controller.get().addEdge(edgeId, label, outV, inV, properties))
-                .sideEffect(edge -> edge.get().property(schemaElement, select(schemaElement)))
+                .property(schemaElement, select(schemaElement)) //save schema as property
                 .next();
     }
 }

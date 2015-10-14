@@ -1,6 +1,7 @@
 package org.unipop.elastic.helpers;
 
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.delete.DeleteRequestBuilder;
 import org.elasticsearch.action.index.IndexRequestBuilder;
@@ -37,7 +38,9 @@ public class ElasticMutations {
             return ((BaseElement)element).allFields();
 
         Map<String, Object> map = new HashMap<>();
-        element.properties().forEachRemaining(property -> map.put(property.key(), property.value()));
+        element.properties().forEachRemaining(property -> {
+            if(!Graph.Hidden.isHidden(property.key())) map.put(property.key(), property.value());
+        });
         return map;
     }
 

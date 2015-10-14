@@ -38,8 +38,8 @@ public class ElasticVertexController implements VertexController {
     }
 
     @Override
-    public Iterator<Vertex> vertices(Object[] vertexIds) {
-        List<Vertex> vertices = new ArrayList<>();
+    public Iterator<BaseVertex> vertices(Object[] vertexIds) {
+        List<BaseVertex> vertices = new ArrayList<>();
         for(Object id : vertexIds){
             ElasticVertex vertex = createVertex(id.toString(), null, null, getLazyGetter());
             vertices.add(vertex);
@@ -48,7 +48,7 @@ public class ElasticVertexController implements VertexController {
     }
 
     @Override
-    public Iterator<Vertex> vertices(Predicates predicates, MutableMetrics metrics) {
+    public Iterator<BaseVertex> vertices(Predicates predicates, MutableMetrics metrics) {
         BoolFilterBuilder boolFilter = ElasticHelper.createFilterBuilder(predicates.hasContainers);
         boolFilter.must(FilterBuilders.missingFilter(ElasticEdge.InId));
         return new QueryIterator<>(boolFilter, 0, scrollSize, predicates.limitHigh - predicates.limitLow,
@@ -93,7 +93,7 @@ public class ElasticVertexController implements VertexController {
         return new ElasticVertex(id, label, keyValues, graph, lazyGetter, elasticMutations, getIndex(keyValues));
     }
 
-    protected Vertex createVertex(SearchHit hit) {
+    protected BaseVertex createVertex(SearchHit hit) {
         BaseVertex vertex = createVertex(hit.id(), hit.getType(), null, getLazyGetter());
         hit.getSource().entrySet().forEach((field) -> vertex.addPropertyLocal(field.getKey(), field.getValue()));
         return vertex;

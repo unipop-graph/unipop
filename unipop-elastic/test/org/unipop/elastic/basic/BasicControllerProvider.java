@@ -16,6 +16,7 @@ import org.unipop.elastic.helpers.ElasticClientFactory;
 import org.unipop.elastic.helpers.ElasticHelper;
 import org.unipop.elastic.helpers.ElasticMutations;
 import org.unipop.elastic.helpers.TimingAccessor;
+import org.unipop.structure.BaseEdge;
 import org.unipop.structure.BaseVertex;
 import org.unipop.structure.UniGraph;
 
@@ -60,32 +61,32 @@ public class BasicControllerProvider implements ControllerProvider {
     }
 
     @Override
-    public Iterator<Edge> edges(Object[] ids) {
+    public Iterator<BaseEdge> edges(Object[] ids) {
         return edgeController.edges(ids);
     }
 
     @Override
-    public Iterator<Edge> edges(Predicates predicates, MutableMetrics metrics) {
+    public Iterator<BaseEdge> edges(Predicates predicates, MutableMetrics metrics) {
         return edgeController.edges(predicates, metrics);
     }
 
     @Override
-    public Iterator<Edge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, MutableMetrics metrics) {
+    public Iterator<BaseEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, MutableMetrics metrics) {
         return edgeController.edges(vertices, direction, edgeLabels, predicates, metrics);
     }
 
     @Override
-    public Edge addEdge(Object edgeId, String label, Vertex outV, Vertex inV, Object[] properties) {
+    public BaseEdge addEdge(Object edgeId, String label, Vertex outV, Vertex inV, Object[] properties) {
         return edgeController.addEdge(edgeId, label, outV, inV, properties);
     }
 
     @Override
-    public Iterator<Vertex> vertices(Object[] ids) {
+    public Iterator<BaseVertex> vertices(Object[] ids) {
         return vertexController.vertices(ids);
     }
 
     @Override
-    public Iterator<Vertex> vertices(Predicates predicates, MutableMetrics metrics) {
+    public Iterator<BaseVertex> vertices(Predicates predicates, MutableMetrics metrics) {
         return vertexController.vertices(predicates, metrics);
     }
 

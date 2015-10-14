@@ -1,6 +1,6 @@
 package org.unipop.controller.virtualvertex;
 
-import com.fasterxml.jackson.databind.util.ArrayIterator;
+import org.apache.commons.collections4.iterators.ArrayIterator;
 import org.unipop.controller.Predicates;
 import org.unipop.controller.VertexController;
 import org.unipop.structure.BaseVertex;
@@ -22,17 +22,17 @@ public class VirtualVertexController implements VertexController {
     }
 
     @Override
-    public Iterator<Vertex> vertices(Object[] vertexIds) {
+    public Iterator<BaseVertex> vertices(Object[] vertexIds) {
         ArrayList<BaseVertex> vertices = new ArrayList<>();
         for(Object id : vertexIds) {
             BaseVertex vertex = new VirtualVertex(id, label, graph, null);
             vertices.add(vertex);
         }
-        return new ArrayIterator<>((Vertex[]) vertices.toArray()).iterator();
+        return new ArrayIterator<>(vertices.toArray());
     }
 
     @Override
-    public Iterator<Vertex> vertices(Predicates predicates, MutableMetrics metrics) {
+    public Iterator<BaseVertex> vertices(Predicates predicates, MutableMetrics metrics) {
         throw new UnsupportedOperationException();
     }
 

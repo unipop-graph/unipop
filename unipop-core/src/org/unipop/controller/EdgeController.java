@@ -2,13 +2,13 @@ package org.unipop.controller;
 
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.structure.*;
+import org.unipop.structure.BaseEdge;
 
 import java.util.*;
 
 public interface EdgeController {
-    Iterator<Edge> edges(Object[] ids);
-    Iterator<Edge> edges(Predicates predicates, MutableMetrics metrics);
-    Iterator<Edge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, MutableMetrics metrics);
-    Edge addEdge(Object edgeId, String label,Vertex outV, Vertex inV, Object[] properties);
-
+    Iterator<BaseEdge> edges(Object[] ids);
+    Iterator<BaseEdge> edges(Predicates predicates, MutableMetrics metrics);
+    Iterator<BaseEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, MutableMetrics metrics);
+    BaseEdge addEdge(Object edgeId, String label,Vertex outV, Vertex inV, Object[] properties);
 }

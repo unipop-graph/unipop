@@ -9,7 +9,7 @@
     <artifactId>unipop-core</artifactId>
     <name>Unipop :: Core</name>
     <properties>
-        <tinkerpop.version>3.0.1-incubating</tinkerpop.version>
+        <tinkerpop.version>3.1.0-SNAPSHOT</tinkerpop.version>
     </properties>
     <dependencies>
         <dependency>
@@ -41,6 +41,11 @@
             <groupId>com.github.stephenc.eaio-uuid</groupId>
             <artifactId>uuid</artifactId>
             <version>3.4.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-collections4</artifactId>
+            <version>4.0</version>
         </dependency>
     </dependencies>
     <build>
