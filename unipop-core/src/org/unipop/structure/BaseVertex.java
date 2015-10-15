@@ -3,13 +3,17 @@ package org.unipop.structure;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.*;
 import org.unipop.controller.Predicates;
+import org.unipop.controller.VertexController;
 
 import java.util.*;
 
 public abstract class BaseVertex extends BaseElement implements Vertex {
 
-    protected BaseVertex(Object id, String label, UniGraph graph, Object[] keyValues) {
+    private VertexController controller;
+
+    protected BaseVertex(Object id, String label, Object[] keyValues, VertexController controller, UniGraph graph) {
         super(id, label, graph, keyValues);
+        this.controller = controller;
     }
 
     @Override
@@ -18,9 +22,11 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
     }
 
     @Override
-    public <V> VertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value, Object... propertyKeys) {
+    public <V> VertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value, final Object... keyValues) {
         checkRemoved();
-        if(propertyKeys != null && propertyKeys.length > 0) throw VertexProperty.Exceptions.metaPropertiesNotSupported();
+        ElementHelper.legalPropertyKeyValueArray(keyValues);
+        ElementHelper.validateProperty(key, value);
+        if(keyValues != null && keyValues.length > 0) throw VertexProperty.Exceptions.metaPropertiesNotSupported();
         return this.property(key, value);
     }
 
@@ -43,7 +49,7 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
     @Override
     public <V> VertexProperty<V> property(String key, V value) {
         checkRemoved();
-        if(!Graph.Hidden.isHidden(key)) ElementHelper.validateProperty(key, value);
+        ElementHelper.validateProperty(key, value);
         BaseVertexProperty vertexProperty = (BaseVertexProperty) addPropertyLocal(key, value);
         innerAddProperty(vertexProperty);
         return vertexProperty;
@@ -98,5 +104,9 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
 
     public Iterator<BaseEdge> cachedEdges(Direction direction, String[] edgeLabels, Predicates predicates) {
         return null;
+    }
+
+    public VertexController getController() {
+        return controller;
     }
 }

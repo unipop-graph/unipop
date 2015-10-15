@@ -90,7 +90,7 @@ public class ElasticVertexController implements VertexController {
     }
 
     protected ElasticVertex createVertex(Object id, String label, Object[] keyValues, LazyGetter lazyGetter) {
-        return new ElasticVertex(id, label, keyValues, graph, lazyGetter, elasticMutations, getIndex(keyValues));
+        return new ElasticVertex(id, label, keyValues, this, graph, lazyGetter, elasticMutations, getIndex(keyValues));
     }
 
     protected BaseVertex createVertex(SearchHit hit) {

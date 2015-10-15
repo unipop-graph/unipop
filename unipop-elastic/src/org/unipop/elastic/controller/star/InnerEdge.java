@@ -11,8 +11,8 @@ public class InnerEdge extends BaseEdge {
 
     private final EdgeMapping mapping;
 
-    public InnerEdge(Object edgeId, EdgeMapping mapping, Vertex outVertex, Vertex inVertex, Object[] keyValues, UniGraph graph) {
-        super(edgeId, mapping.getLabel(), keyValues, outVertex, inVertex, graph);
+    public InnerEdge(Object edgeId, EdgeMapping mapping, Vertex outVertex, Vertex inVertex, Object[] keyValues, StarController controller, UniGraph graph) {
+        super(edgeId, mapping.getLabel(), keyValues, outVertex, inVertex, controller, graph);
         this.mapping = mapping;
     }
 

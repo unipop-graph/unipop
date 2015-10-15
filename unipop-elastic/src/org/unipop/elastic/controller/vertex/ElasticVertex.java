@@ -13,8 +13,8 @@ public class ElasticVertex extends BaseVertex {
     private final String indexName;
     private LazyGetter lazyGetter;
 
-    public ElasticVertex(final Object id, final String label, Object[] keyValues, UniGraph graph, LazyGetter lazyGetter, ElasticMutations elasticMutations, String indexName) {
-        super(id, label, graph, keyValues);
+    public ElasticVertex(final Object id, final String label, Object[] keyValues, ElasticVertexController controller, UniGraph graph, LazyGetter lazyGetter, ElasticMutations elasticMutations, String indexName) {
+        super(id, label, keyValues, controller, graph);
         this.elasticMutations = elasticMutations;
         this.indexName = indexName;
         if (lazyGetter != null) {

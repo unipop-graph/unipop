@@ -6,8 +6,8 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.unipop.structure.*;
 
 public class VirtualVertex extends BaseVertex {
-    protected VirtualVertex(Object id, String label, UniGraph graph, Object[] keyValues) {
-        super(id, label, graph, keyValues);
+    protected VirtualVertex(Object id, String label, Object[] keyValues, VirtualVertexController controller, UniGraph graph) {
+        super(id, label, keyValues, controller, graph);
     }
 
     @Override

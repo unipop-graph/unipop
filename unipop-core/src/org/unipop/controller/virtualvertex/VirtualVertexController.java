@@ -25,7 +25,7 @@ public class VirtualVertexController implements VertexController {
     public Iterator<BaseVertex> vertices(Object[] vertexIds) {
         ArrayList<BaseVertex> vertices = new ArrayList<>();
         for(Object id : vertexIds) {
-            BaseVertex vertex = new VirtualVertex(id, label, graph, null);
+            BaseVertex vertex = new VirtualVertex(id, label, null, this, graph);
             vertices.add(vertex);
         }
         return new ArrayIterator<>(vertices.toArray());
@@ -38,7 +38,7 @@ public class VirtualVertexController implements VertexController {
 
     @Override
     public BaseVertex fromEdge(Direction direction, Object vertexId, String vertexLabel) {
-        return new VirtualVertex(vertexId, vertexLabel, graph, null);
+        return new VirtualVertex(vertexId, vertexLabel, null, this, graph);
     }
 
     @Override

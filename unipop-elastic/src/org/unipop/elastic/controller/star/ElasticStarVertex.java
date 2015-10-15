@@ -13,8 +13,8 @@ import java.util.*;
 public class ElasticStarVertex extends ElasticVertex {
     private Set<InnerEdge> innerEdges;
 
-    public ElasticStarVertex(final Object id, final String label, Object[] keyValues, UniGraph graph, LazyGetter lazyGetter, ElasticMutations elasticMutations, String indexName) {
-        super(id, label, keyValues, graph, lazyGetter, elasticMutations, indexName);
+    public ElasticStarVertex(final Object id, final String label, Object[] keyValues, StarController controller, UniGraph graph, LazyGetter lazyGetter, ElasticMutations elasticMutations, String indexName) {
+        super(id, label, keyValues, controller, graph, lazyGetter, elasticMutations, indexName);
         innerEdges = new HashSet<>();
     }
 

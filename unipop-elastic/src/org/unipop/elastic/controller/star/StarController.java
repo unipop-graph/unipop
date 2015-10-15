@@ -38,7 +38,7 @@ public class StarController extends ElasticVertexController implements EdgeContr
     }
 
     protected ElasticVertex createVertex(Object id, String label, Object[] keyValues, LazyGetter lazyGetter) {
-        return new ElasticStarVertex(id.toString(), label, keyValues, graph, lazyGetter, elasticMutations, getIndex(keyValues));
+        return new ElasticStarVertex(id.toString(), label, keyValues, this, graph, lazyGetter, elasticMutations, getIndex(keyValues));
     }
 
     @Override

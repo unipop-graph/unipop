@@ -7,6 +7,7 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.mockito.internal.util.collections.ListUtil;
+import org.unipop.controller.EdgeController;
 
 import java.util.*;
 
@@ -14,9 +15,11 @@ public abstract class BaseEdge extends BaseElement implements Edge {
 
     protected Vertex inVertex;
     protected Vertex outVertex;
+    private EdgeController controller;
 
-    public BaseEdge(final Object id, final String label, Object[] keyValues, Vertex outV, Vertex inV, final UniGraph graph) {
+    public BaseEdge(final Object id, final String label, Object[] keyValues, Vertex outV, Vertex inV, EdgeController controller, final UniGraph graph) {
         super(id, label, graph, keyValues);
+        this.controller = controller;
         ElementHelper.validateLabel(label);
         this.outVertex = outV;
         this.inVertex = inV;
@@ -30,7 +33,7 @@ public abstract class BaseEdge extends BaseElement implements Edge {
     @Override
     public <V> Property<V> property(String key, V value) {
         checkRemoved();
-        if(!Graph.Hidden.isHidden(key)) ElementHelper.validateProperty(key, value);
+        ElementHelper.validateProperty(key, value);
         BaseProperty<V> vertexProperty = (BaseProperty<V>) addPropertyLocal(key, value);
         innerAddProperty(vertexProperty);
         return vertexProperty;
@@ -62,5 +65,9 @@ public abstract class BaseEdge extends BaseElement implements Edge {
     @Override
     public String toString() {
         return StringFactory.edgeString(this);
+    }
+
+    public EdgeController getController() {
+        return controller;
     }
 }
