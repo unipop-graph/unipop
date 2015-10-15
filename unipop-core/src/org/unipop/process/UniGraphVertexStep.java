@@ -1,6 +1,5 @@
 package org.unipop.process;
 
-import org.unipop.controller.EdgeController;
 import org.unipop.controller.Predicates;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
@@ -64,7 +63,7 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
             copyTraversers.add(traverser);
         }
 
-        results.addResults(controllerProvider.edges(vertices.toArray(new BaseVertex[0]), direction, edgeLabels,predicates, metrics));
+        results.addResults(controllerProvider.fromVertex(vertices.toArray(new BaseVertex[0]), direction, edgeLabels, predicates, metrics));
 
         List<Traverser<E>> returnTraversers = new ArrayList<>();
         copyTraversers.forEach(traverser -> {

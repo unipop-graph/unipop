@@ -70,8 +70,8 @@ public class BasicControllerProvider implements ControllerProvider {
     }
 
     @Override
-    public Iterator<BaseEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, MutableMetrics metrics) {
-        return edgeController.edges(vertices, direction, edgeLabels, predicates, metrics);
+    public Iterator<BaseEdge> fromVertex(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, MutableMetrics metrics) {
+        return edgeController.fromVertex(vertices, direction, edgeLabels, predicates, metrics);
     }
 
     @Override
@@ -90,8 +90,8 @@ public class BasicControllerProvider implements ControllerProvider {
     }
 
     @Override
-    public BaseVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
-        return vertexController.vertex(direction, vertexId, vertexLabel);
+    public BaseVertex fromEdge(Direction direction, Object vertexId, String vertexLabel) {
+        return vertexController.fromEdge(direction, vertexId, vertexLabel);
     }
 
     @Override

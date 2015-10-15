@@ -53,7 +53,7 @@ public class StarController extends ElasticVertexController implements EdgeContr
     }
 
     @Override
-    public Iterator<BaseEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, MutableMetrics metrics) {
+    public Iterator<BaseEdge> fromVertex(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, MutableMetrics metrics) {
         Object[] vertexIds = new Object[vertices.length];
         for(int i = 0; i < vertices.length; i++) vertexIds[i] = vertices[i];
 
@@ -106,7 +106,7 @@ public class StarController extends ElasticVertexController implements EdgeContr
 //
 //        Predicates predicates = new Predicates();
 //        predicates.hasContainers.add(new HasContainer(T.id.getAccessor(), P.within(edgeId)));
-//        return containerVertex.edges(mapping.getDirection(), new String[]{label}, predicates).next();
+//        return containerVertex.fromVertex(mapping.getDirection(), new String[]{label}, predicates).next();
 
         //TODO
         return null;
@@ -122,7 +122,7 @@ public class StarController extends ElasticVertexController implements EdgeContr
     }
 
     @Override
-    public BaseVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
+    public BaseVertex fromEdge(Direction direction, Object vertexId, String vertexLabel) {
         return null;
     }
 }
