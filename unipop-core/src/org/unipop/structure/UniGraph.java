@@ -12,7 +12,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.ArrayIterator;
-import org.unipop.controllerprovider.ControllerProvider;
+import org.unipop.controllerprovider.ControllerManager;
 import org.unipop.process.UniGraphStrategy;
 
 import java.util.Iterator;
@@ -65,16 +65,16 @@ public class UniGraph implements Graph {
 
     private UnipopFeatures features = new UnipopFeatures();
     private final Configuration configuration;
-    private ControllerProvider controllerProvider;
+    private ControllerManager controllerManager;
 
     public UniGraph(Configuration configuration) throws InstantiationException {
         try {
             configuration.setProperty(Graph.GRAPH, UniGraph.class.getName());
             this.configuration = configuration;
-            String queryHandlerName = configuration.getString("controllerProvider");
-            if(queryHandlerName != null) this.controllerProvider = (ControllerProvider)Class.forName(queryHandlerName).newInstance();
-            else throw new MissingArgumentException("No ControllerProvider configured.");//this.controllerProvider = new SimpleControllerProvider();
-            this.getControllerProvider().init(this, configuration);
+            String queryHandlerName = configuration.getString("controllerManager");
+            if(queryHandlerName != null) this.controllerManager = (ControllerManager)Class.forName(queryHandlerName).newInstance();
+            else throw new MissingArgumentException("No ControllerManager configured.");//this.controllerManager = new SimpleControllerProvider();
+            this.getControllerManager().init(this, configuration);
         } catch(Exception ex) {
             InstantiationException instantiationException = new InstantiationException();
             instantiationException.addSuppressed(ex);
@@ -82,11 +82,11 @@ public class UniGraph implements Graph {
         }
     }
 
-    public ControllerProvider getControllerProvider() {
-        return controllerProvider;
+    public ControllerManager getControllerManager() {
+        return controllerManager;
     }
 
-    public void commit() { controllerProvider.commit(); }
+    public void commit() { controllerManager.commit(); }
 
     @Override
     public Configuration configuration() {
@@ -95,12 +95,12 @@ public class UniGraph implements Graph {
 
     @Override
     public String toString() {
-        return StringFactory.graphString(this, controllerProvider.toString());
+        return StringFactory.graphString(this, controllerManager.toString());
     }
 
     @Override
     public void close() {
-        controllerProvider.close();
+        controllerManager.close();
     }
 
     @Override
@@ -135,7 +135,7 @@ public class UniGraph implements Graph {
 
         if (ids.length > 1 && !ids[0].getClass().equals(ids[1].getClass())) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
         if (Vertex.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator(ids);
-        else return transform(controllerProvider.vertices(ids));
+        else return transform(controllerManager.vertices(ids));
     }
 
     @Override
@@ -144,7 +144,7 @@ public class UniGraph implements Graph {
 
         if (ids.length > 1 && !ids[0].getClass().equals(ids[1].getClass())) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
         if (Edge.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator(ids);
-        return transform(controllerProvider.edges(ids));
+        return transform(controllerManager.edges(ids));
     }
 
     @Override
@@ -152,7 +152,7 @@ public class UniGraph implements Graph {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
-        return controllerProvider.addVertex(idValue, label, keyValues);
+        return controllerManager.addVertex(idValue, label, keyValues);
     }
 
     private <E,S>Iterator<E> transform(Iterator<S> source){

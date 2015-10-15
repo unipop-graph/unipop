@@ -29,7 +29,7 @@ public class UniGraphStrategy extends AbstractTraversalStrategy<TraversalStrateg
             if(graphStep.getIds().length > 0) return; //let Graph.vertices(ids) handle it.
 
             Predicates predicates = getPredicates(graphStep);
-            final UniGraphStartStep<?> uniGraphStartStep = new UniGraphStartStep<>(graphStep, predicates, uniGraph.getControllerProvider());
+            final UniGraphStartStep<?> uniGraphStartStep = new UniGraphStartStep<>(graphStep, predicates, uniGraph.getControllerManager());
             TraversalHelper.replaceStep(graphStep, (Step) uniGraphStartStep, traversal);
         });
 
@@ -37,7 +37,7 @@ public class UniGraphStrategy extends AbstractTraversalStrategy<TraversalStrateg
             boolean returnVertex = vertexStep.getReturnClass().equals(Vertex.class);
             Predicates predicates = returnVertex ? new Predicates() : getPredicates(vertexStep);
 
-            UniGraphVertexStep uniGraphVertexStep = new UniGraphVertexStep(vertexStep, predicates, uniGraph.getControllerProvider());
+            UniGraphVertexStep uniGraphVertexStep = new UniGraphVertexStep(vertexStep, predicates, uniGraph.getControllerManager());
             TraversalHelper.replaceStep(vertexStep, uniGraphVertexStep, traversal);
         });
 

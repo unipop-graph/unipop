@@ -94,7 +94,7 @@ public class ElasticGraphProvider extends AbstractGraphProvider {
             g.close();
         }
         if(g instanceof UniGraph)
-            ((UniGraph)g).getControllerProvider().printStats();
+            ((UniGraph)g).getControllerManager().printStats();
     }
 
     @Override

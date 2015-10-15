@@ -15,7 +15,7 @@ public class BasicGraphProvider extends ElasticGraphProvider {
     @Override
     public Configuration newGraphConfiguration(String graphName, Class<?> test, String testMethodName, Map<String, Object> configurationOverrides, LoadGraphWith.GraphData loadGraphWith) {
         Configuration configuration = super.newGraphConfiguration(graphName, test, testMethodName, configurationOverrides, loadGraphWith);
-        configuration.setProperty("controllerProvider", BasicControllerProvider.class.getName());
+        configuration.setProperty("controllerManager", BasicControllerManager.class.getName());
         return configuration;
     }
 }

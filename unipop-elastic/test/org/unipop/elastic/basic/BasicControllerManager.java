@@ -8,7 +8,7 @@ import org.elasticsearch.client.Client;
 import org.unipop.controller.EdgeController;
 import org.unipop.controller.Predicates;
 import org.unipop.controller.VertexController;
-import org.unipop.controllerprovider.ControllerProvider;
+import org.unipop.controllerprovider.ControllerManager;
 import org.unipop.elastic.controller.edge.ElasticEdgeController;
 import org.unipop.elastic.controller.vertex.ElasticVertexController;
 import org.unipop.elastic.helpers.ElasticClientFactory;
@@ -22,7 +22,7 @@ import org.unipop.structure.UniGraph;
 import java.io.IOException;
 import java.util.Iterator;
 
-public class BasicControllerProvider implements ControllerProvider {
+public class BasicControllerManager implements ControllerManager {
 
     private EdgeController edgeController;
     private VertexController vertexController;

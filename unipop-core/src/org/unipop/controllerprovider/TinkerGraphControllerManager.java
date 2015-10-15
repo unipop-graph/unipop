@@ -18,13 +18,13 @@ import java.util.Set;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.inject;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.select;
 
-public abstract class GraphSchemaControllerProvider implements ControllerProvider {
+public abstract class TinkerGraphControllerManager implements ControllerManager {
 
     protected String controller = "controller";
     private final GraphTraversalSource g;
     protected TinkerGraph schema;
 
-    public GraphSchemaControllerProvider() {
+    public TinkerGraphControllerManager() {
         this.schema = TinkerGraph.open();
         this.g = schema.traversal();
     }

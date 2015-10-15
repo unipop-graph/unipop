@@ -9,7 +9,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.*;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
-import org.unipop.controllerprovider.ControllerProvider;
+import org.unipop.controllerprovider.ControllerManager;
 import org.unipop.structure.BaseEdge;
 import org.unipop.structure.BaseVertex;
 
@@ -17,19 +17,19 @@ import java.util.*;
 
 public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, E> {
     protected final Predicates predicates;
-    protected final ControllerProvider controllerProvider;
+    protected final ControllerManager controllerManager;
     private final Direction direction;
     private final Class returnClass;
     private final String[] edgeLabels;
     private MutableMetrics metrics;
     private Iterator<Traverser<E>> results = EmptyIterator.instance();
 
-    public UniGraphVertexStep(VertexStep vertexStep, Predicates predicates, ControllerProvider controllerProvider) {
+    public UniGraphVertexStep(VertexStep vertexStep, Predicates predicates, ControllerManager controllerManager) {
         super(vertexStep.getTraversal());
         this.direction = vertexStep.getDirection();
         this.returnClass = vertexStep.getReturnClass();
         this.predicates = predicates;
-        this.controllerProvider = controllerProvider;
+        this.controllerManager = controllerManager;
         vertexStep.getLabels().forEach(label -> this.addLabel(label.toString()));
         predicates.labels.forEach(this::addLabel);
         this.edgeLabels = vertexStep.getEdgeLabels();
@@ -63,7 +63,7 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
             copyTraversers.add(traverser);
         }
 
-        results.addResults(controllerProvider.fromVertex(vertices.toArray(new BaseVertex[0]), direction, edgeLabels, predicates, metrics));
+        results.addResults(controllerManager.fromVertex(vertices.toArray(new BaseVertex[0]), direction, edgeLabels, predicates, metrics));
 
         List<Traverser<E>> returnTraversers = new ArrayList<>();
         copyTraversers.forEach(traverser -> {

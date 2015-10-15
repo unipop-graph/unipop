@@ -1,29 +1,23 @@
 package org.unipop.elastic.custom;
 
 import org.apache.commons.configuration.Configuration;
-import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticsearch.client.Client;
 import org.unipop.controller.EdgeController;
-import org.unipop.controller.Predicates;
 import org.unipop.controller.VertexController;
-import org.unipop.controllerprovider.GraphSchemaControllerProvider;
+import org.unipop.controllerprovider.TinkerGraphControllerManager;
 import org.unipop.elastic.controller.edge.ElasticEdgeController;
 import org.unipop.elastic.controller.vertex.ElasticVertexController;
 import org.unipop.elastic.helpers.ElasticClientFactory;
 import org.unipop.elastic.helpers.ElasticHelper;
 import org.unipop.elastic.helpers.ElasticMutations;
 import org.unipop.elastic.helpers.TimingAccessor;
-import org.unipop.structure.BaseEdge;
-import org.unipop.structure.BaseVertex;
 import org.unipop.structure.UniGraph;
 
 import java.io.IOException;
-import java.util.Iterator;
 
-public class ModernGraphControllerProvider extends GraphSchemaControllerProvider {
+public class ModernGraphControllerManager extends TinkerGraphControllerManager {
     private EdgeController edgeController;
     private VertexController vertexController;
     private Client client;
