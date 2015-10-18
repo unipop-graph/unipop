@@ -1,80 +1,65 @@
-# elastic-gremlin
+# Unipop
 
-[TinkerPop 3](http://tinkerpop.incubator.apache.org/docs/3.0.0-SNAPSHOT/) implementation on Elasticsearch backend. You should read up on Tinkerpop before you use elastic-gremlin.
+Federated database powered by [TinkerPop 3](http://tinkerpop.incubator.apache.org/).
 
-## Features   
-- **Scalable** <br> 
-   Using ElasticSearch's scale-out capabilities we can spread out our graph to many nodes, enabling more data while retaining good performance.
-- **Indexing** <br>
-We utilise ES's great indexing capabilities. Either let elastic-gremlin automatically create them, or configure the mappings for your specific needs. <br> 
-You can index Text (including analyzers), Numbers, Dates, Geo (just use the Geo predicate in a 'has' clause), etc..
-- **Custom Schema** <br>
-ES offers many different ways to customize the way your data is stored, enabling you to optimize it for your specific querying needs. We give you the power to use all these features and get the most out of your ES cluster.<br>
-You can also utilize this ability to query existing data that you've loaded into ElasticSearch, by mapping the data to vertex-edge relationships of different kinds.
-- **Aggregations** (Coming Soon) <br>
-Aggregation traversals (e.g. g.V().count()) can benefit greatly from ES's [Aggregation module](https://www.elastic.co/guide/en/elasticsearch/reference/1.x/search-aggregations.html)
+Most organisations have multiple sources of data: RDBMSs, Document Stores, KV Stores, special enterprise software, filesystems, etc. Usually you'll have a whole bunch of different ones. 
 
-<br>
-## Getting Started!
-1. clone & build elastic-gremlin
+Of course there's nothing wrong with diversity (different tools for different jobs...), but spreading data around makes it hard to reason about the connections between them.
 
-    ```git clone https://github.com/rmagen/elastic-gremlin.git```
-    
-    ```mvn clean install -Dmaven.test.skip=true```
-    
-2. Create an ElasticGraph:
-   
-    ```java
-    BaseConfiguration config = new BaseConfiguration();
-    /* put configuration properties as you like*/
-    ElasticGraph graph = new ElasticGraph(config);
-    GraphTraversalSource g = graph.traversal();
-    g.addV();
-    ```
-3. Or just use the Gremlin Server or Gremlin Console.
-
-<br>
-##Confiuration
-
-###Basic
-Basic usage of elastic-gremlin creates or uses an existing ES index, with each Vertex and Edge contained in its own document.
-You can customize some of the behaviour:
-
-- `elasticsearch.client` (Default: "NODE") <br>
-   The client type used to connect to elasticsearch. 
-  - `NODE` Sets up a local elasticsearch node and runs against it. elastic-gremlin defaults to NODE, so you can get up and running as quickly as possible.
-  - `TRANSPORT_CLIENT` Connects to an existing ES node.
-  - `NODE_CLIENT` An optimized way to connect to an ES cluster. 
-For more information read [here](http://www.elastic.co/guide/en/elasticsearch/client/java-api/current/client.html)
-- `elasticsearch.cluster.name`(Default: "elasticsearch")<br>
-The elasticsearch cluster's name.
-- `elasticsearch.cluster.address` (Default: "127.0.0.1:9300") <br>
-The elasticsearch nodes' address. The format is: "ip1:port1,ip2:port2,...".
-- `elasticsearch.refresh` (Default: true) <br>
-Whether to refresh the ES index before every search. Useful for testing.
-- `elasticsearch.index.name` (Default: "graph")<br>
-The name of the elasticsearch index.
-- `elasticsearch.bulk` (Default: false) <br>
-Cache all mutations in-memory and execute them in bulk when calling `ElasticGraph.commit()`.
-
-And most importantly you can customize the ES Index's Mappings to best fit your data. You can use ES's own APIs to do it. elastic-gremlin will automatically utilize your indices as best as he can.
+[Tinkerpop Gremlin](http://tinkerpop.incubator.apache.org/docs/3.0.1-incubating/) is a functional language that enables easy querying of data modeled as a graph.
+ 
+Unipop models your data and the connections between your data, and enables you to easily query it using Gremlin.
 
 
-###Advanced
-In addition to index mappings, ES offers many other ways to optimize your queries.
-- Model your documents in [different ways](https://www.elastic.co/guide/en/elasticsearch/guide/current/modeling-your-data.html) (Nested Objects, Parent-Child Relationship, etc)
-- and your [indices](https://www.elastic.co/guide/en/elasticsearch/guide/current/time-based.html)
-- [routing](https://www.elastic.co/blog/customizing-your-document-routing)
-- batch together queries 
-- upsert documents
-- and any other ES feature that could help optimize your use-case...
+#How Does it work?
 
-Implement `QueryHandler` to use a customized schema that works best for your data. <br>
-We still don't have enough documentation on this, but you can take a look at the implementations of `SimpleQueryHandler` and `ModernGraphQueryHandler`
+##Controllers
+
+The basic building blocks of a graph are Vertices and Edges.
+
+The basic building blocks of Unipop are VertexControllers and EdgeControllers.
+
+```java
+public interface VertexController {
+    Iterator<BaseVertex> vertices(Object[] ids);
+    Iterator<BaseVertex> vertices(Predicates predicates, MutableMetrics metrics);
+    BaseVertex fromEdge(Direction direction, Object vertexId, String vertexLabel);
+    BaseVertex addVertex(Object id, String label, Object[] properties);
+}
+
+public interface EdgeController {
+    Iterator<BaseEdge> edges(Object[] ids);
+    Iterator<BaseEdge> edges(Predicates predicates, MutableMetrics metrics);
+    Iterator<BaseEdge> fromVertex(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, MutableMetrics metrics);
+    BaseEdge addEdge(Object edgeId, String label,Vertex outV, Vertex inV, Object[] properties);
+}
+```
+
+Controllers are responsible for querying data and transforming the results to vertices and edges.
+Lets say we have data stored in Elasticsearch that we want to represent as vertices. We'll use an ElasticVertexController, which queries ES documents and converts them to vertices.
+But we can go a step further. Lets say that those documents have an email address in them, and we want to connect to their LinkedIn profile. First we would use a RESTVertexController in order to retrieve the profiles as vertices, and then we'd extend ElasticVertexController to represent the email field as an edge to a profile vertex (implementing both VertexController & EdgeController).
+
+We're bundling with Unipop a few generic Controllers:
+
+- ElasticSearch
+  - ElasticVertexController - ES documents as vertices.
+  - ElasticEdgeController - ES documents as edges.
+  - ElasticStarController(WIP) - ES documents as vertices, with nested documents as edges.
+  - ElasticAggregationEdgeController(TBD) - ES Aggregation query, with the results represented as edges.
+  - GeoIntersectsEdgeController(WIP) - Issues an ES spatial intersection query in order to connect two intersecting vertices. 
+- ElasticSearch2
+  - ElasticVertexController(WIP) - ES documents as vertices.
+  - ElasticEdgeController(WIP) - ES documents as edges.
+- JDBC
+  - SqlVertex(WIP) - Runs an arbitrary sql command. Each row is transformed to a vertex.
+  - SqlEdge(WIP) - Runs an arbitrary sql command. Each row is transformed to an edge.
+
+And of course you can also implement your own Controllers (and submit useful ones back to us!). The options are endless. 
+
+##ControllerManager
 
 
 
-You're welcome to send us any comments or questions (rmagen@gmail.com)
 
 
 
