@@ -1,6 +1,7 @@
 package org.unipop.elastic.custom;
 
 import org.apache.commons.configuration.Configuration;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticsearch.client.Client;
@@ -16,6 +17,8 @@ import org.unipop.elastic.helpers.TimingAccessor;
 import org.unipop.structure.UniGraph;
 
 import java.io.IOException;
+
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.inject;
 
 public class ModernGraphControllerManager extends TinkerGraphControllerManager {
     private EdgeController edgeController;
@@ -59,5 +62,13 @@ public class ModernGraphControllerManager extends TinkerGraphControllerManager {
         client.close();
     }
 
+    @Override
+    protected GraphTraversal<?, VertexController> defaultVertexControllers() {
+        return inject(vertexController);
+    }
 
+    @Override
+    protected GraphTraversal<?, EdgeController> defaultEdgeControllers() {
+        return inject(edgeController);
+    }
 }
