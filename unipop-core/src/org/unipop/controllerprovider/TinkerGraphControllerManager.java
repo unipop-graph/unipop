@@ -53,9 +53,11 @@ public abstract class TinkerGraphControllerManager implements ControllerManager 
 
     @Override
     public BaseVertex fromEdge(Direction direction, Object vertexId, String vertexLabel) {
-        return g.V()
-                //TODO: filter vertices
-                .<VertexController>values(controller).dedup()
+        GraphTraversal<Vertex, VertexController> controllers = g.V()
+                .hasLabel(vertexLabel) //TODO: filter by edge
+                .<VertexController>values(controller).dedup();
+
+        return orDefault(controllers, defaultVertexControllers())
                 .map(controller -> controller.get().fromEdge(direction, vertexId, vertexLabel))
                 .next(); //only supposed to get 1
     }
@@ -138,9 +140,11 @@ public abstract class TinkerGraphControllerManager implements ControllerManager 
     }
 
     protected Traversal<?, ?> filterPredicates(Predicates predicates) {
-        GraphTraversal<?, ?> traversal = start();
-        predicates.hasContainers.forEach(predicate ->
-                traversal.where(not(has(predicate.getKey())).or().has(predicate.getKey(), predicate.getPredicate())));
-        return traversal;
+        //if(predicates.hasContainers.size() == 0) //TODO: filter predicates
+            return constant(true).is(true);
+//        GraphTraversal<?, ?> traversal = start();
+//        predicates.hasContainers.forEach(predicate ->
+//                traversal.where(not(has(predicate.getKey())).or().has(predicate.getKey(), predicate.getPredicate())));
+//        return traversal;
     }
 }
