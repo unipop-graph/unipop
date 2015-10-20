@@ -37,8 +37,4 @@ public class BasicJdbcControllerManager extends BasicControllerManager {
 
     }
 
-    @Override
-    public void printStats() {
-
-    }
 }

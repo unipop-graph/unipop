@@ -55,10 +55,6 @@ public class BasicElasticControllerManager extends BasicControllerManager {
     @Override
     public void close() {
         client.close();
-    }
-
-    @Override
-    public void printStats() {
         timing.print();
     }
 }

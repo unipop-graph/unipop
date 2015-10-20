@@ -50,10 +50,8 @@ public class ModernGraphControllerManager extends TinkerGraphControllerManager {
     }
 
     @Override
-    public void commit() { elasticMutations.commit(); }
-
-    @Override
-    public void printStats() {
+    public void commit() {
+        elasticMutations.commit();
         timing.print();
     }
 

@@ -93,8 +93,6 @@ public class ElasticGraphProvider extends AbstractGraphProvider {
             ElasticHelper.clearIndex(client, indexName);
             g.close();
         }
-        if(g instanceof UniGraph)
-            ((UniGraph)g).getControllerManager().printStats();
     }
 
     @Override
