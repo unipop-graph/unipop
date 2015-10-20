@@ -14,7 +14,6 @@ import org.unipop.structure.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -34,8 +33,6 @@ public class ElasticGraphProvider extends AbstractGraphProvider {
         add(BaseVertexProperty.class);
     }};
 
-    private final int port;
-    private final Node node;
     private final Client client;
 
     public ElasticGraphProvider() throws IOException, ExecutionException, InterruptedException {
@@ -44,54 +41,25 @@ public class ElasticGraphProvider extends AbstractGraphProvider {
         File file = new File(path);
         FileUtils.deleteQuietly(file);
 
-        this.port = findFreePort();
-
-        node = ElasticClientFactory.createNode(CLUSTER_NAME, false, port);
+        Node node = ElasticClientFactory.createNode(CLUSTER_NAME, false, 0);
         client = node.client();
-
-
-    }
-
-    private static int findFreePort() {
-        ServerSocket socket = null;
-        try {
-            socket = new ServerSocket(0);
-            socket.setReuseAddress(true);
-            int port = socket.getLocalPort();
-            try {
-                socket.close();
-            } catch (IOException e) {
-                // Ignore IOException on close()
-            }
-            return port;
-        } catch (IOException e) {
-        } finally {
-            if (socket != null) {
-                try {
-                    socket.close();
-                } catch (IOException e) {
-                }
-            }
-        }
-        throw new IllegalStateException("Could not find a free TCP/IP port to start embedded Jetty HTTP Server on");
     }
 
     @Override
     public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName, LoadGraphWith.GraphData loadGraphWith) {
         return new HashMap<String, Object>() {{
             put(Graph.GRAPH, UniGraph.class.getName());
+            put("graphName",graphName.toLowerCase());
+            put("elasticsearch.client", ElasticClientFactory.ClientType.TRANSPORT_CLIENT);
             put("elasticsearch.cluster.name", CLUSTER_NAME);
-            put("elasticsearch.index.name",graphName.toLowerCase());
-            put("elasticsearch.refresh", true);
-            put("elasticsearch.client", ElasticClientFactory.ClientType.TRANSPORT_CLIENT.toString());
-            put("elasticsearch.cluster.address", "127.0.0.1:" + port);
+            put("elasticsearch.cluster.address", "127.0.0.1:" + client.settings().get("transport.tcp.port"));
         }};
     }
 
     @Override
     public void clear(final Graph g, final Configuration configuration) throws Exception {
         if (g != null) {
-            String indexName = configuration.getString("elasticsearch.index.name");
+            String indexName = configuration.getString("graphName");
             ElasticHelper.clearIndex(client, indexName);
             g.close();
         }

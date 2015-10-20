@@ -9,6 +9,8 @@ import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.node.*;
 
+import java.io.IOException;
+import java.net.ServerSocket;
 import java.util.concurrent.ExecutionException;
 
 public class ElasticClientFactory {
@@ -50,6 +52,7 @@ public class ElasticClientFactory {
     }
 
     public static Node createNode(String clusterName, boolean client, int port) throws ExecutionException, InterruptedException {
+        if(port == 0) port = findFreePort();
         Settings settings = NodeBuilder.nodeBuilder().settings()
                 .put("script.groovy.sandbox.enabled", true)
                 .put("script.disable_dynamic", false)
@@ -59,5 +62,29 @@ public class ElasticClientFactory {
         final ClusterHealthResponse clusterHealth = node.client().admin().cluster().prepareHealth().setTimeout(TimeValue.timeValueSeconds(10)).setWaitForGreenStatus().execute().get();
         if (clusterHealth.isTimedOut()) System.out.print(clusterHealth.getStatus());
         return node;
+    }
+
+    private static int findFreePort() {
+        ServerSocket socket = null;
+        try {
+            socket = new ServerSocket(0);
+            socket.setReuseAddress(true);
+            int port = socket.getLocalPort();
+            try {
+                socket.close();
+            } catch (IOException e) {
+                // Ignore IOException on close()
+            }
+            return port;
+        } catch (IOException e) {
+        } finally {
+            if (socket != null) {
+                try {
+                    socket.close();
+                } catch (IOException e) {
+                }
+            }
+        }
+        throw new IllegalStateException("Could not find free port");
     }
 }

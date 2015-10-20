@@ -27,18 +27,15 @@ public class ModernGraphControllerManager extends TinkerGraphControllerManager {
 
     @Override
     public void init(UniGraph graph, Configuration configuration) throws Exception {
-        String indexName = configuration.getString("elasticsearch.index.name", "unipop");
-        boolean refresh = configuration.getBoolean("elasticsearch.refresh", true);
-        int scrollSize = configuration.getInt("elasticsearch.scrollSize", 500);
-        boolean bulk = configuration.getBoolean("elasticsearch.bulk", false);
+        String indexName = configuration.getString("graphName", "unipop");
 
         client = ElasticClientFactory.create(configuration);
         ElasticHelper.createIndex(indexName, client);
 
         timing = new TimingAccessor();
-        elasticMutations = new ElasticMutations(bulk, client, timing);
-        edgeController = new ElasticEdgeController(graph, client, elasticMutations, indexName, scrollSize, refresh, timing);
-        vertexController = new ElasticVertexController(graph, client, elasticMutations, indexName, scrollSize, refresh, timing);
+        elasticMutations = new ElasticMutations(false, client, timing);
+        edgeController = new ElasticEdgeController(graph, client, elasticMutations, indexName, 500, true, timing);
+        vertexController = new ElasticVertexController(graph, client, elasticMutations, indexName, 500, true, timing);
 
         Vertex person = schema.addVertex(T.label, "person", controller, vertexController);
         person.addEdge("knows", person, controller, edgeController);
