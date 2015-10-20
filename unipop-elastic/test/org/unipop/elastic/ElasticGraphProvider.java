@@ -8,6 +8,8 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.node.Node;
+import org.unipop.elastic.controllermanagers.BasicElasticControllerManager;
+import org.unipop.elastic.controllermanagers.ModernGraphControllerManager;
 import org.unipop.elastic.helpers.ElasticClientFactory;
 import org.unipop.elastic.helpers.ElasticHelper;
 import org.unipop.structure.*;
@@ -53,6 +55,10 @@ public class ElasticGraphProvider extends AbstractGraphProvider {
             put("elasticsearch.client", ElasticClientFactory.ClientType.TRANSPORT_CLIENT);
             put("elasticsearch.cluster.name", CLUSTER_NAME);
             put("elasticsearch.cluster.address", "127.0.0.1:" + client.settings().get("transport.tcp.port"));
+
+            if(loadGraphWith != null && loadGraphWith.equals(LoadGraphWith.GraphData.MODERN))
+                put("controllerManager", ModernGraphControllerManager.class.getName());
+            else put("controllerManager", BasicElasticControllerManager.class.getName());
         }};
     }
 

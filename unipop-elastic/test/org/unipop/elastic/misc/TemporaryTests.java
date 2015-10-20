@@ -5,7 +5,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.*;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
-import org.unipop.elastic.basic.BasicGraphProvider;
+import org.unipop.elastic.ElasticGraphProvider;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
@@ -16,7 +16,7 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
 public class TemporaryTests extends AbstractGremlinTest {
 
     public TemporaryTests() throws InterruptedException, ExecutionException, IOException {
-        GraphManager.setGraphProvider(new BasicGraphProvider());
+        GraphManager.setGraphProvider(new ElasticGraphProvider());
     }
 
     @Test

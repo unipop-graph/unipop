@@ -3,9 +3,12 @@ package org.unipop.elastic.misc;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.*;
-import org.junit.*;
-import org.unipop.elastic.basic.BasicGraphProvider;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.T;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Before;
+import org.junit.Test;
+import org.unipop.elastic.ElasticGraphProvider;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -20,7 +23,7 @@ public class ConfigurationTests {
 
     @Before
     public void startUp() throws InstantiationException, IOException, ExecutionException, InterruptedException {
-        BasicGraphProvider elasticGraphProvider = new BasicGraphProvider();
+        ElasticGraphProvider elasticGraphProvider = new ElasticGraphProvider();
         HashMap<String, Object> config = new HashMap<>();
         config.put("elasticsearch.upsert", true);
         final Configuration configuration = elasticGraphProvider.newGraphConfiguration("testGraph", this.getClass(), "spatialTests",

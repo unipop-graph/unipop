@@ -6,16 +6,22 @@ import com.spatial4j.core.shape.impl.PointImpl;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.junit.*;
-import org.unipop.elastic.basic.BasicGraphProvider;
+import org.junit.Before;
+import org.junit.Test;
+import org.unipop.elastic.ElasticGraphProvider;
 import org.unipop.elastic.helpers.Geo;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
@@ -30,7 +36,7 @@ public class SpatialStepTests {
 
     @Before
     public void startUp() throws InstantiationException, IOException, ExecutionException, InterruptedException {
-        BasicGraphProvider elasticGraphProvider = new BasicGraphProvider();
+        ElasticGraphProvider elasticGraphProvider = new ElasticGraphProvider();
         final Configuration configuration = elasticGraphProvider.newGraphConfiguration("testGraph", this.getClass(), "spatialTests", LoadGraphWith.GraphData.MODERN);
         this.graph = elasticGraphProvider.openTestGraph(configuration);
 

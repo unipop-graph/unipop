@@ -1,12 +1,12 @@
-package org.unipop.elastic.basic.java;
+package org.unipop.elastic.suite;
 
 import org.apache.tinkerpop.gremlin.GraphProviderClass;
-import org.unipop.elastic.basic.BasicGraphProvider;
-import org.unipop.structure.UniGraph;
 import org.apache.tinkerpop.gremlin.process.ProcessStandardSuite;
 import org.junit.runner.RunWith;
+import org.unipop.elastic.ElasticGraphProvider;
+import org.unipop.structure.UniGraph;
 
 @RunWith(ProcessStandardSuite.class)
-@GraphProviderClass(provider = BasicGraphProvider.class, graph = UniGraph.class)
+@GraphProviderClass(provider = ElasticGraphProvider.class, graph = UniGraph.class)
 public class UniGraphProcessStandardTest {
 }

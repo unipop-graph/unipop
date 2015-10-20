@@ -2,9 +2,12 @@ package org.unipop.elastic.misc;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
-import org.apache.tinkerpop.gremlin.structure.*;
-import org.junit.*;
-import org.unipop.elastic.basic.BasicGraphProvider;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Before;
+import org.junit.Test;
+import org.unipop.elastic.ElasticGraphProvider;
 import org.unipop.elastic.helpers.TimingAccessor;
 
 import java.io.IOException;
@@ -18,7 +21,7 @@ public class PerformanceTests {
 
     @Before
     public void startUp() throws InstantiationException, IOException, ExecutionException, InterruptedException {
-        BasicGraphProvider elasticGraphProvider = new BasicGraphProvider();
+        ElasticGraphProvider elasticGraphProvider = new ElasticGraphProvider();
         final Configuration configuration = elasticGraphProvider.newGraphConfiguration("testGraph", this.getClass(), "performanceTests", LoadGraphWith.GraphData.MODERN);
         this.graph = elasticGraphProvider.openTestGraph(configuration);
     }
