@@ -16,8 +16,6 @@ import org.unipop.elastic.helpers.ElasticMutations;
 import org.unipop.elastic.helpers.TimingAccessor;
 import org.unipop.structure.UniGraph;
 
-import java.io.IOException;
-
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.inject;
 
 public class ModernGraphControllerManager extends TinkerGraphControllerManager {
@@ -28,7 +26,7 @@ public class ModernGraphControllerManager extends TinkerGraphControllerManager {
     private TimingAccessor timing;
 
     @Override
-    public void init(UniGraph graph, Configuration configuration) throws IOException {
+    public void init(UniGraph graph, Configuration configuration) throws Exception {
         String indexName = configuration.getString("elasticsearch.index.name", "unipop");
         boolean refresh = configuration.getBoolean("elasticsearch.refresh", true);
         int scrollSize = configuration.getInt("elasticsearch.scrollSize", 500);

@@ -13,8 +13,6 @@ import org.unipop.elastic.helpers.ElasticMutations;
 import org.unipop.elastic.helpers.TimingAccessor;
 import org.unipop.structure.UniGraph;
 
-import java.io.IOException;
-
 public class BasicElasticControllerManager extends BasicControllerManager {
 
     private EdgeController edgeController;
@@ -24,7 +22,7 @@ public class BasicElasticControllerManager extends BasicControllerManager {
     private TimingAccessor timing;
 
     @Override
-    public void init(UniGraph graph, Configuration configuration) throws IOException {
+    public void init(UniGraph graph, Configuration configuration) throws Exception {
         String indexName = configuration.getString("elasticsearch.index.name", "graph");
         boolean refresh = configuration.getBoolean("elasticsearch.refresh", true);
         int scrollSize = configuration.getInt("elasticsearch.scrollSize", 500);

@@ -1,11 +1,15 @@
 package org.unipop.elastic.helpers;
 
 import org.apache.commons.configuration.Configuration;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.*;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.node.*;
+
+import java.util.concurrent.ExecutionException;
 
 public class ElasticClientFactory {
 
@@ -15,7 +19,7 @@ public class ElasticClientFactory {
         public static String NODE = "NODE";
     }
 
-    public static Client create(Configuration configuration) {
+    public static Client create(Configuration configuration) throws ExecutionException, InterruptedException {
         String clientType = configuration.getString("elasticsearch.client", ClientType.NODE);
         String clusterName = configuration.getString("elasticsearch.cluster.name", "elasticsearch");
 
@@ -45,13 +49,15 @@ public class ElasticClientFactory {
         return transportClient;
     }
 
-    public static Node createNode(String clusterName, boolean client, int port) {
+    public static Node createNode(String clusterName, boolean client, int port) throws ExecutionException, InterruptedException {
         Settings settings = NodeBuilder.nodeBuilder().settings()
                 .put("script.groovy.sandbox.enabled", true)
                 .put("script.disable_dynamic", false)
                 .put("transport.tcp.port", port).build();
         Node node = NodeBuilder.nodeBuilder().client(client).data(!client).clusterName(clusterName).settings(settings).build();
         node.start();
+        final ClusterHealthResponse clusterHealth = node.client().admin().cluster().prepareHealth().setTimeout(TimeValue.timeValueSeconds(10)).setWaitForGreenStatus().execute().get();
+        if (clusterHealth.isTimedOut()) System.out.print(clusterHealth.getStatus());
         return node;
     }
 }

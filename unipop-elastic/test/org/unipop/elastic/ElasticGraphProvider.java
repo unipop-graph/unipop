@@ -2,19 +2,23 @@ package org.unipop.elastic;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.FileUtils;
-import org.apache.tinkerpop.gremlin.*;
-import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.AbstractGraphProvider;
+import org.apache.tinkerpop.gremlin.LoadGraphWith;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.elasticsearch.client.Client;
+import org.elasticsearch.node.Node;
 import org.unipop.elastic.helpers.ElasticClientFactory;
 import org.unipop.elastic.helpers.ElasticHelper;
 import org.unipop.structure.*;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.node.Node;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.net.ServerSocket;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 public class ElasticGraphProvider extends AbstractGraphProvider {
@@ -35,8 +39,7 @@ public class ElasticGraphProvider extends AbstractGraphProvider {
     private final Client client;
 
     public ElasticGraphProvider() throws IOException, ExecutionException, InterruptedException {
-        System.setProperty("build.dir", System.getProperty("user.dir") + "\\build");
-
+        //Delete elasticsearch 'data' directory
         String path = new java.io.File( "." ).getCanonicalPath() + "\\data";
         File file = new File(path);
         FileUtils.deleteQuietly(file);
@@ -46,8 +49,7 @@ public class ElasticGraphProvider extends AbstractGraphProvider {
         node = ElasticClientFactory.createNode(CLUSTER_NAME, false, port);
         client = node.client();
 
-        final ClusterHealthResponse clusterHealth = client.admin().cluster().prepareHealth().setTimeout(TimeValue.timeValueSeconds(10)).setWaitForGreenStatus().execute().get();
-        if (clusterHealth.isTimedOut()) System.out.print(clusterHealth.getStatus());
+
     }
 
     private static int findFreePort() {
