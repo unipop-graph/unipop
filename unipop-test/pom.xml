@@ -1,17 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project>
     <modelVersion>4.0.0</modelVersion>
-    <groupId>unipop</groupId>
-    <artifactId>unipop</artifactId>
-    <version>0.1</version>
-    <packaging>pom</packaging>
-    <name>Unipop</name>
-    <modules>
-        <module>unipop-core</module>
-        <module>unipop-elastic</module>
-        <module>unipop-jdbc</module>
-        <module>unipop-test</module>
-    </modules>
+    <parent>
+        <artifactId>unipop</artifactId>
+        <groupId>unipop</groupId>
+        <version>0.1</version>
+    </parent>
+    <artifactId>unipop-test</artifactId>
+    <name>Unipop :: Integration tests</name>
+    <dependencies>
+        <dependency>
+            <groupId>unipop</groupId>
+            <artifactId>unipop-elastic</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>unipop</groupId>
+            <artifactId>unipop-jdbc</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
     <build>
         <directory>${basedir}/target</directory>
         <pluginManagement>
