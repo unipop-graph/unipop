@@ -1,5 +1,6 @@
 package org.unipop.jdbc.controller.star;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
@@ -14,7 +15,9 @@ import org.unipop.structure.BaseVertex;
 import org.unipop.structure.UniGraph;
 
 import java.sql.Connection;
-import java.util.*;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.function.BiPredicate;
 
 import static org.jooq.impl.DSL.field;
@@ -60,6 +63,8 @@ public class SqlTableController implements VertexController {
         Object value = hasContainer.getValue();
         BiPredicate<?, ?> predicate = hasContainer.getBiPredicate();
 
+        if(key.equals(T.label.getAccessor())) return DSL.trueCondition();
+
         if(key.equals("~id"))
             return field(T.id.toString()).in(value.getClass().isArray() ? (Object[])value : new Object[]{value});
         Field<Object> field = field(key);
@@ -102,17 +107,12 @@ public class SqlTableController implements VertexController {
     }
 
     @Override
-    public BaseVertex addVertex(Object id, String label, Object[] properties) {
-        Collection<Field<Object>> fields = new ArrayList<>();
-        List<Object> values = new ArrayList<>();
+    public BaseVertex addVertex(Object id, String label, Map<String, Object> properties) {
+        properties.putIfAbsent("id", id);
 
-        for(int i = 0; i < properties.length; i = i+2){
-            if(properties[i].toString().equals("label")) continue;
-            fields.add(field(properties[i].toString()));
-            values.add(properties[i+1]);
-        }
+        dslContext.insertInto(table(tableName), CollectionUtils.collect(properties.keySet(), DSL::field))
+                .values(properties.values()).execute();
 
-        dslContext.insertInto(table(tableName), fields).values(values).execute();
         return new SqlVertex(id, label, properties, this, graph);
     }
 
@@ -122,12 +122,7 @@ public class SqlTableController implements VertexController {
         @Override
         public BaseVertex map(Record record) {
             Map<String, Object> stringObjectMap = record.intoMap();
-            SqlVertex vertex = new SqlVertex(stringObjectMap.get("ID"), tableName.toLowerCase(), null, self, graph);
-            stringObjectMap.forEach((key, value) -> {
-                if(value != null)
-                    vertex.addPropertyLocal(key, value);
-            });
-            return vertex;
+            return new SqlVertex(stringObjectMap.get("ID"), tableName.toLowerCase(), stringObjectMap, self, graph);
         }
     }
 }
