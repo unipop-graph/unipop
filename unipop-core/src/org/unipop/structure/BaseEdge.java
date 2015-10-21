@@ -1,15 +1,14 @@
 package org.unipop.structure;
 
 import org.apache.commons.collections4.IteratorUtils;
-import org.apache.commons.collections4.ListUtils;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
-import org.mockito.internal.util.collections.ListUtil;
 import org.unipop.controller.EdgeController;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.Map;
 
 public abstract class BaseEdge extends BaseElement implements Edge {
 
@@ -17,7 +16,7 @@ public abstract class BaseEdge extends BaseElement implements Edge {
     protected Vertex outVertex;
     private EdgeController controller;
 
-    public BaseEdge(final Object id, final String label, Object[] keyValues, Vertex outV, Vertex inV, EdgeController controller, final UniGraph graph) {
+    public BaseEdge(final Object id, final String label, Map<String, Object> keyValues, Vertex outV, Vertex inV, EdgeController controller, final UniGraph graph) {
         super(id, label, graph, keyValues);
         this.controller = controller;
         ElementHelper.validateLabel(label);

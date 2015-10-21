@@ -5,12 +5,14 @@ import org.unipop.structure.BaseVertex;
 import org.unipop.structure.BaseVertexProperty;
 import org.unipop.structure.UniGraph;
 
+import java.util.Map;
+
 import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.table;
 
 public class SqlVertex extends BaseVertex<SqlTableController>{
 
-    protected SqlVertex(Object id, String label, Object[] keyValues, SqlTableController controller, UniGraph graph) {
+    protected SqlVertex(Object id, String label, Map<String, Object> keyValues, SqlTableController controller, UniGraph graph) {
         super(id, label, keyValues, controller, graph);
     }
 

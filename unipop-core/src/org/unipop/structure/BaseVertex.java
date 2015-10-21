@@ -11,7 +11,7 @@ public abstract class BaseVertex<C extends VertexController> extends BaseElement
 
     private C controller;
 
-    protected BaseVertex(Object id, String label, Object[] keyValues, C controller, UniGraph graph) {
+    protected BaseVertex(Object id, String label, Map<String, Object> keyValues, C controller, UniGraph graph) {
         super(id, label, graph, keyValues);
         this.controller = controller;
     }
@@ -72,8 +72,10 @@ public abstract class BaseVertex<C extends VertexController> extends BaseElement
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         checkRemoved();
         Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
-
-        BaseEdge edge = graph.getControllerManager().addEdge(idValue, label, this, vertex, keyValues);
+        Map<String, Object> stringObjectMap = ElementHelper.asMap(keyValues);
+        stringObjectMap.remove("id");
+        stringObjectMap.remove("label");
+        BaseEdge edge = graph.getControllerManager().addEdge(idValue, label, this, vertex, stringObjectMap);
         return edge;
     }
 

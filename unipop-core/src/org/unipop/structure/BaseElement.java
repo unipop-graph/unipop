@@ -12,22 +12,12 @@ public abstract class BaseElement implements Element{
     protected final UniGraph graph;
     protected boolean removed = false;
 
-    public BaseElement(final Object id, final String label, UniGraph graph, Object[] keyValues) {
+    public BaseElement(final Object id, final String label, UniGraph graph, Map<String, Object> keyValues) {
         this.graph = graph;
         this.id = id != null ? id.toString() : new com.eaio.uuid.UUID().toString();
         this.label = label;
-        if(keyValues != null) ElementHelper.legalPropertyKeyValueArray(keyValues);
-
-        if (keyValues != null) {
-            if(keyValues.length % 2 == 1) throw Element.Exceptions.providedKeyValuesMustBeAMultipleOfTwo();
-            for (int i = 0; i < keyValues.length; i = i + 2) {
-                String key = keyValues[i].toString();
-                Object value = keyValues[i + 1];
-
-                addPropertyLocal(key, value);
-            }
-        }
-
+        if(keyValues != null)
+            keyValues.forEach(this::addPropertyLocal);
     }
 
     public Property addPropertyLocal(String key, Object value) {

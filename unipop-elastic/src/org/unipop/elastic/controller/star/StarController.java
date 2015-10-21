@@ -19,6 +19,7 @@ import org.unipop.structure.BaseVertex;
 import org.unipop.structure.UniGraph;
 
 import java.util.Iterator;
+import java.util.Map;
 
 public class StarController extends ElasticVertexController implements EdgeController {
 
@@ -37,7 +38,7 @@ public class StarController extends ElasticVertexController implements EdgeContr
         return vertex;
     }
 
-    protected ElasticVertex createVertex(Object id, String label, Object[] keyValues, LazyGetter lazyGetter) {
+    protected ElasticVertex createVertex(Object id, String label, Map<String, Object> keyValues, LazyGetter lazyGetter) {
         return new ElasticStarVertex(id.toString(), label, keyValues, this, graph, lazyGetter, elasticMutations, getIndex(keyValues));
     }
 
@@ -96,7 +97,7 @@ public class StarController extends ElasticVertexController implements EdgeContr
     }
 
     @Override
-    public BaseEdge addEdge(Object edgeId, String label, Vertex outV, Vertex inV, Object[] properties) {
+    public BaseEdge addEdge(Object edgeId, String label, Vertex outV, Vertex inV, Map<String, Object> properties) {
 
 //        EdgeMapping mapping = getEdgeMapping(label, Direction.OUT );
 //        if(mapping != null)

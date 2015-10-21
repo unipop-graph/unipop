@@ -61,7 +61,7 @@ public class ElasticVertexController implements VertexController {
     }
 
     @Override
-    public BaseVertex addVertex(Object id, String label, Object[] properties) {
+    public BaseVertex addVertex(Object id, String label, Map<String, Object> properties) {
         BaseVertex v = createVertex(id, label, properties, getLazyGetter());
 
         try {
@@ -89,21 +89,19 @@ public class ElasticVertexController implements VertexController {
         return lazyGetter;
     }
 
-    protected ElasticVertex createVertex(Object id, String label, Object[] keyValues, LazyGetter lazyGetter) {
+    protected ElasticVertex createVertex(Object id, String label, Map<String, Object> keyValues, LazyGetter lazyGetter) {
         return new ElasticVertex(id, label, keyValues, this, graph, lazyGetter, elasticMutations, getIndex(keyValues));
     }
 
     protected BaseVertex createVertex(SearchHit hit) {
-        BaseVertex vertex = createVertex(hit.id(), hit.getType(), null, getLazyGetter());
-        hit.getSource().entrySet().forEach((field) -> vertex.addPropertyLocal(field.getKey(), field.getValue()));
-        return vertex;
+        return createVertex(hit.id(), hit.getType(), hit.getSource(), getLazyGetter());
     }
 
     protected String getDefaultIndex() {
         return this.defaultIndex;
     }
 
-    protected String getIndex(Object[] properties) {
+    protected String getIndex(Map<String, Object> properties) {
         return getDefaultIndex();
     }
 

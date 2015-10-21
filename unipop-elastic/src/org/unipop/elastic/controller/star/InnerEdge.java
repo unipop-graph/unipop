@@ -1,17 +1,20 @@
 package org.unipop.elastic.controller.star;
 
-import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.Property;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
-import org.unipop.structure.*;
+import org.unipop.structure.BaseEdge;
+import org.unipop.structure.BaseProperty;
+import org.unipop.structure.UniGraph;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
-import java.util.Iterator;
+import java.util.Map;
 
 public class InnerEdge extends BaseEdge {
 
     private final EdgeMapping mapping;
 
-    public InnerEdge(Object edgeId, EdgeMapping mapping, Vertex outVertex, Vertex inVertex, Object[] keyValues, StarController controller, UniGraph graph) {
+    public InnerEdge(Object edgeId, EdgeMapping mapping, Vertex outVertex, Vertex inVertex, Map<String, Object> keyValues, StarController controller, UniGraph graph) {
         super(edgeId, mapping.getLabel(), keyValues, outVertex, inVertex, controller, graph);
         this.mapping = mapping;
     }

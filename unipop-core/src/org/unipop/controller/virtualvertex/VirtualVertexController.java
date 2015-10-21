@@ -42,7 +42,7 @@ public class VirtualVertexController implements VertexController {
     }
 
     @Override
-    public BaseVertex addVertex(Object id, String label, Object[] properties) {
+    public BaseVertex addVertex(Object id, String label, Map<String, Object> properties) {
         throw new UnsupportedOperationException();
     }
 }

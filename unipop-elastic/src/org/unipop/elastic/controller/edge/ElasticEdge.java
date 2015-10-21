@@ -16,7 +16,7 @@ public class ElasticEdge extends BaseEdge {
     private final ElasticMutations elasticMutations;
     private final String indexName;
 
-    public ElasticEdge(Object edgeId, String label, Object[] properties, Vertex outV, Vertex inV, ElasticEdgeController controller, UniGraph graph, ElasticMutations elasticMutations, String indexName) {
+    public ElasticEdge(Object edgeId, String label, Map<String, Object> properties, Vertex outV, Vertex inV, ElasticEdgeController controller, UniGraph graph, ElasticMutations elasticMutations, String indexName) {
         super(edgeId, label, properties, outV, inV, controller,  graph);
 
         this.elasticMutations = elasticMutations;

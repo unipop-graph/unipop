@@ -10,6 +10,7 @@ import org.unipop.structure.BaseEdge;
 import org.unipop.structure.BaseVertex;
 
 import java.util.Iterator;
+import java.util.Map;
 
 public abstract class BasicControllerManager implements ControllerManager {
 
@@ -32,7 +33,7 @@ public abstract class BasicControllerManager implements ControllerManager {
     }
 
     @Override
-    public BaseVertex addVertex(Object id, String label, Object[] properties) {
+    public BaseVertex addVertex(Object id, String label, Map<String, Object> properties) {
         return getDefaultVertexController().addVertex(id, label, properties);
     }
 
@@ -52,7 +53,7 @@ public abstract class BasicControllerManager implements ControllerManager {
     }
 
     @Override
-    public BaseEdge addEdge(Object edgeId, String label, Vertex outV, Vertex inV, Object[] properties) {
+    public BaseEdge addEdge(Object edgeId, String label, Vertex outV, Vertex inV, Map<String, Object> properties) {
         return getDefaultEdgeController().addEdge(edgeId, label, outV, inV, properties);
     }
 }
