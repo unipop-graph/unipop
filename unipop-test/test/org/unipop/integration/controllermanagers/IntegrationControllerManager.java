@@ -1,6 +1,7 @@
 package org.unipop.integration.controllermanagers;
 
 import org.apache.commons.configuration.Configuration;
+import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticsearch.client.Client;
@@ -40,9 +41,12 @@ public class IntegrationControllerManager extends TinkerGraphControllerManager {
         edgeController = new ElasticEdgeController(graph, client, elasticMutations, indexName, 500, true, timing);
         vertexController = new ElasticVertexController(graph, client, elasticMutations, indexName, 500, true, timing);
 
-        Class.forName("org.h2.Driver");
-        this.jdbcConnection = DriverManager.getConnection("jdbc:h2:~/test", "sa", "");
-        SqlTableController personController = new SqlTableController("PERSON", graph, this.jdbcConnection);
+        VertexController personController = vertexController;
+        if(configuration.getString("loadGraphWith").equals(LoadGraphWith.GraphData.MODERN.toString())){
+            Class.forName("org.h2.Driver");
+            this.jdbcConnection = DriverManager.getConnection("jdbc:h2:~/test", "sa", "");
+            personController = new SqlTableController("PERSON", graph, this.jdbcConnection);
+        }
 
         Vertex person = schema.addVertex(T.label, "person", controller, personController);
         person.addEdge("knows", person, controller, edgeController);
@@ -61,7 +65,8 @@ public class IntegrationControllerManager extends TinkerGraphControllerManager {
     public void close() {
         client.close();
         try {
-            jdbcConnection.close();
+            if(jdbcConnection != null)
+                jdbcConnection.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
