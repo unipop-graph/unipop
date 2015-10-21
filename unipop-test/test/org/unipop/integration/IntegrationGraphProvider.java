@@ -15,6 +15,9 @@ import org.unipop.structure.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -35,8 +38,9 @@ public class IntegrationGraphProvider extends AbstractGraphProvider {
     }};
 
     private final Client client;
+    private final Connection jdbcConnection;
 
-    public IntegrationGraphProvider() throws IOException, ExecutionException, InterruptedException {
+    public IntegrationGraphProvider() throws IOException, ExecutionException, InterruptedException, SQLException, ClassNotFoundException {
         //Delete elasticsearch 'data' directory
         String path = new java.io.File( "." ).getCanonicalPath() + "\\data";
         File file = new File(path);
@@ -44,6 +48,10 @@ public class IntegrationGraphProvider extends AbstractGraphProvider {
 
         Node node = ElasticClientFactory.createNode(CLUSTER_NAME, false, 0);
         client = node.client();
+
+        Class.forName("org.h2.Driver");
+        this.jdbcConnection = DriverManager.getConnection("jdbc:h2:~/test", "sa", "");
+        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS PERSON(id int NOT NULL PRIMARY KEY, name varchar(100), age int, known_by int, known_weight float);");
     }
 
     @Override
@@ -65,6 +73,8 @@ public class IntegrationGraphProvider extends AbstractGraphProvider {
             ElasticHelper.clearIndex(client, indexName);
             g.close();
         }
+
+        jdbcConnection.createStatement().execute("TRUNCATE TABLE PERSON;");
     }
 
     @Override

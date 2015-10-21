@@ -8,7 +8,7 @@ import org.unipop.structure.*;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-public class ElasticVertex extends BaseVertex {
+public class ElasticVertex extends BaseVertex<ElasticVertexController> {
     private final ElasticMutations elasticMutations;
     private final String indexName;
     private LazyGetter lazyGetter;

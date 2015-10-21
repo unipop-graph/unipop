@@ -7,11 +7,11 @@ import org.unipop.controller.VertexController;
 
 import java.util.*;
 
-public abstract class BaseVertex extends BaseElement implements Vertex {
+public abstract class BaseVertex<C extends VertexController> extends BaseElement implements Vertex {
 
-    private VertexController controller;
+    private C controller;
 
-    protected BaseVertex(Object id, String label, Object[] keyValues, VertexController controller, UniGraph graph) {
+    protected BaseVertex(Object id, String label, Object[] keyValues, C controller, UniGraph graph) {
         super(id, label, graph, keyValues);
         this.controller = controller;
     }
@@ -106,7 +106,7 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
         return null;
     }
 
-    public VertexController getController() {
+    public C getController() {
         return controller;
     }
 }
