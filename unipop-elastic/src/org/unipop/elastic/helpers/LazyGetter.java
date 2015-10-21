@@ -46,8 +46,11 @@ public class LazyGetter {
         timing.stop("lazyMultiGet");
 
         multiGetItemResponses.forEach(response -> {
-            if (response.isFailed() || !response.getResponse().isExists()) {
+            if (response.isFailed()) {
                 System.out.println(response.getFailure().getMessage());
+                return;
+            }
+            if (!response.getResponse().isExists()) {
                 return;
             }
             List<BaseVertex> vertices = keyToVertices.get(new GetKey(response.getId(), response.getType(), response.getIndex()));

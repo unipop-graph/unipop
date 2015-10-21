@@ -128,7 +128,7 @@ public class ElasticHelper {
                 else  boolFilterBuilder.must(FilterBuilders.termsFilter (key, value));
             }
         } else if (predicate instanceof Geo) boolFilterBuilder.must(new GeoShapeFilterBuilder(key, GetShapeBuilder(value), ((Geo) predicate).getRelation()));
-        else throw new IllegalArgumentException("predicate not supported by elastic-gremlin: " + predicate.toString());
+        else throw new IllegalArgumentException("predicate not supported by unipop: " + predicate.toString());
     }
 
     private static ShapeBuilder GetShapeBuilder(Object object) {
