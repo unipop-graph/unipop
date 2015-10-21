@@ -5,10 +5,7 @@ import org.apache.commons.collections4.iterators.TransformIterator;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.Transaction;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.ArrayIterator;
@@ -16,6 +13,7 @@ import org.unipop.controllerprovider.ControllerManager;
 import org.unipop.process.UniGraphStrategy;
 
 import java.util.Iterator;
+import java.util.Map;
 
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.VertexTest$BasicVertexTest", method = "shouldNotGetConcurrentModificationException",
         reason = "need to investigate...")
@@ -152,7 +150,10 @@ public class UniGraph implements Graph {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
-        return controllerManager.addVertex(idValue, label, keyValues);
+        Map<String, Object> stringObjectMap = ElementHelper.asMap(keyValues);
+        stringObjectMap.remove("id");
+        stringObjectMap.remove("label");
+        return controllerManager.addVertex(idValue, label, stringObjectMap);
     }
 
     private <E,S>Iterator<E> transform(Iterator<S> source){
