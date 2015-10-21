@@ -21,6 +21,7 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
     private final Direction direction;
     private final Class returnClass;
     private final String[] edgeLabels;
+    private final int bulk;
     private MutableMetrics metrics;
     private Iterator<Traverser<E>> results = EmptyIterator.instance();
 
@@ -38,6 +39,8 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
 
         Optional<StandardTraversalMetrics> metrics = this.getTraversal().asAdmin().getSideEffects().<StandardTraversalMetrics>get(TraversalMetrics.METRICS_KEY);
         if(metrics.isPresent()) this.metrics = (MutableMetrics) metrics.get().getMetrics(this.getId());
+
+        this.bulk = getTraversal().getGraph().get().configuration().getInt("bulk", 100);
     }
 
     @Override
@@ -56,7 +59,7 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
         List<Traverser.Admin<Vertex>> copyTraversers = new ArrayList<>();
         List<BaseVertex> vertices = new ArrayList<>();
 
-        while(traversers.hasNext() && vertices.size() <= 100)
+        while(traversers.hasNext() && vertices.size() <= bulk)
         {
             Traverser.Admin<Vertex> traverser = traversers.next();
             vertices.add((BaseVertex) traverser.get());
