@@ -15,6 +15,7 @@ import org.unipop.structure.BaseVertex;
 import org.unipop.structure.UniGraph;
 
 import java.sql.Connection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -29,16 +30,15 @@ public class SqlTableController implements VertexController {
     private final UniGraph graph;
     private final Connection conn;
     private final String tableName;
-    private final EdgeMapping[] mappings;
     private final VertexMapper vertexMapper;
 
-    public SqlTableController(String tableName, UniGraph graph, Connection conn,  EdgeMapping... mappings) {
+    public SqlTableController(String tableName, UniGraph graph, Connection conn) {
         this.graph = graph;
         this.conn = conn;
         this.tableName = tableName;
-        this.mappings = mappings;
         dslContext = DSL.using(conn, SQLDialect.DEFAULT);
         vertexMapper = new VertexMapper();
+        //dslContext.settings().setRenderNameStyle(RenderNameStyle.AS_IS);
     }
 
     public DSLContext getContext() {
@@ -106,8 +106,11 @@ public class SqlTableController implements VertexController {
         return dslContext.select().from(tableName).where(field("id").eq(vertexId)).fetchOne(vertexMapper);
     }
 
+    int count = 10000;
+
     @Override
     public BaseVertex addVertex(Object id, String label, Map<String, Object> properties) {
+        if(id == null) id = count++; //TODO: make this smarter...
         properties.putIfAbsent("id", id);
 
         dslContext.insertInto(table(tableName), CollectionUtils.collect(properties.keySet(), DSL::field))
@@ -121,8 +124,10 @@ public class SqlTableController implements VertexController {
 
         @Override
         public BaseVertex map(Record record) {
-            Map<String, Object> stringObjectMap = record.intoMap();
-            return new SqlVertex(stringObjectMap.get("ID"), tableName.toLowerCase(), stringObjectMap, self, graph);
+            //Change keys to lower-case. TODO: make configurable mapping
+            Map<String, Object> stringObjectMap = new HashMap<>();
+            record.intoMap().forEach((key, value) -> stringObjectMap.put(key.toLowerCase(), value));
+            return new SqlVertex(stringObjectMap.get("id"), tableName.toLowerCase(), stringObjectMap, self, graph);
         }
     }
 }
