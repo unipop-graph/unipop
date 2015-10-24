@@ -28,13 +28,12 @@ public class SqlTableController implements VertexController {
 
     private final DSLContext dslContext;
     private final UniGraph graph;
-    private final Connection conn;
     private final String tableName;
     private final VertexMapper vertexMapper;
+    int idCount = 10000;
 
     public SqlTableController(String tableName, UniGraph graph, Connection conn) {
         this.graph = graph;
-        this.conn = conn;
         this.tableName = tableName;
         dslContext = DSL.using(conn, SQLDialect.DEFAULT);
         vertexMapper = new VertexMapper();
@@ -56,6 +55,34 @@ public class SqlTableController implements VertexController {
         predicates.hasContainers.forEach(hasContainer -> select.where(createCondition(hasContainer)));
         //select.limit((int)predicates.limitLow, predicates.limitHigh < Long.MAX_VALUE ? (int)(predicates.limitHigh - predicates.limitLow) : Integer.MAX_VALUE);
         return select.fetch(vertexMapper).iterator();
+    }
+
+    @Override
+    public BaseVertex fromEdge(Direction direction, Object vertexId, String vertexLabel) {
+        return dslContext.select().from(tableName).where(field("id").eq(vertexId)).fetchOne(vertexMapper);
+    }
+
+    @Override
+    public BaseVertex addVertex(Object id, String label, Map<String, Object> properties) {
+        if(id == null) id = idCount++; //TODO: make this smarter...
+        properties.putIfAbsent("id", id);
+
+        dslContext.insertInto(table(tableName), CollectionUtils.collect(properties.keySet(), DSL::field))
+                .values(properties.values()).execute();
+
+        return new SqlVertex(id, label, properties, this, graph);
+    }
+
+    private SqlTableController self = this;
+    private class VertexMapper implements RecordMapper<Record, BaseVertex> {
+
+        @Override
+        public BaseVertex map(Record record) {
+            //Change keys to lower-case. TODO: make configurable mapping
+            Map<String, Object> stringObjectMap = new HashMap<>();
+            record.intoMap().forEach((key, value) -> stringObjectMap.put(key.toLowerCase(), value));
+            return new SqlVertex(stringObjectMap.get("id"), tableName.toLowerCase(), stringObjectMap, self, graph);
+        }
     }
 
     private Condition createCondition(HasContainer hasContainer) {
@@ -95,39 +122,9 @@ public class SqlTableController implements VertexController {
             if (predicate == Contains.without) return field.isNull();
             else if (predicate == Contains.within){
                 if(value == null) return field.isNotNull();
-               // else
+                // else
             }
         }
         throw new IllegalArgumentException("predicate not supported by unipop: " + predicate.toString());
-    }
-
-    @Override
-    public BaseVertex fromEdge(Direction direction, Object vertexId, String vertexLabel) {
-        return dslContext.select().from(tableName).where(field("id").eq(vertexId)).fetchOne(vertexMapper);
-    }
-
-    int count = 10000;
-
-    @Override
-    public BaseVertex addVertex(Object id, String label, Map<String, Object> properties) {
-        if(id == null) id = count++; //TODO: make this smarter...
-        properties.putIfAbsent("id", id);
-
-        dslContext.insertInto(table(tableName), CollectionUtils.collect(properties.keySet(), DSL::field))
-                .values(properties.values()).execute();
-
-        return new SqlVertex(id, label, properties, this, graph);
-    }
-
-    private SqlTableController self = this;
-    private class VertexMapper implements RecordMapper<Record, BaseVertex> {
-
-        @Override
-        public BaseVertex map(Record record) {
-            //Change keys to lower-case. TODO: make configurable mapping
-            Map<String, Object> stringObjectMap = new HashMap<>();
-            record.intoMap().forEach((key, value) -> stringObjectMap.put(key.toLowerCase(), value));
-            return new SqlVertex(stringObjectMap.get("id"), tableName.toLowerCase(), stringObjectMap, self, graph);
-        }
     }
 }
