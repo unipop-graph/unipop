@@ -11,14 +11,12 @@ public class LazyGetter {
     private static final int MAX_LAZY_GET = 1000;
     private Client client;
     private TimingAccessor timing;
-    private boolean refresh;
     private boolean executed = false;
     private HashMap<GetKey, List<BaseVertex>> keyToVertices = new HashMap();
 
-    public LazyGetter(Client client, TimingAccessor timing, boolean refresh) {
+    public LazyGetter(Client client, TimingAccessor timing) {
         this.client = client;
         this.timing = timing;
-        this.refresh = refresh;
     }
 
     public Boolean canRegister() {
@@ -40,7 +38,7 @@ public class LazyGetter {
         if (executed) return;
 
         timing.start("lazyMultiGet");
-        MultiGetRequestBuilder multiGetRequestBuilder = client.prepareMultiGet().setRefresh(refresh);
+        MultiGetRequestBuilder multiGetRequestBuilder = client.prepareMultiGet();
         keyToVertices.keySet().forEach(key -> multiGetRequestBuilder.add(key.indexName, key.type, key.id));
         MultiGetResponse multiGetItemResponses = multiGetRequestBuilder.execute().actionGet();
         timing.stop("lazyMultiGet");

@@ -58,14 +58,17 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
 
     @Override
     public Iterator<BaseEdge> edges(Predicates predicates, MutableMetrics metrics) {
+        elasticMutations.refresh();
         BoolFilterBuilder boolFilter = ElasticHelper.createFilterBuilder(predicates.hasContainers);
         boolFilter.must(FilterBuilders.existsFilter(ElasticEdge.InId));
         return new QueryIterator<>(boolFilter, 0, scrollSize, predicates.limitHigh - predicates.limitLow,
-                client, this::createEdge, refresh, timing, indexName);
+                client, this::createEdge, timing, indexName);
     }
 
     @Override
     public Iterator<BaseEdge> fromVertex(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, MutableMetrics metrics) {
+        elasticMutations.refresh();
+
         Object[] vertexIds = new Object[vertices.length];
         for(int i = 0; i < vertices.length; i++) vertexIds[i] = vertices[i].id();
 
@@ -82,7 +85,7 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
                     FilterBuilders.termsFilter(ElasticEdge.InId, vertexIds),
                     FilterBuilders.termsFilter(ElasticEdge.OutId, vertexIds)));
 
-        return new QueryIterator<>(boolFilter, 0, scrollSize, predicates.limitHigh - predicates.limitLow, client, this::createEdge , refresh, timing, indexName);
+        return new QueryIterator<>(boolFilter, 0, scrollSize, predicates.limitHigh - predicates.limitLow, client, this::createEdge, timing, indexName);
     }
 
     @Override

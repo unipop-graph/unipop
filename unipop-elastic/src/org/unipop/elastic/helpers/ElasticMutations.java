@@ -1,7 +1,6 @@
 package org.unipop.elastic.helpers;
 
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.delete.DeleteRequestBuilder;
 import org.elasticsearch.action.index.IndexRequestBuilder;
@@ -9,7 +8,8 @@ import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.Client;
 import org.unipop.structure.BaseElement;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 public class ElasticMutations {
@@ -69,7 +69,10 @@ public class ElasticMutations {
         timing.stop("bulk");
     }
 
-    public int getRevision() {
-        return revision;
+    public void refresh(String... indices) {
+        if (revision > 0) {
+            client.admin().indices().prepareRefresh(indices).execute().actionGet();
+            revision = 0;
+        }
     }
 }

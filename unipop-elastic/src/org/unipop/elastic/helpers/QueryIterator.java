@@ -21,13 +21,13 @@ public class QueryIterator<E extends Element> implements Iterator<E> {
 
     public QueryIterator(FilterBuilder filter, int startFrom, int scrollSize, long maxSize, Client client,
                          Function<SearchHit,? extends E> convertFunc,
-                         Boolean refresh, TimingAccessor timing, String... indices) {
+                          TimingAccessor timing, String... indices) {
         this.client = client;
         this.allowedRemaining = maxSize;
         this.convertFunc = convertFunc;
         this.timing = timing;
 
-        if (refresh) client.admin().indices().prepareRefresh(indices).execute().actionGet();
+
         this.timing.start("query");
         scrollResponse = client.prepareSearch(indices)
                 .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), filter))

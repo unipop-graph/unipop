@@ -49,10 +49,11 @@ public class ElasticVertexController implements VertexController {
 
     @Override
     public Iterator<BaseVertex> vertices(Predicates predicates, MutableMetrics metrics) {
+        elasticMutations.refresh();
         BoolFilterBuilder boolFilter = ElasticHelper.createFilterBuilder(predicates.hasContainers);
         boolFilter.must(FilterBuilders.missingFilter(ElasticEdge.InId));
         return new QueryIterator<>(boolFilter, 0, scrollSize, predicates.limitHigh - predicates.limitLow,
-                client, this::createVertex, refresh, timing, getDefaultIndex());
+                client, this::createVertex, timing, getDefaultIndex());
     }
 
     @Override
@@ -74,7 +75,7 @@ public class ElasticVertexController implements VertexController {
 
     private LazyGetter getLazyGetter() {
         if (defaultLazyGetter == null || !defaultLazyGetter.canRegister()) {
-            defaultLazyGetter = new LazyGetter(client, timing, refresh);
+            defaultLazyGetter = new LazyGetter(client, timing);
         }
         return defaultLazyGetter;
     }
@@ -82,7 +83,7 @@ public class ElasticVertexController implements VertexController {
     private LazyGetter getLazyGetter(Direction direction) {
         LazyGetter lazyGetter = lazyGetters.get(direction);
         if (lazyGetter == null || !lazyGetter.canRegister()) {
-            lazyGetter = new LazyGetter(client, timing, refresh);
+            lazyGetter = new LazyGetter(client, timing);
             lazyGetters.put(direction,
                     lazyGetter);
         }

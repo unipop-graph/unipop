@@ -55,6 +55,7 @@ public class StarController extends ElasticVertexController implements EdgeContr
 
     @Override
     public Iterator<BaseEdge> fromVertex(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, MutableMetrics metrics) {
+        elasticMutations.refresh();
         Object[] vertexIds = new Object[vertices.length];
         for(int i = 0; i < vertices.length; i++) vertexIds[i] = vertices[i];
 
@@ -71,7 +72,7 @@ public class StarController extends ElasticVertexController implements EdgeContr
         }
 
         QueryIterator<BaseVertex> results = new QueryIterator<>(boolFilter, 0, scrollSize,
-                predicates.limitHigh - predicates.limitLow, client, this::createVertex, refresh, timing, getDefaultIndex());
+                predicates.limitHigh - predicates.limitLow, client, this::createVertex, timing, getDefaultIndex());
 
         return new Iterator<BaseEdge>() {
             public Iterator<BaseEdge> currentIterator = EmptyIterator.instance();
