@@ -21,6 +21,8 @@ public abstract class BaseElement implements Element{
     }
 
     public Property addPropertyLocal(String key, Object value) {
+        if(key == null || value == null) return null;
+
         checkRemoved();
         if (shouldAddProperty(key)) {
             ElementHelper.validateProperty(key, value);
