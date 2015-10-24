@@ -64,7 +64,8 @@ public class IntegrationGraphProvider extends AbstractGraphProvider {
             put("elasticsearch.cluster.address", "127.0.0.1:" + client.settings().get("transport.tcp.port"));
             put("controllerManager", IntegrationControllerManager.class.getName());
             put("controllerManager", IntegrationControllerManager.class.getName());
-            put("loadGraphWith", loadGraphWith.toString());
+            if(loadGraphWith != null)
+                put("loadGraphWith", loadGraphWith.toString());
         }};
     }
 

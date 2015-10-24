@@ -42,7 +42,7 @@ public class IntegrationControllerManager extends TinkerGraphControllerManager {
         vertexController = new ElasticVertexController(graph, client, elasticMutations, indexName, 500, true, timing);
 
         VertexController personController = vertexController;
-        if(configuration.getString("loadGraphWith").equals(LoadGraphWith.GraphData.MODERN.toString())){
+        if(configuration.getString("loadGraphWith", "").equals(LoadGraphWith.GraphData.MODERN.toString())){
             Class.forName("org.h2.Driver");
             this.jdbcConnection = DriverManager.getConnection("jdbc:h2:~/test", "sa", "");
             personController = new SqlTableController("PERSON", graph, this.jdbcConnection);
