@@ -34,8 +34,8 @@ public class ModernGraphControllerManager extends TinkerGraphControllerManager {
 
         timing = new TimingAccessor();
         elasticMutations = new ElasticMutations(false, client, timing);
-        edgeController = new ElasticEdgeController(graph, client, elasticMutations, indexName, 500, true, timing);
-        vertexController = new ElasticVertexController(graph, client, elasticMutations, indexName, 500, true, timing);
+        edgeController = new ElasticEdgeController(graph, client, elasticMutations, indexName, 500, timing);
+        vertexController = new ElasticVertexController(graph, client, elasticMutations, indexName, 500, timing);
 
         Vertex person = schema.addVertex(T.label, "person", controller, vertexController);
         person.addEdge("knows", person, controller, edgeController);

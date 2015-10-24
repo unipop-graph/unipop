@@ -26,8 +26,8 @@ public class StarController extends ElasticVertexController implements EdgeContr
     private EdgeMapping[] edgeMappings;
 
     public StarController(UniGraph graph, Client client, ElasticMutations elasticMutations, String defaultIndex,
-                          int scrollSize, boolean refresh, TimingAccessor timing, EdgeMapping... edgeMappings) {
-        super(graph, client, elasticMutations, defaultIndex, scrollSize, refresh, timing);
+                          int scrollSize, TimingAccessor timing, EdgeMapping... edgeMappings) {
+        super(graph, client, elasticMutations, defaultIndex, scrollSize, timing);
         this.edgeMappings = edgeMappings;
     }
 

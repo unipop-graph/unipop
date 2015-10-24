@@ -19,20 +19,18 @@ public class ElasticVertexController implements VertexController {
     protected Client client;
     protected ElasticMutations elasticMutations;
     protected final int scrollSize;
-    protected final boolean refresh;
     protected TimingAccessor timing;
     private String defaultIndex;
     private Map<Direction, LazyGetter> lazyGetters;
     private LazyGetter defaultLazyGetter;
 
     public ElasticVertexController(UniGraph graph, Client client, ElasticMutations elasticMutations, String defaultIndex,
-                                   int scrollSize, boolean refresh, TimingAccessor timing) {
+                                   int scrollSize, TimingAccessor timing) {
         this.graph = graph;
         this.client = client;
         this.elasticMutations = elasticMutations;
         this.defaultIndex = defaultIndex;
         this.scrollSize = scrollSize;
-        this.refresh = refresh;
         this.timing = timing;
         this.lazyGetters = new HashMap<>();
     }

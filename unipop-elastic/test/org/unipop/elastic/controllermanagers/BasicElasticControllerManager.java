@@ -30,8 +30,8 @@ public class BasicElasticControllerManager extends BasicControllerManager {
 
         timing = new TimingAccessor();
         elasticMutations = new ElasticMutations(false, client, timing);
-        edgeController = new ElasticEdgeController(graph, client, elasticMutations, indexName, 500, true, timing);
-        vertexController = new ElasticVertexController(graph, client, elasticMutations, indexName, 500, true, timing);
+        edgeController = new ElasticEdgeController(graph, client, elasticMutations, indexName, 500, timing);
+        vertexController = new ElasticVertexController(graph, client, elasticMutations, indexName, 500, timing);
     }
 
     @Override

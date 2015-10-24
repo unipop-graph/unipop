@@ -27,23 +27,21 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
     private final ElasticMutations elasticMutations;
     private final String indexName;
     private final int scrollSize;
-    private final boolean refresh;
     private TimingAccessor timing;
 
     public ElasticEdgeController(UniGraph graph, Client client, ElasticMutations elasticMutations, String indexName,
-                                 int scrollSize, boolean refresh, TimingAccessor timing) {
+                                 int scrollSize, TimingAccessor timing) {
         this.graph = graph;
         this.client = client;
         this.elasticMutations = elasticMutations;
         this.indexName = indexName;
         this.scrollSize = scrollSize;
-        this.refresh = refresh;
         this.timing = timing;
     }
 
     @Override
     public Iterator<BaseEdge> edges(Object[] ids) {
-        MultiGetRequest request = new MultiGetRequest().refresh(refresh);
+        MultiGetRequest request = new MultiGetRequest();
         for (Object id : ids) request.add(indexName, null, id.toString());
         MultiGetResponse responses = client.multiGet(request).actionGet();
 
