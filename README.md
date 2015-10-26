@@ -1,15 +1,16 @@
 # Unipop
 
-Federated database powered by [TinkerPop 3](http://tinkerpop.incubator.apache.org/).
+Graph queries for your existing databases, powered by [TinkerPop 3](http://tinkerpop.incubator.apache.org/).
 
 Most organisations have multiple sources of data: RDBMSs, Document Stores, KV Stores, special enterprise software, filesystems, etc. Usually you'll have a whole bunch of different ones. 
+Of course there's nothing wrong with diversity (different tools for different jobs...), but spreading data around makes it hard to query and to reason about the relationships in your data.
 
-Of course there's nothing wrong with diversity (different tools for different jobs...), but spreading data around makes it hard to reason about the connections between them.
+Unipop does not store data. Unipop connects to your databases, creates a model of your data and the relationships between your data, and enables you to easily query it using Gremlin.
 
 [Tinkerpop Gremlin](http://tinkerpop.incubator.apache.org/docs/3.0.1-incubating/) is a functional language that enables easy querying of data modeled as a graph.
- 
-Unipop models your data and the connections between your data, and enables you to easily query it using Gremlin.
 
+There are other projects with similiar goals as Unipop ([Drill](http://drill.apache.org/), [Calcite](https://calcite.incubator.apache.org/), [Dremel](http://research.google.com/pubs/pub36632.html)). These projects utilize SQL as their query language, which is fine for simple queries, but can quickly become a [JOIN nightmare](http://sql2gremlin.com/#_recommendation) when making complicated queries.
+OTOH, Gremlin enables a very easy and natural way to query your data.
 
 #How Does it work?
 
