@@ -1,3 +1,5 @@
+<img src="https://raw.githubusercontent.com/rmagen/unipop/master/docs/images/unipop-logo.png" width=150/>
+
 # Unipop
 Run Graph queries on your existing databases.
 
