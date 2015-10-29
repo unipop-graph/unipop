@@ -17,7 +17,7 @@ import org.unipop.elastic.helpers.ElasticClientFactory;
 import org.unipop.elastic.helpers.ElasticHelper;
 import org.unipop.elastic.helpers.ElasticMutations;
 import org.unipop.elastic.helpers.TimingAccessor;
-import org.unipop.jdbc.controller.star.SqlTableController;
+import org.unipop.jdbc.controller.vertex.SqlVertexController;
 import org.unipop.structure.BaseVertex;
 import org.unipop.structure.UniGraph;
 
@@ -50,7 +50,7 @@ public class IntegrationControllerManager extends TinkerGraphControllerManager {
         if(configuration.getString("loadGraphWith", "").equals(LoadGraphWith.GraphData.MODERN.toString())){
             Class.forName("org.h2.Driver");
             this.jdbcConnection = DriverManager.getConnection("jdbc:h2:~/test", "sa", "");
-            personController = new SqlTableController("PERSON", graph, this.jdbcConnection);
+            personController = new SqlVertexController("PERSON", graph, this.jdbcConnection);
         }
 
         Vertex person = schema.addVertex(T.label, "person", controller, personController);

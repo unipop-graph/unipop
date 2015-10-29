@@ -1,4 +1,4 @@
-package org.unipop.jdbc.controller.star;
+package org.unipop.jdbc.controller.vertex;
 
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.unipop.structure.BaseVertex;
@@ -10,9 +10,9 @@ import java.util.Map;
 import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.table;
 
-public class SqlVertex extends BaseVertex<SqlTableController>{
+public class SqlVertex extends BaseVertex<SqlVertexController>{
 
-    protected SqlVertex(Object id, String label, Map<String, Object> keyValues, SqlTableController controller, UniGraph graph) {
+    protected SqlVertex(Object id, String label, Map<String, Object> keyValues, SqlVertexController controller, UniGraph graph) {
         super(id, label, keyValues, controller, graph);
     }
 
