@@ -37,6 +37,8 @@ public class ElasticGraphProvider extends AbstractGraphProvider {
     private final Client client;
 
     public ElasticGraphProvider() throws IOException, ExecutionException, InterruptedException {
+        //patch for failing IO tests that wrute to disk
+        System.setProperty("build.dir", System.getProperty("user.dir") + "\\build");
         //Delete elasticsearch 'data' directory
         String path = new java.io.File( "." ).getCanonicalPath() + "\\data";
         File file = new File(path);

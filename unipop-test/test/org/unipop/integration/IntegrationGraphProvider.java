@@ -41,6 +41,8 @@ public class IntegrationGraphProvider extends AbstractGraphProvider {
     private final Connection jdbcConnection;
 
     public IntegrationGraphProvider() throws IOException, ExecutionException, InterruptedException, SQLException, ClassNotFoundException {
+        //patch for failing IO tests that wrute to disk
+        System.setProperty("build.dir", System.getProperty("user.dir") + "\\build");
         //Delete elasticsearch 'data' directory
         String path = new java.io.File( "." ).getCanonicalPath() + "\\data";
         File file = new File(path);
@@ -62,7 +64,6 @@ public class IntegrationGraphProvider extends AbstractGraphProvider {
             put("elasticsearch.client", ElasticClientFactory.ClientType.TRANSPORT_CLIENT);
             put("elasticsearch.cluster.name", CLUSTER_NAME);
             put("elasticsearch.cluster.address", "127.0.0.1:" + client.settings().get("transport.tcp.port"));
-            put("controllerManager", IntegrationControllerManager.class.getName());
             put("controllerManager", IntegrationControllerManager.class.getName());
             if(loadGraphWith != null)
                 put("loadGraphWith", loadGraphWith.toString());
