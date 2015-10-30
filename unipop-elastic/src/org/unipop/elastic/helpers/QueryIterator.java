@@ -1,6 +1,7 @@
 package org.unipop.elastic.helpers;
 
 import org.apache.tinkerpop.gremlin.structure.*;
+import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.unit.TimeValue;
@@ -16,12 +17,14 @@ public class QueryIterator<E extends Element> implements Iterator<E> {
     private long allowedRemaining;
     private final Function<SearchHit,? extends E> convertFunc;
     private TimingAccessor timing;
+    private final int scrollSize;
     private Client client;
     private Iterator<SearchHit> hits;
 
     public QueryIterator(FilterBuilder filter, int startFrom, int scrollSize, long maxSize, Client client,
                          Function<SearchHit,? extends E> convertFunc,
                           TimingAccessor timing, String... indices) {
+        this.scrollSize = scrollSize;
         this.client = client;
         this.allowedRemaining = maxSize;
         this.convertFunc = convertFunc;
@@ -29,12 +32,16 @@ public class QueryIterator<E extends Element> implements Iterator<E> {
 
 
         this.timing.start("query");
-        scrollResponse = client.prepareSearch(indices)
+        SearchRequestBuilder searchRequestBuilder = client.prepareSearch(indices)
                 .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), filter))
-                .setFrom(startFrom)
-                .setScroll(new TimeValue(60000))
-                .setSize(maxSize < scrollSize ? (int) maxSize : scrollSize)
-                .execute().actionGet();
+                .setFrom(startFrom);
+
+        if(scrollSize > 0)
+            searchRequestBuilder.setScroll(new TimeValue(60000))
+            .setSize(maxSize < scrollSize ? (int) maxSize : scrollSize);
+        else searchRequestBuilder.setSize(maxSize < Integer.MAX_VALUE ? (int) maxSize : Integer.MAX_VALUE);
+
+        this.scrollResponse = searchRequestBuilder.execute().actionGet();
 
         hits = scrollResponse.getHits().iterator();
         this.timing.stop("query");
@@ -45,10 +52,12 @@ public class QueryIterator<E extends Element> implements Iterator<E> {
         if(allowedRemaining <= 0) return false;
         if(hits.hasNext()) return true;
 
-        timing.start("scroll");
-        scrollResponse = client.prepareSearchScroll(scrollResponse.getScrollId()).setScroll(new TimeValue(600000)).execute().actionGet();
-        hits = scrollResponse.getHits().iterator();
-        timing.stop("scroll");
+        if(scrollSize > 0) {
+            timing.start("scroll");
+            scrollResponse = client.prepareSearchScroll(scrollResponse.getScrollId()).setScroll(new TimeValue(600000)).execute().actionGet();
+            hits = scrollResponse.getHits().iterator();
+            timing.stop("scroll");
+        }
 
         return hits.hasNext();
     }
