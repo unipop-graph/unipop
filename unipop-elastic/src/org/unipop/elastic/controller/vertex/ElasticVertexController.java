@@ -36,16 +36,6 @@ public class ElasticVertexController implements VertexController {
     }
 
     @Override
-    public Iterator<BaseVertex> vertices(Object[] vertexIds) {
-        List<BaseVertex> vertices = new ArrayList<>();
-        for(Object id : vertexIds){
-            ElasticVertex vertex = createVertex(id.toString(), null, null, getLazyGetter());
-            vertices.add(vertex);
-        }
-        return vertices.iterator();
-    }
-
-    @Override
     public Iterator<BaseVertex> vertices(Predicates predicates, MutableMetrics metrics) {
         elasticMutations.refresh();
         BoolFilterBuilder boolFilter = ElasticHelper.createFilterBuilder(predicates.hasContainers);

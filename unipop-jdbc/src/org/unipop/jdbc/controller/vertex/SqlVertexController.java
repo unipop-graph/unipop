@@ -40,11 +40,6 @@ public class SqlVertexController implements VertexController {
     }
 
     @Override
-    public Iterator<BaseVertex> vertices(Object[] ids) {
-        return dslContext.select().from(tableName).where(field("id").in(ids)).fetch(vertexMapper).iterator();
-    }
-
-    @Override
     public Iterator<BaseVertex> vertices(Predicates predicates, MutableMetrics metrics) {
         SelectJoinStep<Record> select = dslContext.select().from(tableName);
         predicates.hasContainers.forEach(hasContainer -> select.where(JooqHelper.createCondition(hasContainer)));

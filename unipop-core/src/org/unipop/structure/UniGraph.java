@@ -4,11 +4,14 @@ import groovyjarjarcommonscli.MissingArgumentException;
 import org.apache.commons.collections4.iterators.TransformIterator;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.ArrayIterator;
+import org.unipop.controller.Predicates;
 import org.unipop.controllerprovider.ControllerManager;
 import org.unipop.process.UniGraphStrategy;
 
@@ -134,7 +137,10 @@ public class UniGraph implements Graph {
 
         if (ids.length > 1 && !ids[0].getClass().equals(ids[1].getClass())) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
         if (Vertex.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator(ids);
-        else return transform(controllerManager.vertices(ids));
+        HasContainer hasContainer = new HasContainer(T.id.getAccessor(), P.eq(ids));
+        Predicates predicates = new Predicates();
+        predicates.hasContainers.add(hasContainer);
+        return transform(controllerManager.vertices(predicates, null));
     }
 
     @Override
@@ -143,7 +149,10 @@ public class UniGraph implements Graph {
 
         if (ids.length > 1 && !ids[0].getClass().equals(ids[1].getClass())) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
         if (Edge.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator(ids);
-        return transform(controllerManager.edges(ids));
+        HasContainer hasContainer = new HasContainer(T.id.getAccessor(), P.eq(ids));
+        Predicates predicates = new Predicates();
+        predicates.hasContainers.add(hasContainer);
+        return transform(controllerManager.edges(predicates, null));
     }
 
     @Override

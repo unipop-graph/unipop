@@ -1,25 +1,28 @@
 package org.unipop.elastic.controller.edge;
 
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
+import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.T;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.elasticsearch.client.Client;
+import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
+import org.elasticsearch.index.query.BoolFilterBuilder;
+import org.elasticsearch.index.query.FilterBuilders;
+import org.elasticsearch.search.SearchHit;
+import org.unipop.controller.Predicates;
 import org.unipop.elastic.helpers.ElasticHelper;
 import org.unipop.elastic.helpers.ElasticMutations;
 import org.unipop.elastic.helpers.QueryIterator;
 import org.unipop.elastic.helpers.TimingAccessor;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
-import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
-import org.apache.tinkerpop.gremlin.structure.*;
-import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.action.get.MultiGetItemResponse;
-import org.elasticsearch.action.get.MultiGetRequest;
-import org.elasticsearch.action.get.MultiGetResponse;
-import org.unipop.controller.*;
-import org.unipop.structure.*;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
-import org.elasticsearch.index.query.*;
-import org.elasticsearch.search.SearchHit;
+import org.unipop.structure.BaseEdge;
+import org.unipop.structure.BaseVertex;
+import org.unipop.structure.UniGraph;
 
-import java.util.*;
+import java.util.Iterator;
+import java.util.Map;
 
 public class ElasticEdgeController implements org.unipop.controller.EdgeController {
     private UniGraph graph;
@@ -37,21 +40,6 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
         this.indexName = indexName;
         this.scrollSize = scrollSize;
         this.timing = timing;
-    }
-
-    @Override
-    public Iterator<BaseEdge> edges(Object[] ids) {
-        MultiGetRequest request = new MultiGetRequest();
-        for (Object id : ids) request.add(indexName, null, id.toString());
-        MultiGetResponse responses = client.multiGet(request).actionGet();
-
-        ArrayList<BaseEdge> elements = new ArrayList<>(ids.length);
-        for (MultiGetItemResponse getResponse : responses) {
-            GetResponse response = getResponse.getResponse();
-            if (!response.isExists()) throw Graph.Exceptions.elementNotFound(Edge.class, response.getId());
-            elements.add(createEdge(response.getId(), response.getType(), response.getSource()));
-        }
-        return elements.iterator();
     }
 
     @Override

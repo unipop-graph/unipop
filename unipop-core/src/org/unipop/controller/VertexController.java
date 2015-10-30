@@ -8,7 +8,6 @@ import java.util.Iterator;
 import java.util.Map;
 
 public interface VertexController {
-    Iterator<BaseVertex> vertices(Object[] ids);
     Iterator<BaseVertex> vertices(Predicates predicates, MutableMetrics metrics);
     BaseVertex fromEdge(Direction direction, Object vertexId, String vertexLabel);
     BaseVertex addVertex(Object id, String label, Map<String, Object> properties);

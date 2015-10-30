@@ -43,11 +43,6 @@ public class StarController extends ElasticVertexController implements EdgeContr
     }
 
     @Override
-    public Iterator<BaseEdge> edges(Object[] ids) {
-        return null;
-    }
-
-    @Override
     public Iterator<BaseEdge> edges(Predicates predicates, MutableMetrics metrics) {
         //TODO
         return null;

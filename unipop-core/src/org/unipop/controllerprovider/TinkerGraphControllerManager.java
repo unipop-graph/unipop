@@ -34,12 +34,6 @@ public abstract class TinkerGraphControllerManager implements ControllerManager 
     }
 
     @Override
-    public Iterator<BaseVertex> vertices(Object[] ids) {
-        return defaultVertexControllers()
-                .flatMap(controller -> controller.get().vertices(ids));
-    }
-
-    @Override
     public Iterator<BaseVertex> vertices(Predicates predicates, MutableMetrics metrics) {
         GraphTraversal<Vertex, VertexController> controllers = g.V()
                 .where(filterPredicates(predicates))
@@ -72,12 +66,6 @@ public abstract class TinkerGraphControllerManager implements ControllerManager 
         return orDefault(controllers, defaultVertexControllers())
                 .map(controller -> controller.get().addVertex(id, label, properties))
                 .next();//only supposed to get 1 vertex
-    }
-
-    @Override
-    public Iterator<BaseEdge> edges(Object[] ids) {
-        return defaultEdgeControllers()
-                .flatMap(controller -> controller.get().edges(ids));
     }
 
     @Override

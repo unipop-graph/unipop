@@ -18,11 +18,6 @@ public abstract class BasicControllerManager implements ControllerManager {
     protected abstract EdgeController getDefaultEdgeController();
 
     @Override
-    public Iterator<BaseVertex> vertices(Object[] ids) {
-        return getDefaultVertexController().vertices(ids);
-    }
-
-    @Override
     public Iterator<BaseVertex> vertices(Predicates predicates, MutableMetrics metrics) {
         return getDefaultVertexController().vertices(predicates, metrics);
     }
@@ -35,11 +30,6 @@ public abstract class BasicControllerManager implements ControllerManager {
     @Override
     public BaseVertex addVertex(Object id, String label, Map<String, Object> properties) {
         return getDefaultVertexController().addVertex(id, label, properties);
-    }
-
-    @Override
-    public Iterator<BaseEdge> edges(Object[] ids) {
-        return getDefaultEdgeController().edges(ids);
     }
 
     @Override
