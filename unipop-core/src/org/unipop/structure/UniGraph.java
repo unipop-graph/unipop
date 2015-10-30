@@ -12,6 +12,7 @@ import org.apache.tinkerpop.gremlin.util.iterator.ArrayIterator;
 import org.unipop.controllerprovider.ControllerManager;
 import org.unipop.process.UniGraphStrategy;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -147,10 +148,10 @@ public class UniGraph implements Graph {
 
     @Override
     public Vertex addVertex(final Object... keyValues) {
-        ElementHelper.legalPropertyKeyValueArray(keyValues);
+
+        Map<String, Object> stringObjectMap = asMap(keyValues);
         Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
-        Map<String, Object> stringObjectMap = ElementHelper.asMap(keyValues);
         stringObjectMap.remove("id");
         stringObjectMap.remove("label");
         return controllerManager.addVertex(idValue, label, stringObjectMap);
@@ -158,5 +159,20 @@ public class UniGraph implements Graph {
 
     private <E,S>Iterator<E> transform(Iterator<S> source){
         return new TransformIterator<>(source, input -> (E) input);
+    }
+
+    public static Map<String, Object> asMap(Object[] keyValues){
+        ElementHelper.legalPropertyKeyValueArray(keyValues);
+        Map<String, Object> map = new HashMap<>();
+        if (keyValues != null) {
+            //if(keyValues.length % 2 == 1) throw Element.Exceptions.providedKeyValuesMustBeAMultipleOfTwo();
+            for (int i = 0; i < keyValues.length; i = i + 2) {
+                String key = keyValues[i].toString();
+                Object value = keyValues[i + 1];
+                ElementHelper.validateProperty(key,value);
+                map.put(key, value);
+            }
+        }
+        return map;
     }
 }

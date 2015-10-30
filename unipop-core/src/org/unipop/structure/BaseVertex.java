@@ -69,10 +69,9 @@ public abstract class BaseVertex<C extends VertexController> extends BaseElement
     @Override
     public Edge addEdge(final String label, final Vertex vertex, final Object... keyValues) {
         if (null == vertex) throw Graph.Exceptions.argumentCanNotBeNull("vertex");
-        ElementHelper.legalPropertyKeyValueArray(keyValues);
         checkRemoved();
+        Map<String, Object> stringObjectMap = UniGraph.asMap(keyValues);
         Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
-        Map<String, Object> stringObjectMap = ElementHelper.asMap(keyValues);
         stringObjectMap.remove("id");
         stringObjectMap.remove("label");
         BaseEdge edge = graph.getControllerManager().addEdge(idValue, label, this, vertex, stringObjectMap);
