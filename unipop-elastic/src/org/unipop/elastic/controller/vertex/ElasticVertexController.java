@@ -37,7 +37,7 @@ public class ElasticVertexController implements VertexController {
 
     @Override
     public Iterator<BaseVertex> vertices(Predicates predicates, MutableMetrics metrics) {
-        elasticMutations.refresh();
+        elasticMutations.refresh(defaultIndex);
         BoolFilterBuilder boolFilter = ElasticHelper.createFilterBuilder(predicates.hasContainers);
         boolFilter.must(FilterBuilders.missingFilter(ElasticEdge.InId));
         return new QueryIterator<>(boolFilter, 0, scrollSize, predicates.limitHigh - predicates.limitLow,
