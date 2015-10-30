@@ -133,7 +133,7 @@ public class UniGraph implements Graph {
 
     @Override
     public Iterator<Vertex> vertices(Object... ids) {
-        if(ids.length == 0) return this.traversal().V();
+        if(ids.length == 0) return transform(controllerManager.vertices(new Predicates(), null));
 
         if (ids.length > 1 && !ids[0].getClass().equals(ids[1].getClass())) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
         if (Vertex.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator(ids);
@@ -145,7 +145,7 @@ public class UniGraph implements Graph {
 
     @Override
     public Iterator<Edge> edges(Object... ids) {
-        if(ids.length == 0) return this.traversal().E();
+        if(ids.length == 0) return transform(controllerManager.edges(new Predicates(), null));
 
         if (ids.length > 1 && !ids[0].getClass().equals(ids[1].getClass())) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
         if (Edge.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator(ids);
@@ -157,7 +157,6 @@ public class UniGraph implements Graph {
 
     @Override
     public Vertex addVertex(final Object... keyValues) {
-
         Map<String, Object> stringObjectMap = asMap(keyValues);
         Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
