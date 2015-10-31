@@ -27,11 +27,16 @@ public class SqlVertex extends BaseVertex<SqlVertexController>{
     @Override
     protected void innerRemoveProperty(Property property) {
         Object n = null;
-        getController().getContext().update(table(label)).set(field(property.key()), n).execute();
+        getController().getContext().update(table(label))
+                .set(field(property.key()), n)
+                .where(field("ID").equal(this.id()))
+                .execute();
     }
 
     @Override
     protected void innerRemove() {
-        getController().getContext().delete(table(label)).where(field("ID").equal(this.id())).execute();
+        getController().getContext().delete(table(label))
+                .where(field("ID").equal(this.id()))
+                .execute();
     }
 }
