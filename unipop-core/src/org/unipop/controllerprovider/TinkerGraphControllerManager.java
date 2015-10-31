@@ -25,8 +25,8 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
 public abstract class TinkerGraphControllerManager implements ControllerManager {
 
     protected String controller = "controller";
-    private final GraphTraversalSource g;
     protected TinkerGraph schema;
+    private final GraphTraversalSource g;
 
     public TinkerGraphControllerManager() {
         this.schema = TinkerGraph.open();
@@ -36,14 +36,12 @@ public abstract class TinkerGraphControllerManager implements ControllerManager 
     @Override
     public Iterator<BaseVertex> vertices(Predicates predicates, MutableMetrics metrics) {
         GraphTraversal<Vertex, VertexController> controllers = g.V()
-                .where(filterPredicates(predicates))
+                .filter(filterPredicates(predicates))
                 .<VertexController>values(controller).dedup();
 
         return orDefault(controllers, defaultVertexControllers())
                 .flatMap(controller -> controller.get().vertices(predicates, metrics));
     }
-
-
 
     @Override
     public BaseVertex fromEdge(Direction direction, Object vertexId, String vertexLabel) {
@@ -55,7 +53,6 @@ public abstract class TinkerGraphControllerManager implements ControllerManager 
                 .map(controller -> controller.get().fromEdge(direction, vertexId, vertexLabel))
                 .next(); //only supposed to get 1
     }
-
 
     @Override
     public BaseVertex addVertex(Object id, String label, Map<String, Object> properties) {
@@ -71,7 +68,7 @@ public abstract class TinkerGraphControllerManager implements ControllerManager 
     @Override
     public Iterator<BaseEdge> edges(Predicates predicates, MutableMetrics metrics) {
         GraphTraversal<Edge, EdgeController> controllers = g.E()
-                .where(filterPredicates(predicates))
+                .filter(filterPredicates(predicates))
                 .<EdgeController>values(controller).dedup();
         return orDefault(controllers, defaultEdgeControllers())
                 .flatMap(controller -> controller.get().edges(predicates, metrics));
@@ -128,11 +125,15 @@ public abstract class TinkerGraphControllerManager implements ControllerManager 
     }
 
     protected Traversal<?, ?> filterPredicates(Predicates predicates) {
-        //if(predicates.hasContainers.size() == 0) //TODO: filter predicates
+        if(predicates.hasContainers.size() == 0)
             return constant(true).is(true);
-//        GraphTraversal<?, ?> traversal = start();
-//        predicates.hasContainers.forEach(predicate ->
-//                traversal.where(not(has(predicate.getKey())).or().has(predicate.getKey(), predicate.getPredicate())));
-//        return traversal;
+        GraphTraversal<?, ?> traversal = start();
+        predicates.hasContainers.forEach(predicate -> {
+            if (predicate.getKey().equals(T.label.getAccessor()))
+                traversal.hasLabel(predicate.getValue().toString());
+            else traversal.or(hasNot(predicate.getKey()), has(predicate.getKey(), predicate.getPredicate()));
+
+        });
+        return traversal;
     }
 }
