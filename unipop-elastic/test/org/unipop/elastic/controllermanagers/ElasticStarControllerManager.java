@@ -1,12 +1,10 @@
 package org.unipop.elastic.controllermanagers;
 
 import org.apache.commons.configuration.Configuration;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.elasticsearch.client.Client;
 import org.unipop.controller.EdgeController;
 import org.unipop.controller.VertexController;
 import org.unipop.controllerprovider.BasicControllerManager;
-import org.unipop.elastic.controller.star.NestedEdgeMapping;
 import org.unipop.elastic.controller.star.StarController;
 import org.unipop.elastic.helpers.ElasticClientFactory;
 import org.unipop.elastic.helpers.ElasticHelper;
@@ -14,9 +12,6 @@ import org.unipop.elastic.helpers.ElasticMutations;
 import org.unipop.elastic.helpers.TimingAccessor;
 import org.unipop.structure.UniGraph;
 
-/**
- * Created by sbarzilay on 10/26/15.
- */
 public class ElasticStarControllerManager extends BasicControllerManager {
     private StarController controller;
     private Client client;
@@ -42,7 +37,7 @@ public class ElasticStarControllerManager extends BasicControllerManager {
 
         timing = new TimingAccessor();
         elasticMutations = new ElasticMutations(false, client, timing);
-        controller =new StarController(graph,client,elasticMutations,indexName,10,false,timing);
+        controller = new StarController(graph,client,elasticMutations,indexName,0,false,timing);
     }
 
     @Override

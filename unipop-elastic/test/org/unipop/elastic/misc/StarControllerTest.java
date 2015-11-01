@@ -1,16 +1,15 @@
+package org.unipop.elastic.misc;
+
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.unipop.elastic.controllermanagers.ElasticStarControllerManager;
 import org.unipop.elastic.helpers.ElasticClientFactory;
 import org.unipop.structure.UniGraph;
 
-/**
- * Created by sbarzilay on 10/31/15.
- */
-public class Test {
+public class StarControllerTest {
     UniGraph graph;
 
-    public Test() throws InstantiationException {
+    public StarControllerTest() throws InstantiationException {
         BaseConfiguration conf = new BaseConfiguration();
         conf.addProperty("controllerManager", ElasticStarControllerManager.class.getCanonicalName());
         conf.addProperty("elasticsearch.client", ElasticClientFactory.ClientType.TRANSPORT_CLIENT);
