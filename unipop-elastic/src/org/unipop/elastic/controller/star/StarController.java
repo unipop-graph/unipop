@@ -39,10 +39,19 @@ public class StarController extends ElasticVertexController implements EdgeContr
         Collections.addAll(this.edgeMappings, edgeMappings);
     }
 
+    private boolean mappingsHasField(String field){
+        for (EdgeMapping mapping : edgeMappings)
+            if (mapping.getExternalVertexField().equals(field)) return true;
+        return false;
+    }
+
     @Override
     protected BaseVertex createVertex(SearchHit hit) {
         ElasticStarVertex vertex = new ElasticStarVertex(hit.id(), hit.type(), null, graph, new LazyGetter(client, timing), this, elasticMutations, getDefaultIndex());
-        hit.getSource().entrySet().forEach((field) -> vertex.addPropertyLocal(field.getKey(), field.getValue()));
+        hit.getSource().entrySet().forEach((field) -> {
+            if (!mappingsHasField(field.getKey()))
+                vertex.addPropertyLocal(field.getKey(), field.getValue());
+        });
         vertex.createEdges(edgeMappings, hit.getSource());
         return vertex;
     }
@@ -55,7 +64,6 @@ public class StarController extends ElasticVertexController implements EdgeContr
     @Override
     public BaseVertex fromEdge(Direction direction, Object vertexId, String vertexLabel) {
         Predicates predicates = new Predicates();
-        predicates.hasContainers.add(new HasContainer("~label", P.eq(vertexLabel)));
         predicates.hasContainers.add(new HasContainer("~id", P.eq(vertexId)));
         return vertices(predicates, new MutableMetrics("fromEdge", "fromEdge")).next();
     }
@@ -64,7 +72,7 @@ public class StarController extends ElasticVertexController implements EdgeContr
     public Iterator<BaseEdge> edges(Predicates predicates, MutableMetrics metrics) {
         ArrayList<BaseEdge> edges = new ArrayList<>();
         vertices(new Predicates(), null).forEachRemaining(baseVertex ->
-                        baseVertex.cachedEdges(Direction.OUT, new String[0], predicates).forEachRemaining(edge -> edges.add(((BaseEdge) edge)))
+                        baseVertex.cachedEdges(Direction.BOTH, new String[0], predicates).forEachRemaining(edge -> edges.add(((BaseEdge) edge)))
         );
         return edges.iterator();
     }
@@ -72,33 +80,28 @@ public class StarController extends ElasticVertexController implements EdgeContr
     @Override
     public Iterator<BaseEdge> fromVertex(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, MutableMetrics metrics) {
         ArrayList<BaseEdge> edges = new ArrayList<>();
-        if (direction.equals(Direction.OUT) || direction.equals(Direction.BOTH)) {
-            for (Vertex vertex : vertices) {
-                ((ElasticStarVertex) vertex).cachedEdges(Direction.OUT, edgeLabels, predicates).forEachRemaining(edge -> edges.add(((InnerEdge) edge)));
+
+        BoolFilterBuilder bool = FilterBuilders.boolFilter();
+        for (EdgeMapping mapping : edgeMappings) {
+            if (edgeLabels.length > 0 && !Arrays.asList(edgeLabels).contains(mapping.getLabel())) continue;
+            if (mapping.getDirection().equals(direction) || direction.equals(Direction.BOTH)) {
+                for (Vertex vertex : vertices) {
+                    ((ElasticStarVertex) vertex).cachedEdges(mapping.getDirection(), new String[]{mapping.getLabel()}, predicates).forEachRemaining(edge -> edges.add(((InnerEdge) edge)));
+                }
+            }
+            if (!mapping.getDirection().equals(direction) || direction.equals(Direction.BOTH)) {
+                ArrayList<Object> ids = new ArrayList<>();
+                for (Vertex vertex : vertices) {
+                    if (mapping.getExternalVertexLabel().contains(vertex.label())) {
+                        ids.add(vertex.id());
+                    }
+                }
+                bool.should(mapping.createFilter(ids.toArray()));
+
             }
         }
-        if (direction.equals(Direction.IN) || direction.equals(Direction.BOTH)) {
-            BoolFilterBuilder bool = FilterBuilders.boolFilter();
-            Object[] ids = new Object[vertices.length];
-            for (int i = 0; i < vertices.length; i++) {
-                ids[i] = vertices[i].id();
-            }
-            if (edgeLabels.length > 0) {
-                for (String label : edgeLabels) {
-                    Predicates p = new Predicates();
-                    p.hasContainers.add(new HasContainer(label + "." + ElasticEdge.InId, P.within(ids)));
-                    NestedFilterBuilder filter = FilterBuilders.nestedFilter(label, ElasticHelper.createFilterBuilder(p.hasContainers));
-                    bool.should(filter);
-                }
-            } else {
-                for (EdgeMapping mapping : this.edgeMappings) {
-                    Predicates p = new Predicates();
-                    p.hasContainers.add(new HasContainer(mapping.getLabel() + "." + ElasticEdge.InId, P.within(ids)));
-                    NestedFilterBuilder filter = FilterBuilders.nestedFilter(mapping.getExternalVertexField(), ElasticHelper.createFilterBuilder(p.hasContainers));
-                    bool.should(filter);
-                }
-            }
-
+        if (bool.hasClauses()) {
+            elasticMutations.refresh();
             QueryIterator<Vertex> edgesVertices =
                     new QueryIterator<>(bool,
                             (int) predicates.limitLow,
@@ -112,15 +115,11 @@ public class StarController extends ElasticVertexController implements EdgeContr
         return edges.iterator();
     }
 
-    public ElasticMutations getElasticMutations(){
-        return elasticMutations;
-    }
-
     @Override
     public BaseEdge addEdge(Object edgeId, String label, Vertex outV, Vertex inV, Map<String, Object> properties) {
         EdgeMapping mapping = getEdgeMapping(label, Direction.OUT);
         if (mapping == null) {
-            mapping = new NestedEdgeMapping(label, inV.label(), Direction.OUT, label);
+            mapping = new NestedEdgeMapping(label, Direction.OUT, label, inV.label());
             edgeMappings.add(mapping);
             Map<String, Object> propertiesMap = new HashMap<>();
             Map<String, Object> nested = new HashMap<>();

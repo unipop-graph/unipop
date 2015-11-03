@@ -1,6 +1,8 @@
 package org.unipop.elastic.misc;
 
 import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.unipop.elastic.controllermanagers.ElasticStarControllerManager;
 import org.unipop.elastic.helpers.ElasticClientFactory;
@@ -18,39 +20,27 @@ public class StarControllerTest {
 
     @org.junit.Test
     public void test() throws Exception {
-        Vertex marko = graph.addVertex("person");
-        marko.property("name", "marko");
-        marko.property("age", "29");
+        Vertex marko = graph.addVertex(T.label,"person", T.id, "1", "name", "marko", "age", 29);
 
-        Vertex josh = graph.addVertex("person");
-        marko.property("name", "josh");
-        marko.property("age", "32");
+        Vertex josh = graph.addVertex(T.label,"person", T.id, "4", "name", "josh", "age", 32);
 
-        Vertex vadas = graph.addVertex("person");
-        marko.property("name", "vadas");
-        marko.property("age", "27");
+        Vertex vadas = graph.addVertex(T.label, "person", T.id, "2", "name" , "vadas", "age" ,27);
 
-        Vertex peter = graph.addVertex("person");
-        marko.property("name", "peter");
-        marko.property("age", "35");
+        Vertex peter = graph.addVertex(T.label, "person", T.id, "6", "name", "peter", "age", 35);
 
-        Vertex lop = graph.addVertex("software");
-        marko.property("name", "lop");
-        marko.property("lang", "java");
+        Vertex lop = graph.addVertex(T.label,"software", T.id, "3", "name", "lop", "lang", "java");
 
-        Vertex ripple = graph.addVertex("software");
-        marko.property("name", "ripple");
-        marko.property("lang", "java");
+        Vertex ripple = graph.addVertex(T.label, "software", T.id, "5", "name","ripple", "lang","java");
 
-        marko.addEdge("created", lop, "weight", 0.4d);
-        marko.addEdge("knows", vadas, "weight", 0.5d);
-        marko.addEdge("knows", josh, "weight", 1.0d);
+        marko.addEdge("created", lop, "weight", 0.4d, T.id,"9");
+        marko.addEdge("knows", vadas, "weight", 0.5d, T.id, "7");
+        marko.addEdge("knows", josh, "weight", 1.0d, T.id,"8");
 
-        josh.addEdge("created", lop, "weight", 0.4d);
-        josh.addEdge("created", ripple, "weight", 1.0d);
+        josh.addEdge("created", lop, "weight", 0.4d,T.id,"11");
+        josh.addEdge("created", ripple, "weight", 1.0d,T.id,"10");
 
-        peter.addEdge("created", lop, "weight", 0.2d);
-        graph.traversal().V().both().both().count()
+        peter.addEdge("created", lop, "weight", 0.2d,T.id,"12");
+        graph.traversal().E().sample(2).by("weight")
                 .forEachRemaining(System.out::println);
     }
 }

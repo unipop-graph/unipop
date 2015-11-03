@@ -6,6 +6,7 @@ import org.elasticsearch.index.query.FilterBuilder;
 import org.unipop.controller.Predicates;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 public interface EdgeMapping {
@@ -18,8 +19,9 @@ public interface EdgeMapping {
 
     String getLabel() ;
 
-    String getExternalVertexLabel() ;
+    List<String> getExternalVertexLabel() ;
 
     Iterable<Object> getExternalVertexId(Map<String, Object> entries);
 
+    FilterBuilder createFilter(Object[] ids);
 }
