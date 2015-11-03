@@ -12,6 +12,7 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import org.unipop.structure.*;
 
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 
 public class ElasticStarVertex extends ElasticVertex {
     private Set<InnerEdge> innerEdges;
@@ -41,28 +42,36 @@ public class ElasticStarVertex extends ElasticVertex {
             InnerEdge edge = new InnerEdge(id.toString() + label() + externalId.toString(),
                     edgeMapping,
                     this,
-                    getController().fromEdge(Direction.OUT, externalId, edgeMapping.getExternalVertexLabel()),
+                    getController().fromEdge(Direction.OUT, externalId, null),
                     edgeMapping.getProperties(source, externalId),
                     ((EdgeController) getController()),
-                    graph);
+                    graph,
+                    elasticMutations,
+                    indexName);
             innerEdges.add(edge);
         });
     }
 
+
+    public void removeEdge(InnerEdge edge) throws ExecutionException, InterruptedException {
+        innerEdges.remove(edge);
+        elasticMutations.updateElement(this, indexName, null, false);
+        elasticMutations.refresh();
+    }
 
     @Override
     public Iterator<BaseEdge> cachedEdges(Direction direction, String[] edgeLabels, Predicates predicates) {
         ArrayList<BaseEdge> edges = new ArrayList<>();
         innerEdges.forEach(edge -> {
             EdgeMapping mapping = edge.getMapping();
-            if (mapping.getDirection().equals(direction) &&
+            if ((mapping.getDirection().equals(direction) || direction.equals(Direction.BOTH)) &&
                     (edgeLabels.length == 0 || StarController.contains(edgeLabels, mapping.getLabel()))) {
 
                 // Test predicates on inner edge
                 boolean passed = true;
                 for (HasContainer hasContainer : predicates.hasContainers) {
                     if (hasContainer.getKey().equals(T.id.getAccessor())) {
-                        if(hasContainer.getValue().getClass().isArray())
+                        if (hasContainer.getValue().getClass().isArray())
                             for (Object id : ((Object[]) hasContainer.getValue())) {
                                 if (!id.equals(edge.id()))
                                     passed = false;
@@ -85,7 +94,7 @@ public class ElasticStarVertex extends ElasticVertex {
     public BaseEdge addInnerEdge(EdgeMapping mapping, Object edgeId, Vertex inV, Map<String, Object> properties) {
         if (edgeId == null)
             edgeId = id.toString() + inV.id();
-        InnerEdge edge = new InnerEdge(edgeId, mapping, this, inV, properties, ((EdgeController) getController()), graph);
+        InnerEdge edge = new InnerEdge(edgeId, mapping, this, inV, properties, ((EdgeController) getController()), graph, elasticMutations, indexName);
         innerEdges.add(edge);
         return edge;
     }

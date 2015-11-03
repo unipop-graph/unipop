@@ -1,23 +1,29 @@
 package org.unipop.elastic.controller.star;
 
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.elasticsearch.index.query.FilterBuilder;
+import org.elasticsearch.index.query.FilterBuilders;
+import org.unipop.controller.Predicates;
+import org.unipop.elastic.controller.edge.ElasticEdge;
+import org.unipop.elastic.helpers.ElasticHelper;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.lang.reflect.Array;
+import java.util.*;
 
 /**
  * Created by sbarzilay on 10/14/15.
  */
 public class NestedEdgeMapping implements EdgeMapping {
     private final String edgeLabel;
-    private final String externalVertexLabel;
+    private final List<String> externalVertexLabels;
     private final Direction direction;
     private final String externalVertexField;
 
-    public NestedEdgeMapping(String edgeLabel, String externalVertexLabel, Direction direction, String externalVertexField) {
+    public NestedEdgeMapping(String edgeLabel, Direction direction, String externalVertexField, String... externalVertexLabels) {
         this.edgeLabel = edgeLabel;
-        this.externalVertexLabel = externalVertexLabel;
+        this.externalVertexLabels = Arrays.asList(externalVertexLabels);
         this.direction = direction;
         this.externalVertexField = externalVertexField;
     }
@@ -55,8 +61,8 @@ public class NestedEdgeMapping implements EdgeMapping {
     }
 
     @Override
-    public String getExternalVertexLabel() {
-        return externalVertexLabel;
+    public List<String> getExternalVertexLabel() {
+        return externalVertexLabels;
     }
 
     @Override
@@ -70,5 +76,12 @@ public class NestedEdgeMapping implements EdgeMapping {
             );
         }
         return ids;
+    }
+
+    @Override
+    public FilterBuilder createFilter(Object[] ids) {
+        Predicates p = new Predicates();
+        p.hasContainers.add(new HasContainer(edgeLabel + "." + ElasticEdge.InId, P.within(ids)));
+        return FilterBuilders.nestedFilter(externalVertexField, ElasticHelper.createFilterBuilder(p.hasContainers));
     }
 }

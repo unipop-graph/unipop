@@ -4,6 +4,7 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 
 public abstract class BaseElement implements Element{
     protected HashMap<String, Property> properties = new HashMap<>();

@@ -42,7 +42,7 @@ public class ElasticStarControllerManager extends BasicControllerManager {
 
         timing = new TimingAccessor();
         elasticMutations = new ElasticMutations(false, client, timing);
-        controller =new StarController(graph,client,elasticMutations,indexName,10,false,timing);
+        controller = new StarController(graph, client, elasticMutations, indexName, 10, false, timing);
     }
 
     @Override
