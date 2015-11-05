@@ -94,8 +94,10 @@ public class NestedEdgeController implements InnerEdgeController {
     public void addEdgeFields(List<InnerEdge> edges, Map<String, Object> map) {
         Map<String, Object>[] edgesMap = new Map[edges.size()];
         for(int i = 0; i< edges.size(); i++){
-            Map<String, Object> innerEdge = edges.get(i).allFields();
-            edgesMap[i] = innerEdge;
+            InnerEdge innerEdge = edges.get(i);
+            Map<String, Object> fields = innerEdge .allFields();
+            fields.put(externalVertexIdField, innerEdge.vertices(direction.opposite()).next().id());
+            edgesMap[i] = fields;
         }
         map.put(edgeLabel, edgesMap);
     }

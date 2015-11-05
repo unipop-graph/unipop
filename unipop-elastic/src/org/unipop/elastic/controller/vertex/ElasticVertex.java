@@ -61,7 +61,7 @@ public class ElasticVertex<T extends ElasticVertexController> extends BaseVertex
         return super.properties(propertyKeys);
     }
 
-    private void checkLazy() {
+    protected void checkLazy() {
         if (lazyGetter != null) lazyGetter.execute();
     }
 }

@@ -13,6 +13,7 @@ import org.unipop.elastic.controller.star.inneredge.InnerEdgeController;
 import org.unipop.elastic.controller.vertex.ElasticVertex;
 import org.unipop.elastic.controller.vertex.ElasticVertexController;
 import org.unipop.elastic.helpers.ElasticMutations;
+import org.unipop.elastic.helpers.LazyGetter;
 import org.unipop.elastic.helpers.QueryIterator;
 import org.unipop.elastic.helpers.TimingAccessor;
 import org.unipop.structure.BaseEdge;
@@ -38,8 +39,13 @@ public class ElasticStarController extends ElasticVertexController implements Ed
         return createStarVertex(id, label, keyValues);
     }
 
+    @Override
+    protected ElasticVertex createLazyVertex(Object id, String label, LazyGetter lazyGetter) {
+        return new ElasticStarVertex(id, label, null, graph, lazyGetter, this, elasticMutations, getDefaultIndex(), innerEdgeControllers);
+    }
+
     private ElasticStarVertex createStarVertex(Object id, String label, Map<String, Object> keyValues) {
-        ElasticStarVertex vertex = new ElasticStarVertex(id, label, null, graph, null, this, elasticMutations, getDefaultIndex());
+        ElasticStarVertex vertex = new ElasticStarVertex(id, label, null, graph, null, this, elasticMutations, getDefaultIndex(), innerEdgeControllers);
         if(keyValues != null) {
             innerEdgeControllers.stream().map(controller -> controller.parseEdges(vertex, keyValues)).flatMap(Collection::stream).forEach(vertex::addInnerEdge);
             keyValues.entrySet().forEach((field) -> vertex.addPropertyLocal(field.getKey(), field.getValue()));
@@ -57,13 +63,14 @@ public class ElasticStarController extends ElasticVertexController implements Ed
 
     @Override
     public Iterator<BaseEdge> edges(Predicates predicates, MutableMetrics metrics) {
+        elasticMutations.refresh();
+
         OrFilterBuilder orFilter = FilterBuilders.orFilter();
         innerEdgeControllers.forEach(controller -> {
             FilterBuilder filter = controller.getFilter(predicates.hasContainers);
             if(filter != null) orFilter.add(filter);
         });
 
-        elasticMutations.refresh();
         QueryIterator<ElasticStarVertex> queryIterator = new QueryIterator<>(orFilter, (int) predicates.limitLow, scrollSize, predicates.limitHigh - predicates.limitLow, client,
                 this::createStarVertex, timing, getDefaultIndex());
 

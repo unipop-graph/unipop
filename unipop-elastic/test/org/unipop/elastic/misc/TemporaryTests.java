@@ -29,6 +29,7 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void get_g_VX1X_out_hasIdX2X() {
+        graph.edges().forEachRemaining(System.out::println);
         GraphTraversal traversal = g.V().outE("knows").inV().valueMap();
 
         check(traversal);
