@@ -8,12 +8,12 @@ import org.unipop.structure.*;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-public class ElasticVertex extends BaseVertex<ElasticVertexController> {
+public class ElasticVertex<T extends ElasticVertexController> extends BaseVertex<T> {
     protected final ElasticMutations elasticMutations;
     protected final String indexName;
     private LazyGetter lazyGetter;
 
-    public ElasticVertex(final Object id, final String label, Map<String, Object> keyValues, ElasticVertexController controller, UniGraph graph, LazyGetter lazyGetter, ElasticMutations elasticMutations, String indexName) {
+    public ElasticVertex(final Object id, final String label, Map<String, Object> keyValues, T controller, UniGraph graph, LazyGetter lazyGetter, ElasticMutations elasticMutations, String indexName) {
         super(id, label, keyValues, controller, graph);
         this.elasticMutations = elasticMutations;
         this.indexName = indexName;

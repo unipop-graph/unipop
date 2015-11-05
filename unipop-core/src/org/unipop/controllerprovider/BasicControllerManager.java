@@ -43,7 +43,7 @@ public abstract class BasicControllerManager implements ControllerManager {
     }
 
     @Override
-    public BaseEdge addEdge(Object edgeId, String label, Vertex outV, Vertex inV, Map<String, Object> properties) {
+    public BaseEdge addEdge(Object edgeId, String label, BaseVertex outV, BaseVertex inV, Map<String, Object> properties) {
         return getDefaultEdgeController().addEdge(edgeId, label, outV, inV, properties);
     }
 }

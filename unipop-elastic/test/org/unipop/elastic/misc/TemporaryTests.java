@@ -29,11 +29,7 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void get_g_VX1X_out_hasIdX2X() {
-        GraphTraversal traversal =   g.V().barrier().coalesce(out());
-
-//        traversal =   g.V().branch().
-//                option(TraversalOptionParent.Pick.any,  values("age")).
-//                option(TraversalOptionParent.Pick.any, values("name"));
+        GraphTraversal traversal = g.V().outE("knows").inV().valueMap();
 
         check(traversal);
     }
@@ -42,7 +38,6 @@ public class TemporaryTests extends AbstractGremlinTest {
     @LoadGraphWith(MODERN)
     public void g_V_repeat() {
         GraphTraversal<Vertex, Vertex> traversal = g.V().repeat(out()).times(1);
-        //GraphTraversal traversal = g.V().out();
         check(traversal);
     }
 

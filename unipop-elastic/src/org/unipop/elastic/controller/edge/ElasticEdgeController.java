@@ -11,7 +11,6 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.elasticsearch.index.query.BoolFilterBuilder;
 import org.elasticsearch.index.query.FilterBuilders;
-import org.elasticsearch.search.SearchHit;
 import org.unipop.controller.Predicates;
 import org.unipop.elastic.helpers.ElasticHelper;
 import org.unipop.elastic.helpers.ElasticMutations;
@@ -75,7 +74,7 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
     }
 
     @Override
-    public BaseEdge addEdge(Object edgeId, String label, Vertex outV, Vertex inV, Map<String, Object> properties) {
+    public BaseEdge addEdge(Object edgeId, String label, BaseVertex outV, BaseVertex inV, Map<String, Object> properties) {
         ElasticEdge elasticEdge = new ElasticEdge(edgeId, label, properties, outV, inV,this, graph, elasticMutations, indexName);
         try {
             elasticMutations.addElement(elasticEdge, indexName, null, true);
@@ -86,11 +85,7 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
         return elasticEdge;
     }
 
-    private BaseEdge createEdge(SearchHit hit) {
-        return createEdge(hit.id(), hit.getType(), hit.getSource());
-    }
-
-    private BaseEdge createEdge(String id, String label, Map<String, Object> fields) {
+    private BaseEdge createEdge(Object id, String label, Map<String, Object> fields) {
         BaseVertex outV = this.graph.getControllerManager().fromEdge(Direction.OUT, fields.get(ElasticEdge.OutId), fields.get(ElasticEdge.OutLabel).toString());
         BaseVertex inV = this.graph.getControllerManager().fromEdge(Direction.IN, fields.get(ElasticEdge.InId), fields.get(ElasticEdge.InLabel).toString());
         BaseEdge edge = new ElasticEdge(id, label, fields, outV, inV, this,  graph, elasticMutations, indexName);

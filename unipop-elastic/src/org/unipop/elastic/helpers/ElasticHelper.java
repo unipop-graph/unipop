@@ -12,6 +12,8 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.common.geo.builders.ShapeBuilder;
 import org.elasticsearch.common.settings.*;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.index.query.*;
@@ -55,6 +57,24 @@ public class ElasticHelper {
         }
 
         return indexDeleteByQueryResponses;
+    }
+
+    public static void mapNested(Client client, String index, String typeName, String nestedFieldName){
+        try {
+            XContentBuilder nestedMapping = XContentFactory.jsonBuilder()
+                    .startObject()
+                    .startObject(typeName)
+                    .startObject("properties")
+                    .startObject(nestedFieldName)
+                    .field("type", "nested")
+                    .endObject()
+                    .endObject()
+                    .endObject()
+                    .endObject();
+            client.admin().indices().preparePutMapping(index).setType(typeName).setSource(nestedMapping).execute().actionGet();
+        } catch (IOException e) {
+            throw new RuntimeException(e.getMessage());
+        }
     }
 
     public static BoolFilterBuilder createFilterBuilder(List<HasContainer> hasContainers) {

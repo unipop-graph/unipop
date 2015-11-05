@@ -98,7 +98,7 @@ public abstract class TinkerGraphControllerManager implements ControllerManager 
     }
 
     @Override
-    public BaseEdge addEdge(Object edgeId, String label, Vertex outV, Vertex inV, Map<String, Object> properties) {
+    public BaseEdge addEdge(Object edgeId, String label, BaseVertex outV, BaseVertex inV, Map<String, Object> properties) {
         GraphTraversal<?, EdgeController> controllers =
                 g.E().has(T.label, label)
                 .where(outV().label().is(outV.label()).and().inV().label().is(inV.label()))

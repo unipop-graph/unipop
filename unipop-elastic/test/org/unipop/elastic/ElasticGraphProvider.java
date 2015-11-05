@@ -8,7 +8,6 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.node.Node;
-import org.unipop.elastic.controllermanagers.BasicElasticControllerManager;
 import org.unipop.elastic.controllermanagers.ElasticStarControllerManager;
 import org.unipop.elastic.helpers.ElasticClientFactory;
 import org.unipop.elastic.helpers.ElasticHelper;

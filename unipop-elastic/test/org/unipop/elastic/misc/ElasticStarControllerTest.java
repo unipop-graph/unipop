@@ -8,10 +8,10 @@ import org.unipop.elastic.controllermanagers.ElasticStarControllerManager;
 import org.unipop.elastic.helpers.ElasticClientFactory;
 import org.unipop.structure.UniGraph;
 
-public class StarControllerTest {
+public class ElasticStarControllerTest {
     UniGraph graph;
 
-    public StarControllerTest() throws InstantiationException {
+    public ElasticStarControllerTest() throws InstantiationException {
         BaseConfiguration conf = new BaseConfiguration();
         conf.addProperty("controllerManager", ElasticStarControllerManager.class.getCanonicalName());
         conf.addProperty("elasticsearch.client", ElasticClientFactory.ClientType.TRANSPORT_CLIENT);

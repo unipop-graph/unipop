@@ -1,10 +1,14 @@
 package org.unipop.structure;
 
-import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 
-import java.util.*;
-import java.util.concurrent.ExecutionException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 public abstract class BaseElement implements Element{
     protected HashMap<String, Property> properties = new HashMap<>();
@@ -113,5 +117,9 @@ public abstract class BaseElement implements Element{
 
     public void setLabel(String label) {
         this.label = label;
+    }
+
+    public UniGraph getGraph() {
+        return graph;
     }
 }

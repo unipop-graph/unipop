@@ -1,11 +1,12 @@
 package org.unipop.structure;
 
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.apache.tinkerpop.gremlin.structure.util.*;
-import org.unipop.controller.Predicates;
+import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.unipop.controller.VertexController;
 
-import java.util.*;
+import java.util.Iterator;
+import java.util.Map;
 
 public abstract class BaseVertex<C extends VertexController> extends BaseElement implements Vertex {
 
@@ -74,7 +75,7 @@ public abstract class BaseVertex<C extends VertexController> extends BaseElement
         Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
         stringObjectMap.remove("id");
         stringObjectMap.remove("label");
-        BaseEdge edge = graph.getControllerManager().addEdge(idValue, label, this, vertex, stringObjectMap);
+        BaseEdge edge = graph.getControllerManager().addEdge(idValue, label, this, (BaseVertex) vertex, stringObjectMap);
         return edge;
     }
 
@@ -101,10 +102,6 @@ public abstract class BaseVertex<C extends VertexController> extends BaseElement
     @Override
     protected void checkRemoved() {
         if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, this.id);
-    }
-
-    public Iterator<BaseEdge> cachedEdges(Direction direction, String[] edgeLabels, Predicates predicates) {
-        return null;
     }
 
     public C getController() {
