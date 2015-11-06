@@ -36,26 +36,24 @@ public class NestedEdgeController implements InnerEdgeController {
 
     @Override
     public InnerEdge createEdge(Object edgeId, String label, BaseVertex outV, BaseVertex inV, Map<String, Object> properties) {
-        if(!label.equals(edgeLabel)) return null;
+        if (!label.equals(edgeLabel)) return null;
         ElasticStarVertex starVertex = (ElasticStarVertex) (direction.equals(Direction.IN) ? inV : outV);
-        if(!starVertex.label().equals(vertexLabel)) return null;
+        if (!starVertex.label().equals(vertexLabel)) return null;
         return new NestedEdge(starVertex, edgeId, edgeLabel, this, outV, inV, properties);
     }
 
     @Override
     public Set<InnerEdge> parseEdges(ElasticStarVertex vertex, Map<String, Object> keyValues) {
         Object nested = keyValues.get(edgeLabel);
-        if(nested == null) return SetUtils.emptySet();
+        if (nested == null) return SetUtils.emptySet();
         keyValues.remove(edgeLabel);
-        if(nested instanceof Map){
+        if (nested instanceof Map) {
             InnerEdge edge = createEdge(vertex, (Map<String, Object>) nested);
             return Collections.singleton(edge);
-        }
-        else if(nested instanceof List){
+        } else if (nested instanceof List) {
             List<Map<String, Object>> edgesMaps = (List<Map<String, Object>>) nested;
             return edgesMaps.stream().map(edgeMap -> createEdge(vertex, edgeMap)).collect(Collectors.toSet());
-        }
-        else throw new IllegalArgumentException(nested.toString());
+        } else throw new IllegalArgumentException(nested.toString());
     }
 
     private InnerEdge createEdge(ElasticStarVertex vertex, Map<String, Object> keyValues) {
@@ -63,38 +61,39 @@ public class NestedEdgeController implements InnerEdgeController {
         BaseVertex externalVertex = vertex.getGraph().getControllerManager().fromEdge(direction.opposite(), externalVertexId, externalVertexLabel);
         BaseVertex outV = direction.equals(Direction.OUT) ? vertex : externalVertex;
         BaseVertex inV = direction.equals(Direction.IN) ? vertex : externalVertex;
-        return createEdge(null, edgeLabel, outV, inV,keyValues);
+        return createEdge(null, edgeLabel, outV, inV, keyValues);
     }
 
     @Override
     public FilterBuilder getFilter(ArrayList<HasContainer> hasContainers) {
         ArrayList<HasContainer> hasClone = (ArrayList<HasContainer>) hasContainers.clone();
+        hasClone.forEach(has -> has.setKey(edgeLabel + "." + has.getKey()));
         HasContainer labelHas = hasClone.stream().filter(has -> has.getKey().equals(T.label.getAccessor())).findFirst().orElse(null);
 
-        if(labelHas != null) {
+        if (labelHas != null) {
             Object value = labelHas.getValue();
             if (value instanceof List && !((List<String>) value).contains(edgeLabel)) return null;
             else if (!value.equals(edgeLabel)) return null;
             hasClone.remove(labelHas);
         }
 
-        if(hasClone == null || hasClone.size() == 0)
+        if (hasClone == null || hasClone.size() == 0)
             return FilterBuilders.nestedFilter(edgeLabel, QueryBuilders.matchAllQuery());
         return FilterBuilders.nestedFilter(edgeLabel, ElasticHelper.createFilterBuilder(hasClone));
     }
 
     @Override
     public FilterBuilder getFilter(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
-        if(!direction.opposite().equals(this.direction)) return null;
-        if(edgeLabels.length > 0 && !Arrays.asList(edgeLabels).contains(edgeLabel)) return null;
+        if (!direction.opposite().equals(this.direction)) return null;
+        if (edgeLabels.length > 0 && !Arrays.asList(edgeLabels).contains(edgeLabel)) return null;
 
         ArrayList ids = new ArrayList();
-        for(Vertex vertex : vertices) {
-            if(vertex.label().equals(externalVertexLabel))
+        for (Vertex vertex : vertices) {
+            if (vertex.label().equals(externalVertexLabel))
                 ids.add(vertex.id());
         }
 
-        if(ids.size() == 0) return null;
+        if (ids.size() == 0) return null;
 
         ArrayList<HasContainer> hasContainers = (ArrayList<HasContainer>) predicates.hasContainers.clone();
         hasContainers.add(new HasContainer(externalVertexIdField, P.within(ids.toArray())));
@@ -104,7 +103,7 @@ public class NestedEdgeController implements InnerEdgeController {
     @Override
     public void addEdgeFields(List<InnerEdge> edges, Map<String, Object> map) {
         Map<String, Object>[] edgesMap = new Map[edges.size()];
-        for(int i = 0; i< edges.size(); i++){
+        for (int i = 0; i < edges.size(); i++) {
             InnerEdge innerEdge = edges.get(i);
             Map<String, Object> fields = innerEdge.allFields();
             fields.put(externalVertexIdField, innerEdge.vertices(direction.opposite()).next().id());

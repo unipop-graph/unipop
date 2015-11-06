@@ -46,7 +46,7 @@ public class ElasticStarController extends ElasticVertexController implements Ed
 
     private ElasticStarVertex createStarVertex(Object id, String label, Map<String, Object> keyValues) {
         ElasticStarVertex vertex = new ElasticStarVertex(id, label, null, graph, null, this, elasticMutations, getDefaultIndex(), innerEdgeControllers);
-        if(keyValues != null) {
+        if (keyValues != null) {
             innerEdgeControllers.stream().map(controller -> controller.parseEdges(vertex, keyValues)).flatMap(Collection::stream).forEach(vertex::addInnerEdge);
             keyValues.entrySet().forEach((field) -> vertex.addPropertyLocal(field.getKey(), field.getValue()));
         }
@@ -57,7 +57,7 @@ public class ElasticStarController extends ElasticVertexController implements Ed
     public BaseEdge addEdge(Object edgeId, String label, BaseVertex outV, BaseVertex inV, Map<String, Object> properties) {
         return innerEdgeControllers.stream()
                 .map(mapping -> mapping.createEdge(edgeId, label, outV, inV, properties))
-                .filter(i-> i != null)
+                .filter(i -> i != null)
                 .findFirst().get();
     }
 
@@ -68,7 +68,7 @@ public class ElasticStarController extends ElasticVertexController implements Ed
         OrFilterBuilder orFilter = FilterBuilders.orFilter();
         innerEdgeControllers.forEach(controller -> {
             FilterBuilder filter = controller.getFilter(predicates.hasContainers);
-            if(filter != null) orFilter.add(filter);
+            if (filter != null) orFilter.add(filter);
         });
 
         QueryIterator<ElasticStarVertex> queryIterator = new QueryIterator<>(orFilter, (int) predicates.limitLow, scrollSize, predicates.limitHigh - predicates.limitLow, client,
@@ -76,23 +76,23 @@ public class ElasticStarController extends ElasticVertexController implements Ed
 
         Iterable<ElasticStarVertex> iterable = () -> queryIterator;
         return StreamSupport.stream(iterable.spliterator(), false)
-            .map(vertex -> vertex.getInnerEdges(predicates))
-            .flatMap(Collection::stream).iterator();
+                .map(vertex -> vertex.getInnerEdges(predicates))
+                .flatMap(Collection::stream).iterator();
     }
 
     @Override
     public Iterator<BaseEdge> fromVertex(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, MutableMetrics metrics) {
         Set<ElasticStarVertex> starVertices = new HashSet<>();
 
-        for(Vertex vertex : vertices){
-            if(vertex instanceof ElasticStarVertex)
+        for (Vertex vertex : vertices) {
+            if (vertex instanceof ElasticStarVertex)
                 starVertices.add((ElasticStarVertex) vertex);
         }
 
         OrFilterBuilder orFilter = null;
         for (InnerEdgeController controller : innerEdgeControllers) {
             FilterBuilder filter = controller.getFilter(vertices, direction, edgeLabels, predicates);
-            if(filter != null) {
+            if (filter != null) {
                 if (orFilter == null) orFilter = FilterBuilders.orFilter();
                 orFilter.add(filter);
             }
