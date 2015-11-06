@@ -4,6 +4,7 @@ import org.apache.commons.collections4.SetUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.index.query.FilterBuilders;
@@ -66,16 +67,26 @@ public class NestedEdgeController implements InnerEdgeController {
     }
 
     @Override
-    public FilterBuilder getFilter(List<HasContainer> hasContainers) {
-        if(hasContainers == null || hasContainers.size() == 0)
+    public FilterBuilder getFilter(ArrayList<HasContainer> hasContainers) {
+        ArrayList<HasContainer> hasClone = (ArrayList<HasContainer>) hasContainers.clone();
+        HasContainer labelHas = hasClone.stream().filter(has -> has.getKey().equals(T.label.getAccessor())).findFirst().orElse(null);
+
+        if(labelHas != null) {
+            Object value = labelHas.getValue();
+            if (value instanceof List && !((List<String>) value).contains(edgeLabel)) return null;
+            else if (!value.equals(edgeLabel)) return null;
+            hasClone.remove(labelHas);
+        }
+
+        if(hasClone == null || hasClone.size() == 0)
             return FilterBuilders.nestedFilter(edgeLabel, QueryBuilders.matchAllQuery());
-        return FilterBuilders.nestedFilter(edgeLabel, ElasticHelper.createFilterBuilder(hasContainers));
+        return FilterBuilders.nestedFilter(edgeLabel, ElasticHelper.createFilterBuilder(hasClone));
     }
 
     @Override
     public FilterBuilder getFilter(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
-        if(!direction.equals(this.direction) && !direction.equals(Direction.BOTH)) return null;
-        if(!Arrays.asList(edgeLabels).contains(edgeLabel)) return null;
+        if(!direction.opposite().equals(this.direction)) return null;
+        if(edgeLabels.length > 0 && !Arrays.asList(edgeLabels).contains(edgeLabel)) return null;
 
         ArrayList ids = new ArrayList();
         for(Vertex vertex : vertices) {
@@ -85,7 +96,7 @@ public class NestedEdgeController implements InnerEdgeController {
 
         if(ids.size() == 0) return null;
 
-        List<HasContainer> hasContainers = (List<HasContainer>) predicates.hasContainers.clone();
+        ArrayList<HasContainer> hasContainers = (ArrayList<HasContainer>) predicates.hasContainers.clone();
         hasContainers.add(new HasContainer(externalVertexIdField, P.within(ids.toArray())));
         return getFilter(hasContainers);
     }
@@ -95,7 +106,7 @@ public class NestedEdgeController implements InnerEdgeController {
         Map<String, Object>[] edgesMap = new Map[edges.size()];
         for(int i = 0; i< edges.size(); i++){
             InnerEdge innerEdge = edges.get(i);
-            Map<String, Object> fields = innerEdge .allFields();
+            Map<String, Object> fields = innerEdge.allFields();
             fields.put(externalVertexIdField, innerEdge.vertices(direction.opposite()).next().id());
             edgesMap[i] = fields;
         }

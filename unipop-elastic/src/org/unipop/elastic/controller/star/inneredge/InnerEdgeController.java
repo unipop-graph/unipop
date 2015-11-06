@@ -8,6 +8,7 @@ import org.unipop.controller.Predicates;
 import org.unipop.elastic.controller.star.ElasticStarVertex;
 import org.unipop.structure.BaseVertex;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -17,7 +18,7 @@ public interface InnerEdgeController {
 
     Set<InnerEdge> parseEdges(ElasticStarVertex vertex, Map<String, Object> keyValues);
 
-    FilterBuilder getFilter(List<HasContainer> hasContainers);
+    FilterBuilder getFilter(ArrayList<HasContainer> hasContainers);
 
     FilterBuilder getFilter(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates);
 

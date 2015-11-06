@@ -43,6 +43,7 @@ public class ElasticStarVertex extends ElasticVertex<ElasticStarController> {
 
     public void addInnerEdge(InnerEdge innerEdge) {
         this.innerEdges.add(innerEdge);
+        update();
     }
 
     public void removeInnerEdge(InnerEdge edge) {
