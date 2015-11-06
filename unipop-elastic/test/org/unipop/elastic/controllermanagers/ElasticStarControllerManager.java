@@ -55,7 +55,7 @@ public class ElasticStarControllerManager extends BasicControllerManager {
     @Override
     public BaseEdge addEdge(Object edgeId, String label, BaseVertex outV, BaseVertex inV, Map<String, Object> properties) {
         ElasticHelper.mapNested(client, indexName, outV.label(), label);
-        controller.addEdgeMapping(new NestedEdgeController(outV.label(), label, Direction.OUT, "id", inV.label()));
+        controller.addEdgeMapping(new NestedEdgeController(outV.label(), label, Direction.OUT, "vertex_id", inV.label()));
         return super.addEdge(edgeId, label, outV, inV, properties);
     }
 
