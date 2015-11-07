@@ -1,8 +1,10 @@
 package org.unipop.elastic.misc;
 
-import org.apache.tinkerpop.gremlin.*;
+import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
+import org.apache.tinkerpop.gremlin.GraphManager;
+import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.*;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 import org.unipop.elastic.ElasticGraphProvider;
@@ -29,7 +31,19 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void g_VX2X_inE() {
-        GraphTraversal traversal = g.V("2").inE();
+        GraphTraversal traversal = g.V().repeat(out()).times(2).valueMap();
+        //GraphTraversal traversal = g.V().out().out().valueMap();
+
+//        int counter = 0;
+//
+//        while(traversal.hasNext()) {
+//            ++counter;
+//            Vertex vertex = (Vertex)traversal.next();
+//            Assert.assertTrue(vertex.value("name").equals("lop") || vertex.value("name").equals("ripple"));
+//        }
+//
+//        Assert.assertEquals(2L, (long)counter);
+//        Assert.assertFalse(traversal.hasNext());
 
         check(traversal);
     }
