@@ -24,6 +24,8 @@ public class LazyGetter {
     }
 
     public void register(BaseVertex v, String label, String indexName) {
+        if(executed) System.out.println("This LazyGetter has already been executed.");
+
         GetKey key = new GetKey(v.id(), label, indexName);
 
         List<BaseVertex> vertices = keyToVertices.get(key);

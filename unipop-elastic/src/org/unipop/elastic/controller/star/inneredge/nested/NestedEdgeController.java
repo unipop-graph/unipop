@@ -67,15 +67,16 @@ public class NestedEdgeController implements InnerEdgeController {
     @Override
     public FilterBuilder getFilter(ArrayList<HasContainer> hasContainers) {
         ArrayList<HasContainer> hasClone = (ArrayList<HasContainer>) hasContainers.clone();
-        hasClone.forEach(has -> has.setKey(edgeLabel + "." + has.getKey()));
         HasContainer labelHas = hasClone.stream().filter(has -> has.getKey().equals(T.label.getAccessor())).findFirst().orElse(null);
 
         if (labelHas != null) {
             Object value = labelHas.getValue();
-            if (value instanceof List && !((List<String>) value).contains(edgeLabel)) return null;
-            else if (!value.equals(edgeLabel)) return null;
+            if (!value.equals(edgeLabel) && (value instanceof List && !((List<String>) value).contains(edgeLabel)))
+                return null;
             hasClone.remove(labelHas);
         }
+
+        hasClone.forEach(has -> has.setKey(edgeLabel + "." + has.getKey()));
 
         if (hasClone == null || hasClone.size() == 0)
             return FilterBuilders.nestedFilter(edgeLabel, QueryBuilders.matchAllQuery());
@@ -84,7 +85,7 @@ public class NestedEdgeController implements InnerEdgeController {
 
     @Override
     public FilterBuilder getFilter(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
-        if (!direction.opposite().equals(this.direction)) return null;
+        if (!direction.opposite().equals(this.direction) && !direction.equals(Direction.BOTH)) return null;
         if (edgeLabels.length > 0 && !Arrays.asList(edgeLabels).contains(edgeLabel)) return null;
 
         ArrayList ids = new ArrayList();

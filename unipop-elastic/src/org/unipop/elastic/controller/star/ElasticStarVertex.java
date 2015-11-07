@@ -43,7 +43,6 @@ public class ElasticStarVertex extends ElasticVertex<ElasticStarController> {
 
     public void addInnerEdge(InnerEdge innerEdge) {
         this.innerEdges.add(innerEdge);
-        update();
     }
 
     public void removeInnerEdge(InnerEdge edge) {
@@ -51,6 +50,7 @@ public class ElasticStarVertex extends ElasticVertex<ElasticStarController> {
     }
 
     public void update() {
+        checkLazy();
         elasticMutations.addElement(this, indexName, null, false);
     }
 
@@ -75,6 +75,7 @@ public class ElasticStarVertex extends ElasticVertex<ElasticStarController> {
     }
 
     private boolean filterPredicates(InnerEdge edge, Predicates predicates) {
+        checkLazy();
         return predicates.hasContainers.stream().allMatch(predicate -> predicate.test(edge));
     }
 }

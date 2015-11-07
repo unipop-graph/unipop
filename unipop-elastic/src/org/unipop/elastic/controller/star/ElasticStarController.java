@@ -71,7 +71,7 @@ public class ElasticStarController extends ElasticVertexController implements Ed
             if (filter != null) orFilter.add(filter);
         });
 
-        QueryIterator<ElasticStarVertex> queryIterator = new QueryIterator<>(orFilter, (int) predicates.limitLow, scrollSize, predicates.limitHigh - predicates.limitLow, client,
+        QueryIterator<ElasticStarVertex> queryIterator = new QueryIterator<>(orFilter, 0, scrollSize, predicates.limitHigh - predicates.limitLow, client,
                 this::createStarVertex, timing, getDefaultIndex());
 
         Iterable<ElasticStarVertex> iterable = () -> queryIterator;
@@ -82,11 +82,12 @@ public class ElasticStarController extends ElasticVertexController implements Ed
 
     @Override
     public Iterator<BaseEdge> fromVertex(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, MutableMetrics metrics) {
-        Set<ElasticStarVertex> starVertices = new HashSet<>();
+        Set<BaseEdge> results = new HashSet<>();
+        List<String> labels = Arrays.asList(edgeLabels);
 
         for (Vertex vertex : vertices) {
             if (vertex instanceof ElasticStarVertex)
-                starVertices.add((ElasticStarVertex) vertex);
+                results.addAll(((ElasticStarVertex) vertex).getInnerEdges(direction, labels, predicates));
         }
 
         OrFilterBuilder orFilter = null;
@@ -100,15 +101,12 @@ public class ElasticStarController extends ElasticVertexController implements Ed
 
         if (orFilter != null) {
             elasticMutations.refresh();
-            QueryIterator<ElasticStarVertex> queryIterator = new QueryIterator<>(orFilter, (int) predicates.limitLow, scrollSize, predicates.limitHigh - predicates.limitLow, client,
+            QueryIterator<ElasticStarVertex> queryIterator = new QueryIterator<>(orFilter, 0, scrollSize, predicates.limitHigh - predicates.limitLow, client,
                     this::createStarVertex, timing, getDefaultIndex());
-            queryIterator.forEachRemaining(starVertices::add);
-
+            queryIterator.forEachRemaining(vertex -> results.addAll(vertex.getInnerEdges(direction.opposite(), labels, predicates)));
         }
 
-        return starVertices.stream()
-                .map(vertex -> vertex.getInnerEdges(direction, Arrays.asList(edgeLabels), predicates))
-                .flatMap(Collection::stream).iterator();
+        return results.iterator();
     }
 
     public void addEdgeMapping(InnerEdgeController mapping) {
