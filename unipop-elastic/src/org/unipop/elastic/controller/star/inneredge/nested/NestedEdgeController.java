@@ -25,13 +25,15 @@ public class NestedEdgeController implements InnerEdgeController {
     private final String externalVertexLabel;
     private final Direction direction;
     private final String externalVertexIdField;
+    private String edgeIdField;
 
-    public NestedEdgeController(String vertexLabel, String edgeLabel, Direction direction, String externalVertexIdField, String externalVertexLabel) {
+    public NestedEdgeController(String vertexLabel, String edgeLabel, Direction direction, String externalVertexIdField, String externalVertexLabel, String edgeIdField) {
         this.vertexLabel = vertexLabel;
         this.edgeLabel = edgeLabel;
         this.externalVertexLabel = externalVertexLabel;
         this.direction = direction;
         this.externalVertexIdField = externalVertexIdField;
+        this.edgeIdField = edgeIdField;
     }
 
     @Override
@@ -58,10 +60,11 @@ public class NestedEdgeController implements InnerEdgeController {
 
     private InnerEdge createEdge(ElasticStarVertex vertex, Map<String, Object> keyValues) {
         Object externalVertexId = keyValues.get(externalVertexIdField);
+        Object edgeId = keyValues.get(edgeIdField);
         BaseVertex externalVertex = vertex.getGraph().getControllerManager().fromEdge(direction.opposite(), externalVertexId, externalVertexLabel);
         BaseVertex outV = direction.equals(Direction.OUT) ? vertex : externalVertex;
         BaseVertex inV = direction.equals(Direction.IN) ? vertex : externalVertex;
-        return createEdge(null, edgeLabel, outV, inV, keyValues);
+        return createEdge(edgeId, edgeLabel, outV, inV, keyValues);
     }
 
     @Override
@@ -108,6 +111,7 @@ public class NestedEdgeController implements InnerEdgeController {
             InnerEdge innerEdge = edges.get(i);
             Map<String, Object> fields = innerEdge.allFields();
             fields.put(externalVertexIdField, innerEdge.vertices(direction.opposite()).next().id());
+            fields.put(edgeIdField, innerEdge.id());
             edgesMap[i] = fields;
         }
         map.put(edgeLabel, edgesMap);
@@ -120,6 +124,7 @@ public class NestedEdgeController implements InnerEdgeController {
 
         NestedEdgeController that = (NestedEdgeController) o;
 
+        if (edgeIdField != null ? !edgeIdField.equals(that.edgeIdField) : that.edgeIdField != null) return false;
         if (vertexLabel != null ? !vertexLabel.equals(that.vertexLabel) : that.vertexLabel != null) return false;
         if (edgeLabel != null ? !edgeLabel.equals(that.edgeLabel) : that.edgeLabel != null) return false;
         if (externalVertexLabel != null ? !externalVertexLabel.equals(that.externalVertexLabel) : that.externalVertexLabel != null)
