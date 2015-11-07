@@ -50,17 +50,19 @@ public class NestedEdgeController implements InnerEdgeController {
         if (nested == null) return SetUtils.emptySet();
         keyValues.remove(edgeLabel);
         if (nested instanceof Map) {
-            InnerEdge edge = createEdge(vertex, (Map<String, Object>) nested);
+            InnerEdge edge = parseEdge(vertex, (Map<String, Object>) nested);
             return Collections.singleton(edge);
         } else if (nested instanceof List) {
             List<Map<String, Object>> edgesMaps = (List<Map<String, Object>>) nested;
-            return edgesMaps.stream().map(edgeMap -> createEdge(vertex, edgeMap)).collect(Collectors.toSet());
+            return edgesMaps.stream().map(edgeMap -> parseEdge(vertex, edgeMap)).collect(Collectors.toSet());
         } else throw new IllegalArgumentException(nested.toString());
     }
 
-    private InnerEdge createEdge(ElasticStarVertex vertex, Map<String, Object> keyValues) {
+    private InnerEdge parseEdge(ElasticStarVertex vertex, Map<String, Object> keyValues) {
         Object externalVertexId = keyValues.get(externalVertexIdField);
+        keyValues.remove(externalVertexIdField);
         Object edgeId = keyValues.get(edgeIdField);
+        keyValues.remove(edgeIdField);
         BaseVertex externalVertex = vertex.getGraph().getControllerManager().fromEdge(direction.opposite(), externalVertexId, externalVertexLabel);
         BaseVertex outV = direction.equals(Direction.OUT) ? vertex : externalVertex;
         BaseVertex inV = direction.equals(Direction.IN) ? vertex : externalVertex;
@@ -69,21 +71,22 @@ public class NestedEdgeController implements InnerEdgeController {
 
     @Override
     public FilterBuilder getFilter(ArrayList<HasContainer> hasContainers) {
-        ArrayList<HasContainer> hasClone = (ArrayList<HasContainer>) hasContainers.clone();
-        HasContainer labelHas = hasClone.stream().filter(has -> has.getKey().equals(T.label.getAccessor())).findFirst().orElse(null);
+        ArrayList<HasContainer> transformed = new ArrayList<>();
 
-        if (labelHas != null) {
-            Object value = labelHas.getValue();
-            if (!value.equals(edgeLabel) && (value instanceof List && !((List<String>) value).contains(edgeLabel)))
-                return null;
-            hasClone.remove(labelHas);
+        for(HasContainer has : hasContainers) {
+            if(has.getKey().equals(T.label.getAccessor())){
+                Object value = has.getValue();
+                if (!value.equals(edgeLabel) && (value instanceof List && !((List<String>) value).contains(edgeLabel)))
+                    return null;
+            }
+            else if(has.getKey().equals(T.id.getAccessor()))
+                transformed.add(new HasContainer(edgeLabel + "." + edgeIdField, has.getPredicate()));
+            else transformed.add(new HasContainer(edgeLabel + "." + has.getKey(), has.getPredicate()));
         }
 
-        hasClone.forEach(has -> has.setKey(edgeLabel + "." + has.getKey()));
-
-        if (hasClone == null || hasClone.size() == 0)
+        if (transformed.size() == 0)
             return FilterBuilders.nestedFilter(edgeLabel, QueryBuilders.matchAllQuery());
-        return FilterBuilders.nestedFilter(edgeLabel, ElasticHelper.createFilterBuilder(hasClone));
+        return FilterBuilders.nestedFilter(edgeLabel, ElasticHelper.createFilterBuilder(transformed));
     }
 
     @Override

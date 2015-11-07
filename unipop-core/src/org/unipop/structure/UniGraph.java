@@ -139,7 +139,7 @@ public class UniGraph implements Graph {
 
         if (ids.length > 1 && !ids[0].getClass().equals(ids[1].getClass())) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
         if (Vertex.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator(ids);
-        HasContainer hasContainer = new HasContainer(T.id.getAccessor(), P.eq(ids));
+        HasContainer hasContainer = new HasContainer(T.id.getAccessor(), P.within(ids));
         Predicates predicates = new Predicates();
         predicates.hasContainers.add(hasContainer);
         return transform(controllerManager.vertices(predicates, null));
@@ -151,7 +151,7 @@ public class UniGraph implements Graph {
 
         if (ids.length > 1 && !ids[0].getClass().equals(ids[1].getClass())) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
         if (Edge.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator(ids);
-        HasContainer hasContainer = new HasContainer(T.id.getAccessor(), P.eq(ids));
+        HasContainer hasContainer = new HasContainer(T.id.getAccessor(), P.within(ids));
         Predicates predicates = new Predicates();
         predicates.hasContainers.add(hasContainer);
         return transform(controllerManager.edges(predicates, null));

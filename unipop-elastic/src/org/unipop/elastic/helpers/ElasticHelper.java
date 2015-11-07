@@ -1,16 +1,21 @@
 package org.unipop.elastic.helpers;
 
-import org.apache.tinkerpop.gremlin.process.traversal.*;
+import org.apache.tinkerpop.gremlin.process.traversal.Compare;
+import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
-import org.elasticsearch.action.admin.cluster.health.*;
+import org.apache.tinkerpop.gremlin.structure.T;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
-import org.elasticsearch.action.admin.indices.exists.indices.*;
+import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRequest;
+import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
 import org.elasticsearch.action.admin.indices.mapping.delete.DeleteMappingResponse;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
 import org.elasticsearch.action.deletebyquery.DeleteByQueryResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.geo.builders.ShapeBuilder;
-import org.elasticsearch.common.settings.*;
+import org.elasticsearch.common.settings.ImmutableSettings;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
@@ -19,7 +24,8 @@ import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.index.query.*;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.BiPredicate;
 
 public class ElasticHelper {
@@ -88,16 +94,16 @@ public class ElasticHelper {
         Object value = has.getValue();
         BiPredicate<?, ?> predicate = has.getBiPredicate();
 
-        if(key.equals("~id")) {
+        if(key.equals(T.id.getAccessor())) {
             IdsFilterBuilder idsFilterBuilder = FilterBuilders.idsFilter();
-            if(value.getClass().isArray()) {
-                for(Object id : (Object[])value)
+            if(value instanceof Iterable) {
+                for(Object id : (Iterable)value)
                     idsFilterBuilder.addIds(id.toString());
             }
             else idsFilterBuilder.addIds(value.toString());
             boolFilterBuilder.must(idsFilterBuilder);
         }
-        else if(key.equals("~label")) {
+        else if(key.equals(T.label.getAccessor())) {
             if(value instanceof List){
                 List labels = (List) value;
                 if(labels.size() == 1)
