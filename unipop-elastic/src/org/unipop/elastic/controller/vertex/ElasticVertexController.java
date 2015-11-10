@@ -54,7 +54,7 @@ public class ElasticVertexController implements VertexController {
         elasticMutations.refresh(defaultIndex);
         BoolFilterBuilder boolFilter = ElasticHelper.createFilterBuilder(predicates.hasContainers);
         boolFilter.must(FilterBuilders.missingFilter(ElasticEdge.InId));
-        return new QueryIterator<>(boolFilter, 0, scrollSize, predicates.limitHigh - predicates.limitLow, client,
+        return new QueryIterator<>(boolFilter, scrollSize, predicates.limitHigh, client,
                 this::createVertex, timing, getDefaultIndex());
     }
 

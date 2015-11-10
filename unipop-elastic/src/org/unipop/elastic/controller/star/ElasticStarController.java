@@ -71,7 +71,7 @@ public class ElasticStarController extends ElasticVertexController implements Ed
             if (filter != null) orFilter.add(filter);
         });
 
-        QueryIterator<ElasticStarVertex> queryIterator = new QueryIterator<>(orFilter, 0, scrollSize, predicates.limitHigh - predicates.limitLow, client,
+        QueryIterator<ElasticStarVertex> queryIterator = new QueryIterator<>(orFilter, scrollSize, predicates.limitHigh, client,
                 this::createStarVertex, timing, getDefaultIndex());
 
         Iterable<ElasticStarVertex> iterable = () -> queryIterator;
@@ -101,7 +101,7 @@ public class ElasticStarController extends ElasticVertexController implements Ed
 
         if (orFilter != null) {
             elasticMutations.refresh();
-            QueryIterator<ElasticStarVertex> queryIterator = new QueryIterator<>(orFilter, 0, scrollSize, predicates.limitHigh - predicates.limitLow, client,
+            QueryIterator<ElasticStarVertex> queryIterator = new QueryIterator<>(orFilter, scrollSize, predicates.limitHigh, client,
                     this::createStarVertex, timing, getDefaultIndex());
             queryIterator.forEachRemaining(vertex -> results.addAll(vertex.getInnerEdges(direction.opposite(), labels, predicates)));
         }

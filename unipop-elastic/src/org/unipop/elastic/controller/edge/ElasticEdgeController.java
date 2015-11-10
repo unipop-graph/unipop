@@ -46,7 +46,7 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
         elasticMutations.refresh(indexName);
         BoolFilterBuilder boolFilter = ElasticHelper.createFilterBuilder(predicates.hasContainers);
         boolFilter.must(FilterBuilders.existsFilter(ElasticEdge.InId));
-        return new QueryIterator<>(boolFilter, 0, scrollSize, predicates.limitHigh - predicates.limitLow,
+        return new QueryIterator<>(boolFilter, scrollSize, predicates.limitHigh,
                 client, this::createEdge, timing, indexName);
     }
 
@@ -70,7 +70,7 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
                     FilterBuilders.termsFilter(ElasticEdge.InId, vertexIds),
                     FilterBuilders.termsFilter(ElasticEdge.OutId, vertexIds)));
 
-        return new QueryIterator<>(boolFilter, 0, scrollSize, predicates.limitHigh - predicates.limitLow, client, this::createEdge, timing, indexName);
+        return new QueryIterator<>(boolFilter, scrollSize, predicates.limitHigh, client, this::createEdge, timing, indexName);
     }
 
     @Override
