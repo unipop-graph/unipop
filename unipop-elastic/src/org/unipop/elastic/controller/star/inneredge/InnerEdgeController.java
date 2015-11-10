@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.Set;
 
 public interface InnerEdgeController {
-    InnerEdge createEdge(Object edgeId, String label, BaseVertex outV, BaseVertex inV, Map<String, Object> properties);
+    InnerEdge addEdge(Object edgeId, String label, BaseVertex outV, BaseVertex inV, Map<String, Object> properties);
 
     Set<InnerEdge> parseEdges(ElasticStarVertex vertex, Map<String, Object> keyValues);
 

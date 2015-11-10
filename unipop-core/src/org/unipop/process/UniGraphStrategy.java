@@ -49,25 +49,21 @@ public class UniGraphStrategy extends AbstractTraversalStrategy<TraversalStrateg
     private Predicates getPredicates(Step step){
         Predicates predicates = new Predicates();
         predicates.labels = step.getLabels();
-        Step<?, ?> nextStep = step.getNextStep();
 
         while(predicates.labels.size() == 0) {
-            if(nextStep instanceof HasContainerHolder) {
-                HasContainerHolder hasContainerHolder = (HasContainerHolder) nextStep;
+            step = step.getNextStep();
+            if(step instanceof HasContainerHolder) {
+                HasContainerHolder hasContainerHolder = (HasContainerHolder) step;
                 hasContainerHolder.getHasContainers().forEach(predicates.hasContainers::add);
-                predicates.labels = nextStep.getLabels();
-                nextStep.getTraversal().removeStep(nextStep);
+                predicates.labels = step.getLabels();
+                step.getTraversal().removeStep(step);
             }
-            else if(nextStep instanceof RangeGlobalStep) {
-                RangeGlobalStep rangeGlobalStep = (RangeGlobalStep) nextStep;
-                predicates.limitLow = rangeGlobalStep.getLowRange();
+            else if(step instanceof RangeGlobalStep) {
+                RangeGlobalStep rangeGlobalStep = (RangeGlobalStep) step;
                 predicates.limitHigh = rangeGlobalStep.getHighRange();
-                predicates.labels = nextStep.getLabels();
-                nextStep.getTraversal().removeStep(nextStep);
+                predicates.labels = step.getLabels();
             }
             else break;
-
-            nextStep = nextStep.getNextStep();
         }
         return predicates;
     }

@@ -22,20 +22,17 @@ public class QueryIterator<E extends Element> implements Iterator<E> {
     private Client client;
     private Iterator<SearchHit> hits;
 
-    public QueryIterator(FilterBuilder filter, int startFrom, int scrollSize, long maxSize, Client client,
-                         Parser<E> parser,
-                          TimingAccessor timing, String... indices) {
+    public QueryIterator(FilterBuilder filter, int scrollSize, long maxSize, Client client,
+                         Parser<E> parser, TimingAccessor timing, String... indices) {
         this.scrollSize = scrollSize;
         this.client = client;
         this.allowedRemaining = maxSize;
         this.parser = parser;
         this.timing = timing;
 
-
         this.timing.start("query");
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch(indices)
-                .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), filter))
-                .setFrom(startFrom);
+                .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), filter));
 
         if(scrollSize > 0)
             searchRequestBuilder.setScroll(new TimeValue(60000))
