@@ -151,7 +151,8 @@ public class ElasticHelper {
             if (predicate == Contains.without) boolFilterBuilder.must(FilterBuilders.missingFilter(key));
             else if (predicate == Contains.within){
                 if(value == null) boolFilterBuilder.must(FilterBuilders.existsFilter(key));
-                else  boolFilterBuilder.must(FilterBuilders.termsFilter (key, value));
+                else if(value instanceof Iterable) boolFilterBuilder.must(FilterBuilders.termsFilter (key, (Iterable)value));
+                else boolFilterBuilder.must(FilterBuilders.termsFilter (key, value));
             }
         } else if (predicate instanceof Geo) boolFilterBuilder.must(new GeoShapeFilterBuilder(key, GetShapeBuilder(value), ((Geo) predicate).getRelation()));
         else throw new IllegalArgumentException("predicate not supported by unipop: " + predicate.toString());
