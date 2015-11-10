@@ -4,6 +4,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
@@ -57,13 +58,13 @@ public class UniGraphStrategy extends AbstractTraversalStrategy<TraversalStrateg
                 predicates.labels = nextStep.getLabels();
                 nextStep.getTraversal().removeStep(nextStep);
             }
-//            else if(nextStep instanceof RangeGlobalStep) {
-//                RangeGlobalStep rangeGlobalStep = (RangeGlobalStep) nextStep;
-//                predicates.limitLow = rangeGlobalStep.getLowRange();
-//                predicates.limitHigh = rangeGlobalStep.getHighRange();
-//                predicates.labels = nextStep.getLabels();
-//                nextStep.getTraversal().removeStep(nextStep);
-//            }
+            else if(nextStep instanceof RangeGlobalStep) {
+                RangeGlobalStep rangeGlobalStep = (RangeGlobalStep) nextStep;
+                predicates.limitLow = rangeGlobalStep.getLowRange();
+                predicates.limitHigh = rangeGlobalStep.getHighRange();
+                predicates.labels = nextStep.getLabels();
+                nextStep.getTraversal().removeStep(nextStep);
+            }
             else break;
 
             nextStep = nextStep.getNextStep();
