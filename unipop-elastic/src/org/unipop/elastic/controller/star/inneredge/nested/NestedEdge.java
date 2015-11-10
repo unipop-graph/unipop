@@ -16,7 +16,7 @@ public class NestedEdge extends InnerEdge {
     public NestedEdge(ElasticStarVertex starVertex, Object edgeId, String edgeLabel, InnerEdgeController mapping, Vertex outVertex, Vertex inVertex, Map<String, Object> keyValues) {
         super(starVertex, edgeId, edgeLabel, mapping, outVertex, inVertex, keyValues);
         this.starVertex = starVertex;
-        this.starVertex.addInnerEdge(this);
+
     }
 
     @Override

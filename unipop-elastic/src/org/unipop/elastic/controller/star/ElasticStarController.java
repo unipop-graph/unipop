@@ -56,7 +56,7 @@ public class ElasticStarController extends ElasticVertexController implements Ed
     @Override
     public BaseEdge addEdge(Object edgeId, String label, BaseVertex outV, BaseVertex inV, Map<String, Object> properties) {
         return innerEdgeControllers.stream()
-                .map(mapping -> mapping.createEdge(edgeId, label, outV, inV, properties))
+                .map(mapping -> mapping.addEdge(edgeId, label, outV, inV, properties))
                 .filter(i -> i != null)
                 .findFirst().get();
     }

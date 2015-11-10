@@ -37,11 +37,14 @@ public class NestedEdgeController implements InnerEdgeController {
     }
 
     @Override
-    public InnerEdge createEdge(Object edgeId, String label, BaseVertex outV, BaseVertex inV, Map<String, Object> properties) {
+    public InnerEdge addEdge(Object edgeId, String label, BaseVertex outV, BaseVertex inV, Map<String, Object> properties) {
         if (!label.equals(edgeLabel)) return null;
         ElasticStarVertex starVertex = (ElasticStarVertex) (direction.equals(Direction.IN) ? inV : outV);
         if (!starVertex.label().equals(vertexLabel)) return null;
-        return new NestedEdge(starVertex, edgeId, edgeLabel, this, outV, inV, properties);
+        NestedEdge edge = new NestedEdge(starVertex, edgeId, edgeLabel, this, outV, inV, properties);
+        starVertex.addInnerEdge(edge);
+        starVertex.update();
+        return edge;
     }
 
     @Override
@@ -66,7 +69,9 @@ public class NestedEdgeController implements InnerEdgeController {
         BaseVertex externalVertex = vertex.getGraph().getControllerManager().fromEdge(direction.opposite(), externalVertexId, externalVertexLabel);
         BaseVertex outV = direction.equals(Direction.OUT) ? vertex : externalVertex;
         BaseVertex inV = direction.equals(Direction.IN) ? vertex : externalVertex;
-        return createEdge(edgeId, edgeLabel, outV, inV, keyValues);
+        NestedEdge edge = new NestedEdge(vertex, edgeId, edgeLabel, this, outV, inV, keyValues);
+        vertex.addInnerEdge(edge);
+        return edge;
     }
 
     @Override
