@@ -11,6 +11,7 @@ import org.unipop.structure.BaseEdge;
 import org.unipop.structure.UniGraph;
 
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 public class ElasticStarVertex extends ElasticVertex<ElasticStarController> {
@@ -51,7 +52,11 @@ public class ElasticStarVertex extends ElasticVertex<ElasticStarController> {
 
     public void update() {
         checkLazy();
-        elasticMutations.addElement(this, indexName, null, false);
+        try {
+            elasticMutations.updateElement(this, indexName, null, false);
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
