@@ -63,7 +63,7 @@ public class NestedEdgeController implements InnerEdgeController {
         keyValues.remove(externalVertexIdField);
         Object edgeId = keyValues.get(edgeIdField);
         keyValues.remove(edgeIdField);
-        BaseVertex externalVertex = vertex.getGraph().getControllerManager().fromEdge(direction.opposite(), externalVertexId, externalVertexLabel);
+        BaseVertex externalVertex = vertex.getGraph().getControllerManager().vertex(direction.opposite(), externalVertexId, externalVertexLabel);
         BaseVertex outV = direction.equals(Direction.OUT) ? vertex : externalVertex;
         BaseVertex inV = direction.equals(Direction.IN) ? vertex : externalVertex;
         return createEdge(edgeId, edgeLabel, outV, inV, keyValues);

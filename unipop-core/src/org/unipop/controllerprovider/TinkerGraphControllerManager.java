@@ -3,6 +3,7 @@ package org.unipop.controllerprovider;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.util.Metrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -34,7 +35,7 @@ public abstract class TinkerGraphControllerManager implements ControllerManager 
     }
 
     @Override
-    public Iterator<BaseVertex> vertices(Predicates predicates, MutableMetrics metrics) {
+    public Iterator<BaseVertex> vertices(Predicates predicates, Metrics metrics) {
         GraphTraversal<Vertex, VertexController> controllers = g.V()
                 .filter(filterPredicates(predicates))
                 .<VertexController>values(controller).dedup();
@@ -44,13 +45,13 @@ public abstract class TinkerGraphControllerManager implements ControllerManager 
     }
 
     @Override
-    public BaseVertex fromEdge(Direction direction, Object vertexId, String vertexLabel) {
+    public BaseVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
         GraphTraversal<Vertex, VertexController> controllers = g.V()
                 .hasLabel(vertexLabel) //TODO: filter by edge
                 .<VertexController>values(controller).dedup();
 
         return orDefault(controllers, defaultVertexControllers())
-                .map(controller -> controller.get().fromEdge(direction, vertexId, vertexLabel))
+                .map(controller -> controller.get().vertex(direction, vertexId, vertexLabel))
                 .next(); //only supposed to get 1
     }
 
@@ -66,7 +67,7 @@ public abstract class TinkerGraphControllerManager implements ControllerManager 
     }
 
     @Override
-    public Iterator<BaseEdge> edges(Predicates predicates, MutableMetrics metrics) {
+    public Iterator<BaseEdge> edges(Predicates predicates, Metrics metrics) {
         GraphTraversal<Edge, EdgeController> controllers = g.E()
                 .filter(filterPredicates(predicates))
                 .<EdgeController>values(controller).dedup();
@@ -75,7 +76,7 @@ public abstract class TinkerGraphControllerManager implements ControllerManager 
     }
 
     @Override
-    public Iterator<BaseEdge> fromVertex(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, MutableMetrics metrics) {
+    public Iterator<BaseEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, Metrics metrics) {
         return inject(vertices)
                 .group().by(flatMap(traverser -> getEdgeControllers((Vertex) traverser.get(), direction, edgeLabels, predicates)))
                 .<Map.Entry<EdgeController, Set<Vertex>>>unfold()
@@ -92,8 +93,8 @@ public abstract class TinkerGraphControllerManager implements ControllerManager 
         return orDefault(controllers, defaultEdgeControllers());
     }
     
-    private Iterator<BaseEdge> getEdges(EdgeController controller, Set<Vertex> vertices, Direction direction, String[] edgeLabels, Predicates predicates, MutableMetrics metrics) {
-        return controller.fromVertex(vertices.toArray(new Vertex[vertices.size()]), direction, edgeLabels, predicates, metrics);
+    private Iterator<BaseEdge> getEdges(EdgeController controller, Set<Vertex> vertices, Direction direction, String[] edgeLabels, Predicates predicates, Metrics metrics) {
+        return controller.edges(vertices.toArray(new Vertex[vertices.size()]), direction, edgeLabels, predicates, metrics);
 
     }
 

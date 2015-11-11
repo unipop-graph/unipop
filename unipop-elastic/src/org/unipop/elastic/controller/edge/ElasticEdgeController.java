@@ -1,7 +1,9 @@
 package org.unipop.elastic.controller.edge;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
+import org.apache.tinkerpop.gremlin.process.traversal.util.Metrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -42,7 +44,7 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
     }
 
     @Override
-    public Iterator<BaseEdge> edges(Predicates predicates, MutableMetrics metrics) {
+    public Iterator<BaseEdge> edges(Predicates predicates, Metrics metrics) {
         elasticMutations.refresh(indexName);
         BoolFilterBuilder boolFilter = ElasticHelper.createFilterBuilder(predicates.hasContainers);
         boolFilter.must(FilterBuilders.existsFilter(ElasticEdge.InId));
@@ -51,7 +53,7 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
     }
 
     @Override
-    public Iterator<BaseEdge> fromVertex(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, MutableMetrics metrics) {
+    public Iterator<BaseEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, Metrics metrics) {
         elasticMutations.refresh(indexName);
 
         Object[] vertexIds = new Object[vertices.length];
@@ -74,6 +76,26 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
     }
 
     @Override
+    public long edgeCount(Predicates predicates) {
+        return 0;
+    }
+
+    @Override
+    public long edgeCount(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
+        return 0;
+    }
+
+    @Override
+    public Map<String, Object> edgeGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
+        return null;
+    }
+
+    @Override
+    public Map<String, Object> edgeGroupBy(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
+        return null;
+    }
+
+    @Override
     public BaseEdge addEdge(Object edgeId, String label, BaseVertex outV, BaseVertex inV, Map<String, Object> properties) {
         ElasticEdge elasticEdge = new ElasticEdge(edgeId, label, properties, outV, inV,this, graph, elasticMutations, indexName);
         try {
@@ -86,8 +108,8 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
     }
 
     private BaseEdge createEdge(Object id, String label, Map<String, Object> fields) {
-        BaseVertex outV = this.graph.getControllerManager().fromEdge(Direction.OUT, fields.get(ElasticEdge.OutId), fields.get(ElasticEdge.OutLabel).toString());
-        BaseVertex inV = this.graph.getControllerManager().fromEdge(Direction.IN, fields.get(ElasticEdge.InId), fields.get(ElasticEdge.InLabel).toString());
+        BaseVertex outV = this.graph.getControllerManager().vertex(Direction.OUT, fields.get(ElasticEdge.OutId), fields.get(ElasticEdge.OutLabel).toString());
+        BaseVertex inV = this.graph.getControllerManager().vertex(Direction.IN, fields.get(ElasticEdge.InId), fields.get(ElasticEdge.InLabel).toString());
         BaseEdge edge = new ElasticEdge(id, label, fields, outV, inV, this,  graph, elasticMutations, indexName);
         return edge;
     }

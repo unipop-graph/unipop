@@ -1,5 +1,7 @@
 package org.unipop.elastic.controller.vertex;
 
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.util.Metrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -50,7 +52,7 @@ public class ElasticVertexController implements VertexController {
     }
 
     @Override
-    public Iterator<BaseVertex> vertices(Predicates predicates, MutableMetrics metrics) {
+    public Iterator<BaseVertex> vertices(Predicates predicates, Metrics metrics) {
         elasticMutations.refresh(defaultIndex);
         BoolFilterBuilder boolFilter = ElasticHelper.createFilterBuilder(predicates.hasContainers);
         boolFilter.must(FilterBuilders.missingFilter(ElasticEdge.InId));
@@ -59,8 +61,18 @@ public class ElasticVertexController implements VertexController {
     }
 
     @Override
-    public BaseVertex fromEdge(Direction direction, Object vertexId, String vertexLabel) {
+    public BaseVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
         return createLazyVertex(vertexId, vertexLabel, getLazyGetter(direction));
+    }
+
+    @Override
+    public long vertexCount(Predicates predicates) {
+        return 0;
+    }
+
+    @Override
+    public Map<String, Object> vertexGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
+        return null;
     }
 
     private LazyGetter getLazyGetter(Direction direction) {

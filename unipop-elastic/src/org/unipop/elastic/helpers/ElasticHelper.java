@@ -22,6 +22,7 @@ import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.index.query.*;
+import org.unipop.controller.ExistsP;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -89,72 +90,77 @@ public class ElasticHelper {
         return boolFilter;
     }
 
-    private static void addFilter(BoolFilterBuilder boolFilterBuilder, HasContainer has){
+    private static void addFilter(BoolFilterBuilder boolFilterBuilder, HasContainer has) {
         String key = has.getKey();
         Object value = has.getValue();
-        BiPredicate<?, ?> predicate = has.getBiPredicate();
+        BiPredicate<?, ?> biPredicate = has.getBiPredicate();
 
-        if(key.equals(T.id.getAccessor())) {
+        if (key.equals(T.id.getAccessor())) {
             IdsFilterBuilder idsFilterBuilder = FilterBuilders.idsFilter();
-            if(value instanceof Iterable) {
-                for(Object id : (Iterable)value)
+            if (value instanceof Iterable) {
+                for (Object id : (Iterable) value)
                     idsFilterBuilder.addIds(id.toString());
-            }
-            else idsFilterBuilder.addIds(value.toString());
+            } else idsFilterBuilder.addIds(value.toString());
             boolFilterBuilder.must(idsFilterBuilder);
-        }
-        else if(key.equals(T.label.getAccessor())) {
-            if(value instanceof List){
+        } else if (key.equals(T.label.getAccessor())) {
+            if (value instanceof List) {
                 List labels = (List) value;
-                if(labels.size() == 1)
+                if (labels.size() == 1)
                     boolFilterBuilder.must(FilterBuilders.typeFilter(labels.get(0).toString()));
                 else {
                     FilterBuilder[] filters = new FilterBuilder[labels.size()];
-                    for(int i = 0; i < labels.size(); i++)
+                    for (int i = 0; i < labels.size(); i++)
                         filters[i] = FilterBuilders.typeFilter(labels.get(i).toString());
                     boolFilterBuilder.must(FilterBuilders.orFilter(filters));
                 }
-            }
-            else boolFilterBuilder.must(FilterBuilders.typeFilter(value.toString()));
+            } else boolFilterBuilder.must(FilterBuilders.typeFilter(value.toString()));
+        } else if (biPredicate != null) {
+            if (biPredicate instanceof Compare) {
+                String predicateString = biPredicate.toString();
+                switch (predicateString) {
+                    case ("eq"):
+                        boolFilterBuilder.must(FilterBuilders.termFilter(key, value));
+                        break;
+                    case ("neq"):
+                        boolFilterBuilder.mustNot(FilterBuilders.termFilter(key, value));
+                        break;
+                    case ("gt"):
+                        boolFilterBuilder.must(FilterBuilders.rangeFilter(key).gt(value));
+                        break;
+                    case ("gte"):
+                        boolFilterBuilder.must(FilterBuilders.rangeFilter(key).gte(value));
+                        break;
+                    case ("lt"):
+                        boolFilterBuilder.must(FilterBuilders.rangeFilter(key).lt(value));
+                        break;
+                    case ("lte"):
+                        boolFilterBuilder.must(FilterBuilders.rangeFilter(key).lte(value));
+                        break;
+                    case ("inside"):
+                        List items = (List) value;
+                        Object firstItem = items.get(0);
+                        Object secondItem = items.get(1);
+                        boolFilterBuilder.must(FilterBuilders.rangeFilter(key).from(firstItem).to(secondItem));
+                        break;
+                    default:
+                        throw new IllegalArgumentException("predicate not supported in has step: " + biPredicate.toString());
+                }
+            } else if (biPredicate instanceof Contains) {
+                if (biPredicate == Contains.without) boolFilterBuilder.must(FilterBuilders.missingFilter(key));
+                else if (biPredicate == Contains.within) {
+                    if (value == null) boolFilterBuilder.must(FilterBuilders.existsFilter(key));
+                    else boolFilterBuilder.must(FilterBuilders.termsFilter(key, value));
+                }
+            } else if (biPredicate instanceof Geo)
+                boolFilterBuilder.must(new GeoShapeFilterBuilder(key, GetShapeBuilder(value), ((Geo) biPredicate).getRelation()));
+            else throw new IllegalArgumentException("predicate not supported by unipop: " + biPredicate.toString());
         }
-        else if (predicate instanceof Compare) {
-            String predicateString = predicate.toString();
-            switch (predicateString) {
-                case ("eq"):
-                    boolFilterBuilder.must(FilterBuilders.termFilter(key, value));
-                    break;
-                case ("neq"):
-                    boolFilterBuilder.mustNot(FilterBuilders.termFilter(key, value));
-                    break;
-                case ("gt"):
-                    boolFilterBuilder.must(FilterBuilders.rangeFilter(key).gt(value));
-                    break;
-                case ("gte"):
-                    boolFilterBuilder.must(FilterBuilders.rangeFilter(key).gte(value));
-                    break;
-                case ("lt"):
-                    boolFilterBuilder.must(FilterBuilders.rangeFilter(key).lt(value));
-                    break;
-                case ("lte"):
-                    boolFilterBuilder.must(FilterBuilders.rangeFilter(key).lte(value));
-                    break;
-                case("inside"):
-                    List items =(List) value;
-                    Object firstItem = items.get(0);
-                    Object secondItem = items.get(1);
-                    boolFilterBuilder.must(FilterBuilders.rangeFilter(key).from(firstItem).to(secondItem));
-                    break;
-                default:
-                    throw new IllegalArgumentException("predicate not supported in has step: " + predicate.toString());
-            }
-        } else if (predicate instanceof Contains) {
-            if (predicate == Contains.without) boolFilterBuilder.must(FilterBuilders.missingFilter(key));
-            else if (predicate == Contains.within){
-                if(value == null) boolFilterBuilder.must(FilterBuilders.existsFilter(key));
-                else  boolFilterBuilder.must(FilterBuilders.termsFilter (key, value));
-            }
-        } else if (predicate instanceof Geo) boolFilterBuilder.must(new GeoShapeFilterBuilder(key, GetShapeBuilder(value), ((Geo) predicate).getRelation()));
-        else throw new IllegalArgumentException("predicate not supported by unipop: " + predicate.toString());
+        else if (has.getPredicate() instanceof ExistsP) {
+            boolFilterBuilder.must(FilterBuilders.existsFilter(key));
+        } else {
+            //todo: add descriptive unsupported has container description
+            throw new IllegalArgumentException("HasContainer not supported by unipop");
+        }
     }
 
     private static ShapeBuilder GetShapeBuilder(Object object) {
