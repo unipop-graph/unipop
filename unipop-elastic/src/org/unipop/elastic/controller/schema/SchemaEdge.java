@@ -50,7 +50,8 @@ public class SchemaEdge extends BaseEdge {
 
     @Override
     protected void innerRemoveProperty(Property property) {
-
+        String writeIndex = FluentIterable.from(schema.get().getIndices()).first().get();
+        elasticMutations.addElement(this, writeIndex, null, false);
     }
 
     @Override

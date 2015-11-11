@@ -1,5 +1,6 @@
 package org.unipop.elastic.controller.schema;
 
+import com.google.common.collect.FluentIterable;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -15,7 +16,6 @@ import org.unipop.elastic.controller.schema.helpers.elementConverters.utils.Sear
 import org.unipop.elastic.controller.schema.helpers.schemaProviders.GraphElementSchemaProvider;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.common.collect.FluentIterable;
 import org.elasticsearch.search.SearchHit;
 import org.unipop.elastic.helpers.ElasticMutations;
 import org.unipop.elastic.helpers.TimingAccessor;

@@ -1,4 +1,4 @@
-package org.unipop.strategy;
+package org.unipop.process.strategy;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
@@ -25,20 +25,27 @@ import java.util.Set;
 /**
  * Created by Roman on 11/8/2015.
  */
-public class ElasticPredicatesGatheringStrategy extends AbstractTraversalStrategy<TraversalStrategy.VendorOptimizationStrategy> implements TraversalStrategy.VendorOptimizationStrategy {
+public class UniGraphPredicatesStrategy extends AbstractTraversalStrategy<TraversalStrategy.VendorOptimizationStrategy> implements TraversalStrategy.VendorOptimizationStrategy {
     //region AbstractTraversalStrategy Implementation
     @Override
     public Set<Class<? extends VendorOptimizationStrategy>> applyPrior() {
         Set<Class<? extends TraversalStrategy.VendorOptimizationStrategy>> priorStrategies = new HashSet<>();
-        priorStrategies.add(UniGraphStrategy.class);
+        priorStrategies.add(UniGraphStartStepStrategy.class);
+        priorStrategies.add(UniGraphVertexStepStrategy.class);
         return priorStrategies;
     }
 
     @Override
     public void apply(Traversal.Admin<?, ?> traversal) {
-        if(traversal.getEngine().isComputer()) return;
+        if(traversal.getEngine().isComputer()) {
+            return;
+        }
+
         Graph graph = traversal.getGraph().get();
-        if(!(graph instanceof UniGraph)) return;
+        if(!(graph instanceof UniGraph)) {
+            return;
+        }
+
         UniGraph uniGraph = (UniGraph) graph;
 
         TraversalHelper.getStepsOfAssignableClassRecursively(UniGraphStartStep.class, traversal).forEach(elasticGraphStep -> {
@@ -90,9 +97,8 @@ public class ElasticPredicatesGatheringStrategy extends AbstractTraversalStrateg
                         traversal.removeStep(traversalFilterStep);
                     }
 
-                    if(collectLabels(predicates, step)) {
-                        return predicates;
-                    }
+                    collectLabels(predicates, step);
+                    return predicates;
                 }
             }
             else if (PropertiesStep.class.isAssignableFrom(step.getClass()) &&
@@ -112,7 +118,6 @@ public class ElasticPredicatesGatheringStrategy extends AbstractTraversalStrateg
                 RangeGlobalStep rangeGlobalStep = (RangeGlobalStep) step;
                 predicates.limitLow = rangeGlobalStep.getLowRange();
                 predicates.limitHigh = rangeGlobalStep.getHighRange();
-                traversal.removeStep(rangeGlobalStep);
                 if(collectLabels(predicates, step)) return predicates;
             }
             else {

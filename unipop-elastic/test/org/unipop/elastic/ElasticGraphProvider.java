@@ -9,11 +9,10 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.node.Node;
 import org.unipop.controllerprovider.ControllerManagerFactory;
-import org.unipop.elastic.controller.schema.SchemaControllerManager;
 import org.unipop.elastic.controllermanagers.BasicElasticControllerManager;
 import org.unipop.elastic.helpers.ElasticClientFactory;
 import org.unipop.elastic.helpers.ElasticHelper;
-import org.unipop.strategy.DefaultStrategyRegistrar;
+import org.unipop.process.strategy.DefaultStrategyRegistrar;
 import org.unipop.structure.*;
 
 import java.io.File;

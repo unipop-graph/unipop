@@ -11,6 +11,7 @@ import org.unipop.structure.BaseVertex;
 import org.unipop.structure.BaseVertexProperty;
 import org.unipop.structure.UniGraph;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
@@ -55,7 +56,8 @@ public class SchemaVertex<TController extends SchemaVertexController> extends Ba
 
     @Override
     protected void innerRemoveProperty(Property property) {
-
+        String writeIndex = FluentIterable.from(schema.get().getIndices()).first().get();
+        elasticMutations.addElement(this, writeIndex, null, false);
     }
 
     @Override
@@ -66,14 +68,30 @@ public class SchemaVertex<TController extends SchemaVertexController> extends Ba
 
     @Override
     public <V> VertexProperty<V> property(final String key) {
-        if (lazyGetter != null) lazyGetter.execute();
-        return super.property(key);
+        VertexProperty<V> property = super.property(key);
+        if (property == VertexProperty.empty() && lazyGetter != null) {
+            lazyGetter.execute();
+            property = super.property(key);
+        }
+        return property;
     }
 
     @Override
     public <V> Iterator<VertexProperty<V>> properties(final String... propertyKeys) {
-        if (lazyGetter != null) lazyGetter.execute();
-        return super.properties(propertyKeys);
+        ArrayList properties = new ArrayList();
+        for (int i = 0 ; i < propertyKeys.length; i++) {
+            VertexProperty<V> property = this.property(propertyKeys[i]);
+            if (property != VertexProperty.empty()) {
+                properties.add(property);
+            }
+        }
+
+        if (propertyKeys.length == 0 && lazyGetter != null) {
+            lazyGetter.execute();
+            return super.properties(propertyKeys);
+        }
+
+        return properties.iterator();
     }
     //endregion
 

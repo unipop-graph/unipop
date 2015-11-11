@@ -109,14 +109,14 @@ public class HasContainersTranslator {
                             case within:
                                 if (hasContainer.getValue() != null) {
                                     searchBuilder.getQueryBuilder().seekRoot().query().filtered().filter().bool().must()
-                                            .ids(Arrays.asList(convertValueToStringArray(hasContainer.getValue())));
+                                            .ids(Arrays.asList(convertValueToStringArray(hasContainer.getValue())), FluentIterable.from(searchBuilder.getTypes()).toArray(String.class));
                                 }
                                 break;
 
                             case without:
                                 if (hasContainer.getValue() != null) {
                                     searchBuilder.getQueryBuilder().seekRoot().query().filtered().filter().bool().mustNot()
-                                            .ids(Arrays.asList(convertValueToStringArray(hasContainer.getValue())));
+                                            .ids(Arrays.asList(convertValueToStringArray(hasContainer.getValue())), FluentIterable.from(searchBuilder.getTypes()).toArray(String.class));
                                 }
 
                             default:

@@ -65,7 +65,7 @@ public class SchemaControllerManager extends BasicControllerManager {
 
         client = ElasticClientFactory.create(elasticConfiguration);
 
-        String indexName = configuration.getString("elasticsearch.index.name", "graph");
+        String indexName = configuration.getString("graphName", "graph");
         ElasticHelper.createIndex(indexName, client);
 
         lazyGetterFactory = new LazyGetterFactory(client, schemaProvider);

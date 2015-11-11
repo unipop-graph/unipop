@@ -15,9 +15,9 @@ import org.apache.tinkerpop.gremlin.util.iterator.ArrayIterator;
 import org.unipop.controller.Predicates;
 import org.unipop.controllerprovider.ControllerManager;
 import org.unipop.controllerprovider.ControllerManagerFactory;
-import org.unipop.strategy.DefaultStrategyRegistrar;
-import org.unipop.strategy.StrategyRegistrar;
-import org.unipop.strategy.UniGraphStrategy;
+import org.unipop.process.strategy.DefaultStrategyRegistrar;
+import org.unipop.process.strategy.StrategyRegistrar;
+import org.unipop.process.strategy.UniGraphStartStepStrategy;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -58,14 +58,16 @@ import java.util.Map;
         reason = "Takes too long.")
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest", method = "g_V_repeatXoutX_timesX3X_count",
         reason = "Takes too long.")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.algorithm.generator.DistributionGeneratorTest$ProcessorTest", method = "shouldProcessEdges",
+        reason = "Takes too long.")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.algorithm.generator.DistributionGeneratorTest$DifferentDistributionsTest", method = "shouldGenerateSameGraph",
+        reason = "Takes too long.")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.algorithm.generator.DistributionGeneratorTest$DifferentDistributionsTest", method = "shouldGenerateDifferentGraph",
+        reason = "Takes too long.")
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_STANDARD)
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
 @Graph.OptIn("org.unipop.elastic.schema.misc.CustomTestSuite")
 public class UniGraph implements Graph {
-    static {
-        TraversalStrategies.GlobalCache.registerStrategies(UniGraph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(UniGraphStrategy.instance()));
-    }
-
     //for testSuite
     public static UniGraph open(final Configuration configuration) throws InstantiationException {
         return new UniGraph(configuration);

@@ -1,4 +1,4 @@
-package org.unipop.strategy;
+package org.unipop.process.strategy;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;

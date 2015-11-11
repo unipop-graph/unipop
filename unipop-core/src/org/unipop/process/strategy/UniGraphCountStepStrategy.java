@@ -1,4 +1,4 @@
-package org.unipop.strategy;
+package org.unipop.process.strategy;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
@@ -25,7 +25,7 @@ public class UniGraphCountStepStrategy extends AbstractTraversalStrategy<Travers
     @Override
     public Set<Class<? extends TraversalStrategy.VendorOptimizationStrategy>> applyPrior() {
         Set<Class<? extends TraversalStrategy.VendorOptimizationStrategy>> priorStrategies = new HashSet<>();
-        priorStrategies.add(ElasticPredicatesGatheringStrategy.class);
+        priorStrategies.add(UniGraphPredicatesStrategy.class);
         return priorStrategies;
     }
 

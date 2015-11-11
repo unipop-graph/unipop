@@ -1,9 +1,18 @@
 package org.unipop.elastic.schema.misc;
 
 import org.apache.tinkerpop.gremlin.AbstractGremlinSuite;
+import org.apache.tinkerpop.gremlin.algorithm.generator.DistributionGeneratorTest;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalEngine;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalTest;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.UnionTest;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.DropTest;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeTest;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.*;
+import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.ProfileTest;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategyProcessTest;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.SubgraphStrategyProcessTest;
+import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedVertexTest;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.RunnerBuilder;
 
@@ -49,9 +58,9 @@ public class CustomTestSuite extends AbstractGremlinSuite {
 
     //private static final Class<?>[] allTests = new Class[]{BranchTest.Traversals.class};
     //private static final Class<?>[] allTests = new Class[]{ChooseTest.Traversals.class};
-    private static final Class<?>[] allTests = new Class[]{LocalTest.Traversals.class};
+    //private static final Class<?>[] allTests = new Class[]{LocalTest.Traversals.class};
     //private static final Class<?>[] allTests = new Class[]{RepeatTest.Traversals.class};
-    //private static final Class<?>[] allTests = new Class[]{UnionTest.Traversals.class};
+   // private static final Class<?>[] allTests = new Class[]{UnionTest.Traversals.class};
     //private static final Class<?>[] allTests = new Class[]{AndTest.Traversals.class, CoinTest.Traversals.class, CyclicPathTest.Traversals.class};
     //private static final Class<?>[] allTests = new Class[]{DedupTest.Traversals.class};
     //private static final Class<?>[] allTests = new Class[]{DropTest.Traversals.class};
@@ -59,6 +68,7 @@ public class CustomTestSuite extends AbstractGremlinSuite {
     //private static final Class<?>[] allTests = new Class[]{HasTest.Traversals.class};
     //private static final Class<?>[] allTests = new Class[]{IsTest.Traversals.class, OrTest.Traversals.class, RangeTest.Traversals.class, SampleTest.Traversals.class, SimplePathTest.Traversals.class};
     //private static final Class<?>[] allTests = new Class[]{SampleTest.Traversals.class};
+   // private static final Class<?>[] allTests = new Class[]{RangeTest.Traversals.class};
     //private static final Class<?>[] allTests = new Class[]{TailTest.Traversals.class};
     //private static final Class<?>[] allTests = new Class[]{WhereTest.Traversals.class};
     //private static final Class<?>[] allTests = new Class[]{AddEdgeTest.Traversals.class};
@@ -92,18 +102,21 @@ public class CustomTestSuite extends AbstractGremlinSuite {
 //    private static final Class<?>[] allTests = new Class[]{ CoreTraversalTest.class};
 //    private static final Class<?>[] allTests = new Class[]{ ComputerVerificationStrategyProcessTest.StandardTraversals.class };
 //    private static final Class<?>[] allTests = new Class[]{ ElementIdStrategyProcessTest.class };
-//    private static final Class<?>[] allTests = new Class[]{ EventStrategyProcessTest.class };
+   // private static final Class<?>[] allTests = new Class[]{ EventStrategyProcessTest.class };
 //    private static final Class<?>[] allTests = new Class[]{ ReadOnlyStrategyProcessTest.class,PartitionStrategyProcessTest.class,SubgraphStrategyProcessTest.class };
     //private static final Class<?>[] allTests = new Class[]{ PathTest.Traversals.class};
     //private static final Class<?>[] allTests = new Class[]{ SelectTest.Traversals.class};
     //private static final Class<?>[] allTests = new Class[]{ VertexTest.Traversals.class };
+    //private static final Class<?>[] allTests = new Class[]{DistributionGeneratorTest.class};
+    //private static final Class<?>[] allTests = new Class[]{org.apache.tinkerpop.gremlin.structure.VertexTest.BasicVertexTest.class};
+
 
     // problematic
     // last test runs till OutOfMemory Exception (both on ran's code and ours)
     //private static final Class<?>[] allTests = new Class[]{ MatchTest.GreedyMatchTraversals.class };
     //private static final Class<?>[] allTests = new Class[]{ ProfileTest.Traversals.class };
 
-   // private static final Class<?>[] allTests = new Class[]{ SubgraphStrategyProcessTest.class };
+   private static final Class<?>[] allTests = new Class[]{ SubgraphStrategyProcessTest.class };
 
     //private static final Class<?>[] allTests = new Class[]{ GroupTests.class };
 
