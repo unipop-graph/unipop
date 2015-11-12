@@ -43,7 +43,7 @@ public class SqlVertexController implements VertexController {
     public Iterator<BaseVertex> vertices(Predicates predicates) {
         SelectJoinStep<Record> select = dslContext.select().from(tableName);
         predicates.hasContainers.forEach(hasContainer -> select.where(JooqHelper.createCondition(hasContainer)));
-        //select.limit((int)predicates.limitLow, predicates.limitHigh < Long.MAX_VALUE ? (int)(predicates.limitHigh - predicates.limitLow) : Integer.MAX_VALUE);
+        select.limit(0, predicates.limitHigh < Long.MAX_VALUE ? (int)predicates.limitHigh : Integer.MAX_VALUE);
         return select.fetch(vertexMapper).iterator();
     }
 
