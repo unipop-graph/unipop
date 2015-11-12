@@ -149,6 +149,7 @@ public class ElasticHelper {
                 if (biPredicate == Contains.without) boolFilterBuilder.must(FilterBuilders.missingFilter(key));
                 else if (biPredicate == Contains.within) {
                     if (value == null) boolFilterBuilder.must(FilterBuilders.existsFilter(key));
+                    else if(value instanceof Iterable) boolFilterBuilder.must(FilterBuilders.termsFilter (key, (Iterable)value));
                     else boolFilterBuilder.must(FilterBuilders.termsFilter(key, value));
                 }
             } else if (biPredicate instanceof Geo)

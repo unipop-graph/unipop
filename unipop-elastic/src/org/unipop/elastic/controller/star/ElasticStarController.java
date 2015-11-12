@@ -56,7 +56,7 @@ public class ElasticStarController extends ElasticVertexController implements Ed
     @Override
     public BaseEdge addEdge(Object edgeId, String label, BaseVertex outV, BaseVertex inV, Map<String, Object> properties) {
         return innerEdgeControllers.stream()
-                .map(mapping -> mapping.createEdge(edgeId, label, outV, inV, properties))
+                .map(mapping -> mapping.addEdge(edgeId, label, outV, inV, properties))
                 .filter(i -> i != null)
                 .findFirst().get();
     }
@@ -71,7 +71,7 @@ public class ElasticStarController extends ElasticVertexController implements Ed
             if (filter != null) orFilter.add(filter);
         });
 
-        QueryIterator<ElasticStarVertex> queryIterator = new QueryIterator<>(orFilter, 0, scrollSize, predicates.limitHigh, client,
+        QueryIterator<ElasticStarVertex> queryIterator = new QueryIterator<>(orFilter, scrollSize, predicates.limitHigh, client,
                 this::createStarVertex, timing, getDefaultIndex());
 
         Iterable<ElasticStarVertex> iterable = () -> queryIterator;
@@ -101,7 +101,8 @@ public class ElasticStarController extends ElasticVertexController implements Ed
 
         if (orFilter != null) {
             elasticMutations.refresh();
-            QueryIterator<ElasticStarVertex> queryIterator = new QueryIterator<>(orFilter, 0, scrollSize, predicates.limitHigh, client,
+
+            QueryIterator<ElasticStarVertex> queryIterator = new QueryIterator<>(orFilter, scrollSize, predicates.limitHigh, client,
                     this::createStarVertex, timing, getDefaultIndex());
             queryIterator.forEachRemaining(vertex -> results.addAll(vertex.getInnerEdges(direction.opposite(), labels, predicates)));
         }

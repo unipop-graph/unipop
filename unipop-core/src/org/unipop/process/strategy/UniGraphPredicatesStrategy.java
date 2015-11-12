@@ -54,7 +54,6 @@ public class UniGraphPredicatesStrategy extends AbstractTraversalStrategy<Traver
                 elasticGraphStep.getPredicates().hasContainers.addAll(predicates.hasContainers);
                 elasticGraphStep.getPredicates().labels.addAll(predicates.labels);
                 elasticGraphStep.getPredicates().labels.forEach(label -> elasticGraphStep.addLabel(label));
-                elasticGraphStep.getPredicates().limitLow = predicates.limitLow;
                 elasticGraphStep.getPredicates().limitHigh = predicates.limitHigh;
             }
         });
@@ -65,7 +64,6 @@ public class UniGraphPredicatesStrategy extends AbstractTraversalStrategy<Traver
             elasticVertexStep.getPredicates().hasContainers.addAll(predicates.hasContainers);
             elasticVertexStep.getPredicates().labels.addAll(predicates.labels);
             elasticVertexStep.getPredicates().labels.forEach(label -> elasticVertexStep.addLabel(label));
-            elasticVertexStep.getPredicates().limitLow = predicates.limitLow;
             elasticVertexStep.getPredicates().limitHigh = predicates.limitHigh;
         });
     }
@@ -116,7 +114,6 @@ public class UniGraphPredicatesStrategy extends AbstractTraversalStrategy<Traver
             }
             else if(step instanceof RangeGlobalStep) {
                 RangeGlobalStep rangeGlobalStep = (RangeGlobalStep) step;
-                predicates.limitLow = rangeGlobalStep.getLowRange();
                 predicates.limitHigh = rangeGlobalStep.getHighRange();
                 if(collectLabels(predicates, step)) return predicates;
             }

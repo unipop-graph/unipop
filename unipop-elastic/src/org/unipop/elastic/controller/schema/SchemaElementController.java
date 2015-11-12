@@ -76,7 +76,7 @@ public abstract class SchemaElementController {
         SearchBuilder searchBuilder = buildElementsQuery(elementType);
 
         translateHasContainers(searchBuilder, predicates.hasContainers);
-        translateLimits(predicates.limitHigh, predicates.limitLow, searchBuilder);
+        translateLimits(predicates.limitHigh, searchBuilder);
         return searchBuilder;
     }
 
@@ -90,7 +90,7 @@ public abstract class SchemaElementController {
         }
     }
 
-    protected void translateLimits(long limitHigh, long limitLow, SearchBuilder searchBuilder) {
+    protected void translateLimits(long limitHigh, SearchBuilder searchBuilder) {
         searchBuilder.setLimit(limitHigh);
         //TODO: implement limit low
     }

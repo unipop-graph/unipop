@@ -38,6 +38,7 @@ public class LazyGetter {
 
     public void execute() {
         if (executed) return;
+        executed = true;
 
         timing.start("lazyMultiGet");
         MultiGetRequestBuilder multiGetRequestBuilder = client.prepareMultiGet();
@@ -58,7 +59,6 @@ public class LazyGetter {
             vertices.forEach(vertex -> vertex.applyLazyFields(response.getType(), response.getResponse().getSource()));
         });
 
-        executed = true;
         keyToVertices = null;
         client = null;
     }
