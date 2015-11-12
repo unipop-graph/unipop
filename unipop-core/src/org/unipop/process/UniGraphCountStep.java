@@ -1,5 +1,6 @@
 package org.unipop.process;
 
+import com.google.common.collect.FluentIterable;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierStep;
@@ -45,8 +46,8 @@ public class UniGraphCountStep<E extends Element> extends ReducingBarrierStep<E,
 
             Long bulkElementCount = 0L;
             //TODO: configure bulk size dynamically
-            if (bulk.size() > 1000000 || !this.starts.hasNext()) {
-                bulkElementCount = this.controllerManager.edgeCount((Vertex[])bulk.toArray(), direction.get(), edgeLabels, predicates);
+            if (bulk.size() > 100 || !this.starts.hasNext()) {
+                bulkElementCount = this.controllerManager.edgeCount(FluentIterable.from(bulk).transform(e -> (Vertex)e).toArray(Vertex.class), direction.get(), edgeLabels, predicates);
                 if (direction.isPresent() &&
                         direction.get().equals(Direction.BOTH) &&
                         Vertex.class.isAssignableFrom(elementClass)) {

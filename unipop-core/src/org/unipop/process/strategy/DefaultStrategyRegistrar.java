@@ -18,8 +18,8 @@ public class DefaultStrategyRegistrar implements StrategyRegistrar {
                     //add strategies here
                     new UniGraphStartStepStrategy(),
                     new UniGraphVertexStepStrategy(),
-                    new UniGraphPredicatesStrategy()//,
-//                    new UniGraphCountStepStrategy(),
+                    new UniGraphPredicatesStrategy(),
+                    new UniGraphCountStepStrategy()//,
 //                    new ElasticGroupStepStrategy()
             );
 

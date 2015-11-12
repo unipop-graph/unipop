@@ -3,10 +3,13 @@ package org.unipop.elastic.controller.vertex;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.elasticsearch.index.query.BoolFilterBuilder;
 import org.elasticsearch.index.query.FilterBuilders;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.unipop.controller.Predicates;
 import org.unipop.controller.VertexController;
 import org.unipop.elastic.controller.edge.ElasticEdge;
@@ -65,7 +68,19 @@ public class ElasticVertexController implements VertexController {
 
     @Override
     public long vertexCount(Predicates predicates) {
-        return 0;
+        elasticMutations.refresh(defaultIndex);
+        BoolFilterBuilder boolFilter = ElasticHelper.createFilterBuilder(predicates.hasContainers);
+        boolFilter.must(FilterBuilders.missingFilter(ElasticEdge.InId));
+
+        try {
+            SearchResponse response = client.prepareSearch().setIndices(defaultIndex)
+                    .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), boolFilter))
+                    .setSearchType(SearchType.COUNT).execute().get();
+            return response.getHits().getTotalHits();
+        } catch(Exception ex) {
+            //TODO: decide what to do here
+            return 0L;
+        }
     }
 
     @Override

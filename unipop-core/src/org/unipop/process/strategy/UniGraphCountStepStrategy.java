@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.CountGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.SideEffectStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.StartStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
@@ -65,28 +66,17 @@ public class UniGraphCountStepStrategy extends AbstractTraversalStrategy<Travers
                 TraversalHelper.replaceStep(step.getPreviousStep(), elasticCountStep, traversal);
                 traversal.removeStep(step);
 
-                insertDummyStepWhenTraversalIsInternal(traversal, elasticCountStep);
+                insertStartStepWhenTraversalIsInternal(traversal, elasticCountStep);
             }
         });
     }
     //endregion
 
     //region Private Methods
-    private void insertDummyStepWhenTraversalIsInternal(final Traversal.Admin<?, ?> traversal, Step step) {
+    private void insertStartStepWhenTraversalIsInternal(final Traversal.Admin<?, ?> traversal, Step step) {
         if (!traversal.getParent().equals(EmptyStep.instance())) {
-            SideEffectStep dummyStep = new SideEffectStep(traversal) {
-                @Override
-                protected void sideEffect(Traverser.Admin admin) {
-                    //do nothing
-                }
-
-                @Override
-                public String toString() {
-                    return "DummyStep";
-                }
-            };
-
-            TraversalHelper.insertBeforeStep(dummyStep, step, traversal);
+            StartStep startStep = new StartStep(traversal);
+            TraversalHelper.insertBeforeStep(startStep, step, traversal);
         }
     }
     //endregion

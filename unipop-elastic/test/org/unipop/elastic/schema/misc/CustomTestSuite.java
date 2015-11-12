@@ -75,7 +75,7 @@ public class CustomTestSuite extends AbstractGremlinSuite {
     //private static final Class<?>[] allTests = new Class[]{AddVertexTest.Traversals.class};
     //private static final Class<?>[] allTests = new Class[]{CoalesceTest.Traversals.class};
     //private static final Class<?>[] allTests = new Class[]{ConstantTest.Traversals.class};
-    //private static final Class<?>[] allTests = new Class[]{CountTest.Traversals.class};
+    private static final Class<?>[] allTests = new Class[]{CountTest.Traversals.class};
     //private static final Class<?>[] allTests = new Class[]{ CountTests.class};
     //private static final Class<?>[] allTests = new Class[]{FoldTest.Traversals.class};
     //private static final Class<?>[] allTests = new Class[]{MapTest.Traversals.class};
@@ -116,7 +116,7 @@ public class CustomTestSuite extends AbstractGremlinSuite {
     //private static final Class<?>[] allTests = new Class[]{ MatchTest.GreedyMatchTraversals.class };
     //private static final Class<?>[] allTests = new Class[]{ ProfileTest.Traversals.class };
 
-   private static final Class<?>[] allTests = new Class[]{ SubgraphStrategyProcessTest.class };
+   //private static final Class<?>[] allTests = new Class[]{ SubgraphStrategyProcessTest.class };
 
     //private static final Class<?>[] allTests = new Class[]{ GroupTests.class };
 

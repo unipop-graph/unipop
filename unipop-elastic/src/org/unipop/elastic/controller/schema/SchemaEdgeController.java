@@ -77,12 +77,39 @@ public class SchemaEdgeController extends SchemaElementController implements Edg
 
     @Override
     public long edgeCount(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
-        //TODO: change code so it'll take into account ids that appear in idsMap more than once
         HashMap<String, Pair<Long, Vertex>> idsCount = getIdsCounts(Arrays.asList(vertices));
 
-        long count = 0L;
-        //count = getSingleVertexCount(idsCount, direction, edgeLabels, predicates);
-        count += getMultiVertexCount(idsCount, direction, edgeLabels, predicates);
+        SearchBuilder searchBuilder = buildEdgesQuery(edgeLabels, predicates);
+        if (!appendQuery(Arrays.asList(vertices), getQueryAppender(direction), searchBuilder)) {
+            return 0L;
+        }
+
+        appendAggregationsForMultipleVertices(searchBuilder);
+
+        SearchAggregationIterable aggregations = new SearchAggregationIterable(
+                this.graph,
+                searchBuilder.getSearchRequest(this.client),
+                this.client);
+        CompositeAggregation compositeAggregation = new CompositeAggregation(null, aggregations);
+
+        Map<String, Object> result = this.getAggregationConverter(searchBuilder.getAggregationBuilder()).convert(compositeAggregation);
+
+
+        Long count = 0L;
+        for (Map.Entry fieldAggregationEntry : result.entrySet()) {
+            Map<String, Object> fieldAggregation = (Map<String, Object>)fieldAggregationEntry.getValue();
+
+            for(Map.Entry entry : fieldAggregation.entrySet()) {
+                Pair<Long, Vertex> vertexCountPair = idsCount.get(entry.getKey());
+                if (vertexCountPair == null) {
+                    continue;
+                }
+
+                Long occurrences = (Long)entry.getValue();
+                Long factor = vertexCountPair.getValue0();
+                count += occurrences * factor;
+            }
+        }
 
         return count;
     }
@@ -186,49 +213,6 @@ public class SchemaEdgeController extends SchemaElementController implements Edg
     //endregion
 
     //region Private methods
-    private long getMultiVertexCount(HashMap<String, Pair<Long, Vertex>> idsCount, Direction direction, String[] edgeLabels, Predicates predicates) {
-        List<Vertex> multipleVertices = FluentIterable.from(idsCount.entrySet())
-                .filter(entry -> entry.getValue().getValue0() > 0L)
-                .transform(entry -> entry.getValue().getValue1()).toList();
-
-        if (multipleVertices.size() == 0) {
-            return 0L;
-        }
-
-        SearchBuilder searchBuilder = buildEdgesQuery(edgeLabels, predicates);
-        if (!appendQuery(multipleVertices, getQueryAppender(direction), searchBuilder)) {
-            return 0L;
-        }
-
-        appendAggregationsForMultipleVertices(searchBuilder);
-
-        SearchAggregationIterable aggregations = new SearchAggregationIterable(
-                this.graph,
-                searchBuilder.getSearchRequest(this.client),
-                this.client);
-        CompositeAggregation compositeAggregation = new CompositeAggregation(null, aggregations);
-
-        Map<String, Object> result = this.getAggregationConverter(searchBuilder.getAggregationBuilder()).convert(compositeAggregation);
-
-
-        Long count = 0L;
-        for (Map.Entry fieldAggregationEntry : result.entrySet()) {
-            Map<String, Object> fieldAggregation = (Map<String, Object>)fieldAggregationEntry.getValue();
-
-            for(Map.Entry entry : fieldAggregation.entrySet()) {
-                Pair<Long, Vertex> vertexCountPair = idsCount.get(entry.getKey());
-                if (vertexCountPair == null) {
-                    continue;
-                }
-
-                Long occurrences = (Long)entry.getValue();
-                Long factor = vertexCountPair.getValue0();
-                count += occurrences * factor;
-            }
-        }
-
-        return count;
-    }
 
     private void appendAggregationsForMultipleVertices(SearchBuilder searchBuilder) {
         BiFunction biFunction = new BiFunction<QueryBuilder.Composite, Set<String>, Set<String>>() {
@@ -247,27 +231,6 @@ public class SchemaEdgeController extends SchemaElementController implements Edg
         }
     }
 
-    private Long getSingleVertexCount(HashMap<String, Pair<Long, Vertex>> idsCount, Direction direction, String[] edgeLabels, Predicates predicates) {
-        List<Vertex> singleVertices = FluentIterable.from(idsCount.entrySet())
-                .filter(entry -> entry.getValue().getValue0() == 1L)
-                .transform(entry -> entry.getValue().getValue1()).toList();
-
-        SearchBuilder searchBuilder = buildEdgesQuery(edgeLabels, predicates);
-        if (!appendQuery(singleVertices, getQueryAppender(direction), searchBuilder)) {
-            return 0L;
-        }
-
-        long count = 0;
-        try {
-            SearchResponse response = searchBuilder.getSearchRequest(client).setSearchType(SearchType.COUNT).execute().get();
-            count += response.getHits().getTotalHits();
-        } catch(Exception ex) {
-            //TODO: decide what to do here
-            return 0L;
-        }
-        return count;
-    }
-
     private HashMap<String, Pair<Long, Vertex>> getIdsCounts(Iterable<Vertex> vertices) {
         HashMap<String, Pair<Long, Vertex>> idsCount = new HashMap<>();
         vertices.forEach(vertex -> {
@@ -275,11 +238,12 @@ public class SchemaEdgeController extends SchemaElementController implements Edg
             String id = vertex.id().toString();
             if (idsCount.containsKey(id)) {
                 pair = idsCount.get(id);
-                pair.setAt0(pair.getValue0() + 1);
+                pair = new Pair<Long, Vertex>(pair.getValue0() + 1, vertex);
             } else {
                 pair = new Pair<>(1L, vertex);
-                idsCount.put(id, pair);
             }
+
+            idsCount.put(id, pair);
         });
 
         return idsCount;
