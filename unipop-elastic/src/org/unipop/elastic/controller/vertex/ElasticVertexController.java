@@ -98,7 +98,7 @@ public class ElasticVertexController implements VertexController {
         boolFilter.must(FilterBuilders.missingFilter(ElasticEdge.InId));
 
         AggregationBuilder aggregationBuilder = new AggregationBuilder();
-        applyAggregationBuilder(aggregationBuilder, keyTraversal, reducerTraversal);
+        AggregationHelper.applyAggregationBuilder(aggregationBuilder, keyTraversal, reducerTraversal, 0, 0, "global_ordinal_hash");
 
         SearchRequestBuilder searchRequest = client.prepareSearch().setIndices(defaultIndex)
                 .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), boolFilter))
@@ -110,7 +110,7 @@ public class ElasticVertexController implements VertexController {
         SearchAggregationIterable aggregations = new SearchAggregationIterable(this.graph, searchRequest, this.client);
         CompositeAggregation compositeAggregation = new CompositeAggregation(null, aggregations);
 
-        Map<String, Object> result = this.getAggregationConverter(aggregationBuilder, true).convert(compositeAggregation);
+        Map<String, Object> result = AggregationHelper.getAggregationConverter(aggregationBuilder, true).convert(compositeAggregation);
         return result;
     }
 
@@ -140,65 +140,5 @@ public class ElasticVertexController implements VertexController {
         return getDefaultIndex();
     }
 
-    protected void applyAggregationBuilder(AggregationBuilder aggregationBuilder, Traversal keyTraversal, Traversal reducerTraversal) {
-        if (SemanticKeyTraversal.class.isAssignableFrom(keyTraversal.getClass())) {
-            SemanticKeyTraversal semanticKeyTraversal = (SemanticKeyTraversal) keyTraversal;
-            aggregationBuilder.terms("key")
-                    .field(semanticKeyTraversal.getKey())
-                    .size(0)
-                    .shardSize(0)
-                    .executionHint("global_ordinals_hash");
 
-            if (reducerTraversal != null && SemanticReducerTraversal.class.isAssignableFrom(reducerTraversal.getClass())) {
-                SemanticReducerTraversal semanticReducerTraversalInstance = (SemanticReducerTraversal)reducerTraversal;
-                String reduceAggregationName = "reduce";
-                switch (semanticReducerTraversalInstance.getType()) {
-                    case count:
-                        aggregationBuilder.count(reduceAggregationName)
-                                .field(semanticReducerTraversalInstance.getKey());
-                        break;
-
-                    case min:
-                        aggregationBuilder.min(reduceAggregationName)
-                                .field(semanticReducerTraversalInstance.getKey());
-                        break;
-
-                    case max:
-                        aggregationBuilder.max(reduceAggregationName)
-                                .field(semanticReducerTraversalInstance.getKey());
-                        break;
-
-                    case cardinality:
-                        aggregationBuilder.cardinality(reduceAggregationName)
-                                .field(semanticReducerTraversalInstance.getKey())
-                                .precisionThreshold(1000L);
-                        break;
-                }
-            }
-        }
-    }
-
-    protected MapAggregationConverter getAggregationConverter(AggregationBuilder aggregationBuilder, boolean useSimpleFormat) {
-
-        MapAggregationConverter mapAggregationConverter = new MapAggregationConverter();
-
-        FilteredMapAggregationConverter filteredMapAggregationConverter = new FilteredMapAggregationConverter(
-                aggregationBuilder,
-                mapAggregationConverter);
-
-        FilteredMapAggregationConverter filteredStatsAggregationConverter = new FilteredMapAggregationConverter(
-                aggregationBuilder,
-                new StatsAggregationConverter()
-        );
-
-        CompositeAggregationConverter compositeAggregationConverter = new CompositeAggregationConverter(
-                filteredMapAggregationConverter,
-                filteredStatsAggregationConverter,
-                new SingleValueAggregationConverter()
-        );
-
-        mapAggregationConverter.setInnerConverter(compositeAggregationConverter);
-        mapAggregationConverter.setUseSimpleFormat(useSimpleFormat);
-        return mapAggregationConverter;
-    }
 }

@@ -4,10 +4,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.unipop.controller.EdgeController;
 import org.unipop.controller.Predicates;
-import org.unipop.elastic.controller.schema.helpers.ElasticGraphConfiguration;
-import org.unipop.elastic.controller.schema.helpers.QueryBuilder;
-import org.unipop.elastic.controller.schema.helpers.SearchAggregationIterable;
-import org.unipop.elastic.controller.schema.helpers.SearchBuilder;
+import org.unipop.elastic.controller.schema.helpers.*;
 import org.unipop.elastic.controller.schema.helpers.aggregationConverters.*;
 import org.unipop.elastic.controller.schema.helpers.elementConverters.ElementConverter;
 import org.unipop.elastic.controller.schema.helpers.queryAppenders.*;
@@ -20,6 +17,7 @@ import org.elasticsearch.common.collect.FluentIterable;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.elasticsearch.search.SearchHit;
 import org.javatuples.Pair;
+import org.unipop.elastic.helpers.AggregationHelper;
 import org.unipop.elastic.helpers.ElasticMutations;
 import org.unipop.structure.BaseEdge;
 import org.unipop.structure.BaseVertex;
@@ -77,13 +75,12 @@ public class SchemaEdgeController extends SchemaElementController implements Edg
 
     @Override
     public long edgeCount(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
-        HashMap<String, Pair<Long, Vertex>> idsCount = getIdsCounts(Arrays.asList(vertices));
+        HashMap<String, Pair<Long, Vertex>> idsCount = AggregationHelper.getIdsCounts(Arrays.asList(vertices));
 
         SearchBuilder searchBuilder = buildEdgesQuery(edgeLabels, predicates);
         if (!appendQuery(Arrays.asList(vertices), getQueryAppender(direction), searchBuilder)) {
             return 0L;
         }
-
         appendAggregationsForMultipleVertices(searchBuilder);
 
         SearchAggregationIterable aggregations = new SearchAggregationIterable(
@@ -92,33 +89,16 @@ public class SchemaEdgeController extends SchemaElementController implements Edg
                 this.client);
         CompositeAggregation compositeAggregation = new CompositeAggregation(null, aggregations);
 
-        Map<String, Object> result = this.getAggregationConverter(searchBuilder.getAggregationBuilder(), false).convert(compositeAggregation);
+        Map<String, Object> result = AggregationHelper.getAggregationConverter(searchBuilder.getAggregationBuilder(), false).convert(compositeAggregation);
 
-
-        Long count = 0L;
-        for (Map.Entry fieldAggregationEntry : result.entrySet()) {
-            Map<String, Object> fieldAggregation = (Map<String, Object>)fieldAggregationEntry.getValue();
-
-            for(Map.Entry entry : fieldAggregation.entrySet()) {
-                Pair<Long, Vertex> vertexCountPair = idsCount.get(entry.getKey());
-                if (vertexCountPair == null) {
-                    continue;
-                }
-
-                Long occurrences = (Long)((Map<String, Object>)entry.getValue()).get("count");
-                Long factor = vertexCountPair.getValue0();
-                count += occurrences * factor;
-            }
-        }
-
-        return count;
+        return AggregationHelper.countResultsWithRespectToOriginalOccurrences(idsCount, result);
     }
 
     @Override
     public Map<String, Object> edgeGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
         SearchBuilder searchBuilder = buildElementsQuery(predicates, Edge.class);
 
-        applyAggregationBuilder(searchBuilder.getAggregationBuilder(), keyTraversal, reducerTraversal);
+        this.applyAggregationBuilder(searchBuilder.getAggregationBuilder(), keyTraversal, reducerTraversal);
 
         SearchAggregationIterable aggregations = new SearchAggregationIterable(
                 this.graph,
@@ -126,7 +106,7 @@ public class SchemaEdgeController extends SchemaElementController implements Edg
                 this.client);
         CompositeAggregation compositeAggregation = new CompositeAggregation(null, aggregations);
 
-        Map<String, Object> result = this.getAggregationConverter(searchBuilder.getAggregationBuilder(), true).convert(compositeAggregation);
+        Map<String, Object> result = AggregationHelper.getAggregationConverter(searchBuilder.getAggregationBuilder(), true).convert(compositeAggregation);
         return result;
     }
 
@@ -137,7 +117,7 @@ public class SchemaEdgeController extends SchemaElementController implements Edg
             return new HashMap<>();
         }
 
-        applyAggregationBuilder(searchBuilder.getAggregationBuilder(), keyTraversal, reducerTraversal);
+        this.applyAggregationBuilder(searchBuilder.getAggregationBuilder(), keyTraversal, reducerTraversal);
 
         SearchAggregationIterable aggregations = new SearchAggregationIterable(
                 this.graph,
@@ -145,7 +125,7 @@ public class SchemaEdgeController extends SchemaElementController implements Edg
                 this.client);
         CompositeAggregation compositeAggregation = new CompositeAggregation(null, aggregations);
 
-        Map<String, Object> result = this.getAggregationConverter(searchBuilder.getAggregationBuilder(), true).convert(compositeAggregation);
+        Map<String, Object> result = AggregationHelper.getAggregationConverter(searchBuilder.getAggregationBuilder(), true).convert(compositeAggregation);
         return result;
     }
 
@@ -231,23 +211,6 @@ public class SchemaEdgeController extends SchemaElementController implements Edg
         }
     }
 
-    private HashMap<String, Pair<Long, Vertex>> getIdsCounts(Iterable<Vertex> vertices) {
-        HashMap<String, Pair<Long, Vertex>> idsCount = new HashMap<>();
-        vertices.forEach(vertex -> {
-            Pair<Long, Vertex> pair;
-            String id = vertex.id().toString();
-            if (idsCount.containsKey(id)) {
-                pair = idsCount.get(id);
-                pair = new Pair<Long, Vertex>(pair.getValue0() + 1, vertex);
-            } else {
-                pair = new Pair<>(1L, vertex);
-            }
-
-            idsCount.put(id, pair);
-        });
-
-        return idsCount;
-    }
 
     private SearchBuilder buildEdgesQuery(String[] edgeLabels, Predicates predicates) {
         this.elasticMutations.refreshIfDirty();

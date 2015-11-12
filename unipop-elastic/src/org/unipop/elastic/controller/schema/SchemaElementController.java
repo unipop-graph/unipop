@@ -17,6 +17,7 @@ import org.unipop.elastic.controller.schema.helpers.schemaProviders.GraphElement
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.search.SearchHit;
+import org.unipop.elastic.helpers.AggregationHelper;
 import org.unipop.elastic.helpers.ElasticMutations;
 import org.unipop.elastic.helpers.TimingAccessor;
 import org.unipop.structure.BaseElement;
@@ -52,17 +53,7 @@ public abstract class SchemaElementController {
         ));
     }
 
-    protected Iterator<? extends Element> elements(Class elementType) {
-        SearchBuilder searchBuilder = buildElementsQuery(elementType);
-        Iterable<SearchHit> scrollIterable = getSearchHits(searchBuilder);
-        return transformSearchHitsToElements(scrollIterable);
-    }
-
-    protected Iterator<? extends Element> elements(Object[] elementsIds, Class elementType) {
-        SearchBuilder searchBuilder = buildElementsQuery(elementsIds, elementType);
-        Iterable<SearchHit> scrollIterable = getSearchHits(searchBuilder);
-        return transformSearchHitsToElements(scrollIterable);
-    }
+    protected abstract Iterator<? extends Element> transformSearchHitsToElements(Iterable<SearchHit> scrollIterable);
 
     protected Iterator<? extends Element> elements(Predicates predicates, Class elementType) {
         SearchBuilder searchBuilder = buildElementsQuery(predicates, elementType);
@@ -81,17 +72,6 @@ public abstract class SchemaElementController {
         return searchBuilder;
     }
 
-    protected SearchBuilder buildElementsQuery(Object[] elementsIds, Class elementType) {
-        SearchBuilder searchBuilder = buildElementsQuery(elementType);
-
-        // Add to the elastic query a condition for each of the given vertex ids:
-        if (elementsIds != null && elementsIds.length > 0) {
-            appendIds(elementsIds, searchBuilder);
-        }
-
-        return searchBuilder;
-    }
-
     protected SearchBuilder buildElementsQuery(Predicates predicates, Class elementType) {
         SearchBuilder searchBuilder = buildElementsQuery(elementType);
 
@@ -99,32 +79,6 @@ public abstract class SchemaElementController {
         translateLimits(predicates.limitHigh, predicates.limitLow, searchBuilder);
         return searchBuilder;
     }
-
-    protected SearchBuilder buildElementsQuery(Predicates predicates, Object[] elementsIds, Class elementType) {
-        SearchBuilder searchBuilder = buildElementsQuery(elementType);
-
-        translateHasContainers(searchBuilder, predicates.hasContainers);
-        translateLimits(predicates.limitHigh, predicates.limitLow, searchBuilder);
-
-        if (elementsIds != null && elementsIds.length > 0) {
-            appendIds(elementsIds, searchBuilder);
-        }
-
-        return searchBuilder;
-    }
-
-    private void appendIds(Object[] elementsIds, SearchBuilder searchBuilder) {
-        // Add to the elastic query a condition for each of the given vertex ids:
-        if (elementsIds != null && elementsIds.length > 0) {
-            Iterable<String> properIds = FluentIterable.from(Arrays.asList(elementsIds))
-                    .filter(id -> id != null).transform(id -> id.toString());
-
-            searchBuilder.getQueryBuilder().seekRoot().query().filtered().filter().bool()
-                    .must().ids(properIds, FluentIterable.from(searchBuilder.getTypes()).toArray(String.class));
-        }
-    }
-
-    protected abstract Iterator<? extends Element> transformSearchHitsToElements(Iterable<SearchHit> scrollIterable);
 
     protected void translateLabelsPredicate(Iterable<String> labels, SearchBuilder searchBuilder, Class elementType) {
         if (labels != null && FluentIterable.from(labels).size() > 0) {
@@ -161,66 +115,15 @@ public abstract class SchemaElementController {
         return scrollIterable;
     }
 
-    protected MapAggregationConverter getAggregationConverter(AggregationBuilder aggregationBuilder, boolean useSimpleFormat) {
-
-        MapAggregationConverter mapAggregationConverter = new MapAggregationConverter();
-
-        FilteredMapAggregationConverter filteredMapAggregationConverter = new FilteredMapAggregationConverter(
-                aggregationBuilder,
-                mapAggregationConverter);
-
-        FilteredMapAggregationConverter filteredStatsAggregationConverter = new FilteredMapAggregationConverter(
-                aggregationBuilder,
-                new StatsAggregationConverter()
-        );
-
-        CompositeAggregationConverter compositeAggregationConverter = new CompositeAggregationConverter(
-                filteredMapAggregationConverter,
-                filteredStatsAggregationConverter,
-                new SingleValueAggregationConverter()
-        );
-
-        mapAggregationConverter.setInnerConverter(compositeAggregationConverter);
-        mapAggregationConverter.setUseSimpleFormat(useSimpleFormat);
-        return mapAggregationConverter;
-    }
-
     protected void applyAggregationBuilder(AggregationBuilder aggregationBuilder, Traversal keyTraversal, Traversal reducerTraversal) {
-        if (SemanticKeyTraversal.class.isAssignableFrom(keyTraversal.getClass())) {
-            SemanticKeyTraversal semanticKeyTraversal = (SemanticKeyTraversal) keyTraversal;
-            aggregationBuilder.terms("key")
-                    .field(semanticKeyTraversal.getKey())
-                    .size(this.configuration.getElasticGraphAggregationsDefaultTermsSize())
-                    .shardSize(this.configuration.getElasticGraphAggregationsDefaultTermsShardSize())
-                    .executionHint(this.configuration.getElasticGraphAggregationsDefaultTermsExecutonHint());
-
-            if (reducerTraversal != null && SemanticReducerTraversal.class.isAssignableFrom(reducerTraversal.getClass())) {
-                SemanticReducerTraversal semanticReducerTraversalInstance = (SemanticReducerTraversal)reducerTraversal;
-                String reduceAggregationName = "reduce";
-                switch (semanticReducerTraversalInstance.getType()) {
-                    case count:
-                        aggregationBuilder.count(reduceAggregationName)
-                                .field(semanticReducerTraversalInstance.getKey());
-                        break;
-
-                    case min:
-                        aggregationBuilder.min(reduceAggregationName)
-                                .field(semanticReducerTraversalInstance.getKey());
-                        break;
-
-                    case max:
-                        aggregationBuilder.max(reduceAggregationName)
-                                .field(semanticReducerTraversalInstance.getKey());
-                        break;
-
-                    case cardinality:
-                        aggregationBuilder.cardinality(reduceAggregationName)
-                                .field(semanticReducerTraversalInstance.getKey())
-                                .precisionThreshold(1000L);
-                        break;
-                }
-            }
-        }
+        AggregationHelper.applyAggregationBuilder(
+                aggregationBuilder,
+                keyTraversal,
+                reducerTraversal,
+                this.configuration.getElasticGraphAggregationsDefaultTermsSize(),
+                this.configuration.getElasticGraphAggregationsDefaultTermsShardSize(),
+                this.configuration.getElasticGraphAggregationsDefaultTermsExecutonHint()
+        );
     }
 
     protected ElementFactory<SearchHit,SearchHitElement> getSearchHitElementFactory() {

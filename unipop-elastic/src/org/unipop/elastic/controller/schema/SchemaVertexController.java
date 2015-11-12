@@ -18,6 +18,7 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.common.collect.FluentIterable;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.elasticsearch.search.SearchHit;
+import org.unipop.elastic.helpers.AggregationHelper;
 import org.unipop.elastic.helpers.ElasticMutations;
 import org.unipop.structure.BaseVertex;
 import org.unipop.structure.UniGraph;
@@ -47,6 +48,11 @@ public class SchemaVertexController extends SchemaElementController implements V
     }
 
     @Override
+    public BaseVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
+        return new SchemaVertex(vertexId, vertexLabel, graph, null, this, lazyGetterFactory.getLazyGetter(vertexLabel), schemaProvider, this.elasticMutations);
+    }
+
+    @Override
     public long vertexCount(Predicates predicates) {
         SearchBuilder searchBuilder = buildElementsQuery(predicates, Vertex.class);
 
@@ -63,7 +69,7 @@ public class SchemaVertexController extends SchemaElementController implements V
     public Map<String, Object> vertexGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
         SearchBuilder searchBuilder = buildElementsQuery(predicates, Vertex.class);
 
-        applyAggregationBuilder(searchBuilder.getAggregationBuilder(), keyTraversal, reducerTraversal);
+        this.applyAggregationBuilder(searchBuilder.getAggregationBuilder(), keyTraversal, reducerTraversal);
 
         SearchAggregationIterable aggregations = new SearchAggregationIterable(
                 this.graph,
@@ -71,13 +77,8 @@ public class SchemaVertexController extends SchemaElementController implements V
                 this.client);
         CompositeAggregation compositeAggregation = new CompositeAggregation(null, aggregations);
 
-        Map<String, Object> result = this.getAggregationConverter(searchBuilder.getAggregationBuilder(), true).convert(compositeAggregation);
+        Map<String, Object> result = AggregationHelper.getAggregationConverter(searchBuilder.getAggregationBuilder(), true).convert(compositeAggregation);
         return result;
-    }
-
-    @Override
-    public BaseVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
-        return new SchemaVertex(vertexId, vertexLabel, graph, null, this, lazyGetterFactory.getLazyGetter(vertexLabel), schemaProvider, this.elasticMutations);
     }
 
     @Override
