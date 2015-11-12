@@ -1,9 +1,6 @@
 package org.unipop.elastic.controller.schema;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.TraverserSet;
-import org.apache.tinkerpop.gremlin.process.traversal.util.Metrics;
-import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.unipop.controller.EdgeController;
 import org.unipop.controller.Predicates;
@@ -25,7 +22,6 @@ import org.elasticsearch.search.SearchHit;
 import org.javatuples.Pair;
 import org.unipop.elastic.helpers.ElasticMutations;
 import org.unipop.structure.BaseEdge;
-import org.unipop.structure.BaseElement;
 import org.unipop.structure.BaseVertex;
 import org.unipop.structure.UniGraph;
 
@@ -47,12 +43,12 @@ public class SchemaEdgeController extends SchemaElementController implements Edg
 
     //region EdgeHandler Implementation
     @Override
-    public Iterator<BaseEdge> edges(Predicates predicates, Metrics metrics) {
+    public Iterator<BaseEdge> edges(Predicates predicates) {
         return (Iterator<BaseEdge>) elements(predicates, Edge.class);
     }
 
     @Override
-    public Iterator<BaseEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, Metrics metrics) {
+    public Iterator<BaseEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
         SearchBuilder searchBuilder = buildEdgesQuery(edgeLabels, predicates);
 
         if (!appendQuery(Arrays.asList(vertices), getQueryAppender(direction), searchBuilder)) {

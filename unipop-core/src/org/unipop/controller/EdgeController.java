@@ -1,9 +1,6 @@
 package org.unipop.controller;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.TraverserSet;
-import org.apache.tinkerpop.gremlin.process.traversal.util.Metrics;
-import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.unipop.structure.BaseEdge;
 import org.unipop.structure.BaseVertex;
@@ -11,8 +8,8 @@ import org.unipop.structure.BaseVertex;
 import java.util.*;
 
 public interface EdgeController {
-    Iterator<BaseEdge> edges(Predicates predicates, Metrics metrics);
-    Iterator<BaseEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, Metrics metrics);
+    Iterator<BaseEdge> edges(Predicates predicates);
+    Iterator<BaseEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates);
 
     long edgeCount(Predicates predicates);
     long edgeCount(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates);

@@ -1,8 +1,6 @@
 package org.unipop.controller.virtualvertex;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.util.Metrics;
-import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.unipop.controller.Predicates;
 import org.unipop.controller.VertexController;
@@ -24,7 +22,7 @@ public class VirtualVertexController implements VertexController {
     }
 
     @Override
-    public Iterator<BaseVertex> vertices(Predicates predicatess, Metrics metrics) {
+    public Iterator<BaseVertex> vertices(Predicates predicatess) {
         throw new UnsupportedOperationException();
     }
 

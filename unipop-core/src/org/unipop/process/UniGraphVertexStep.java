@@ -66,7 +66,7 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
             copyTraversers.add(traverser);
         }
 
-        results.addResults(controllerManager.edges(vertices.toArray(new BaseVertex[0]), getDirection(), getEdgeLabels(), getPredicates(), metrics));
+        results.addResults(controllerManager.edges(vertices.toArray(new BaseVertex[0]), getDirection(), getEdgeLabels(), getPredicates()));
 
         List<Traverser<E>> returnTraversers = new ArrayList<>();
         copyTraversers.forEach(traverser -> {

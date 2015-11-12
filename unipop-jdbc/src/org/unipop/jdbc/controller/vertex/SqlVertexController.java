@@ -2,8 +2,6 @@ package org.unipop.jdbc.controller.vertex;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.util.Metrics;
-import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.jooq.*;
 import org.jooq.impl.DSL;
@@ -42,7 +40,7 @@ public class SqlVertexController implements VertexController {
     }
 
     @Override
-    public Iterator<BaseVertex> vertices(Predicates predicates, Metrics metrics) {
+    public Iterator<BaseVertex> vertices(Predicates predicates) {
         SelectJoinStep<Record> select = dslContext.select().from(tableName);
         predicates.hasContainers.forEach(hasContainer -> select.where(JooqHelper.createCondition(hasContainer)));
         //select.limit((int)predicates.limitLow, predicates.limitHigh < Long.MAX_VALUE ? (int)(predicates.limitHigh - predicates.limitLow) : Integer.MAX_VALUE);

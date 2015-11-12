@@ -28,11 +28,11 @@ public class UniGraphStartStep<E extends Element> extends GraphStep<E> {
     }
 
     private Iterator<? extends Vertex> vertices() {
-        return controllerManager.vertices(predicates, metrics);
+        return controllerManager.vertices(predicates);
     }
 
     private Iterator<? extends Edge> edges() {
-         return controllerManager.edges(predicates, metrics);
+         return controllerManager.edges(predicates);
     }
 
     public Class<E> getReturnClass() {

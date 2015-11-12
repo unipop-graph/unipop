@@ -1,8 +1,6 @@
 package org.unipop.elastic.controller.schema;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.util.Metrics;
-import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.unipop.controller.Predicates;
 import org.unipop.controller.VertexController;
@@ -44,7 +42,7 @@ public class SchemaVertexController extends SchemaElementController implements V
 
     //region VertexHandler Implementation
     @Override
-    public Iterator<BaseVertex> vertices(Predicates predicates, Metrics metrics) {
+    public Iterator<BaseVertex> vertices(Predicates predicates) {
         return (Iterator<BaseVertex>) elements(predicates, Vertex.class);
     }
 

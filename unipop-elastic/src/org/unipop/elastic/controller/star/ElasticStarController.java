@@ -1,8 +1,6 @@
 package org.unipop.elastic.controller.star;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.util.Metrics;
-import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticsearch.client.Client;
@@ -64,7 +62,7 @@ public class ElasticStarController extends ElasticVertexController implements Ed
     }
 
     @Override
-    public Iterator<BaseEdge> edges(Predicates predicates, Metrics metrics) {
+    public Iterator<BaseEdge> edges(Predicates predicates) {
         elasticMutations.refresh();
 
         OrFilterBuilder orFilter = FilterBuilders.orFilter();
@@ -83,7 +81,7 @@ public class ElasticStarController extends ElasticVertexController implements Ed
     }
 
     @Override
-    public Iterator<BaseEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, Metrics metrics) {
+    public Iterator<BaseEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
         Set<BaseEdge> results = new HashSet<>();
         List<String> labels = Arrays.asList(edgeLabels);
 

@@ -1,9 +1,6 @@
 package org.unipop.controllerprovider;
 
-import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.util.Metrics;
-import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.unipop.controller.EdgeController;
@@ -11,7 +8,6 @@ import org.unipop.controller.Predicates;
 import org.unipop.controller.VertexController;
 import org.unipop.structure.BaseEdge;
 import org.unipop.structure.BaseVertex;
-import org.unipop.structure.UniGraph;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -22,13 +18,13 @@ public abstract class BasicControllerManager implements ControllerManager {
     protected abstract EdgeController getDefaultEdgeController();
 
     @Override
-    public Iterator<BaseEdge> edges(Predicates predicates, Metrics metrics) {
-        return getDefaultEdgeController().edges(predicates, metrics);
+    public Iterator<BaseEdge> edges(Predicates predicates) {
+        return getDefaultEdgeController().edges(predicates);
     }
 
     @Override
-    public Iterator<BaseEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, Metrics metrics) {
-        return getDefaultEdgeController().edges(vertices, direction, edgeLabels, predicates, metrics);
+    public Iterator<BaseEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
+        return getDefaultEdgeController().edges(vertices, direction, edgeLabels, predicates);
     }
 
     @Override
@@ -57,8 +53,8 @@ public abstract class BasicControllerManager implements ControllerManager {
     }
 
     @Override
-    public Iterator<BaseVertex> vertices(Predicates predicates, Metrics metrics) {
-        return getDefaultVertexController().vertices(predicates, metrics);
+    public Iterator<BaseVertex> vertices(Predicates predicates) {
+        return getDefaultVertexController().vertices(predicates);
     }
 
     @Override

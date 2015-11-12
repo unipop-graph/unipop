@@ -6,7 +6,6 @@ import org.apache.commons.collections4.iterators.TransformIterator;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
@@ -17,7 +16,7 @@ import org.unipop.controllerprovider.ControllerManager;
 import org.unipop.controllerprovider.ControllerManagerFactory;
 import org.unipop.process.strategy.DefaultStrategyRegistrar;
 import org.unipop.process.strategy.StrategyRegistrar;
-import org.unipop.process.strategy.UniGraphStartStepStrategy;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -57,12 +56,6 @@ import java.util.Map;
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest", method = "g_V_repeatXoutX_timesX8X_count",
         reason = "Takes too long.")
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest", method = "g_V_repeatXoutX_timesX3X_count",
-        reason = "Takes too long.")
-@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.algorithm.generator.DistributionGeneratorTest$ProcessorTest", method = "shouldProcessEdges",
-        reason = "Takes too long.")
-@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.algorithm.generator.DistributionGeneratorTest$DifferentDistributionsTest", method = "shouldGenerateSameGraph",
-        reason = "Takes too long.")
-@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.algorithm.generator.DistributionGeneratorTest$DifferentDistributionsTest", method = "shouldGenerateDifferentGraph",
         reason = "Takes too long.")
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_STANDARD)
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
@@ -147,26 +140,26 @@ public class UniGraph implements Graph {
 
     @Override
     public Iterator<Vertex> vertices(Object... ids) {
-        if(ids.length == 0) return transform(controllerManager.vertices(new Predicates(), null));
+        if(ids.length == 0) return transform(controllerManager.vertices(new Predicates()));
 
         if (ids.length > 1 && !ids[0].getClass().equals(ids[1].getClass())) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
         if (Vertex.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator(ids);
         HasContainer hasContainer = new HasContainer(T.id.getAccessor(), P.within(ids));
         Predicates predicates = new Predicates();
         predicates.hasContainers.add(hasContainer);
-        return transform(controllerManager.vertices(predicates, null));
+        return transform(controllerManager.vertices(predicates));
     }
 
     @Override
     public Iterator<Edge> edges(Object... ids) {
-        if(ids.length == 0) return transform(controllerManager.edges(new Predicates(), null));
+        if(ids.length == 0) return transform(controllerManager.edges(new Predicates()));
 
         if (ids.length > 1 && !ids[0].getClass().equals(ids[1].getClass())) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
         if (Edge.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator(ids);
         HasContainer hasContainer = new HasContainer(T.id.getAccessor(), P.within(ids));
         Predicates predicates = new Predicates();
         predicates.hasContainers.add(hasContainer);
-        return transform(controllerManager.edges(predicates, null));
+        return transform(controllerManager.edges(predicates));
     }
 
     @Override
