@@ -15,6 +15,7 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedVertexTest;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.RunnerBuilder;
+import org.unipop.elastic.misc.GroupTests;
 
 /**
  * Created by Gilad on 20/10/2015.
@@ -75,7 +76,7 @@ public class CustomTestSuite extends AbstractGremlinSuite {
     //private static final Class<?>[] allTests = new Class[]{AddVertexTest.Traversals.class};
     //private static final Class<?>[] allTests = new Class[]{CoalesceTest.Traversals.class};
     //private static final Class<?>[] allTests = new Class[]{ConstantTest.Traversals.class};
-    private static final Class<?>[] allTests = new Class[]{CountTest.Traversals.class};
+    //private static final Class<?>[] allTests = new Class[]{CountTest.Traversals.class};
     //private static final Class<?>[] allTests = new Class[]{ CountTests.class};
     //private static final Class<?>[] allTests = new Class[]{FoldTest.Traversals.class};
     //private static final Class<?>[] allTests = new Class[]{MapTest.Traversals.class};
@@ -118,7 +119,7 @@ public class CustomTestSuite extends AbstractGremlinSuite {
 
    //private static final Class<?>[] allTests = new Class[]{ SubgraphStrategyProcessTest.class };
 
-    //private static final Class<?>[] allTests = new Class[]{ GroupTests.class };
+    private static final Class<?>[] allTests = new Class[]{ GroupTests.class };
 
 
     //private static final Class<?>[] allTests = new Class[]{BranchTest.Traversals.class, ChooseTest.Traversals.class, LocalTest.Traversals.class, RepeatTest.Traversals.class, UnionTest.Traversals.class, AndTest.Traversals.class, CoinTest.Traversals.class, CyclicPathTest.Traversals.class, DedupTest.Traversals.class, DropTest.Traversals.class, FilterTest.Traversals.class, HasTest.Traversals.class, IsTest.Traversals.class, OrTest.Traversals.class, RangeTest.Traversals.class, SampleTest.Traversals.class, SimplePathTest.Traversals.class, TailTest.Traversals.class, WhereTest.Traversals.class, AddEdgeTest.Traversals.class, AddVertexTest.Traversals.class, CoalesceTest.Traversals.class, ConstantTest.Traversals.class, CountTest.Traversals.class, FoldTest.Traversals.class, MapTest.Traversals.class, MapKeysTest.Traversals.class, MapValuesTest.Traversals.class, MaxTest.Traversals.class,MeanTest.Traversals.class,MinTest.Traversals.class,SumTest.Traversals.class,OrderTest.Traversals.class,PropertiesTest.Traversals.class, UnfoldTest.Traversals.class ,ValueMapTest.Traversals.class ,AggregateTest.Traversals.class ,GroupTest.Traversals.class ,GroupCountTest.Traversals.class ,InjectTest.Traversals.class, SackTest.Traversals.class ,SideEffectCapTest.Traversals.class ,SideEffectTest.Traversals.class ,StoreTest.Traversals.class ,TreeTest.Traversals.class ,TraversalSideEffectsTest.Traversals.class,CoreTraversalTest.class,ComputerVerificationStrategyProcessTest.StandardTraversals.class,ElementIdStrategyProcessTest.class,EventStrategyProcessTest.class,ReadOnlyStrategyProcessTest.class,PartitionStrategyProcessTest.class,SubgraphStrategyProcessTest.class, PathTest.Traversals.class, SelectTest.Traversals.class, VertexTest.Traversals.class};

@@ -48,11 +48,6 @@ public class UniGraphCountStep<E extends Element> extends ReducingBarrierStep<E,
             //TODO: configure bulk size dynamically
             if (bulk.size() > 100 || !this.starts.hasNext()) {
                 bulkElementCount = this.controllerManager.edgeCount(FluentIterable.from(bulk).transform(e -> (Vertex)e).toArray(Vertex.class), direction.get(), edgeLabels, predicates);
-                if (direction.isPresent() &&
-                        direction.get().equals(Direction.BOTH) &&
-                        Vertex.class.isAssignableFrom(elementClass)) {
-                    bulkElementCount *= 2;
-                }
                 bulk.clear();
             }
 

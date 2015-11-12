@@ -71,7 +71,7 @@ public class SchemaVertexController extends SchemaElementController implements V
                 this.client);
         CompositeAggregation compositeAggregation = new CompositeAggregation(null, aggregations);
 
-        Map<String, Object> result = this.getAggregationConverter(searchBuilder.getAggregationBuilder()).convert(compositeAggregation);
+        Map<String, Object> result = this.getAggregationConverter(searchBuilder.getAggregationBuilder(), true).convert(compositeAggregation);
         return result;
     }
 

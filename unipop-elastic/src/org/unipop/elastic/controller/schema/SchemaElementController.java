@@ -161,7 +161,7 @@ public abstract class SchemaElementController {
         return scrollIterable;
     }
 
-    protected MapAggregationConverter getAggregationConverter(AggregationBuilder aggregationBuilder) {
+    protected MapAggregationConverter getAggregationConverter(AggregationBuilder aggregationBuilder, boolean useSimpleFormat) {
 
         MapAggregationConverter mapAggregationConverter = new MapAggregationConverter();
 
@@ -181,7 +181,7 @@ public abstract class SchemaElementController {
         );
 
         mapAggregationConverter.setInnerConverter(compositeAggregationConverter);
-        mapAggregationConverter.setUseSimpleFormat(true);
+        mapAggregationConverter.setUseSimpleFormat(useSimpleFormat);
         return mapAggregationConverter;
     }
 

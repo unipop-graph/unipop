@@ -8,6 +8,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.lambda.ElementValueTravers
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.TokenTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.SideEffectStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.StartStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
@@ -28,12 +29,13 @@ import java.util.Set;
 /**
  * Created by Gilad on 03/11/2015.
  */
-public class ElasticGroupStepStrategy extends AbstractTraversalStrategy<TraversalStrategy.VendorOptimizationStrategy> implements TraversalStrategy.VendorOptimizationStrategy {
+public class UniGraphGroupStepStrategy extends AbstractTraversalStrategy<TraversalStrategy.VendorOptimizationStrategy> implements TraversalStrategy.VendorOptimizationStrategy {
     //region AbstractTraversalStrategy Implementation
     @Override
     public Set<Class<? extends VendorOptimizationStrategy>> applyPrior() {
         Set<Class<? extends TraversalStrategy.VendorOptimizationStrategy>> priorStrategies = new HashSet<>();
-        priorStrategies.add(UniGraphCountStepStrategy.class);
+        priorStrategies.add(UniGraphPredicatesStrategy.class);
+        priorStrategies.add(UniGraphGroupStepCountStrategy.class);
         return priorStrategies;
     }
 
@@ -96,7 +98,7 @@ public class ElasticGroupStepStrategy extends AbstractTraversalStrategy<Traversa
                     TraversalHelper.replaceStep(step.getPreviousStep(), elasticGroupStep, traversal);
                     traversal.removeStep(step);
 
-                    insertDummyStepWhenTraversalIsInternal(traversal, elasticGroupStep);
+                    insertStartStepWhenTraversalIsInternal(traversal, elasticGroupStep);
                 }
             }
         });
@@ -220,21 +222,10 @@ public class ElasticGroupStepStrategy extends AbstractTraversalStrategy<Traversa
     //endregion
 
     //region Private Methods
-    private void insertDummyStepWhenTraversalIsInternal(final Traversal.Admin<?, ?> traversal, Step step) {
+    private void insertStartStepWhenTraversalIsInternal(final Traversal.Admin<?, ?> traversal, Step step) {
         if (!traversal.getParent().equals(EmptyStep.instance())) {
-            SideEffectStep dummyStep = new SideEffectStep(traversal) {
-                @Override
-                protected void sideEffect(Traverser.Admin admin) {
-                    //do nothing
-                }
-
-                @Override
-                public String toString() {
-                    return "DummyStep";
-                }
-            };
-
-            TraversalHelper.insertBeforeStep(dummyStep, step, traversal);
+            StartStep startStep = new StartStep(traversal);
+            TraversalHelper.insertBeforeStep(startStep, step, traversal);
         }
     }
     //endregion

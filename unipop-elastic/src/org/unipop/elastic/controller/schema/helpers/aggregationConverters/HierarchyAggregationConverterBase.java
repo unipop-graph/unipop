@@ -35,10 +35,9 @@ public abstract class HierarchyAggregationConverterBase<TAggregation extends Agg
         if (MultiBucketsAggregation.class.isAssignableFrom(aggregation.getClass())) {
             MultiBucketsAggregation multiBucketAggregation = (MultiBucketsAggregation)aggregation;
 
-            output = mergeBuckets(output, multiBucketAggregation.getBuckets());
             for(MultiBucketsAggregation.Bucket bucket : multiBucketAggregation.getBuckets()) {
                 output = mergeBucket(output, bucket);
-                for (Aggregation childAggregation : ((HasAggregations) bucket).getAggregations()) {
+                for (Aggregation childAggregation : bucket.getAggregations()) {
                     if (this.innerConverter != null) {
                         if (this.innerConverter.canConvert(childAggregation)) {
                             Object childOutput = this.innerConverter.convert(childAggregation);
@@ -52,7 +51,7 @@ public abstract class HierarchyAggregationConverterBase<TAggregation extends Agg
                 if (this.innerConverter != null) {
                     if (this.innerConverter.canConvert(childAggregation)) {
                         Object childOutput = this.innerConverter.convert(childAggregation);
-                        output = mergeChildOutput(output, null, childAggregation, childOutput);
+                        output = mergeChildOutput(output, (HasAggregations) aggregation, childAggregation, childOutput);
                     }
                 }
             }
@@ -65,8 +64,7 @@ public abstract class HierarchyAggregationConverterBase<TAggregation extends Agg
     //region Abstract Methods
     protected abstract TOutput initializeOutput();
     protected abstract TOutput mergeBucket(TOutput output, MultiBucketsAggregation.Bucket bucket);
-    protected abstract TOutput mergeBuckets(TOutput output, Collection<? extends MultiBucketsAggregation.Bucket> bucket);
-    protected abstract TOutput mergeChildOutput(TOutput output, MultiBucketsAggregation.Bucket bucket, Aggregation childAggregation, Object childOutput);
+    protected abstract TOutput mergeChildOutput(TOutput output, HasAggregations aggregationParent , Aggregation childAggregation, Object childOutput);
     //endregion
 
     //region properties

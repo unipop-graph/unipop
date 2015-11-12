@@ -3,10 +3,7 @@ package org.unipop.elastic.controller.edge;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.T;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
@@ -18,8 +15,11 @@ import org.elasticsearch.index.query.FilterBuilders;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.javatuples.Pair;
 import org.unipop.controller.Predicates;
+import org.unipop.controller.aggregation.SemanticKeyTraversal;
+import org.unipop.controller.aggregation.SemanticReducerTraversal;
 import org.unipop.elastic.controller.schema.helpers.AggregationBuilder;
 import org.unipop.elastic.controller.schema.helpers.SearchAggregationIterable;
+import org.unipop.elastic.controller.schema.helpers.SearchBuilder;
 import org.unipop.elastic.controller.schema.helpers.aggregationConverters.*;
 import org.unipop.elastic.helpers.ElasticHelper;
 import org.unipop.elastic.helpers.ElasticMutations;
@@ -146,7 +146,7 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
         SearchAggregationIterable aggregations = new SearchAggregationIterable(this.graph, searchRequest, this.client);
         CompositeAggregation compositeAggregation = new CompositeAggregation(null, aggregations);
 
-        Map<String, Object> result = this.getAggregationConverter(aggregationBuilder).convert(compositeAggregation);
+        Map<String, Object> result = this.getAggregationConverter(aggregationBuilder, false).convert(compositeAggregation);
 
         Long count = 0L;
         for (Map.Entry fieldAggregationEntry : result.entrySet()) {
@@ -158,7 +158,7 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
                     continue;
                 }
 
-                Long occurrences = (Long)entry.getValue();
+                Long occurrences = (Long)((Map<String, Object>)entry.getValue()).get("count");
                 Long factor = vertexCountPair.getValue0();
                 count += occurrences * factor;
             }
@@ -169,12 +169,62 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
 
     @Override
     public Map<String, Object> edgeGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
-        return null;
+        elasticMutations.refresh(indexName);
+        BoolFilterBuilder boolFilter = ElasticHelper.createFilterBuilder(predicates.hasContainers);
+        boolFilter.must(FilterBuilders.existsFilter(ElasticEdge.InId));
+
+        AggregationBuilder aggregationBuilder = new AggregationBuilder();
+        applyAggregationBuilder(aggregationBuilder, keyTraversal, reducerTraversal);
+
+        SearchRequestBuilder searchRequest = client.prepareSearch().setIndices(indexName)
+                .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), boolFilter))
+                .setSearchType(SearchType.COUNT);
+        for(org.elasticsearch.search.aggregations.AggregationBuilder innerAggregation : aggregationBuilder.getAggregations()) {
+            searchRequest.addAggregation(innerAggregation);
+        }
+
+        SearchAggregationIterable aggregations = new SearchAggregationIterable(this.graph, searchRequest, this.client);
+        CompositeAggregation compositeAggregation = new CompositeAggregation(null, aggregations);
+
+        Map<String, Object> result = this.getAggregationConverter(aggregationBuilder, true).convert(compositeAggregation);
+        return result;
     }
 
     @Override
     public Map<String, Object> edgeGroupBy(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
-        return null;
+        elasticMutations.refresh(indexName);
+
+        Object[] vertexIds = new Object[vertices.length];
+        for(int i = 0; i < vertices.length; i++) vertexIds[i] = vertices[i].id();
+
+        if (edgeLabels != null && edgeLabels.length > 0)
+            predicates.hasContainers.add(new HasContainer(T.label.getAccessor(), P.within(edgeLabels)));
+
+        BoolFilterBuilder boolFilter = ElasticHelper.createFilterBuilder(predicates.hasContainers);
+        if (direction == Direction.IN)
+            boolFilter.must(FilterBuilders.termsFilter(ElasticEdge.InId, vertexIds));
+        else if (direction == Direction.OUT)
+            boolFilter.must(FilterBuilders.termsFilter(ElasticEdge.OutId, vertexIds));
+        else if (direction == Direction.BOTH)
+            boolFilter.must(FilterBuilders.orFilter(
+                    FilterBuilders.termsFilter(ElasticEdge.InId, vertexIds),
+                    FilterBuilders.termsFilter(ElasticEdge.OutId, vertexIds)));
+
+        AggregationBuilder aggregationBuilder = new AggregationBuilder();
+        applyAggregationBuilder(aggregationBuilder, keyTraversal, reducerTraversal);
+
+        SearchRequestBuilder searchRequest = client.prepareSearch().setIndices(indexName)
+                .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), boolFilter))
+                .setSearchType(SearchType.COUNT);
+        for(org.elasticsearch.search.aggregations.AggregationBuilder innerAggregation : aggregationBuilder.getAggregations()) {
+            searchRequest.addAggregation(innerAggregation);
+        }
+
+        SearchAggregationIterable aggregations = new SearchAggregationIterable(this.graph, searchRequest, this.client);
+        CompositeAggregation compositeAggregation = new CompositeAggregation(null, aggregations);
+
+        Map<String, Object> result = this.getAggregationConverter(aggregationBuilder, true).convert(compositeAggregation);
+        return result;
     }
 
     @Override
@@ -214,7 +264,7 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
         return idsCount;
     }
 
-    protected MapAggregationConverter getAggregationConverter(AggregationBuilder aggregationBuilder) {
+    protected MapAggregationConverter getAggregationConverter(AggregationBuilder aggregationBuilder, boolean useSimpleFormat) {
 
         MapAggregationConverter mapAggregationConverter = new MapAggregationConverter();
 
@@ -234,7 +284,45 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
         );
 
         mapAggregationConverter.setInnerConverter(compositeAggregationConverter);
-        mapAggregationConverter.setUseSimpleFormat(true);
+        mapAggregationConverter.setUseSimpleFormat(useSimpleFormat);
         return mapAggregationConverter;
+    }
+
+    protected void applyAggregationBuilder(AggregationBuilder aggregationBuilder, Traversal keyTraversal, Traversal reducerTraversal) {
+        if (SemanticKeyTraversal.class.isAssignableFrom(keyTraversal.getClass())) {
+            SemanticKeyTraversal semanticKeyTraversal = (SemanticKeyTraversal) keyTraversal;
+            aggregationBuilder.terms("key")
+                    .field(semanticKeyTraversal.getKey())
+                    .size(0)
+                    .shardSize(0)
+                    .executionHint("global_ordinals_hash");
+
+            if (reducerTraversal != null && SemanticReducerTraversal.class.isAssignableFrom(reducerTraversal.getClass())) {
+                SemanticReducerTraversal semanticReducerTraversalInstance = (SemanticReducerTraversal)reducerTraversal;
+                String reduceAggregationName = "reduce";
+                switch (semanticReducerTraversalInstance.getType()) {
+                    case count:
+                        aggregationBuilder.count(reduceAggregationName)
+                                .field(semanticReducerTraversalInstance.getKey());
+                        break;
+
+                    case min:
+                        aggregationBuilder.min(reduceAggregationName)
+                                .field(semanticReducerTraversalInstance.getKey());
+                        break;
+
+                    case max:
+                        aggregationBuilder.max(reduceAggregationName)
+                                .field(semanticReducerTraversalInstance.getKey());
+                        break;
+
+                    case cardinality:
+                        aggregationBuilder.cardinality(reduceAggregationName)
+                                .field(semanticReducerTraversalInstance.getKey())
+                                .precisionThreshold(1000L);
+                        break;
+                }
+            }
+        }
     }
 }

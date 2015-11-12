@@ -92,7 +92,7 @@ public class SchemaEdgeController extends SchemaElementController implements Edg
                 this.client);
         CompositeAggregation compositeAggregation = new CompositeAggregation(null, aggregations);
 
-        Map<String, Object> result = this.getAggregationConverter(searchBuilder.getAggregationBuilder()).convert(compositeAggregation);
+        Map<String, Object> result = this.getAggregationConverter(searchBuilder.getAggregationBuilder(), false).convert(compositeAggregation);
 
 
         Long count = 0L;
@@ -105,7 +105,7 @@ public class SchemaEdgeController extends SchemaElementController implements Edg
                     continue;
                 }
 
-                Long occurrences = (Long)entry.getValue();
+                Long occurrences = (Long)((Map<String, Object>)entry.getValue()).get("count");
                 Long factor = vertexCountPair.getValue0();
                 count += occurrences * factor;
             }
@@ -126,7 +126,7 @@ public class SchemaEdgeController extends SchemaElementController implements Edg
                 this.client);
         CompositeAggregation compositeAggregation = new CompositeAggregation(null, aggregations);
 
-        Map<String, Object> result = this.getAggregationConverter(searchBuilder.getAggregationBuilder()).convert(compositeAggregation);
+        Map<String, Object> result = this.getAggregationConverter(searchBuilder.getAggregationBuilder(), true).convert(compositeAggregation);
         return result;
     }
 
@@ -145,7 +145,7 @@ public class SchemaEdgeController extends SchemaElementController implements Edg
                 this.client);
         CompositeAggregation compositeAggregation = new CompositeAggregation(null, aggregations);
 
-        Map<String, Object> result = this.getAggregationConverter(searchBuilder.getAggregationBuilder()).convert(compositeAggregation);
+        Map<String, Object> result = this.getAggregationConverter(searchBuilder.getAggregationBuilder(), true).convert(compositeAggregation);
         return result;
     }
 

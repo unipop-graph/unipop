@@ -1,6 +1,7 @@
 package org.unipop.elastic.controller.schema.helpers.aggregationConverters;
 
 import org.elasticsearch.search.aggregations.Aggregation;
+import org.elasticsearch.search.aggregations.HasAggregations;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 
 import java.util.Collection;
@@ -38,8 +39,6 @@ public class MapAggregationConverter extends HierarchyAggregationConverterBase<A
                     bucketMap = new HashMap<>();
                     bucketMap.put("count", bucket.getDocCount());
                     stringObjectMap.put(bucket.getKey(), bucketMap);
-                } else {
-                    bucketMap = (HashMap<String, Object>) bucketObj;
                 }
             }
         }
@@ -48,30 +47,26 @@ public class MapAggregationConverter extends HierarchyAggregationConverterBase<A
     }
 
     @Override
-    protected Map<String, Object> mergeBuckets(Map<String, Object> stringObjectMap, Collection<? extends MultiBucketsAggregation.Bucket> buckets) {
-        return stringObjectMap;
-    }
+    protected Map<String, Object> mergeChildOutput(Map<String, Object> stringObjectMap, HasAggregations aggregationParent, Aggregation childAggregation, Object childOutput) {
+        MultiBucketsAggregation.Bucket bucket = MultiBucketsAggregation.Bucket.class.isAssignableFrom(aggregationParent.getClass()) ?
+                (MultiBucketsAggregation.Bucket)aggregationParent : null;
 
-    @Override
-    protected Map<String, Object> mergeChildOutput(Map<String, Object> stringObjectMap, MultiBucketsAggregation.Bucket bucket, Aggregation childAggregation, Object childOutput) {
         if (bucket != null) {
             mergeBucket(stringObjectMap, bucket);
-            if (getUseSimpleFormat()) {
+            if (getUseSimpleFormat() && aggregationParent.getAggregations().asList().size() == 1) {
                 stringObjectMap.put(bucket.getKey(), childOutput);
             } else {
                 Map<String, Object> bucketMap = (Map<String, Object>) stringObjectMap.get(bucket.getKey());
                 bucketMap.put(childAggregation.getName(), childOutput);
             }
         } else {
-            /*if (getUseSimpleFormat()) {
+            if (getUseSimpleFormat() && aggregationParent.getAggregations().asList().size() == 1) {
                 if (Map.class.isAssignableFrom(childOutput.getClass())) {
-                    ((Map<String, Object>)childOutput).entrySet().forEach(entry -> {
-                        stringObjectMap.put(entry.getKey(), entry.getValue());
-                    });
+                    stringObjectMap = (Map<String, Object>)childOutput;
                 }
-            } else {*/
+            } else {
                 stringObjectMap.put(childAggregation.getName(), childOutput);
-            //}
+            }
         }
 
         return stringObjectMap;

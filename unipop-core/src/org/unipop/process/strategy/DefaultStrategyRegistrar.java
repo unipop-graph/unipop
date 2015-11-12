@@ -19,8 +19,9 @@ public class DefaultStrategyRegistrar implements StrategyRegistrar {
                     new UniGraphStartStepStrategy(),
                     new UniGraphVertexStepStrategy(),
                     new UniGraphPredicatesStrategy(),
-                    new UniGraphCountStepStrategy()//,
-//                    new ElasticGroupStepStrategy()
+                    new UniGraphGroupStepCountStrategy(),
+                    new UniGraphCountStepStrategy(),
+                    new UniGraphGroupStepStrategy()
             );
 
             TraversalStrategies.GlobalCache.getStrategies(Graph.class).toList().forEach(strategies::addStrategies);

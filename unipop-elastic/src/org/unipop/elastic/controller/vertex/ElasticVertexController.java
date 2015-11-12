@@ -3,6 +3,8 @@ package org.unipop.elastic.controller.vertex;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
@@ -12,7 +14,13 @@ import org.elasticsearch.index.query.FilterBuilders;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.unipop.controller.Predicates;
 import org.unipop.controller.VertexController;
+import org.unipop.controller.aggregation.SemanticKeyTraversal;
+import org.unipop.controller.aggregation.SemanticReducerTraversal;
 import org.unipop.elastic.controller.edge.ElasticEdge;
+import org.unipop.elastic.controller.schema.helpers.AggregationBuilder;
+import org.unipop.elastic.controller.schema.helpers.SearchAggregationIterable;
+import org.unipop.elastic.controller.schema.helpers.SearchBuilder;
+import org.unipop.elastic.controller.schema.helpers.aggregationConverters.*;
 import org.unipop.elastic.helpers.*;
 import org.unipop.structure.BaseVertex;
 import org.unipop.structure.UniGraph;
@@ -85,7 +93,25 @@ public class ElasticVertexController implements VertexController {
 
     @Override
     public Map<String, Object> vertexGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
-        return null;
+        elasticMutations.refresh(defaultIndex);
+        BoolFilterBuilder boolFilter = ElasticHelper.createFilterBuilder(predicates.hasContainers);
+        boolFilter.must(FilterBuilders.missingFilter(ElasticEdge.InId));
+
+        AggregationBuilder aggregationBuilder = new AggregationBuilder();
+        applyAggregationBuilder(aggregationBuilder, keyTraversal, reducerTraversal);
+
+        SearchRequestBuilder searchRequest = client.prepareSearch().setIndices(defaultIndex)
+                .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), boolFilter))
+                .setSearchType(SearchType.COUNT);
+        for(org.elasticsearch.search.aggregations.AggregationBuilder innerAggregation : aggregationBuilder.getAggregations()) {
+            searchRequest.addAggregation(innerAggregation);
+        }
+
+        SearchAggregationIterable aggregations = new SearchAggregationIterable(this.graph, searchRequest, this.client);
+        CompositeAggregation compositeAggregation = new CompositeAggregation(null, aggregations);
+
+        Map<String, Object> result = this.getAggregationConverter(aggregationBuilder, true).convert(compositeAggregation);
+        return result;
     }
 
     private LazyGetter getLazyGetter(Direction direction) {
@@ -112,5 +138,67 @@ public class ElasticVertexController implements VertexController {
 
     protected String getIndex(Map<String, Object> properties) {
         return getDefaultIndex();
+    }
+
+    protected void applyAggregationBuilder(AggregationBuilder aggregationBuilder, Traversal keyTraversal, Traversal reducerTraversal) {
+        if (SemanticKeyTraversal.class.isAssignableFrom(keyTraversal.getClass())) {
+            SemanticKeyTraversal semanticKeyTraversal = (SemanticKeyTraversal) keyTraversal;
+            aggregationBuilder.terms("key")
+                    .field(semanticKeyTraversal.getKey())
+                    .size(0)
+                    .shardSize(0)
+                    .executionHint("global_ordinals_hash");
+
+            if (reducerTraversal != null && SemanticReducerTraversal.class.isAssignableFrom(reducerTraversal.getClass())) {
+                SemanticReducerTraversal semanticReducerTraversalInstance = (SemanticReducerTraversal)reducerTraversal;
+                String reduceAggregationName = "reduce";
+                switch (semanticReducerTraversalInstance.getType()) {
+                    case count:
+                        aggregationBuilder.count(reduceAggregationName)
+                                .field(semanticReducerTraversalInstance.getKey());
+                        break;
+
+                    case min:
+                        aggregationBuilder.min(reduceAggregationName)
+                                .field(semanticReducerTraversalInstance.getKey());
+                        break;
+
+                    case max:
+                        aggregationBuilder.max(reduceAggregationName)
+                                .field(semanticReducerTraversalInstance.getKey());
+                        break;
+
+                    case cardinality:
+                        aggregationBuilder.cardinality(reduceAggregationName)
+                                .field(semanticReducerTraversalInstance.getKey())
+                                .precisionThreshold(1000L);
+                        break;
+                }
+            }
+        }
+    }
+
+    protected MapAggregationConverter getAggregationConverter(AggregationBuilder aggregationBuilder, boolean useSimpleFormat) {
+
+        MapAggregationConverter mapAggregationConverter = new MapAggregationConverter();
+
+        FilteredMapAggregationConverter filteredMapAggregationConverter = new FilteredMapAggregationConverter(
+                aggregationBuilder,
+                mapAggregationConverter);
+
+        FilteredMapAggregationConverter filteredStatsAggregationConverter = new FilteredMapAggregationConverter(
+                aggregationBuilder,
+                new StatsAggregationConverter()
+        );
+
+        CompositeAggregationConverter compositeAggregationConverter = new CompositeAggregationConverter(
+                filteredMapAggregationConverter,
+                filteredStatsAggregationConverter,
+                new SingleValueAggregationConverter()
+        );
+
+        mapAggregationConverter.setInnerConverter(compositeAggregationConverter);
+        mapAggregationConverter.setUseSimpleFormat(useSimpleFormat);
+        return mapAggregationConverter;
     }
 }
