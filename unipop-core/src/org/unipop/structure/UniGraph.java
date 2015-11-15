@@ -1,9 +1,9 @@
 package org.unipop.structure;
 
-import com.google.common.base.Strings;
 import groovyjarjarcommonscli.MissingArgumentException;
 import org.apache.commons.collections4.iterators.TransformIterator;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
@@ -184,7 +184,7 @@ public class UniGraph implements Graph {
         ControllerManagerFactory controllerManagerFactory = (ControllerManagerFactory)configuration.getProperty("controllerManagerFactory");
         if (controllerManagerFactory == null) {
             String controllerManagerfactoryClass = configuration.getString("controllerManagerFactoryClass");
-            if (!Strings.isNullOrEmpty(controllerManagerfactoryClass)) {
+            if (StringUtils.isNotBlank(controllerManagerfactoryClass)) {
                 controllerManagerFactory = (ControllerManagerFactory) Class.forName(controllerManagerfactoryClass).newInstance();
             }
         }
@@ -200,7 +200,7 @@ public class UniGraph implements Graph {
         StrategyRegistrar strategyRegistrar = (StrategyRegistrar)configuration.getProperty("strategyRegistrar");
         if (strategyRegistrar == null) {
             String strategyRegistrarClass = configuration.getString("strategyRegistrarClass");
-            if (!Strings.isNullOrEmpty(strategyRegistrarClass)) {
+            if (StringUtils.isNotBlank(strategyRegistrarClass)) {
                 strategyRegistrar = (StrategyRegistrar) Class.forName(strategyRegistrarClass).newInstance();
             }
         }

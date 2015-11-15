@@ -1,6 +1,5 @@
 package org.unipop.elastic.controller.schema.helpers;
 
-import com.google.common.collect.FluentIterable;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
@@ -8,6 +7,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.unipop.controller.ExistsP;
 
 import java.util.Arrays;
+import java.util.stream.StreamSupport;
 
 /**
  * Created by Gilad on 13/10/2015.
@@ -109,14 +109,16 @@ public class HasContainersTranslator {
                             case within:
                                 if (hasContainer.getValue() != null) {
                                     searchBuilder.getQueryBuilder().seekRoot().query().filtered().filter().bool().must()
-                                            .ids(Arrays.asList(convertValueToStringArray(hasContainer.getValue())), FluentIterable.from(searchBuilder.getTypes()).toArray(String.class));
+                                            .ids(Arrays.asList(convertValueToStringArray(hasContainer.getValue())),
+                                                 searchBuilder.getTypes().stream().toArray(String[]::new));
                                 }
                                 break;
 
                             case without:
                                 if (hasContainer.getValue() != null) {
                                     searchBuilder.getQueryBuilder().seekRoot().query().filtered().filter().bool().mustNot()
-                                            .ids(Arrays.asList(convertValueToStringArray(hasContainer.getValue())), FluentIterable.from(searchBuilder.getTypes()).toArray(String.class));
+                                            .ids(Arrays.asList(convertValueToStringArray(hasContainer.getValue())),
+                                                 searchBuilder.getTypes().stream().toArray(String[]::new));
                                 }
 
                             default:
@@ -172,7 +174,7 @@ public class HasContainersTranslator {
         if (value instanceof String[]) {
             return (String[]) value;
         } else if (Iterable.class.isAssignableFrom(value.getClass())) {
-            return FluentIterable.from((Iterable<String>) value).toArray(String.class);
+            return StreamSupport.stream(((Iterable<String>)value).spliterator(), false).toArray(String[]::new);
         }
 
         return null;

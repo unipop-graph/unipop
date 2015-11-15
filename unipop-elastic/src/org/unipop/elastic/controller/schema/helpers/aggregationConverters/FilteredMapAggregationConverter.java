@@ -1,12 +1,13 @@
 package org.unipop.elastic.controller.schema.helpers.aggregationConverters;
 
-import com.google.common.collect.FluentIterable;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.unipop.elastic.controller.schema.helpers.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregation;
 
 import java.util.*;
 import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  * Created by Roman on 8/2/2015.
@@ -31,10 +32,10 @@ public class FilteredMapAggregationConverter implements AggregationConverter<Agg
     public Map<String, Object> convert(Aggregation aggregation) {
         Map<String, Object> map = this.innerConverter.convert(aggregation);
 
-        List<HavingCompositeMatching> compositeMatchings = FluentIterable.from(this.aggregationBuilder.find(composite ->
-                composite.getParent() != null && composite.getParent().getName() == aggregation.getName()))
+        List<HavingCompositeMatching> compositeMatchings = this.aggregationBuilder.find(composite ->
+                composite.getParent() != null && composite.getParent().getName() == aggregation.getName()).stream()
                 .filter(composite -> AggregationBuilder.HavingComposite.class.isAssignableFrom(composite.getClass()))
-                .transform(composite -> new HavingCompositeMatching((AggregationBuilder.HavingComposite) composite)).toList();
+                .map(composite -> new HavingCompositeMatching((AggregationBuilder.HavingComposite) composite)).collect(Collectors.toList());
 
         if (compositeMatchings.size() > 0) {
             filterMap(map, compositeMatchings);
@@ -46,18 +47,18 @@ public class FilteredMapAggregationConverter implements AggregationConverter<Agg
 
     //region Private Methods
     private void filterMap(Map<String, Object> map, Iterable<HavingCompositeMatching> compositeMatchings) {
-        int maxPathLength = Collections.max(FluentIterable.from(compositeMatchings).transform(compositeMatching -> compositeMatching.getPath().length).toList());
+        int maxPathLength = StreamSupport.stream(compositeMatchings.spliterator(), false).map(compositeMatching -> compositeMatching.getPath().length).max(Integer::max).get();
 
         String[] path = new String[maxPathLength];
         List<String> keysToDelete = new ArrayList<>();
 
         for(Map.Entry<String, Object> entry : map.entrySet()) {
-            FluentIterable.from(compositeMatchings).forEach(compositeMatching -> compositeMatching.setIsMatched(false));
+            compositeMatchings.forEach(compositeMatching -> compositeMatching.setIsMatched(false));
 
             path[0] = entry.getKey();
 
             boolean shouldFilterKey = shouldFilterKey(path, 1, entry.getValue(), compositeMatchings);
-            boolean anyUnmatchedHaving = FluentIterable.from(compositeMatchings).anyMatch(compositeMatching -> !compositeMatching.getIsMatched());
+            boolean anyUnmatchedHaving = StreamSupport.stream(compositeMatchings.spliterator(), false).anyMatch(compositeMatching -> !compositeMatching.getIsMatched());
 
             if (shouldFilterKey || anyUnmatchedHaving) {
                 keysToDelete.add(entry.getKey());
@@ -94,8 +95,8 @@ public class FilteredMapAggregationConverter implements AggregationConverter<Agg
             }
         }
 
-        for (HavingCompositeMatching compositeMatching : FluentIterable.from(compositeMatchings)
-                    .filter(compositePath -> compositePath.isMatchingPath(path, pathLength))) {
+        for (HavingCompositeMatching compositeMatching : StreamSupport.stream(compositeMatchings.spliterator(), false)
+                    .filter(compositePath -> compositePath.isMatchingPath(path, pathLength)).collect(Collectors.toList())) {
             compositeMatching.setIsMatched(true);
             if (!testCondition(compositeMatching, value)) {
                 return true;

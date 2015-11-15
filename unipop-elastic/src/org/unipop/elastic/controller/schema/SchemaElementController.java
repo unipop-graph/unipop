@@ -1,14 +1,10 @@
 package org.unipop.elastic.controller.schema;
 
-import com.google.common.collect.FluentIterable;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.unipop.controller.Predicates;
-import org.unipop.controller.aggregation.SemanticKeyTraversal;
-import org.unipop.controller.aggregation.SemanticReducerTraversal;
 import org.unipop.elastic.controller.schema.helpers.*;
-import org.unipop.elastic.controller.schema.helpers.aggregationConverters.*;
 import org.unipop.elastic.controller.schema.helpers.elementConverters.ElementConverter;
 import org.unipop.elastic.controller.schema.helpers.elementConverters.utils.ElementFactory;
 import org.unipop.elastic.controller.schema.helpers.elementConverters.utils.RecycledElementFactory;
@@ -20,10 +16,10 @@ import org.elasticsearch.search.SearchHit;
 import org.unipop.elastic.helpers.AggregationHelper;
 import org.unipop.elastic.helpers.ElasticMutations;
 import org.unipop.elastic.helpers.TimingAccessor;
-import org.unipop.structure.BaseElement;
 import org.unipop.structure.UniGraph;
 
 import java.util.*;
+import java.util.stream.StreamSupport;
 
 /**
  * Created by Gilad on 14/10/2015.
@@ -81,7 +77,7 @@ public abstract class SchemaElementController {
     }
 
     protected void translateLabelsPredicate(Iterable<String> labels, SearchBuilder searchBuilder, Class elementType) {
-        if (labels != null && FluentIterable.from(labels).size() > 0) {
+        if (labels != null && StreamSupport.stream(labels.spliterator(), false).count() > 0) {
             SearchBuilderHelper.applyIndices(searchBuilder, schemaProvider, labels, elementType);
             SearchBuilderHelper.applyTypes(searchBuilder, schemaProvider, labels, elementType);
         } else {

@@ -1,11 +1,8 @@
 package org.unipop.elastic.controller.schema.helpers;
 
-import com.google.common.collect.FluentIterable;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Created by Gilad on 14/10/2015.
@@ -71,12 +68,12 @@ public class MapHelper {
                     List list = (List) mapValue;
                     if (list.size() > 0 && Map.class.isAssignableFrom(list.get(0).getClass())) {
                         final int pathIndexRec = index + 1;
-                        return FluentIterable.from(list).transformAndConcat(new com.google.common.base.Function() {
-                            @Override
-                            public Object apply(Object o) {
-                                return values((Map<String, Object>) o, path, pathIndexRec);
-                            }
-                        }).toList();
+
+                        List<T> resultList = new ArrayList<>();
+                        for(Object o : list) {
+                            resultList.addAll(values((Map<String, Object>) o, path, pathIndexRec));
+                        }
+                        return resultList;
                     } else {
                         if (index == path.length - 1) {
                             return list;

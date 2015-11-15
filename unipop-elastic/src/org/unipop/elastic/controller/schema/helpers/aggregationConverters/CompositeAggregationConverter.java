@@ -1,9 +1,9 @@
 package org.unipop.elastic.controller.schema.helpers.aggregationConverters;
 
-import com.google.common.collect.FluentIterable;
 import org.elasticsearch.search.aggregations.Aggregation;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * Created by Roman on 5/4/2015.
@@ -19,7 +19,7 @@ public class CompositeAggregationConverter implements AggregationConverter<Aggre
     }
 
     public CompositeAggregationConverter(AggregationConverter<Aggregation, ?>... aggregationConverters) {
-        this.aggregationConverters = FluentIterable.of(aggregationConverters);
+        this.aggregationConverters = Arrays.asList(aggregationConverters);
     }
     //endregion
 

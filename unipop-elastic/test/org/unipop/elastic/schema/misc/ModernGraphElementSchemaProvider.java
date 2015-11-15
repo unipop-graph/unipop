@@ -1,7 +1,7 @@
 package org.unipop.elastic.schema.misc;
 
-import com.google.common.base.Strings;
 import groovyjarjarcommonscli.Option;
+import org.apache.commons.lang3.StringUtils;
 import org.unipop.elastic.controller.schema.helpers.schemaProviders.GraphEdgeSchema;
 import org.unipop.elastic.controller.schema.helpers.schemaProviders.GraphElementRouting;
 import org.unipop.elastic.controller.schema.helpers.schemaProviders.GraphElementSchemaProvider;
@@ -52,7 +52,7 @@ public class ModernGraphElementSchemaProvider implements GraphElementSchemaProvi
     //region GraphElementSchemaProvider implementation
     @Override
     public Optional<GraphVertexSchema> getVertexSchema(String type) {
-        if (Strings.isNullOrEmpty(type)) {
+        if (StringUtils.isBlank(type)) {
             return Optional.empty();
         }
 
@@ -73,7 +73,7 @@ public class ModernGraphElementSchemaProvider implements GraphElementSchemaProvi
             Optional<String> sourceType,
             Optional<String> destinationType) {
 
-        if (Strings.isNullOrEmpty(type)) {
+        if (StringUtils.isBlank(type)) {
             return Optional.empty();
         }
 
@@ -167,7 +167,7 @@ public class ModernGraphElementSchemaProvider implements GraphElementSchemaProvi
 
     @Override
     public Optional<Iterable<GraphEdgeSchema>> getEdgeSchemas(String type) {
-        if (Strings.isNullOrEmpty(type)) {
+        if (StringUtils.isBlank(type)) {
             return Optional.empty();
         }
 

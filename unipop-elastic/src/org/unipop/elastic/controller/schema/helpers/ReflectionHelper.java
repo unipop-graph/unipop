@@ -1,7 +1,5 @@
 package org.unipop.elastic.controller.schema.helpers;
 
-import com.google.common.collect.FluentIterable;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -23,7 +21,7 @@ public class ReflectionHelper {
             parameterTypes.add(param.getClass());
         }
 
-        return (T)(Class.forName(className).getConstructor(FluentIterable.from(parameterTypes).toArray(Class.class))
-                .newInstance(FluentIterable.from(newParamaters).toArray(Object.class)));
+        return (T)(Class.forName(className).getConstructor(parameterTypes.stream().toArray(Class[]::new))
+                .newInstance(newParamaters.stream().toArray(Object[]::new)));
     }
 }

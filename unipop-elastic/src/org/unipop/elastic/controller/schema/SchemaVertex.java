@@ -1,6 +1,5 @@
 package org.unipop.elastic.controller.schema;
 
-import com.google.common.collect.FluentIterable;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.unipop.elastic.controller.schema.helpers.schemaProviders.GraphElementSchemaProvider;
@@ -16,6 +15,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.StreamSupport;
 
 /**
  * Created by Roman on 9/21/2015.
@@ -46,7 +46,7 @@ public class SchemaVertex<TController extends SchemaVertexController> extends Ba
     @Override
     protected void innerAddProperty(BaseVertexProperty vertexProperty) {
         try {
-            String writeIndex = FluentIterable.from(schema.get().getIndices()).first().get();
+            String writeIndex = StreamSupport.stream(schema.get().getIndices().spliterator(), false).findFirst().get();
             elasticMutations.updateElement(this, writeIndex, null, false);
         }
         catch (ExecutionException | InterruptedException e) {
@@ -56,13 +56,13 @@ public class SchemaVertex<TController extends SchemaVertexController> extends Ba
 
     @Override
     protected void innerRemoveProperty(Property property) {
-        String writeIndex = FluentIterable.from(schema.get().getIndices()).first().get();
+        String writeIndex = StreamSupport.stream(schema.get().getIndices().spliterator(), false).findFirst().get();
         elasticMutations.addElement(this, writeIndex, null, false);
     }
 
     @Override
     protected void innerRemove() {
-        String writeIndex = FluentIterable.from(schema.get().getIndices()).first().get();
+        String writeIndex = StreamSupport.stream(schema.get().getIndices().spliterator(), false).findFirst().get();
         elasticMutations.deleteElement(this, writeIndex, null);
     }
 

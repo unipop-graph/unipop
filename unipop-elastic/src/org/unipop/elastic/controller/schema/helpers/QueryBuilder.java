@@ -1,9 +1,6 @@
 package org.unipop.elastic.controller.schema.helpers;
 
-import com.google.common.base.Strings;
-import com.google.common.collect.FluentIterable;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
@@ -14,6 +11,8 @@ import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  * Created by Roman on 3/22/2015.
@@ -44,10 +43,10 @@ public class QueryBuilder implements Cloneable{
     }
 
     public static class Keywords {
-        public static Set<String> getSet() {
-            return set;
-        }
-        private static Set<String> set = ImmutableSet.of("$(ids)");
+       // public static Set<String> getSet() {
+        //    return set;
+       // }
+        //private static Set<String> set = ImmutableSet.of("$(ids)");
     }
 
     //region Constructor
@@ -164,7 +163,7 @@ public class QueryBuilder implements Cloneable{
             throw new UnsupportedOperationException("'bool' may only appear in the 'filter', 'must', 'mustNot' or 'should' context");
         }
 
-        if (!Strings.isNullOrEmpty(name) && seekLocalName(current, name) != null) {
+        if (StringUtils.isNotBlank(name) && seekLocalName(current, name) != null) {
             this.current = seekLocalName(current, name);
             return this;
         }
@@ -277,7 +276,7 @@ public class QueryBuilder implements Cloneable{
             throw new UnsupportedOperationException("'terms' may only appear in the 'filter', 'must', 'mustNot' or 'should' context");
         }
 
-        if (!(Iterable.class.isAssignableFrom(value.getClass())) && !(Keywords.getSet().contains(value.toString()))) {
+        if (!(Iterable.class.isAssignableFrom(value.getClass()))) {
             throw new IllegalArgumentException("illegal value argument for 'terms': " + value.getClass().getSimpleName());
         }
 
@@ -326,7 +325,7 @@ public class QueryBuilder implements Cloneable{
             throw new UnsupportedOperationException("'ids' may only appear in the 'filter', 'must', 'mustNot' or 'should' context");
         }
 
-        if (!(value instanceof Iterable) && !(Keywords.getSet().contains(value.toString()))) {
+        if (!(value instanceof Iterable)) {
             throw new IllegalArgumentException("illegal value argument for 'ids'");
         }
 
@@ -714,9 +713,9 @@ public class QueryBuilder implements Cloneable{
             }
 
             return FilterBuilders.boolFilter().
-                    must(Iterables.toArray(mustFilters, FilterBuilder.class)).
-                    mustNot(Iterables.toArray(mustNotFilters, FilterBuilder.class)).
-                    should(Iterables.toArray(shouldFilters, FilterBuilder.class));
+                    must(StreamSupport.stream(mustFilters.spliterator(), false).toArray(size -> new FilterBuilder[size])).
+                    mustNot(StreamSupport.stream(mustNotFilters.spliterator(), false).toArray(size -> new FilterBuilder[size])).
+                    should(StreamSupport.stream(shouldFilters.spliterator(), false).toArray(size -> new FilterBuilder[size]));
         }
         //endregion
     }
@@ -793,7 +792,7 @@ public class QueryBuilder implements Cloneable{
         @Override
         protected Object build() {
             if (this.value instanceof Iterable) {
-                return FilterBuilders.termsFilter(getName(), (Object[])FluentIterable.from((Iterable) value).toArray(Object.class));
+                return FilterBuilders.termsFilter(getName(), StreamSupport.stream(((Iterable)value).spliterator(), false).toArray());
             }
 
             return FilterBuilders.termsFilter(getName(), this.value);
@@ -887,8 +886,12 @@ public class QueryBuilder implements Cloneable{
         @Override
         protected Object build() {
             if (this.value instanceof Iterable) {
-                String[] ids = Iterables.toArray(FluentIterable.from((Iterable)this.value).transform(val -> val.toString()), String.class);
-                return FilterBuilders.idsFilter(this.types).ids(ids);
+                ArrayList<String> ids = new ArrayList<>();
+                for(Object obj : (Iterable)this.value) {
+                    ids.add(obj.toString());
+                }
+
+                return FilterBuilders.idsFilter(this.types).ids(ids.stream().toArray(String[]::new));
             }
 
             return FilterBuilders.idsFilter(this.types).ids(this.value.toString());

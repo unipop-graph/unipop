@@ -1,6 +1,5 @@
 package org.unipop.elastic.controller.schema.helpers.elementConverters.utils;
 
-import com.google.common.collect.FluentIterable;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.unipop.elastic.controller.schema.SchemaVertex;

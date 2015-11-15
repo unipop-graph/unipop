@@ -1,16 +1,13 @@
 package org.unipop.elastic.controller.schema.helpers;
 
-import com.google.common.collect.FluentIterable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
+import org.apache.tinkerpop.shaded.kryo.serializers.FieldSerializer;
 import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.search.aggregations.AbstractAggregationBuilder;
-import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregator;
-import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.filters.FiltersAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
 import org.elasticsearch.search.aggregations.metrics.cardinality.CardinalityBuilder;
 import org.elasticsearch.search.aggregations.metrics.max.MaxBuilder;
@@ -21,6 +18,8 @@ import org.elasticsearch.search.aggregations.metrics.valuecount.ValueCountBuilde
 import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by Roman on 4/28/2015.
@@ -308,7 +307,7 @@ public class AggregationBuilder implements Cloneable {
     public AggregationBuilder seek(Predicate<Composite> predicate) {
         Collection<Composite> seek = this.root.find(predicate, FindMode.full);
         if (seek != null && seek.size() > 0) {
-            this.current = FluentIterable.from(seek).first().get();
+            this.current = seek.stream().findFirst().get();
         }
 
         return this;
@@ -360,49 +359,49 @@ public class AggregationBuilder implements Cloneable {
 
     //region Private Methods
     private Composite seekLocalName(Composite composite, String name) {
-        FluentIterable<Composite> find = FluentIterable.from(composite.find(childComposite -> {
+        Optional<Composite> find = composite.find(childComposite -> {
             if (childComposite == null) {
                 return false;
             }
 
             return childComposite.getName() != null && childComposite.getName().equals(name);
-        }, FindMode.childrenOnly));
+        }, FindMode.childrenOnly).stream().findFirst();
 
-        if (find.first().isPresent()) {
-            return find.first().get();
+        if (find.isPresent()) {
+            return find.get();
         } else {
             return null;
         }
     }
 
     private Composite seekLocalClass(Composite composite, Class<? extends Composite> compositeClass){
-        FluentIterable<Composite> find =  FluentIterable.from(composite.find(childComposite -> {
+        Optional<Composite> find = composite.find(childComposite -> {
             if (childComposite == null) {
                 return false;
             }
 
             return childComposite.getClass().equals(compositeClass);
-        }, FindMode.childrenOnly));
+        }, FindMode.childrenOnly).stream().findFirst();
 
-        if (find.first().isPresent()) {
-            return find.first().get();
+        if (find.isPresent()) {
+            return find.get();
         } else {
             return null;
         }
     }
 
     private ParamComposite seekLocalParam(Composite composite, String name) {
-        FluentIterable<ParamComposite> find = FluentIterable.from(composite.find(childComposite -> {
+        Optional<ParamComposite> find = composite.find(childComposite -> {
             if (childComposite == null) {
                 return false;
             }
 
             return childComposite.getName() != null && childComposite.getName().equals(name) &&
                     ParamComposite.class.isAssignableFrom(childComposite.getClass());
-        }, FindMode.childrenOnly)).transform(c -> (ParamComposite)c);
+        }, FindMode.childrenOnly).stream().map(c -> (ParamComposite)c).findFirst();
 
-        if (find.first().isPresent()) {
-            return find.first().get();
+        if (find.isPresent()) {
+            return find.get();
         } else {
             return null;
         }
@@ -513,8 +512,8 @@ public class AggregationBuilder implements Cloneable {
         //region Composite Implementation
         @Override
         protected Object build() {
-            return FluentIterable.from(this.getChildren())
-                    .transform(child -> (org.elasticsearch.search.aggregations.AggregationBuilder) child.build());
+            return this.getChildren().stream()
+                    .map(child -> (org.elasticsearch.search.aggregations.AggregationBuilder) child.build()).collect(Collectors.toList());
         }
         //endregion
     }
@@ -530,9 +529,9 @@ public class AggregationBuilder implements Cloneable {
         @Override
         protected Object build() {
             Map<String, FilterBuilder> filterMap = new HashMap<>();
-            for (FilterComposite filter : FluentIterable.from(this.getChildren())
+            for (FilterComposite filter : this.getChildren().stream()
                     .filter(child -> FilterComposite.class.isAssignableFrom(child.getClass()))
-                    .transform(child -> (FilterComposite) child)) {
+                    .map(child -> (FilterComposite) child).collect(Collectors.toList())) {
 
                 FilterBuilder filterBuilder = (FilterBuilder)filter.queryBuilder.seekRoot().query().filtered().filter().getCurrent().build();
                 filterMap.put(filter.getName(), filterBuilder);
@@ -543,10 +542,10 @@ public class AggregationBuilder implements Cloneable {
                 filtersAggsBuilder.filter(entry.getKey(), entry.getValue());
             }
 
-            for (Composite childComposite : FluentIterable.from(this.getChildren())
+            for (Composite childComposite : this.getChildren().stream()
                     .filter(child -> !FilterComposite.class.isAssignableFrom(child.getClass()) &&
                             !ParamComposite.class.isAssignableFrom(child.getClass()) &&
-                            !HavingComposite.class.isAssignableFrom(child.getClass()))) {
+                            !HavingComposite.class.isAssignableFrom(child.getClass())).collect(Collectors.toList())) {
 
                 Object childAggregation = childComposite.build();
 
@@ -611,9 +610,9 @@ public class AggregationBuilder implements Cloneable {
         protected Object build() {
             TermsBuilder terms = AggregationBuilders.terms(this.getName());
 
-            for (ParamComposite param : FluentIterable.from(this.getChildren())
+            for (ParamComposite param : this.getChildren().stream()
                     .filter(child -> ParamComposite.class.isAssignableFrom(child.getClass()))
-                    .transform(child -> (ParamComposite) child)) {
+                    .map(child -> (ParamComposite) child).collect(Collectors.toList())) {
                 switch (param.getName().toLowerCase()) {
                     case "field":
                         terms.field((String)param.getValue());
@@ -637,9 +636,9 @@ public class AggregationBuilder implements Cloneable {
                 }
             }
 
-            for (Composite childComposite : FluentIterable.from(this.getChildren())
+            for (Composite childComposite : this.getChildren().stream()
                     .filter(child -> !ParamComposite.class.isAssignableFrom(child.getClass()) &&
-                            !HavingComposite.class.isAssignableFrom(child.getClass()))) {
+                            !HavingComposite.class.isAssignableFrom(child.getClass())).collect(Collectors.toList())) {
 
                 Object childAggregation = childComposite.build();
 
@@ -674,9 +673,9 @@ public class AggregationBuilder implements Cloneable {
         @Override
         protected Object build() {
             String countField = null;
-            for (ParamComposite param : FluentIterable.from(this.getChildren())
+            for (ParamComposite param : this.getChildren().stream()
                     .filter(child -> ParamComposite.class.isAssignableFrom(child.getClass()))
-                    .transform(child -> (ParamComposite) child)) {
+                    .map(child -> (ParamComposite) child).collect(Collectors.toList())) {
                 switch (param.getName().toLowerCase()) {
                     case "field":
                         countField = (String)param.getValue();
@@ -707,9 +706,9 @@ public class AggregationBuilder implements Cloneable {
         protected Object build() {
             MinBuilder min = AggregationBuilders.min(this.getName());
 
-            for (ParamComposite param : FluentIterable.from(this.getChildren())
+            for (ParamComposite param : this.getChildren().stream()
                     .filter(child -> ParamComposite.class.isAssignableFrom(child.getClass()))
-                    .transform(child -> (ParamComposite) child)) {
+                    .map(child -> (ParamComposite) child).collect(Collectors.toList())) {
                 switch (param.getName().toLowerCase()) {
                     case "field":
                         min.field((String)param.getValue());
@@ -733,9 +732,9 @@ public class AggregationBuilder implements Cloneable {
         protected Object build() {
             MaxBuilder max = AggregationBuilders.max(this.getName());
 
-            for (ParamComposite param : FluentIterable.from(this.getChildren())
+            for (ParamComposite param : this.getChildren().stream()
                     .filter(child -> ParamComposite.class.isAssignableFrom(child.getClass()))
-                    .transform(child -> (ParamComposite) child)) {
+                    .map(child -> (ParamComposite) child).collect(Collectors.toList())) {
                 switch (param.getName().toLowerCase()) {
                     case "field":
                         max.field((String)param.getValue());
@@ -759,9 +758,9 @@ public class AggregationBuilder implements Cloneable {
         protected Object build() {
             StatsBuilder stats = AggregationBuilders.stats(this.getName());
 
-            for (ParamComposite param : FluentIterable.from(this.getChildren())
+            for (ParamComposite param : this.getChildren().stream()
                     .filter(child -> ParamComposite.class.isAssignableFrom(child.getClass()))
-                    .transform(child -> (ParamComposite) child)) {
+                    .map(child -> (ParamComposite) child).collect(Collectors.toList())) {
                 switch (param.getName().toLowerCase()) {
                     case "field":
                         stats.field((String)param.getValue());
@@ -785,9 +784,9 @@ public class AggregationBuilder implements Cloneable {
         protected Object build() {
             CardinalityBuilder cardinality = AggregationBuilders.cardinality(this.getName());
 
-            for (ParamComposite param : FluentIterable.from(this.getChildren())
+            for (ParamComposite param : this.getChildren().stream()
                     .filter(child -> ParamComposite.class.isAssignableFrom(child.getClass()))
-                    .transform(child -> (ParamComposite) child)) {
+                    .map(child -> (ParamComposite) child).collect(Collectors.toList())) {
                 switch (param.getName().toLowerCase()) {
                     case "field":
                         cardinality.field((String)param.getValue());

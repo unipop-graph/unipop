@@ -1,6 +1,5 @@
 package org.unipop.elastic.controller.schema.helpers.aggregationConverters;
 
-import com.google.common.collect.FluentIterable;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.HasAggregations;
 
@@ -8,6 +7,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created by Roman on 5/27/2015.
@@ -52,7 +52,7 @@ public class CompositeAggregation implements Aggregation, HasAggregations {
         //region Aggregations Implementation
         @Override
         public List<Aggregation> asList() {
-            return FluentIterable.from(this.aggregationMap.values()).toList();
+            return this.aggregationMap.values().stream().collect(Collectors.toList());
         }
 
         @Override

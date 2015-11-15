@@ -1,6 +1,5 @@
 package org.unipop.elastic.controller.schema.helpers;
 
-import com.google.common.collect.Iterables;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.client.Client;
 
@@ -74,7 +73,7 @@ public class SearchBuilder {
     //region Private Methods
     private SearchRequestBuilder getSearchRequest(Client client, org.elasticsearch.index.query.QueryBuilder query) {
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch()
-                .setIndices(Iterables.toArray(getIndices(), String.class))
+                .setIndices(getIndices().stream().toArray(String[]::new))
                 .setQuery(query)
                 .setSize((int)getLimit());
 
@@ -82,8 +81,8 @@ public class SearchBuilder {
             searchRequestBuilder.setFetchSource(false);
         } else {
             searchRequestBuilder.setFetchSource(
-                    Iterables.toArray(getIncludeSourceFields(), String.class),
-                    Iterables.toArray(getExcludeSourceFields(), String.class));
+                    getIncludeSourceFields().stream().toArray(String[]::new),
+                    getExcludeSourceFields().stream().toArray(String[]::new));
         }
 
         for(org.elasticsearch.search.aggregations.AggregationBuilder aggregationBuilder : this.aggregationBuilder.getAggregations()) {
