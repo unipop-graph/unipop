@@ -6,16 +6,16 @@ import org.unipop.structure.BaseEdge;
 
 import java.util.Map;
 
-public abstract class InnerEdge extends BaseEdge {
+public abstract class InnerEdge<T extends InnerEdgeController> extends BaseEdge {
 
-    private final InnerEdgeController mapping;
+    private final T innerEdgeController;
 
-    public InnerEdge(ElasticStarVertex starVertex, Object edgeId, String edgeLabel, InnerEdgeController mapping, Vertex outVertex, Vertex inVertex, Map<String, Object> keyValues) {
-        super(edgeId, edgeLabel, keyValues, outVertex, inVertex, starVertex.getController(), starVertex.getGraph());
-        this.mapping = mapping;
+    public InnerEdge(ElasticStarVertex starVertex, Object edgeId, String edgeLabel, T innerEdgeController, Vertex outVertex, Vertex inVertex) {
+        super(edgeId, edgeLabel, null, outVertex, inVertex, starVertex.getController(), starVertex.getGraph());
+        this.innerEdgeController = innerEdgeController;
     }
 
-    public InnerEdgeController getInnerEdgeController() {
-        return mapping;
+    public T getInnerEdgeController() {
+        return innerEdgeController;
     }
 }

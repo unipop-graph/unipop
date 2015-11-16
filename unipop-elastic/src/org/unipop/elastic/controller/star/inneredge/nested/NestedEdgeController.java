@@ -41,7 +41,8 @@ public class NestedEdgeController implements InnerEdgeController {
         if (!label.equals(edgeLabel)) return null;
         ElasticStarVertex starVertex = (ElasticStarVertex) (direction.equals(Direction.IN) ? inV : outV);
         if (!starVertex.label().equals(vertexLabel)) return null;
-        NestedEdge edge = new NestedEdge(starVertex, edgeId, edgeLabel, this, outV, inV, properties);
+        NestedEdge edge = new NestedEdge(starVertex, edgeId, edgeLabel, this, outV, inV);
+        properties.forEach((key, value) -> edge.addPropertyLocal(key, value));
         starVertex.addInnerEdge(edge);
         starVertex.update();
         return edge;
@@ -63,13 +64,12 @@ public class NestedEdgeController implements InnerEdgeController {
 
     private InnerEdge parseEdge(ElasticStarVertex vertex, Map<String, Object> keyValues) {
         Object externalVertexId = keyValues.get(externalVertexIdField);
-        keyValues.remove(externalVertexIdField);
         Object edgeId = keyValues.get(edgeIdField);
-        keyValues.remove(edgeIdField);
         BaseVertex externalVertex = vertex.getGraph().getControllerManager().fromEdge(direction.opposite(), externalVertexId, externalVertexLabel);
         BaseVertex outV = direction.equals(Direction.OUT) ? vertex : externalVertex;
         BaseVertex inV = direction.equals(Direction.IN) ? vertex : externalVertex;
-        NestedEdge edge = new NestedEdge(vertex, edgeId, edgeLabel, this, outV, inV, keyValues);
+        NestedEdge edge = new NestedEdge(vertex, edgeId, edgeLabel, this, outV, inV);
+        keyValues.forEach((key, value) -> edge.addPropertyLocal(key, value));
         vertex.addInnerEdge(edge);
         return edge;
     }
@@ -156,5 +156,9 @@ public class NestedEdgeController implements InnerEdgeController {
 
     public Direction getDirection() {
         return direction;
+    }
+
+    public boolean shouldAddProperty(String key) {
+        return !externalVertexIdField.equals(key) && !edgeIdField.equals(key);
     }
 }
