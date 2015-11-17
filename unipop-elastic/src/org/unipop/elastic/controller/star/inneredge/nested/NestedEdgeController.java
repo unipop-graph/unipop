@@ -44,7 +44,7 @@ public class NestedEdgeController implements InnerEdgeController {
         NestedEdge edge = new NestedEdge(starVertex, edgeId, edgeLabel, this, outV, inV);
         properties.forEach((key, value) -> edge.addPropertyLocal(key, value));
         starVertex.addInnerEdge(edge);
-        starVertex.update();
+        starVertex.update(false);
         return edge;
     }
 

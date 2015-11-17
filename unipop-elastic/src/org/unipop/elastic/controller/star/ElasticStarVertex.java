@@ -50,10 +50,15 @@ public class ElasticStarVertex extends ElasticVertex<ElasticStarController> {
         innerEdges.remove(edge);
     }
 
-    public void update() {
+    public void update(boolean force) {
+        if(removed) return;
         checkLazy();
         try {
-            elasticMutations.updateElement(this, indexName, null, false);
+            if(force) {
+                elasticMutations.deleteElement(this, indexName, null);
+                elasticMutations.addElement(this, indexName, null, false);
+            }
+            else elasticMutations.updateElement(this, indexName, null, false);
         } catch (ExecutionException | InterruptedException e) {
             e.printStackTrace();
         }

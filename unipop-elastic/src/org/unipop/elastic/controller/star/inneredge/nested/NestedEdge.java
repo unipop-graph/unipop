@@ -4,10 +4,7 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.unipop.elastic.controller.star.ElasticStarVertex;
 import org.unipop.elastic.controller.star.inneredge.InnerEdge;
-import org.unipop.elastic.controller.star.inneredge.InnerEdgeController;
 import org.unipop.structure.BaseProperty;
-
-import java.util.Map;
 
 public class NestedEdge extends InnerEdge<NestedEdgeController> {
 
@@ -27,18 +24,18 @@ public class NestedEdge extends InnerEdge<NestedEdgeController> {
     @Override
     protected void innerRemoveProperty(Property property) {
         properties.remove(property.key());
-        starVertex.update();
+        starVertex.update(false);
     }
 
     @Override
     protected void innerRemove() {
         starVertex.removeInnerEdge(this);
-        starVertex.update();
+        starVertex.update(true);
     }
 
     @Override
     protected void innerAddProperty(BaseProperty vertexProperty) {
         properties.put(vertexProperty.key(), vertexProperty);
-        starVertex.update();
+        starVertex.update(false);
     }
 }
