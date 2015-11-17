@@ -8,7 +8,7 @@ import java.util.*;
 
 public class LazyGetter {
 
-    private static final int MAX_LAZY_GET = 1000;
+    private static final int MAX_LAZY_GET = 50;
     private Client client;
     private TimingAccessor timing;
     private boolean executed = false;
