@@ -12,8 +12,7 @@ import org.unipop.controllerprovider.ControllerManagerFactory;
 import org.unipop.elastic.helpers.ElasticClientFactory;
 import org.unipop.elastic.helpers.ElasticHelper;
 import org.unipop.integration.controllermanagers.IntegrationControllerManager;
-import org.unipop.integration.controllermanagers.IntegrationStrategyRegistrar;
-import org.unipop.process.strategy.DefaultStrategyRegistrar;
+import org.unipop.process.strategy.SimplifiedStrategyRegistrar;
 import org.unipop.structure.*;
 
 import java.io.File;
@@ -68,7 +67,7 @@ public class IntegrationGraphProvider extends AbstractGraphProvider {
             put("elasticsearch.cluster.name", CLUSTER_NAME);
             put("elasticsearch.cluster.address", "127.0.0.1:" + client.settings().get("transport.tcp.port"));
             put("controllerManagerFactory", (ControllerManagerFactory) IntegrationControllerManager::new);
-            put("strategyRegistrar", new IntegrationStrategyRegistrar());
+            put("strategyRegistrar", new SimplifiedStrategyRegistrar());
         }};
     }
 

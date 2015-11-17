@@ -1,12 +1,11 @@
-package org.unipop.integration.controllermanagers;
+package org.unipop.process.strategy;
 
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.process.traversal.util.DefaultTraversalStrategies;
 import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.unipop.process.strategy.*;
 import org.unipop.structure.UniGraph;
 
-public class IntegrationStrategyRegistrar implements StrategyRegistrar {
+public class SimplifiedStrategyRegistrar implements StrategyRegistrar {
     @Override
     public void register() {
         try {
