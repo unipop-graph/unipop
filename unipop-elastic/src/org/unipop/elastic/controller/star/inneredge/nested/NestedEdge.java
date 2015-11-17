@@ -9,14 +9,19 @@ import org.unipop.structure.BaseProperty;
 
 import java.util.Map;
 
-public class NestedEdge extends InnerEdge {
+public class NestedEdge extends InnerEdge<NestedEdgeController> {
 
     private ElasticStarVertex starVertex;
 
-    public NestedEdge(ElasticStarVertex starVertex, Object edgeId, String edgeLabel, InnerEdgeController mapping, Vertex outVertex, Vertex inVertex, Map<String, Object> keyValues) {
-        super(starVertex, edgeId, edgeLabel, mapping, outVertex, inVertex, keyValues);
+    public NestedEdge(ElasticStarVertex starVertex, Object edgeId, String edgeLabel, NestedEdgeController mapping, Vertex outVertex, Vertex inVertex) {
+        super(starVertex, edgeId, edgeLabel, mapping, outVertex, inVertex);
         this.starVertex = starVertex;
 
+    }
+
+    @Override
+    protected boolean shouldAddProperty(String key) {
+        return super.shouldAddProperty(key) && getInnerEdgeController().shouldAddProperty(key);
     }
 
     @Override

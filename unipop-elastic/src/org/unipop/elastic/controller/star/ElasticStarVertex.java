@@ -61,8 +61,9 @@ public class ElasticStarVertex extends ElasticVertex<ElasticStarController> {
 
     @Override
     public void applyLazyFields(String label, Map<String, Object> properties) {
-        innerEdgeControllers.stream().map(controller -> controller.parseEdges(this, properties)).flatMap(Collection::stream).forEach(this::addInnerEdge);
-        super.applyLazyFields(label, properties);
+        HashMap<String, Object> clone = new HashMap<>(properties);
+        innerEdgeControllers.stream().map(controller -> controller.parseEdges(this, clone)).flatMap(Collection::stream).forEach(this::addInnerEdge);
+        super.applyLazyFields(label, clone);
     }
 
     public Set<BaseEdge> getInnerEdges(Predicates predicates) {
