@@ -65,7 +65,7 @@ public class NestedEdgeController implements InnerEdgeController {
     private InnerEdge parseEdge(ElasticStarVertex vertex, Map<String, Object> keyValues) {
         Object externalVertexId = keyValues.get(externalVertexIdField);
         Object edgeId = keyValues.get(edgeIdField);
-        BaseVertex externalVertex = vertex.getGraph().getControllerManager().fromEdge(direction.opposite(), externalVertexId, externalVertexLabel);
+        BaseVertex externalVertex = vertex.getGraph().getControllerManager().vertex(direction.opposite(), externalVertexId, externalVertexLabel);
         BaseVertex outV = direction.equals(Direction.OUT) ? vertex : externalVertex;
         BaseVertex inV = direction.equals(Direction.IN) ? vertex : externalVertex;
         NestedEdge edge = new NestedEdge(vertex, edgeId, edgeLabel, this, outV, inV);

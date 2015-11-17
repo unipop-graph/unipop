@@ -3,9 +3,9 @@ package org.unipop.structure;
 import groovyjarjarcommonscli.MissingArgumentException;
 import org.apache.commons.collections4.iterators.TransformIterator;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
@@ -13,7 +13,9 @@ import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.ArrayIterator;
 import org.unipop.controller.Predicates;
 import org.unipop.controllerprovider.ControllerManager;
-import org.unipop.process.UniGraphStrategy;
+import org.unipop.controllerprovider.ControllerManagerFactory;
+import org.unipop.process.strategy.DefaultStrategyRegistrar;
+import org.unipop.process.strategy.StrategyRegistrar;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -59,11 +61,8 @@ import java.util.Map;
         reason = "Takes too long.")
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_STANDARD)
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
+@Graph.OptIn("org.unipop.elastic.schema.misc.CustomTestSuite")
 public class UniGraph implements Graph {
-    static {
-        TraversalStrategies.GlobalCache.registerStrategies(UniGraph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(UniGraphStrategy.instance()));
-    }
-
     //for testSuite
     public static UniGraph open(final Configuration configuration) throws InstantiationException {
         return new UniGraph(configuration);
@@ -72,14 +71,20 @@ public class UniGraph implements Graph {
     private UnipopFeatures features = new UnipopFeatures();
     private final Configuration configuration;
     private ControllerManager controllerManager;
+    private StrategyRegistrar strategyRegistrar;
 
     public UniGraph(Configuration configuration) throws InstantiationException {
         try {
             configuration.setProperty(Graph.GRAPH, UniGraph.class.getName());
             this.configuration = configuration;
-            String queryHandlerName = configuration.getString("controllerManager");
-            if(queryHandlerName != null) this.controllerManager = (ControllerManager)Class.forName(queryHandlerName).newInstance();
-            else throw new MissingArgumentException("No ControllerManager configured.");//this.controllerManager = new SimpleControllerProvider();
+
+            this.strategyRegistrar = determineStartegyRegistrar(configuration);
+            this.strategyRegistrar.register();
+
+            this.controllerManager = determineControllerManager(configuration);
+            if(controllerManager == null) {
+                throw new MissingArgumentException("No ControllerManager configured.");//this.controllerManager = new SimpleControllerProvider();
+            }
             this.getControllerManager().init(this, configuration);
         } catch(Exception ex) {
             InstantiationException instantiationException = new InstantiationException();
@@ -137,26 +142,26 @@ public class UniGraph implements Graph {
 
     @Override
     public Iterator<Vertex> vertices(Object... ids) {
-        if(ids.length == 0) return transform(controllerManager.vertices(new Predicates(), null));
+        if(ids.length == 0) return transform(controllerManager.vertices(new Predicates()));
 
         if (ids.length > 1 && !ids[0].getClass().equals(ids[1].getClass())) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
         if (Vertex.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator(ids);
         HasContainer hasContainer = new HasContainer(T.id.getAccessor(), P.within(ids));
         Predicates predicates = new Predicates();
         predicates.hasContainers.add(hasContainer);
-        return transform(controllerManager.vertices(predicates, null));
+        return transform(controllerManager.vertices(predicates));
     }
 
     @Override
     public Iterator<Edge> edges(Object... ids) {
-        if(ids.length == 0) return transform(controllerManager.edges(new Predicates(), null));
+        if(ids.length == 0) return transform(controllerManager.edges(new Predicates()));
 
         if (ids.length > 1 && !ids[0].getClass().equals(ids[1].getClass())) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
         if (Edge.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator(ids);
         HasContainer hasContainer = new HasContainer(T.id.getAccessor(), P.within(ids));
         Predicates predicates = new Predicates();
         predicates.hasContainers.add(hasContainer);
-        return transform(controllerManager.edges(predicates, null));
+        return transform(controllerManager.edges(predicates));
     }
 
     @Override
@@ -171,6 +176,40 @@ public class UniGraph implements Graph {
 
     private <E,S>Iterator<E> transform(Iterator<S> source){
         return new TransformIterator<>(source, input -> (E) input);
+    }
+
+    private ControllerManager determineControllerManager(Configuration configuration) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+        ControllerManager controllerManager = null;
+
+        ControllerManagerFactory controllerManagerFactory = (ControllerManagerFactory)configuration.getProperty("controllerManagerFactory");
+        if (controllerManagerFactory == null) {
+            String controllerManagerfactoryClass = configuration.getString("controllerManagerFactoryClass");
+            if (StringUtils.isNotBlank(controllerManagerfactoryClass)) {
+                controllerManagerFactory = (ControllerManagerFactory) Class.forName(controllerManagerfactoryClass).newInstance();
+            }
+        }
+
+        if (controllerManagerFactory != null) {
+            controllerManager = controllerManagerFactory.getControllerManager();
+        }
+
+        return controllerManager;
+    }
+
+    private StrategyRegistrar determineStartegyRegistrar(Configuration configuration) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
+        StrategyRegistrar strategyRegistrar = (StrategyRegistrar)configuration.getProperty("strategyRegistrar");
+        if (strategyRegistrar == null) {
+            String strategyRegistrarClass = configuration.getString("strategyRegistrarClass");
+            if (StringUtils.isNotBlank(strategyRegistrarClass)) {
+                strategyRegistrar = (StrategyRegistrar) Class.forName(strategyRegistrarClass).newInstance();
+            }
+        }
+
+        if (strategyRegistrar == null) {
+            strategyRegistrar = new DefaultStrategyRegistrar();
+        }
+
+        return strategyRegistrar;
     }
 
     public static Map<String, Object> asMap(Object[] keyValues){

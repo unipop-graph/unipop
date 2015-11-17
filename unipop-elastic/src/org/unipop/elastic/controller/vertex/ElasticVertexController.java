@@ -1,15 +1,26 @@
 package org.unipop.elastic.controller.vertex;
 
-import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.elasticsearch.index.query.BoolFilterBuilder;
 import org.elasticsearch.index.query.FilterBuilders;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.unipop.controller.Predicates;
 import org.unipop.controller.VertexController;
+import org.unipop.controller.aggregation.SemanticKeyTraversal;
+import org.unipop.controller.aggregation.SemanticReducerTraversal;
 import org.unipop.elastic.controller.edge.ElasticEdge;
+import org.unipop.elastic.controller.schema.helpers.AggregationBuilder;
+import org.unipop.elastic.controller.schema.helpers.SearchAggregationIterable;
+import org.unipop.elastic.controller.schema.helpers.SearchBuilder;
+import org.unipop.elastic.controller.schema.helpers.aggregationConverters.*;
 import org.unipop.elastic.helpers.*;
 import org.unipop.structure.BaseVertex;
 import org.unipop.structure.UniGraph;
@@ -50,7 +61,7 @@ public class ElasticVertexController implements VertexController {
     }
 
     @Override
-    public Iterator<BaseVertex> vertices(Predicates predicates, MutableMetrics metrics) {
+    public Iterator<BaseVertex> vertices(Predicates predicates) {
         elasticMutations.refresh(defaultIndex);
         BoolFilterBuilder boolFilter = ElasticHelper.createFilterBuilder(predicates.hasContainers);
         boolFilter.must(FilterBuilders.missingFilter(ElasticEdge.InId));
@@ -59,8 +70,48 @@ public class ElasticVertexController implements VertexController {
     }
 
     @Override
-    public BaseVertex fromEdge(Direction direction, Object vertexId, String vertexLabel) {
+    public BaseVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
         return createLazyVertex(vertexId, vertexLabel, getLazyGetter(direction));
+    }
+
+    @Override
+    public long vertexCount(Predicates predicates) {
+        elasticMutations.refresh(defaultIndex);
+        BoolFilterBuilder boolFilter = ElasticHelper.createFilterBuilder(predicates.hasContainers);
+        boolFilter.must(FilterBuilders.missingFilter(ElasticEdge.InId));
+
+        try {
+            SearchResponse response = client.prepareSearch().setIndices(defaultIndex)
+                    .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), boolFilter))
+                    .setSearchType(SearchType.COUNT).execute().get();
+            return response.getHits().getTotalHits();
+        } catch(Exception ex) {
+            //TODO: decide what to do here
+            return 0L;
+        }
+    }
+
+    @Override
+    public Map<String, Object> vertexGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
+        elasticMutations.refresh(defaultIndex);
+        BoolFilterBuilder boolFilter = ElasticHelper.createFilterBuilder(predicates.hasContainers);
+        boolFilter.must(FilterBuilders.missingFilter(ElasticEdge.InId));
+
+        AggregationBuilder aggregationBuilder = new AggregationBuilder();
+        AggregationHelper.applyAggregationBuilder(aggregationBuilder, keyTraversal, reducerTraversal, 0, 0, "global_ordinal_hash");
+
+        SearchRequestBuilder searchRequest = client.prepareSearch().setIndices(defaultIndex)
+                .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), boolFilter))
+                .setSearchType(SearchType.COUNT);
+        for(org.elasticsearch.search.aggregations.AggregationBuilder innerAggregation : aggregationBuilder.getAggregations()) {
+            searchRequest.addAggregation(innerAggregation);
+        }
+
+        SearchAggregationIterable aggregations = new SearchAggregationIterable(this.graph, searchRequest, this.client);
+        CompositeAggregation compositeAggregation = new CompositeAggregation(null, aggregations);
+
+        Map<String, Object> result = AggregationHelper.getAggregationConverter(aggregationBuilder, true).convert(compositeAggregation);
+        return result;
     }
 
     private LazyGetter getLazyGetter(Direction direction) {
@@ -88,4 +139,6 @@ public class ElasticVertexController implements VertexController {
     protected String getIndex(Map<String, Object> properties) {
         return getDefaultIndex();
     }
+
+
 }

@@ -7,7 +7,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.StandardTraversalMetr
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.unipop.controllerprovider.ControllerManager;
-
 import java.util.Iterator;
 import java.util.Optional;
 
@@ -29,10 +28,18 @@ public class UniGraphStartStep<E extends Element> extends GraphStep<E> {
     }
 
     private Iterator<? extends Vertex> vertices() {
-        return controllerManager.vertices(predicates, metrics);
+        return controllerManager.vertices(predicates);
     }
 
     private Iterator<? extends Edge> edges() {
-         return controllerManager.edges(predicates, metrics);
+         return controllerManager.edges(predicates);
+    }
+
+    public Class<E> getReturnClass() {
+        return this.returnClass;
+    }
+
+    public Predicates getPredicates() {
+        return predicates;
     }
 }

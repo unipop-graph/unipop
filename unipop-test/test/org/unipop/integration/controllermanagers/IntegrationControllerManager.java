@@ -2,10 +2,13 @@ package org.unipop.integration.controllermanagers;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticsearch.client.Client;
 import org.unipop.controller.EdgeController;
+import org.unipop.controller.Predicates;
 import org.unipop.controller.VertexController;
 import org.unipop.controllerprovider.TinkerGraphControllerManager;
 import org.unipop.elastic.controller.edge.ElasticEdgeController;
@@ -20,6 +23,7 @@ import org.unipop.structure.UniGraph;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Map;
 
 public class IntegrationControllerManager extends TinkerGraphControllerManager {
     private EdgeController edgeController;
@@ -70,5 +74,35 @@ public class IntegrationControllerManager extends TinkerGraphControllerManager {
             e.printStackTrace();
         }
         timing.print();
+    }
+
+    @Override
+    public long edgeCount(Predicates predicates) {
+        return 0;
+    }
+
+    @Override
+    public long edgeCount(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
+        return 0;
+    }
+
+    @Override
+    public Map<String, Object> edgeGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
+        return null;
+    }
+
+    @Override
+    public Map<String, Object> edgeGroupBy(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
+        return null;
+    }
+
+    @Override
+    public long vertexCount(Predicates predicates) {
+        return 0;
+    }
+
+    @Override
+    public Map<String, Object> vertexGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
+        return null;
     }
 }

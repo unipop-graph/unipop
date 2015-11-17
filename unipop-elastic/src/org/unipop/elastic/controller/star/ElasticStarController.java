@@ -1,6 +1,6 @@
 package org.unipop.elastic.controller.star;
 
-import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticsearch.client.Client;
@@ -62,7 +62,7 @@ public class ElasticStarController extends ElasticVertexController implements Ed
     }
 
     @Override
-    public Iterator<BaseEdge> edges(Predicates predicates, MutableMetrics metrics) {
+    public Iterator<BaseEdge> edges(Predicates predicates) {
         elasticMutations.refresh();
 
         OrFilterBuilder orFilter = FilterBuilders.orFilter();
@@ -81,7 +81,7 @@ public class ElasticStarController extends ElasticVertexController implements Ed
     }
 
     @Override
-    public Iterator<BaseEdge> fromVertex(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, MutableMetrics metrics) {
+    public Iterator<BaseEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
         Set<BaseEdge> results = new HashSet<>();
         List<String> labels = Arrays.asList(edgeLabels);
 
@@ -101,6 +101,7 @@ public class ElasticStarController extends ElasticVertexController implements Ed
 
         if (orFilter != null) {
             elasticMutations.refresh();
+
             QueryIterator<ElasticStarVertex> queryIterator = new QueryIterator<>(orFilter, scrollSize, predicates.limitHigh, client,
                     this::createStarVertex, timing, getDefaultIndex());
             queryIterator.forEachRemaining(vertex -> results.addAll(vertex.getInnerEdges(direction.opposite(), labels, predicates)));
@@ -109,7 +110,37 @@ public class ElasticStarController extends ElasticVertexController implements Ed
         return results.iterator();
     }
 
+    @Override
+    public long edgeCount(Predicates predicates) {
+        return 0;
+    }
+
+    @Override
+    public long edgeCount(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
+        return 0;
+    }
+
+    @Override
+    public Map<String, Object> edgeGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
+        return null;
+    }
+
+    @Override
+    public Map<String, Object> edgeGroupBy(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
+        return null;
+    }
+
     public void addEdgeMapping(InnerEdgeController mapping) {
         innerEdgeControllers.add(mapping);
+    }
+
+    @Override
+    public long vertexCount(Predicates predicates) {
+        return 0;
+    }
+
+    @Override
+    public Map<String, Object> vertexGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
+        return null;
     }
 }
