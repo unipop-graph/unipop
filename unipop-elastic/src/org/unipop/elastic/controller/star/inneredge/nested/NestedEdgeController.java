@@ -1,5 +1,6 @@
 package org.unipop.elastic.controller.star.inneredge.nested;
 
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.collections4.SetUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
@@ -113,7 +114,7 @@ public class NestedEdgeController implements InnerEdgeController {
     }
 
     @Override
-    public void addEdgeFields(List<InnerEdge> edges, Map<String, Object> map) {
+    public Map<String, Object> allFields(List<InnerEdge> edges) {
         Map<String, Object>[] edgesMap = new Map[edges.size()];
         for (int i = 0; i < edges.size(); i++) {
             InnerEdge innerEdge = edges.get(i);
@@ -122,7 +123,7 @@ public class NestedEdgeController implements InnerEdgeController {
             fields.put(edgeIdField, innerEdge.id());
             edgesMap[i] = fields;
         }
-        map.put(edgeLabel, edgesMap);
+        return Collections.singletonMap(edgeLabel, edgesMap);
     }
 
     @Override
@@ -150,12 +151,6 @@ public class NestedEdgeController implements InnerEdgeController {
         result = 31 * result + (direction != null ? direction.hashCode() : 0);
         result = 31 * result + (externalVertexIdField != null ? externalVertexIdField.hashCode() : 0);
         return result;
-    }
-
-    @Override
-
-    public Direction getDirection() {
-        return direction;
     }
 
     public boolean shouldAddProperty(String key) {

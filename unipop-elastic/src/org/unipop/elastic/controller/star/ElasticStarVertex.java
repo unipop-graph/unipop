@@ -38,7 +38,7 @@ public class ElasticStarVertex extends ElasticVertex<ElasticStarController> {
     public Map<String, Object> allFields() {
         Map<String, Object> map = super.allFields();
         innerEdges.stream().collect(Collectors.groupingBy(InnerEdge::getInnerEdgeController))
-                .forEach((controller, edges) -> controller.addEdgeFields(edges, map));
+                .forEach((controller, edges) -> map.putAll(controller.allFields(edges)));
         return map;
     }
 
@@ -81,7 +81,7 @@ public class ElasticStarVertex extends ElasticVertex<ElasticStarController> {
         return innerEdges.stream()
                 .filter(edge -> filterPredicates(edge, predicates) &&
                         (edgeLabels.size() == 0 || edgeLabels.contains(edge.label())) &&
-                        (direction.equals(Direction.BOTH) || direction.equals(edge.getInnerEdgeController().getDirection())))
+                        (direction.equals(Direction.BOTH) || direction.equals(this.equals(edge.outVertex())? Direction.OUT : Direction.IN)))
                 .collect(Collectors.toSet());
     }
 
