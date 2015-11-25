@@ -1,14 +1,18 @@
 package org.unipop.controller.virtualvertex;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.T;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.unipop.controller.Predicates;
 import org.unipop.controller.VertexController;
 import org.unipop.structure.BaseVertex;
 import org.unipop.structure.UniGraph;
 
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 public class VirtualVertexController implements VertexController {
     private static final long VERTEX_BULK = 1000;
@@ -23,7 +27,17 @@ public class VirtualVertexController implements VertexController {
 
     @Override
     public Iterator<BaseVertex> vertices(Predicates predicatess) {
-        throw new UnsupportedOperationException();
+        Optional<HasContainer> optionalId = predicatess.hasContainers.stream().filter(has -> has.getKey().equals(T.id.getAccessor())).findAny();
+        if(!optionalId.isPresent()) return EmptyIterator.instance();
+        Object idValue = optionalId.get().getValue();
+        Iterable ids = idValue instanceof Iterable ? (Iterable) idValue : Collections.singleton(idValue);
+
+        Optional<HasContainer> optionalLabel = predicatess.hasContainers.stream().filter(has -> has.getKey().equals(T.label.getAccessor())).findAny();
+        String label = optionalLabel.isPresent() ? optionalLabel.get().getValue().toString() : Vertex.DEFAULT_LABEL;
+
+        Set<BaseVertex> vertices = new HashSet<>();
+        ids.forEach(id-> vertices.add(new VirtualVertex(id, label, null, this, graph)));
+        return vertices.iterator();
     }
 
     @Override
