@@ -17,7 +17,7 @@ import java.util.Set;
 /**
  * Created by Roman on 11/12/2015.
  */
-public class UniGraphGroupStepCountStrategy extends AbstractTraversalStrategy<TraversalStrategy.VendorOptimizationStrategy> implements TraversalStrategy.VendorOptimizationStrategy {
+public class UniGraphGroupStepCountStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy {
     //region AbstractTraversalStrategy Implementation
     @Override
     public void apply(Traversal.Admin<?, ?> traversal) {

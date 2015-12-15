@@ -13,7 +13,7 @@ import org.unipop.structure.UniGraph;
 /**
  * Created by Roman on 11/12/2015.
  */
-public class UniGraphVertexStepStrategy extends AbstractTraversalStrategy<TraversalStrategy.VendorOptimizationStrategy> implements TraversalStrategy.VendorOptimizationStrategy {
+public class UniGraphVertexStepStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy {
     @Override
     public void apply(Traversal.Admin<?, ?> traversal) {
         if(traversal.getEngine().isComputer()) {

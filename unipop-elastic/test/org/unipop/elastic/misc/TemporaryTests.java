@@ -8,11 +8,13 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 import org.unipop.elastic.ElasticGraphProvider;
+import org.unipop.process.traversal.Uni;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
 import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource.computer;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
 
 public class TemporaryTests extends AbstractGremlinTest {
@@ -53,6 +55,13 @@ public class TemporaryTests extends AbstractGremlinTest {
     public void g_V_repeat() {
         GraphTraversal<Vertex, Vertex> traversal = g.V().repeat(out()).times(1);
         check(traversal);
+    }
+
+    @Test
+    @LoadGraphWith(MODERN)
+    public void test() {
+        GraphTraversal t = graph.traversal().V().has("name", Uni.like("mark*")).valueMap();
+        check(t);
     }
 
     private void check(GraphTraversal traversal) {

@@ -23,6 +23,7 @@ import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.index.query.*;
 import org.unipop.controller.ExistsP;
+import org.unipop.process.traversal.Uni;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -154,6 +155,9 @@ public class ElasticHelper {
                 }
             } else if (biPredicate instanceof Geo)
                 boolFilterBuilder.must(new GeoShapeFilterBuilder(key, GetShapeBuilder(value), ((Geo) biPredicate).getRelation()));
+            else if (biPredicate instanceof Uni){
+
+            }
             else throw new IllegalArgumentException("predicate not supported by unipop: " + biPredicate.toString());
         }
         else if (has.getPredicate() instanceof ExistsP) {

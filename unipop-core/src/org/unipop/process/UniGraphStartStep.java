@@ -1,7 +1,7 @@
 package org.unipop.process;
 
 import org.unipop.controller.Predicates;
-import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.StandardTraversalMetrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
@@ -10,14 +10,14 @@ import org.unipop.controllerprovider.ControllerManager;
 import java.util.Iterator;
 import java.util.Optional;
 
-public class UniGraphStartStep<E extends Element> extends GraphStep<E> {
+public class UniGraphStartStep<S,E extends Element> extends GraphStep<S,E> {
 
     private final Predicates predicates;
     private final ControllerManager controllerManager;
     private MutableMetrics metrics;
 
     public UniGraphStartStep(GraphStep originalStep, Predicates predicates, ControllerManager controllerManager) {
-        super(originalStep.getTraversal(), originalStep.getReturnClass(), originalStep.getIds());
+        super(originalStep.getTraversal(), originalStep.getReturnClass(), originalStep.isStartStep(),originalStep.getIds());
         originalStep.getLabels().forEach(label -> this.addLabel(label.toString()));
         predicates.labels.forEach(label -> this.addLabel(label.toString()));
         this.predicates = predicates;

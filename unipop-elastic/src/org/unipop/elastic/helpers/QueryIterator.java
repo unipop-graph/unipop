@@ -23,7 +23,7 @@ public class QueryIterator<E extends Element> implements Iterator<E> {
     private Iterator<SearchHit> hits;
 
     public QueryIterator(FilterBuilder filter, int scrollSize, long maxSize, Client client,
-                         Parser<E> parser, TimingAccessor timing, String... indices) {
+                         Parser<E> parser, TimingAccessor timing, boolean wildcard,String wildCardKey, String pattern, String... indices) {
         this.scrollSize = scrollSize;
         this.client = client;
         this.allowedRemaining = maxSize;
@@ -31,8 +31,16 @@ public class QueryIterator<E extends Element> implements Iterator<E> {
         this.timing = timing;
 
         this.timing.start("query");
-        SearchRequestBuilder searchRequestBuilder = client.prepareSearch(indices)
-                .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), filter));
+
+        SearchRequestBuilder searchRequestBuilder;
+        if(!wildcard) {
+            searchRequestBuilder = client.prepareSearch(indices)
+                    .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), filter));
+        }
+        else{
+            searchRequestBuilder = client.prepareSearch(indices)
+                    .setQuery(QueryBuilders.filteredQuery(QueryBuilders.wildcardQuery(wildCardKey, pattern), filter));
+        }
 
         if(scrollSize > 0)
             searchRequestBuilder.setScroll(new TimeValue(60000))
@@ -43,6 +51,10 @@ public class QueryIterator<E extends Element> implements Iterator<E> {
 
         hits = scrollResponse.getHits().iterator();
         this.timing.stop("query");
+    }
+    public QueryIterator(FilterBuilder filter, int scrollSize, long maxSize, Client client,
+                         Parser<E> parser, TimingAccessor timing, String... indices) {
+        this(filter,scrollSize,maxSize,client,parser,timing,false, null, null, indices);
     }
 
     @Override

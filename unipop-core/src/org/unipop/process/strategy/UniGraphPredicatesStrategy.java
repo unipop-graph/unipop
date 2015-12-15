@@ -25,11 +25,11 @@ import java.util.Set;
 /**
  * Created by Roman on 11/8/2015.
  */
-public class UniGraphPredicatesStrategy extends AbstractTraversalStrategy<TraversalStrategy.VendorOptimizationStrategy> implements TraversalStrategy.VendorOptimizationStrategy {
+public class UniGraphPredicatesStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy {
     //region AbstractTraversalStrategy Implementation
     @Override
-    public Set<Class<? extends VendorOptimizationStrategy>> applyPrior() {
-        Set<Class<? extends TraversalStrategy.VendorOptimizationStrategy>> priorStrategies = new HashSet<>();
+    public Set<Class<? extends ProviderOptimizationStrategy>> applyPrior() {
+        Set<Class<? extends TraversalStrategy.ProviderOptimizationStrategy>> priorStrategies = new HashSet<>();
         priorStrategies.add(UniGraphStartStepStrategy.class);
         priorStrategies.add(UniGraphVertexStepStrategy.class);
         return priorStrategies;

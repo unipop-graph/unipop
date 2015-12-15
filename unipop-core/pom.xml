@@ -9,9 +9,18 @@
     <artifactId>unipop-core</artifactId>
     <name>Unipop :: Core</name>
     <properties>
-        <tinkerpop.version>3.0.1-incubating</tinkerpop.version>
+        <tinkerpop.version>3.1.0-incubating</tinkerpop.version>
     </properties>
     <dependencies>
+
+
+        <dependency>
+            <groupId>org.apache.tinkerpop</groupId>
+            <artifactId>spark-gremlin</artifactId>
+            <version>${tinkerpop.version}</version>
+        </dependency>
+
+
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>
             <artifactId>gremlin-core</artifactId>
@@ -46,6 +55,11 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-collections4</artifactId>
             <version>4.0</version>
+        </dependency>
+        <dependency>
+            <groupId>unipop</groupId>
+            <artifactId>unipop</artifactId>
+            <version>0.1</version>
         </dependency>
     </dependencies>
     <build>

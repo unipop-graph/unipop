@@ -21,11 +21,11 @@ import java.util.*;
 /**
  * Created by Gilad on 02/11/2015.
  */
-public class UniGraphCountStepStrategy extends AbstractTraversalStrategy<TraversalStrategy.VendorOptimizationStrategy> implements TraversalStrategy.VendorOptimizationStrategy {
+public class UniGraphCountStepStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy {
     //region AbstractTraversalStrategy Implementation
     @Override
-    public Set<Class<? extends TraversalStrategy.VendorOptimizationStrategy>> applyPrior() {
-        Set<Class<? extends TraversalStrategy.VendorOptimizationStrategy>> priorStrategies = new HashSet<>();
+    public Set<Class<? extends TraversalStrategy.ProviderOptimizationStrategy>> applyPrior() {
+        Set<Class<? extends TraversalStrategy.ProviderOptimizationStrategy>> priorStrategies = new HashSet<>();
         priorStrategies.add(UniGraphPredicatesStrategy.class);
         return priorStrategies;
     }
