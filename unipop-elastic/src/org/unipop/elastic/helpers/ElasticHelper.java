@@ -22,8 +22,9 @@ import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.index.query.*;
+import org.javatuples.Pair;
 import org.unipop.controller.ExistsP;
-import org.unipop.process.traversal.Uni;
+import org.unipop.process.traversal.Text;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -51,7 +52,7 @@ public class ElasticHelper {
         }
     }
 
-    public static DeleteByQueryResponse clearIndex(Client client, String indexName){
+    public static DeleteByQueryResponse clearIndex(Client client, String indexName) {
         DeleteByQueryResponse indexDeleteByQueryResponses = client.prepareDeleteByQuery(indexName).setQuery(QueryBuilders.matchAllQuery()).execute().actionGet();
 
         GetMappingsResponse getMappingsResponse = client.admin().indices().prepareGetMappings(indexName).execute().actionGet();
@@ -60,14 +61,14 @@ public class ElasticHelper {
             map.value.forEach(map2 -> mappings.add(map2.value.type()));
         });
 
-        if(mappings.size() > 0) {
+        if (mappings.size() > 0) {
             DeleteMappingResponse deleteMappingResponse = client.admin().indices().prepareDeleteMapping(indexName).setType(mappings.toArray(new String[mappings.size()])).execute().actionGet();
         }
 
         return indexDeleteByQueryResponses;
     }
 
-    public static void mapNested(Client client, String index, String typeName, String nestedFieldName){
+    public static void mapNested(Client client, String index, String typeName, String nestedFieldName) {
         try {
             XContentBuilder nestedMapping = XContentFactory.jsonBuilder()
                     .startObject()
@@ -82,6 +83,58 @@ public class ElasticHelper {
             client.admin().indices().preparePutMapping(index).setType(typeName).setSource(nestedMapping).execute().actionGet();
         } catch (IOException e) {
             throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    public static QueryBuilder createQuery(List<HasContainer> hasContainers, FilterBuilder... filtersToAdd) {
+        BoolFilterBuilder boolFilter = FilterBuilders.boolFilter();
+        List<Pair<QueryBuilder, Boolean>> queryBuilders = new ArrayList<>();
+        if (hasContainers != null) hasContainers.forEach(has -> {
+            if (has.getBiPredicate() instanceof Text)
+                addQuery(queryBuilders, has);
+            addFilter(boolFilter, has);
+        });
+
+        for (FilterBuilder filterBuilder : filtersToAdd) {
+            boolFilter.must(filterBuilder);
+        }
+
+        if (queryBuilders.isEmpty()) {
+            return QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), boolFilter);
+        } else {
+            BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+            queryBuilders.forEach(pair -> {
+                if (pair.getValue1())
+                    boolQuery.must(pair.getValue0());
+                else boolQuery.mustNot(pair.getValue0());
+            });
+            return QueryBuilders.filteredQuery(boolQuery, boolFilter);
+        }
+    }
+
+    private static void addQuery(List<Pair<QueryBuilder, Boolean>> queryBuilders, HasContainer has) {
+        String predicateString = has.getBiPredicate().toString();
+        switch (predicateString) {
+            case "LIKE":
+                queryBuilders.add(new Pair<>(QueryBuilders.wildcardQuery(has.getKey(), has.getValue().toString()), true));
+                break;
+            case "UNLIKE":
+                queryBuilders.add(new Pair<>(QueryBuilders.wildcardQuery(has.getKey(), has.getValue().toString()), false));
+                break;
+            case "REGEXP":
+                queryBuilders.add(new Pair<>(QueryBuilders.regexpQuery(has.getKey(), has.getValue().toString()), true));
+                break;
+            case "UNREGEXP":
+                queryBuilders.add(new Pair<>(QueryBuilders.regexpQuery(has.getKey(), has.getValue().toString()), false));
+                break;
+            case "FUZZY":
+                queryBuilders.add(new Pair<>(QueryBuilders.fuzzyQuery(has.getKey(), has.getValue().toString()), true));
+                break;
+            case "UNFUZZY":
+                queryBuilders.add(new Pair<>(QueryBuilders.fuzzyQuery(has.getKey(), has.getValue().toString()), false));
+                break;
+            default:
+                throw new IllegalArgumentException("predicate not supported in has step: " + has.getBiPredicate().toString());
         }
     }
 
@@ -150,17 +203,16 @@ public class ElasticHelper {
                 if (biPredicate == Contains.without) boolFilterBuilder.must(FilterBuilders.missingFilter(key));
                 else if (biPredicate == Contains.within) {
                     if (value == null) boolFilterBuilder.must(FilterBuilders.existsFilter(key));
-                    else if(value instanceof Iterable) boolFilterBuilder.must(FilterBuilders.termsFilter (key, (Iterable)value));
+                    else if (value instanceof Iterable)
+                        boolFilterBuilder.must(FilterBuilders.termsFilter(key, (Iterable) value));
                     else boolFilterBuilder.must(FilterBuilders.termsFilter(key, value));
                 }
             } else if (biPredicate instanceof Geo)
                 boolFilterBuilder.must(new GeoShapeFilterBuilder(key, GetShapeBuilder(value), ((Geo) biPredicate).getRelation()));
-            else if (biPredicate instanceof Uni){
+            else if (biPredicate instanceof Text) {
 
-            }
-            else throw new IllegalArgumentException("predicate not supported by unipop: " + biPredicate.toString());
-        }
-        else if (has.getPredicate() instanceof ExistsP) {
+            } else throw new IllegalArgumentException("predicate not supported by unipop: " + biPredicate.toString());
+        } else if (has.getPredicate() instanceof ExistsP) {
             boolFilterBuilder.must(FilterBuilders.existsFilter(key));
         } else {
             //todo: add descriptive unsupported has container description

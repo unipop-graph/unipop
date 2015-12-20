@@ -8,7 +8,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 import org.unipop.elastic.ElasticGraphProvider;
-import org.unipop.process.traversal.Uni;
+import org.unipop.process.traversal.Text;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
@@ -60,7 +60,7 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void test() {
-        GraphTraversal t = graph.traversal().V().has("name", Uni.like("mark*")).valueMap();
+        GraphTraversal t = graph.traversal().V().has("name", Text.unregexp("*")).valueMap();
         check(t);
     }
 

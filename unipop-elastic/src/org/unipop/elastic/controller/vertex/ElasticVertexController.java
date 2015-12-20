@@ -1,7 +1,6 @@
 package org.unipop.elastic.controller.vertex;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.elasticsearch.action.search.SearchRequestBuilder;
@@ -11,6 +10,7 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.elasticsearch.index.query.BoolFilterBuilder;
 import org.elasticsearch.index.query.FilterBuilders;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.unipop.controller.Predicates;
 import org.unipop.controller.VertexController;
@@ -19,7 +19,6 @@ import org.unipop.elastic.controller.schema.helpers.AggregationBuilder;
 import org.unipop.elastic.controller.schema.helpers.SearchAggregationIterable;
 import org.unipop.elastic.controller.schema.helpers.aggregationConverters.*;
 import org.unipop.elastic.helpers.*;
-import org.unipop.process.traversal.Uni;
 import org.unipop.structure.BaseVertex;
 import org.unipop.structure.UniGraph;
 
@@ -58,28 +57,12 @@ public class ElasticVertexController implements VertexController {
         return v;
     }
 
-    private HasContainer getUniCompare(Predicates predicates) {
-        for (HasContainer hasContainer : predicates.hasContainers) {
-            if (hasContainer.getPredicate().getBiPredicate() instanceof Uni) {
-                return hasContainer;
-            }
-        }
-        return null;
-    }
-
     @Override
     public Iterator<BaseVertex> vertices(Predicates predicates) {
         elasticMutations.refresh(defaultIndex);
-        BoolFilterBuilder boolFilter = ElasticHelper.createFilterBuilder(predicates.hasContainers);
-        boolFilter.must(FilterBuilders.missingFilter(ElasticEdge.InId));
-        HasContainer uniCompare = getUniCompare(predicates);
-        if (null == uniCompare) {
-            return new QueryIterator<>(boolFilter, scrollSize, predicates.limitHigh, client,
+        QueryBuilder query = ElasticHelper.createQuery(predicates.hasContainers, FilterBuilders.missingFilter(ElasticEdge.InId));
+            return new QueryIterator<>(query, scrollSize, predicates.limitHigh, client,
                     this::createVertex, timing, getDefaultIndex());
-        } else {
-            return new QueryIterator<>(boolFilter, scrollSize, predicates.limitHigh, client,
-                    this::createVertex, timing, true, uniCompare.getKey(),uniCompare.getValue().toString(), getDefaultIndex());
-        }
     }
 
     @Override

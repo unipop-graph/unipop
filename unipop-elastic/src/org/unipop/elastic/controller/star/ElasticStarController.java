@@ -12,10 +12,7 @@ import org.unipop.controller.Predicates;
 import org.unipop.elastic.controller.star.inneredge.InnerEdgeController;
 import org.unipop.elastic.controller.vertex.ElasticVertex;
 import org.unipop.elastic.controller.vertex.ElasticVertexController;
-import org.unipop.elastic.helpers.ElasticMutations;
-import org.unipop.elastic.helpers.LazyGetter;
-import org.unipop.elastic.helpers.QueryIterator;
-import org.unipop.elastic.helpers.TimingAccessor;
+import org.unipop.elastic.helpers.*;
 import org.unipop.structure.BaseEdge;
 import org.unipop.structure.BaseVertex;
 import org.unipop.structure.UniGraph;
@@ -71,7 +68,7 @@ public class ElasticStarController extends ElasticVertexController implements Ed
             if (filter != null) orFilter.add(filter);
         });
 
-        QueryIterator<ElasticStarVertex> queryIterator = new QueryIterator<>(orFilter, scrollSize, predicates.limitHigh, client,
+        QueryIterator<ElasticStarVertex> queryIterator = new QueryIterator<>(ElasticHelper.createQuery(new ArrayList<>(), orFilter), scrollSize, predicates.limitHigh, client,
                 this::createStarVertex, timing, getDefaultIndex());
 
         Iterable<ElasticStarVertex> iterable = () -> queryIterator;
@@ -102,7 +99,7 @@ public class ElasticStarController extends ElasticVertexController implements Ed
         if (orFilter != null) {
             elasticMutations.refresh();
 
-            QueryIterator<ElasticStarVertex> queryIterator = new QueryIterator<>(orFilter, scrollSize, predicates.limitHigh, client,
+            QueryIterator<ElasticStarVertex> queryIterator = new QueryIterator<>(ElasticHelper.createQuery(new ArrayList<>(), orFilter), scrollSize, predicates.limitHigh, client,
                     this::createStarVertex, timing, getDefaultIndex());
             queryIterator.forEachRemaining(vertex -> results.addAll(vertex.getInnerEdges(direction.opposite(), labels, predicates)));
         }
