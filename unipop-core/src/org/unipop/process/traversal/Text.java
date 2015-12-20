@@ -7,7 +7,7 @@ import java.util.function.BiPredicate;
 /**
  * Created by sbarzilay on 12/15/15.
  */
-public enum Uni implements BiPredicate<Object, Object> {
+public enum Text implements BiPredicate<Object, Object> {
     LIKE {
         @Override
         public boolean test(final Object first, final Object second) {
@@ -18,7 +18,7 @@ public enum Uni implements BiPredicate<Object, Object> {
          * The negative of {@code LIKE} is {@link #UNLIKE}.
          */
         @Override
-        public Uni negate() {
+        public Text negate() {
             return UNLIKE;
         }
     },
@@ -32,10 +32,11 @@ public enum Uni implements BiPredicate<Object, Object> {
          * The negative of {@code UNLIKE} is {@link #LIKE}.
          */
         @Override
-        public Uni negate() {
+        public Text negate() {
             return LIKE;
         }
     };
 
-    public static <V> P<V> like(final V value) { return new P(Uni.LIKE, value); }
+    public static <V> P<V> like(final V value) { return new P(Text.LIKE, value); }
+    public static <V> P<V> unlike(final V value) { return new P(Text.UNLIKE, value); }
 }
