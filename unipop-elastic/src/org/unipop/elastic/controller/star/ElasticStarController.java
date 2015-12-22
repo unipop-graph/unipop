@@ -1,5 +1,6 @@
 package org.unipop.elastic.controller.star;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -18,6 +19,7 @@ import org.unipop.structure.BaseVertex;
 import org.unipop.structure.UniGraph;
 
 import java.util.*;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 
@@ -58,8 +60,8 @@ public class ElasticStarController extends ElasticVertexController implements Ed
                 .findFirst().get();
     }
 
-    @Override
-    public Iterator<BaseEdge> edges(Predicates predicates) {
+
+    private Iterable<ElasticStarVertex> getVertexIterableForEdges(Predicates predicates){
         elasticMutations.refresh();
 
         OrFilterBuilder orFilter = FilterBuilders.orFilter();
@@ -70,9 +72,12 @@ public class ElasticStarController extends ElasticVertexController implements Ed
 
         QueryIterator<ElasticStarVertex> queryIterator = new QueryIterator<>(ElasticHelper.createQuery(new ArrayList<>(), orFilter), scrollSize, predicates.limitHigh, client,
                 this::createStarVertex, timing, getDefaultIndex());
+        return  () -> queryIterator;
+    }
 
-        Iterable<ElasticStarVertex> iterable = () -> queryIterator;
-        return StreamSupport.stream(iterable.spliterator(), false)
+    @Override
+    public Iterator<BaseEdge> edges(Predicates predicates) {
+        return StreamSupport.stream(getVertexIterableForEdges(predicates).spliterator(), false)
                 .map(vertex -> vertex.getInnerEdges(predicates))
                 .flatMap(Collection::stream).iterator();
     }
@@ -109,35 +114,28 @@ public class ElasticStarController extends ElasticVertexController implements Ed
 
     @Override
     public long edgeCount(Predicates predicates) {
-        return 0;
+        return StreamSupport.stream(getVertexIterableForEdges(predicates).spliterator(), false)
+                .mapToInt(vertex -> vertex.getInnerEdges(predicates).size()).sum();
+
     }
 
     @Override
     public long edgeCount(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
-        return 0;
+        return Stream.of(vertices).mapToInt(vertex -> ((ElasticStarVertex) vertex).getInnerEdges(predicates).size()).sum();
     }
 
     @Override
     public Map<String, Object> edgeGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
-        return null;
+        throw new NotImplementedException();
     }
 
     @Override
     public Map<String, Object> edgeGroupBy(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
-        return null;
+        throw new NotImplementedException();
     }
 
     public void addEdgeMapping(InnerEdgeController mapping) {
         innerEdgeControllers.add(mapping);
     }
 
-    @Override
-    public long vertexCount(Predicates predicates) {
-        return 0;
-    }
-
-    @Override
-    public Map<String, Object> vertexGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
-        return null;
-    }
 }
