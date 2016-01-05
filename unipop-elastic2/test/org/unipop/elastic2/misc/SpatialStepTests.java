@@ -79,7 +79,9 @@ public class SpatialStepTests {
         String geoJsonPoint = "{ \"type\": \"Point\",\"coordinates\": [9, 9]}";
         long intersectionCounter = g.V().has("location", Geo.intersercts(geoJsonPoint)).count().next();
         assertEquals(1l, intersectionCounter);
-        Element location = g.V().has("location", Geo.intersercts(geoJsonPoint)).next();
+        Element location = g.V()
+                            .has("location", Geo.intersercts(geoJsonPoint))
+                            .next();
         assertEquals("1",location.id().toString());
     }
 
@@ -102,8 +104,8 @@ public class SpatialStepTests {
         Map<String, Object> secondPolygon = buildGeoJsonPolygon(secondPolygonPoints);
 
         //add the vertices to graph
-        graph.addVertex(T.label,DOCUMENT_TYPE,T.id,"3","location",firstPolygon);
-        graph.addVertex(T.label,DOCUMENT_TYPE,T.id,"4","location",secondPolygon);
+        graph.addVertex(T.label,DOCUMENT_TYPE,T.id,"1","location",firstPolygon);
+        graph.addVertex(T.label,DOCUMENT_TYPE,T.id,"2","location",secondPolygon);
 
         GraphTraversalSource g = graph.traversal();
 
@@ -130,36 +132,25 @@ public class SpatialStepTests {
 
     private void createGeoShapeMapping(Client client, String documentType) throws IOException {
 
-        try {
-            // Create index
-//            CreateIndexRequestBuilder cirb = client.admin().indices().prepareCreate(INDEX_NAME);
-//            CreateIndexResponse createIndexResponse = cirb.execute().actionGet();
-//            if (!createIndexResponse.isAcknowledged()) throw new Exception("Could not create index [geo_index].");
+        final XContentBuilder mappingBuilder =
 
-            // Create the mapping
-            final XContentBuilder mappingBuilder =
+                jsonBuilder()
+                        .startObject()
+                        .startObject(documentType)
+                        .startObject("properties")
+                        .startObject("location")
+                        .field("type", "geo_shape")
+                        .field("tree_levels", "8")
+                        .endObject()
+                        .endObject()
+                        .endObject()
+                        .endObject();
 
-                    jsonBuilder()
-                            .startObject()
-                            .startObject(documentType)
-                            .startObject("properties")
-                            .startObject("location")
-                            .field("type", "geo_shape")
-                            .field("tree_levels", "8")
-                            .endObject()
-                            .endObject()
-                            .endObject()
-                            .endObject();
-
-            PutMappingResponse putMappingResponse = client.admin().indices()
-                    .preparePutMapping(INDEX_NAME)
-                    .setType(documentType)
-                    .setSource(mappingBuilder)
-                    .execute().actionGet();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        PutMappingResponse putMappingResponse = client.admin().indices()
+                .preparePutMapping(INDEX_NAME)
+                .setType(documentType)
+                .setSource(mappingBuilder)
+                .execute().actionGet();
     }
 
 }
