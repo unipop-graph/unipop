@@ -12,9 +12,11 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.unipop.elastic2.ElasticGraphProvider;
+import org.unipop.elastic2.helpers.ElasticHelper;
 import org.unipop.elastic2.helpers.Geo;
 
 import java.io.IOException;
@@ -29,20 +31,25 @@ import static org.junit.Assert.assertEquals;
 
 public class SpatialStepTests {
 
-    String CLUSTER_NAME = "testscluster";
     String INDEX_NAME = "geo_index";
     String DOCUMENT_TYPE = "geo_item";
     Graph graph;
+    Client client;
 
     @Before
     public void startUp() throws InstantiationException, IOException, ExecutionException, InterruptedException {
         ElasticGraphProvider elasticGraphProvider = new ElasticGraphProvider();
-        final Configuration configuration = elasticGraphProvider.newGraphConfiguration("testGraph", this.getClass(), "spatialTests", LoadGraphWith.GraphData.MODERN);
+        final Configuration configuration = elasticGraphProvider.newGraphConfiguration(INDEX_NAME, this.getClass(), "spatialTests", LoadGraphWith.GraphData.MODERN);
         this.graph = elasticGraphProvider.openTestGraph(configuration);
-
-        createGeoShapeMapping(elasticGraphProvider.getClient(),DOCUMENT_TYPE);
+        client = elasticGraphProvider.getClient();
+        createGeoShapeMapping(client ,DOCUMENT_TYPE);
     }
 
+    @After
+    public void shutDown() throws Exception {
+        ElasticHelper.clearIndex(client, INDEX_NAME);
+        graph.close();
+    }
 
     @Test
     public void geoPointPolygonsIntersectionTest() throws IOException {
@@ -65,6 +72,7 @@ public class SpatialStepTests {
         //add the vertices to graph
         graph.addVertex(T.label,DOCUMENT_TYPE,T.id,"1","location",firstPolygon);
         graph.addVertex(T.label,DOCUMENT_TYPE,T.id,"2","location",secondPolygon);
+        client.admin().indices().prepareRefresh(INDEX_NAME).get();
 
         GraphTraversalSource g = graph.traversal();
 
@@ -94,8 +102,8 @@ public class SpatialStepTests {
         Map<String, Object> secondPolygon = buildGeoJsonPolygon(secondPolygonPoints);
 
         //add the vertices to graph
-        graph.addVertex(T.label,DOCUMENT_TYPE,T.id,"1","location",firstPolygon);
-        graph.addVertex(T.label,DOCUMENT_TYPE,T.id,"2","location",secondPolygon);
+        graph.addVertex(T.label,DOCUMENT_TYPE,T.id,"3","location",firstPolygon);
+        graph.addVertex(T.label,DOCUMENT_TYPE,T.id,"4","location",secondPolygon);
 
         GraphTraversalSource g = graph.traversal();
 
@@ -119,28 +127,39 @@ public class SpatialStepTests {
         json.put("coordinates",envelopeArray);
         return json;
     }
+
     private void createGeoShapeMapping(Client client, String documentType) throws IOException {
 
-        final XContentBuilder mappingBuilder =
+        try {
+            // Create index
+//            CreateIndexRequestBuilder cirb = client.admin().indices().prepareCreate(INDEX_NAME);
+//            CreateIndexResponse createIndexResponse = cirb.execute().actionGet();
+//            if (!createIndexResponse.isAcknowledged()) throw new Exception("Could not create index [geo_index].");
 
-                jsonBuilder()
-                        .startObject()
-                        .startObject(documentType)
-                        .startObject("properties")
-                        .startObject("location")
-                        .field("type", "geo_shape")
-                        .field("tree_levels", "8")
-                        .endObject()
-                        .endObject()
-                        .endObject()
-                        .endObject();
+            // Create the mapping
+            final XContentBuilder mappingBuilder =
 
-        PutMappingResponse putMappingResponse = client.admin().indices()
-                .preparePutMapping("geo_index")
-                .setType(documentType)
-                .setSource(mappingBuilder)
-                .execute().actionGet();
+                    jsonBuilder()
+                            .startObject()
+                            .startObject(documentType)
+                            .startObject("properties")
+                            .startObject("location")
+                            .field("type", "geo_shape")
+                            .field("tree_levels", "8")
+                            .endObject()
+                            .endObject()
+                            .endObject()
+                            .endObject();
 
+            PutMappingResponse putMappingResponse = client.admin().indices()
+                    .preparePutMapping(INDEX_NAME)
+                    .setType(documentType)
+                    .setSource(mappingBuilder)
+                    .execute().actionGet();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 }
