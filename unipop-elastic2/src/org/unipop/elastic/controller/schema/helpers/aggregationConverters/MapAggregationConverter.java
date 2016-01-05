@@ -30,14 +30,14 @@ public class MapAggregationConverter extends HierarchyAggregationConverterBase<A
     protected Map<String, Object> mergeBucket(Map<String, Object> stringObjectMap, MultiBucketsAggregation.Bucket bucket) {
         if (bucket != null) {
             if (getUseSimpleFormat()) {
-                stringObjectMap.put(bucket.getKey(), bucket.getDocCount());
+                stringObjectMap.put((String) bucket.getKey(), bucket.getDocCount());
             } else {
                 Map<String, Object> bucketMap = null;
                 Object bucketObj = stringObjectMap.get(bucket.getKey());
                 if (bucketObj == null) {
                     bucketMap = new HashMap<>();
                     bucketMap.put("count", bucket.getDocCount());
-                    stringObjectMap.put(bucket.getKey(), bucketMap);
+                    stringObjectMap.put((String) bucket.getKey(), bucketMap);
                 }
             }
         }
@@ -53,7 +53,7 @@ public class MapAggregationConverter extends HierarchyAggregationConverterBase<A
         if (bucket != null) {
             mergeBucket(stringObjectMap, bucket);
             if (getUseSimpleFormat() && aggregationParent.getAggregations().asList().size() == 1) {
-                stringObjectMap.put(bucket.getKey(), childOutput);
+                stringObjectMap.put((String) bucket.getKey(), childOutput);
             } else {
                 Map<String, Object> bucketMap = (Map<String, Object>) stringObjectMap.get(bucket.getKey());
                 bucketMap.put(childAggregation.getName(), childOutput);

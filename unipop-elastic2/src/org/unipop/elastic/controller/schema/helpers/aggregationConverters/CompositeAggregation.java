@@ -25,6 +25,16 @@ public class CompositeAggregation implements Aggregation, HasAggregations {
     public String getName() {
         return this.name;
     }
+
+    @Override
+    public Object getProperty(String s) {
+        return null;
+    }
+
+    @Override
+    public Map<String, Object> getMetaData() {
+        return null;
+    }
     //endregion
 
     //region HasAggregations Implementation
@@ -73,6 +83,11 @@ public class CompositeAggregation implements Aggregation, HasAggregations {
         @Override
         public Iterator<Aggregation> iterator() {
             return this.aggregationMap.values().iterator();
+        }
+
+        @Override
+        public Object getProperty(String s) {
+            return null;
         }
         //endregion
 

@@ -1,8 +1,8 @@
 package org.unipop.elastic.controller.schema.helpers.elementConverters.utils;
 
+import com.google.common.base.Strings;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.elasticsearch.common.base.Strings;
 import org.unipop.elastic.controller.schema.SchemaVertex;
 import org.unipop.elastic.controller.schema.helpers.schemaProviders.GraphElementSchemaProvider;
 import org.unipop.elastic.helpers.ElasticMutations;

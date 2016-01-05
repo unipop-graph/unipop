@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -654,8 +655,7 @@ public class QueryBuilder implements Cloneable{
         protected Object build() {
             org.elasticsearch.index.query.QueryBuilder queryBuilder = matchAllQuery();
 //            org.elasticsearch.index.query.QueryBuilder filterBuilder = QueryBuilders.matchAllFilter();
-            org.elasticsearch.index.query.QueryBuilder filterBuilder = boolQuery()
-                    .must(matchAllQuery());
+            org.elasticsearch.index.query.QueryBuilder filterBuilder = boolQuery().must(matchAllQuery());
 
             for(Composite child : getChildren()) {
                 if (child.getOp() == Op.query) {
@@ -715,10 +715,11 @@ public class QueryBuilder implements Cloneable{
                 }
             }
 
-            return boolQuery()
-                    .must(StreamSupport.stream(mustFilters.spliterator(), false).toArray(size -> new org.elasticsearch.index.query.QueryBuilder[size]))
-                    .mustNot(StreamSupport.stream(mustNotFilters.spliterator(), false).toArray(size -> new org.elasticsearch.index.query.QueryBuilder[size]))
-                    .should(StreamSupport.stream(shouldFilters.spliterator(), false).toArray(size -> new org.elasticsearch.index.query.QueryBuilder[size]));
+            BoolQueryBuilder boolQueryBuilder = boolQuery();
+            mustFilters.forEach(f -> boolQueryBuilder.must(f));
+            mustNotFilters.forEach(f -> boolQueryBuilder.mustNot(f));
+            shouldFilters.forEach(f -> boolQueryBuilder.should(f));
+            return boolQueryBuilder;
         }
         //endregion
     }
