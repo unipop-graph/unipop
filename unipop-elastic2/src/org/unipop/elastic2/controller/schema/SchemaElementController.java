@@ -75,7 +75,8 @@ public abstract class SchemaElementController {
         SearchBuilder searchBuilder = buildElementsQuery(elementType);
 
         translateHasContainers(searchBuilder, predicates.hasContainers);
-        translateLimits(predicates.limitHigh, searchBuilder);
+//        translateLimits(predicates.limitHigh, searchBuilder);
+        translateLimits(10000, searchBuilder);
         return searchBuilder;
     }
 

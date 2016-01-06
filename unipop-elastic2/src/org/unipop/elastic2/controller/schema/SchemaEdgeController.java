@@ -224,7 +224,8 @@ public class SchemaEdgeController extends SchemaElementController implements Edg
 
         translateLabelsPredicate(Arrays.asList(edgeLabels), searchBuilder, Edge.class);
         translateHasContainers(searchBuilder, predicates.hasContainers);
-        translateLimits(predicates.limitHigh, searchBuilder);
+//        translateLimits(predicates.limitHigh, searchBuilder);
+        translateLimits(10000, searchBuilder);
         return searchBuilder;
     }
     //endregion

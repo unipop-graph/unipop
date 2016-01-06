@@ -653,9 +653,9 @@ public class QueryBuilder implements Cloneable{
         //region Composite
         @Override
         protected Object build() {
+            org.elasticsearch.index.query.BoolQueryBuilder boolQueryBuilder = boolQuery();
             org.elasticsearch.index.query.QueryBuilder queryBuilder = matchAllQuery();
-//            org.elasticsearch.index.query.QueryBuilder filterBuilder = QueryBuilders.matchAllFilter();
-            org.elasticsearch.index.query.QueryBuilder filterBuilder = boolQuery().must(matchAllQuery());
+            org.elasticsearch.index.query.QueryBuilder filterBuilder = matchAllQuery();
 
             for(Composite child : getChildren()) {
                 if (child.getOp() == Op.query) {
@@ -665,7 +665,7 @@ public class QueryBuilder implements Cloneable{
                 }
             }
 
-            return filteredQuery(queryBuilder, filterBuilder);
+            return boolQueryBuilder.must(queryBuilder).filter(filterBuilder);
         }
         //endregion
     }

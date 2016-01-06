@@ -47,13 +47,7 @@ public class ElasticVertex<T extends ElasticVertexController> extends BaseVertex
 
     @Override
     protected void innerRemoveProperty(Property property) {
-        try
-        {
-            elasticMutations.updateElement(this, indexName, null, false);
-        }
-        catch (ExecutionException | InterruptedException e) {
-            e.printStackTrace();
-        }
+        elasticMutations.addElement(this, indexName, null, false);
     }
 
     @Override

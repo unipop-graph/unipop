@@ -50,8 +50,8 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
         BoolQueryBuilder boolQuery = ElasticHelper.createQueryBuilder(predicates.hasContainers);
         boolQuery.must(QueryBuilders.existsQuery(ElasticEdge.InId));
 
-        return new QueryIterator<>(boolQuery, scrollSize, predicates.limitHigh,
-                client, this::createEdge, timing, indexName);
+//        return new QueryIterator<>(boolQuery, scrollSize, predicates.limitHigh, client, this::createEdge, timing, indexName);
+        return new QueryIterator<>(boolQuery, scrollSize, 10000, client, this::createEdge, timing, indexName);
     }
 
     @Override
@@ -67,7 +67,8 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
         BoolQueryBuilder boolQuery = ElasticHelper.createQueryBuilder(predicates.hasContainers);
         addQuerysByDirection(direction, vertexIds, boolQuery);
 
-        return new QueryIterator<>(boolQuery, scrollSize, predicates.limitHigh, client, this::createEdge, timing, indexName);
+//        return new QueryIterator<>(boolQuery, scrollSize, predicates.limitHigh, client, this::createEdge, timing, indexName);
+        return new QueryIterator<>(boolQuery, scrollSize, 10000, client, this::createEdge, timing, indexName);
     }
 
     @Override
