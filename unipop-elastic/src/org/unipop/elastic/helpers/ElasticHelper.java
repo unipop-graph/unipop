@@ -100,7 +100,10 @@ public class ElasticHelper {
         }
 
         if (queryBuilders.isEmpty()) {
-            return QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), boolFilter);
+            if (boolFilter.hasClauses())
+                return QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), boolFilter);
+            else
+                return QueryBuilders.matchAllQuery();
         } else {
             BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
             queryBuilders.forEach(pair -> {

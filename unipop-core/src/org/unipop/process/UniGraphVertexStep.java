@@ -45,7 +45,7 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
 
     @Override
     protected Traverser<E> processNextStart() {
-        if (!results.hasNext() && starts.hasNext())
+        while (!results.hasNext() && starts.hasNext())
             results = query(starts);
 
         if(results.hasNext())

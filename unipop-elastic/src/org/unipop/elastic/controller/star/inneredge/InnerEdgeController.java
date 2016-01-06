@@ -23,4 +23,8 @@ public interface InnerEdgeController {
     FilterBuilder getFilter(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates);
 
     Map<String, Object> allFields(List<InnerEdge> edges);
+
+    String getEdgeLabel();
+
+    Direction getDirection();
 }

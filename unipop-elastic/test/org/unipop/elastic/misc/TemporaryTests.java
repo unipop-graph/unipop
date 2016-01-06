@@ -5,6 +5,7 @@ import org.apache.tinkerpop.gremlin.GraphManager;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 import org.unipop.elastic.ElasticGraphProvider;
@@ -13,6 +14,7 @@ import org.unipop.process.traversal.Text;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
+import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.GRATEFUL;
 import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource.computer;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
@@ -60,7 +62,8 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void test() {
-        GraphTraversal t = graph.traversal().V().has("name", Text.unregexp("*")).valueMap();
+        GraphTraversal t = g.V().both().both().count();
+        //1406914
         check(t);
     }
 
@@ -70,8 +73,11 @@ public class TemporaryTests extends AbstractGremlinTest {
         System.out.println("post-strategy:" + traversal);
 
         //traversal.profile().cap(TraversalMetrics.METRICS_KEY);
-
-        while(traversal.hasNext())
+        int count = 0;
+        while(traversal.hasNext()) {
             System.out.println(traversal.next());
+            count ++;
+        }
+        System.out.println(count);
     }
 }

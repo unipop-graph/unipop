@@ -127,6 +127,16 @@ public class NestedEdgeController implements InnerEdgeController {
     }
 
     @Override
+    public String getEdgeLabel() {
+        return edgeLabel;
+    }
+
+    @Override
+    public Direction getDirection() {
+        return direction;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;

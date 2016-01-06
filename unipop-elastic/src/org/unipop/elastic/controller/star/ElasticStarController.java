@@ -1,15 +1,33 @@
 package org.unipop.elastic.controller.star;
 
 import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.elasticsearch.action.count.CountResponse;
+import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.index.query.BoolFilterBuilder;
 import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.index.query.FilterBuilders;
 import org.elasticsearch.index.query.OrFilterBuilder;
+import org.elasticsearch.search.aggregations.Aggregation;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.filter.InternalFilter;
+import org.elasticsearch.search.aggregations.bucket.nested.InternalNested;
+import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregator;
+import org.elasticsearch.search.aggregations.bucket.nested.NestedBuilder;
 import org.unipop.controller.EdgeController;
 import org.unipop.controller.Predicates;
+import org.unipop.elastic.controller.edge.ElasticEdge;
+import org.unipop.elastic.controller.schema.helpers.AggregationBuilder;
 import org.unipop.elastic.controller.star.inneredge.InnerEdgeController;
 import org.unipop.elastic.controller.vertex.ElasticVertex;
 import org.unipop.elastic.controller.vertex.ElasticVertexController;
@@ -19,6 +37,7 @@ import org.unipop.structure.BaseVertex;
 import org.unipop.structure.UniGraph;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -61,7 +80,7 @@ public class ElasticStarController extends ElasticVertexController implements Ed
     }
 
 
-    private Iterable<ElasticStarVertex> getVertexIterableForEdges(Predicates predicates){
+    private Iterable<ElasticStarVertex> getVertexIterableForEdges(Predicates predicates) {
         elasticMutations.refresh();
 
         OrFilterBuilder orFilter = FilterBuilders.orFilter();
@@ -72,7 +91,7 @@ public class ElasticStarController extends ElasticVertexController implements Ed
 
         QueryIterator<ElasticStarVertex> queryIterator = new QueryIterator<>(ElasticHelper.createQuery(new ArrayList<>(), orFilter), scrollSize, predicates.limitHigh, client,
                 this::createStarVertex, timing, getDefaultIndex());
-        return  () -> queryIterator;
+        return () -> queryIterator;
     }
 
     @Override
@@ -113,15 +132,59 @@ public class ElasticStarController extends ElasticVertexController implements Ed
     }
 
     @Override
+    public long vertexCount(Predicates predicates) {
+        CountResponse count = client.prepareCount(getDefaultIndex()).setQuery(ElasticHelper.createQuery(predicates.hasContainers)).execute().actionGet();
+        return count.getCount();
+    }
+
+    @Override
     public long edgeCount(Predicates predicates) {
+        // TODO: update to count not only inner edges
         return StreamSupport.stream(getVertexIterableForEdges(predicates).spliterator(), false)
                 .mapToInt(vertex -> vertex.getInnerEdges(predicates).size()).sum();
 
     }
 
+    public Vertex[] getVerticesByIds(Vertex[] vertices, Set<Object> ids) {
+        ArrayList<Vertex> vertexArrayList = new ArrayList<>();
+        for (Vertex vertex : vertices) {
+            if (ids.contains(vertex.id()))
+                vertexArrayList.add(vertex);
+        }
+        return vertexArrayList.toArray(new Vertex[vertexArrayList.size()]);
+    }
+
     @Override
     public long edgeCount(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
-        return Stream.of(vertices).mapToInt(vertex -> ((ElasticStarVertex) vertex).getInnerEdges(predicates).size()).sum();
+        final long[] count = {0};
+        innerEdgeControllers.forEach(innerEdgeController -> {
+            List<Object> idsList = Stream.of(vertices).map(Element::id).collect(Collectors.toList());
+            innerEdgeController.getFilter(vertices, direction, edgeLabels, predicates);
+            SearchRequestBuilder requestBuilder = client.prepareSearch(getDefaultIndex())
+                    .setQuery(ElasticHelper.createQuery(new ArrayList<>(), innerEdgeController.getFilter(vertices, direction, edgeLabels, predicates)));
+            HashMap<Object, Integer> idsCount = new HashMap<>();
+            idsList.forEach(id -> idsCount.put(id, (idsCount.containsKey(id) ? idsCount.get(id) : 0) + 1));
+            ArrayList<NestedBuilder> aggs = new ArrayList<>();
+            int aggregationsCounter = 1;
+            while (!idsCount.isEmpty()) {
+                NestedBuilder agg = AggregationBuilders.nested(Integer.toString(aggregationsCounter))
+                        .path(innerEdgeController.getEdgeLabel());
+                agg.subAggregation(AggregationBuilders.filter("filtered").filter(innerEdgeController.getFilter(getVerticesByIds(vertices, idsCount.keySet()), direction, edgeLabels, predicates)));
+                aggs.add(agg);
+                idsCount.keySet().forEach(id -> idsCount.put(id, idsCount.get(id) - 1));
+                Object[] idArray = idsCount.keySet().toArray();
+                for (int i = 0; i < idArray.length; i++) {
+                    if (idsCount.get(idArray[i]) == 0) idsCount.remove(idArray[i]);
+                }
+                aggregationsCounter++;
+            }
+            aggs.forEach(requestBuilder::addAggregation);
+            SearchResponse response = requestBuilder.execute().actionGet();
+            List<Aggregation> agg = response.getAggregations().asList();
+            agg.forEach(ag -> count[0] += ((InternalFilter) ((InternalNested) ag).getAggregations().get("filtered")).getDocCount());
+
+        });
+        return count[0];
     }
 
     @Override

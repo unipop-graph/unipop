@@ -64,7 +64,7 @@ public class LazyGetter {
         p.hasContainers.add(new HasContainer(T.id.getAccessor(), P.within(ids)));
 
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch(indices.toArray(new String[indices.size()]))
-                .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), ElasticHelper.createFilterBuilder(p.hasContainers)));
+                .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), ElasticHelper.createFilterBuilder(p.hasContainers))).setSize(ids.size());
 
         SearchResponse response = searchRequestBuilder.execute().actionGet();
         response.getHits().forEach(hit -> {
