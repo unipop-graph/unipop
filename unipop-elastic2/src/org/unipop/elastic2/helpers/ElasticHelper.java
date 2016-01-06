@@ -69,9 +69,12 @@ public class ElasticHelper {
      * @return Deleted by query response.
      */
     public static DeleteIndexResponse clearIndex(Client client, String indexName){
-        return client.admin().indices()
-                .delete(new DeleteIndexRequest(indexName))
-                .actionGet();
+        if (client.admin().indices().exists(new IndicesExistsRequest(indexName)).actionGet().isExists()) {
+            return client.admin().indices()
+                    .delete(new DeleteIndexRequest(indexName))
+                    .actionGet();
+        }
+        return null;
     }
 
     /**
