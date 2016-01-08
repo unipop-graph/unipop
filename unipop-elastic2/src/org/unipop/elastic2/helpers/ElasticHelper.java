@@ -70,9 +70,18 @@ public class ElasticHelper {
      */
     public static DeleteIndexResponse clearIndex(Client client, String indexName){
         if (client.admin().indices().exists(new IndicesExistsRequest(indexName)).actionGet().isExists()) {
-            return client.admin().indices()
+            // 1. Delete index is faster. Also, ES 2.x requires plugin to support delete by query.
+            DeleteIndexResponse response = client.admin().indices()
                     .delete(new DeleteIndexRequest(indexName))
                     .actionGet();
+
+            // 2. recreate the index after deletion.
+            try {
+                createIndex(indexName, client);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return response;
         }
         return null;
     }
