@@ -665,7 +665,7 @@ public class QueryBuilder implements Cloneable{
                 }
             }
 
-            return boolQueryBuilder.must(queryBuilder).filter(filterBuilder);
+            return boolQueryBuilder.filter(queryBuilder).filter(filterBuilder);
         }
         //endregion
     }
@@ -716,9 +716,9 @@ public class QueryBuilder implements Cloneable{
             }
 
             BoolQueryBuilder boolQueryBuilder = boolQuery();
-            mustFilters.forEach(f -> boolQueryBuilder.must(f));
-            mustNotFilters.forEach(f -> boolQueryBuilder.mustNot(f));
-            shouldFilters.forEach(f -> boolQueryBuilder.should(f));
+            mustFilters.forEach(boolQueryBuilder::filter);
+            mustNotFilters.forEach(boolQueryBuilder::mustNot);
+            shouldFilters.forEach(boolQueryBuilder::should);
             return boolQueryBuilder;
         }
         //endregion
@@ -796,10 +796,10 @@ public class QueryBuilder implements Cloneable{
         @Override
         protected Object build() {
             if (this.value instanceof Iterable) {
-                return termQuery(getName(), StreamSupport.stream(((Iterable) value).spliterator(), false).toArray());
+                return termsQuery(getName(), StreamSupport.stream(((Iterable) value).spliterator(), false).toArray());
             }
 
-            return termQuery(getName(), this.value);
+            return termsQuery(getName(), this.value);
         }
 
         @Override

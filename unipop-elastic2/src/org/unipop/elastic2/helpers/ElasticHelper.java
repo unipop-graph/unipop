@@ -114,63 +114,63 @@ public class ElasticHelper {
                 for (Object id : (Iterable) value)
                     idsQueryBuilder.addIds(id.toString());
             } else idsQueryBuilder.addIds(value.toString());
-            boolQueryBuilder.must(idsQueryBuilder);
+            boolQueryBuilder.filter(idsQueryBuilder); 
         } else if (key.equals(T.label.getAccessor())) {
             if (value instanceof List) {
                 List labels = (List) value;
                 if (labels.size() == 1)
-                    boolQueryBuilder.must(QueryBuilders.typeQuery(labels.get(0).toString()));
+                    boolQueryBuilder.filter(QueryBuilders.typeQuery(labels.get(0).toString())); 
                 else {
                     QueryBuilder[] filters = new QueryBuilder[labels.size()];
                     for (int i = 0; i < labels.size(); i++)
                         filters[i] = QueryBuilders.typeQuery(labels.get(i).toString());
-                    boolQueryBuilder.must(QueryBuilders.orQuery(filters));
+                    boolQueryBuilder.filter(QueryBuilders.orQuery(filters)); 
                 }
-            } else boolQueryBuilder.must(QueryBuilders.typeQuery(value.toString()));
+            } else boolQueryBuilder.filter(QueryBuilders.typeQuery(value.toString())); 
         } else if (biPredicate != null) {
             if (biPredicate instanceof Compare) {
                 String predicateString = biPredicate.toString();
                 switch (predicateString) {
                     case ("eq"):
-                        boolQueryBuilder.must(QueryBuilders.termQuery(key, value));
+                        boolQueryBuilder.filter(QueryBuilders.termQuery(key, value));
                         break;
                     case ("neq"):
                         boolQueryBuilder.mustNot(QueryBuilders.termQuery(key, value));
                         break;
                     case ("gt"):
-                        boolQueryBuilder.must(QueryBuilders.rangeQuery(key).gt(value));
+                        boolQueryBuilder.filter(QueryBuilders.rangeQuery(key).gt(value));
                         break;
                     case ("gte"):
-                        boolQueryBuilder.must(QueryBuilders.rangeQuery(key).gte(value));
+                        boolQueryBuilder.filter(QueryBuilders.rangeQuery(key).gte(value));
                         break;
                     case ("lt"):
-                        boolQueryBuilder.must(QueryBuilders.rangeQuery(key).lt(value));
+                        boolQueryBuilder.filter(QueryBuilders.rangeQuery(key).lt(value));
                         break;
                     case ("lte"):
-                        boolQueryBuilder.must(QueryBuilders.rangeQuery(key).lte(value));
+                        boolQueryBuilder.filter(QueryBuilders.rangeQuery(key).lte(value));
                         break;
                     case ("inside"):
                         List items = (List) value;
                         Object firstItem = items.get(0);
                         Object secondItem = items.get(1);
-                        boolQueryBuilder.must(QueryBuilders.rangeQuery(key).from(firstItem).to(secondItem));
+                        boolQueryBuilder.filter(QueryBuilders.rangeQuery(key).from(firstItem).to(secondItem)); 
                         break;
                     default:
                         throw new IllegalArgumentException("predicate not supported in has step: " + biPredicate.toString());
                 }
             } else if (biPredicate instanceof Contains) {
-                if (biPredicate == Contains.without) boolQueryBuilder.must(QueryBuilders.missingQuery(key));
+                if (biPredicate == Contains.without) boolQueryBuilder.filter(QueryBuilders.missingQuery(key)); 
                 else if (biPredicate == Contains.within) {
-                    if (value == null) boolQueryBuilder.must(QueryBuilders.existsQuery(key));
-                    else if(value instanceof Iterable) boolQueryBuilder.must(QueryBuilders.termsQuery (key, (Iterable)value));
-                    else boolQueryBuilder.must(QueryBuilders.termsQuery(key, value));
+                    if (value == null) boolQueryBuilder.filter(QueryBuilders.existsQuery(key)); 
+                    else if(value instanceof Iterable) boolQueryBuilder.filter(QueryBuilders.termsQuery (key, (Iterable)value)); 
+                    else boolQueryBuilder.filter(QueryBuilders.termsQuery(key, value)); 
                 }
             } else if (biPredicate instanceof Geo)
-                boolQueryBuilder.must(new GeoShapeQueryBuilder(key, GetShapeBuilder(value), ((Geo) biPredicate).getRelation()));
+                boolQueryBuilder.filter(new GeoShapeQueryBuilder(key, GetShapeBuilder(value), ((Geo) biPredicate).getRelation())); 
             else throw new IllegalArgumentException("predicate not supported by unipop: " + biPredicate.toString());
         }
         else if (has.getPredicate() instanceof ExistsP) {
-            boolQueryBuilder.must(QueryBuilders.existsQuery(key));
+            boolQueryBuilder.filter(QueryBuilders.existsQuery(key)); 
         } else {
             //todo: add descriptive unsupported has container description
             throw new IllegalArgumentException("HasContainer not supported by unipop");
