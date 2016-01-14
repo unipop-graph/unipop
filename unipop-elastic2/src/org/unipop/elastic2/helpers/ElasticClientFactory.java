@@ -58,6 +58,7 @@ public class ElasticClientFactory {
     public static Node createNode(String clusterName, boolean client, int port) throws ExecutionException, InterruptedException {
         if(port == 0) port = findFreePort();
         Settings settings = NodeBuilder.nodeBuilder().settings()
+                .put("index.max_result_window", Integer.MAX_VALUE)
                 .put("script.groovy.sandbox.enabled", true)
                 .put("script.inline", "on")
                 .put("script.indexed", "on")
