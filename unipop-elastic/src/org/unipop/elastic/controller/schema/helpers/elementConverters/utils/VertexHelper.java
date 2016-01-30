@@ -5,11 +5,10 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.unipop.elastic.controller.schema.SchemaVertex;
 import org.unipop.elastic.controller.schema.helpers.schemaProviders.GraphElementSchemaProvider;
 import org.elasticsearch.common.base.Strings;
+import org.unipop.elastic.helpers.ElasticLazyGetter;
 import org.unipop.elastic.helpers.ElasticMutations;
-import org.unipop.elastic.helpers.LazyGetter;
 import org.unipop.structure.UniGraph;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -18,7 +17,7 @@ import java.util.Map;
  */
 public class VertexHelper {
 
-    static public Vertex createVertex(Element element, GraphElementSchemaProvider schemaProvider, ElasticMutations elasticMutations, LazyGetter lazyGetter) {
+    static public Vertex createVertex(Element element, GraphElementSchemaProvider schemaProvider, ElasticMutations elasticMutations, ElasticLazyGetter elasticLazyGetter) {
         if (element.id() == null || Strings.isNullOrEmpty(element.id().toString())) {
             return ElasticMissingVertex.getInstance();
         }
@@ -34,18 +33,18 @@ public class VertexHelper {
                 (UniGraph) element.graph(),
                 keyValues,
                 null,
-                lazyGetter,
+                elasticLazyGetter,
                 schemaProvider,
                 elasticMutations);
     }
 
-    static public Vertex createVertex(Object id, String label, Map<String, Object> properties, UniGraph graph, GraphElementSchemaProvider schemaProvider, ElasticMutations elasticMutations, LazyGetter lazyGetter) {
+    static public Vertex createVertex(Object id, String label, Map<String, Object> properties, UniGraph graph, GraphElementSchemaProvider schemaProvider, ElasticMutations elasticMutations, ElasticLazyGetter elasticLazyGetter) {
         //TODO: repair
         if (id == null || Strings.isNullOrEmpty(id.toString())) {
             return ElasticMissingVertex.getInstance();
         }
 
-        SchemaVertex vertex = new SchemaVertex(id, label, graph, null, null, lazyGetter, schemaProvider, elasticMutations);
+        SchemaVertex vertex = new SchemaVertex(id, label, graph, null, null, elasticLazyGetter, schemaProvider, elasticMutations);
         if (properties != null) {
             for (Map.Entry<String, Object> property : properties.entrySet()) {
                 vertex.property(property.getKey(), property.getValue());

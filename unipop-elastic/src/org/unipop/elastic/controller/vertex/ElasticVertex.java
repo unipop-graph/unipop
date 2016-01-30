@@ -1,7 +1,7 @@
 package org.unipop.elastic.controller.vertex;
 
 import org.unipop.elastic.helpers.ElasticMutations;
-import org.unipop.elastic.helpers.LazyGetter;
+import org.unipop.elastic.helpers.ElasticLazyGetter;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.unipop.structure.*;
 
@@ -11,15 +11,15 @@ import java.util.concurrent.ExecutionException;
 public class ElasticVertex<T extends ElasticVertexController> extends BaseVertex<T> {
     protected final ElasticMutations elasticMutations;
     protected final String indexName;
-    private LazyGetter lazyGetter;
+    private ElasticLazyGetter elasticLazyGetter;
 
-    public ElasticVertex(final Object id, final String label, Map<String, Object> keyValues, T controller, UniGraph graph, LazyGetter lazyGetter, ElasticMutations elasticMutations, String indexName) {
+    public ElasticVertex(final Object id, final String label, Map<String, Object> keyValues, T controller, UniGraph graph, ElasticLazyGetter elasticLazyGetter, ElasticMutations elasticMutations, String indexName) {
         super(id, label, keyValues, controller, graph);
         this.elasticMutations = elasticMutations;
         this.indexName = indexName;
-        if (lazyGetter != null) {
-            this.lazyGetter = lazyGetter;
-            lazyGetter.register(this, label, this.indexName);
+        if (elasticLazyGetter != null) {
+            this.elasticLazyGetter = elasticLazyGetter;
+            elasticLazyGetter.register(this, label, this.indexName);
         }
     }
 
@@ -61,6 +61,6 @@ public class ElasticVertex<T extends ElasticVertexController> extends BaseVertex
     }
 
     protected void checkLazy() {
-        if (lazyGetter != null) lazyGetter.execute();
+        if (elasticLazyGetter != null) elasticLazyGetter.execute();
     }
 }

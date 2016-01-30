@@ -9,11 +9,12 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.unipop.controller.Predicates;
+import org.unipop.helpers.LazzyGetter;
 import org.unipop.structure.BaseVertex;
 
 import java.util.*;
 
-public class LazyGetter {
+public class ElasticLazyGetter implements LazzyGetter{
 
     private static final int MAX_LAZY_GET = 50;
     private Client client;
@@ -21,17 +22,19 @@ public class LazyGetter {
     private boolean executed = false;
     private HashMap<GetKey, List<BaseVertex>> keyToVertices = new HashMap();
 
-    public LazyGetter(Client client, TimingAccessor timing) {
+    public ElasticLazyGetter(Client client, TimingAccessor timing) {
         this.client = client;
         this.timing = timing;
     }
 
+    @Override
     public Boolean canRegister() {
         return !executed && keyToVertices.keySet().size() < MAX_LAZY_GET;
     }
 
+    @Override
     public void register(BaseVertex v, String label, String indexName) {
-        if(executed) System.out.println("This LazyGetter has already been executed.");
+        if(executed) System.out.println("This ElasticLazyGetter has already been executed.");
 
         GetKey key = new GetKey(v.id(), label, indexName);
 
@@ -43,6 +46,7 @@ public class LazyGetter {
         vertices.add(v);
     }
 
+    @Override
     public void execute() {
         if (executed) return;
         executed = true;

@@ -1,20 +1,14 @@
 package org.unipop.elastic.controller.star;
 
 import org.apache.commons.lang.NotImplementedException;
-import org.apache.commons.lang3.tuple.MutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticsearch.action.count.CountResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.index.query.BoolFilterBuilder;
 import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.index.query.FilterBuilders;
 import org.elasticsearch.index.query.OrFilterBuilder;
@@ -22,12 +16,9 @@ import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.filter.InternalFilter;
 import org.elasticsearch.search.aggregations.bucket.nested.InternalNested;
-import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregator;
 import org.elasticsearch.search.aggregations.bucket.nested.NestedBuilder;
 import org.unipop.controller.EdgeController;
 import org.unipop.controller.Predicates;
-import org.unipop.elastic.controller.edge.ElasticEdge;
-import org.unipop.elastic.controller.schema.helpers.AggregationBuilder;
 import org.unipop.elastic.controller.star.inneredge.InnerEdgeController;
 import org.unipop.elastic.controller.vertex.ElasticVertex;
 import org.unipop.elastic.controller.vertex.ElasticVertexController;
@@ -43,7 +34,6 @@ import java.util.stream.StreamSupport;
 
 
 public class ElasticStarController extends ElasticVertexController implements EdgeController {
-
     private Set<InnerEdgeController> innerEdgeControllers = new HashSet<>();
 
     public ElasticStarController(UniGraph graph, Client client, ElasticMutations elasticMutations, String defaultIndex,
@@ -52,14 +42,27 @@ public class ElasticStarController extends ElasticVertexController implements Ed
         Collections.addAll(this.innerEdgeControllers, innerEdgeControllers);
     }
 
+    public ElasticStarController(){}
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public void init(Map<String, Object> conf, UniGraph graph) throws Exception {
+        super.init(conf, graph);
+        for (Map<String, Object> edge : ((List<Map<String, Object>>) conf.get("edges"))) {
+            InnerEdgeController innerEdge = ((InnerEdgeController) Class.forName(edge.get("class").toString()).newInstance());
+            innerEdge.init(edge);
+            innerEdgeControllers.add(innerEdge);
+        }
+    }
+
     @Override
     protected ElasticVertex createVertex(Object id, String label, Map<String, Object> keyValues) {
         return createStarVertex(id, label, keyValues);
     }
 
     @Override
-    protected ElasticVertex createLazyVertex(Object id, String label, LazyGetter lazyGetter) {
-        return new ElasticStarVertex(id, label, null, graph, lazyGetter, this, elasticMutations, getDefaultIndex(), innerEdgeControllers);
+    protected ElasticVertex createLazyVertex(Object id, String label, ElasticLazyGetter elasticLazyGetter) {
+        return new ElasticStarVertex(id, label, null, graph, elasticLazyGetter, this, elasticMutations, getDefaultIndex(), innerEdgeControllers);
     }
 
     private ElasticStarVertex createStarVertex(Object id, String label, Map<String, Object> keyValues) {

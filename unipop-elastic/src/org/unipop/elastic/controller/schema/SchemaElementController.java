@@ -49,6 +49,8 @@ public abstract class SchemaElementController {
         ));
     }
 
+    public SchemaElementController(){}
+
     protected abstract Iterator<? extends Element> transformSearchHitsToElements(Iterable<SearchHit> scrollIterable);
 
     protected Iterator<? extends Element> elements(Predicates predicates, Class elementType) {
@@ -135,7 +137,7 @@ public abstract class SchemaElementController {
     }
 
     //region properties
-    protected final GraphElementSchemaProvider schemaProvider;
+    protected GraphElementSchemaProvider schemaProvider;
     protected Client client = null;
     protected UniGraph graph;
     protected ElasticMutations elasticMutations;

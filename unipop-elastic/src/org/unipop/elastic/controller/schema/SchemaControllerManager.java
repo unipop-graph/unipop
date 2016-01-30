@@ -1,6 +1,7 @@
 package org.unipop.elastic.controller.schema;
 
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -127,5 +128,10 @@ public class SchemaControllerManager extends BasicControllerManager {
     protected Client client;
 
     protected boolean isClosed;
+
+    @Override
+    public void init(Map<String, Object> conf, UniGraph graph) throws Exception {
+        throw new NotImplementedException();
+    }
     //endregion
 }

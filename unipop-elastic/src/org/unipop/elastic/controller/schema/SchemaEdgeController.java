@@ -1,5 +1,6 @@
 package org.unipop.elastic.controller.schema;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.unipop.controller.EdgeController;
@@ -37,6 +38,19 @@ public class SchemaEdgeController extends SchemaElementController implements Edg
     ) {
         super(graph, schemaProvider, client, elasticMutations, elasticGraphConfiguration, elementConverter);
     }
+
+    public SchemaEdgeController(){}
+
+    @Override
+    public void init(Map<String, Object> conf, UniGraph graph) throws Exception {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void close() {
+        throw new NotImplementedException();
+    }
+
     //endregion
 
     //region EdgeHandler Implementation

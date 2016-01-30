@@ -52,7 +52,8 @@ public class JooqHelper {
             if (predicate == Contains.without) return field.isNull();
             else if (predicate == Contains.within){
                 if(value == null) return field.isNotNull();
-                // else
+                else
+                    return field.in(value);
             }
         }
         throw new IllegalArgumentException("predicate not supported by unipop: " + predicate.toString());
