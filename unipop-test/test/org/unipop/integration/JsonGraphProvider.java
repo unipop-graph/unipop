@@ -64,6 +64,7 @@ public class JsonGraphProvider extends AbstractGraphProvider {
         ElasticHelper.createIndex("software", client);
         ElasticHelper.createIndex("created", client);
         ElasticHelper.createIndex("knows", client);
+        ElasticHelper.createIndex("unipop", client);
 
         JSONObject obj = new JSONObject();
         List<Map<String, Object>> controllers = new JSONArray();
@@ -71,28 +72,28 @@ public class JsonGraphProvider extends AbstractGraphProvider {
         elasticStar.put("class", ElasticVertexController.class.getCanonicalName());
         elasticStar.put("type", "vertex");
         elasticStar.put("backend", "elastic");
-        elasticStar.put("defaultIndex", "person");
+        elasticStar.put("defaultIndex", "unipop");
         elasticStar.put("labels", new JSONArray(){{add("person");}});
         controllers.add(elasticStar);
         Map<String, Object> elasticVertex = new JSONObject();
         elasticVertex.put("class", ElasticVertexController.class.getCanonicalName());
         elasticVertex.put("type", "vertex");
         elasticVertex.put("backend", "elastic");
-        elasticVertex.put("defaultIndex", "software");
+        elasticVertex.put("defaultIndex", "unipop");
         elasticVertex.put("labels", new JSONArray(){{add("software");}});
         controllers.add(elasticVertex);
         Map<String, Object> elasticEdge = new JSONObject();
         elasticEdge.put("class", ElasticEdgeController.class.getCanonicalName());
         elasticEdge.put("type", "edge");
         elasticEdge.put("backend", "elastic");
-        elasticEdge.put("defaultIndex", "created");
+        elasticEdge.put("defaultIndex", "unipop");
         elasticEdge.put("labels", new JSONArray(){{add("created");}});
         controllers.add(elasticEdge);
         Map<String, Object> knows = new JSONObject();
         knows.put("class", ElasticEdgeController.class.getCanonicalName());
         knows.put("type", "edge");
         knows.put("backend", "elastic");
-        knows.put("defaultIndex", "knows");
+        knows.put("defaultIndex", "unipop");
         knows.put("labels", new JSONArray(){{add("knows");}});
         controllers.add(knows);
         obj.put("controllers", controllers);
@@ -129,9 +130,11 @@ public class JsonGraphProvider extends AbstractGraphProvider {
             ElasticHelper.clearIndex(client, indexName);
             indexName = "knows";
             ElasticHelper.clearIndex(client, indexName);
+            indexName = "unipop";
+            ElasticHelper.clearIndex(client, indexName);
             g.close();
-            File file = new File("schema.json");
-            FileUtils.deleteQuietly(file);
+//            File file = new File("schema.json");
+//            FileUtils.deleteQuietly(file);
         }
     }
 

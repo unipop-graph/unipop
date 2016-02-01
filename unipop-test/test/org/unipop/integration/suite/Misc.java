@@ -39,7 +39,7 @@ public class Misc extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void g_V_drop() throws Exception {
-        final Traversal traversal = g.V();
+        final Traversal traversal = g.V().out("knows", "created");
         check(traversal);
     }
 

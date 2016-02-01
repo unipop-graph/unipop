@@ -1,6 +1,7 @@
 package org.unipop.controllerprovider;
 
 import org.apache.commons.lang.NotImplementedException;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -37,11 +38,13 @@ public abstract class SchemaControllerManager implements ControllerManager {
         edgeControllers.entrySet().forEach(entry -> entry.getValue().forEach(EdgeController::close));
     }
 
-    protected <T> void addController(Map<String, Set<T>> controllers, T controller, String label){
+    protected <T> void addController(Map<String, Set<T>> controllers, T controller, String label) {
         if (controllers.containsKey(label))
             controllers.get(label).add(controller);
         else
-            controllers.put(label, new HashSet<T>(){{add(controller);}});
+            controllers.put(label, new HashSet<T>() {{
+                add(controller);
+            }});
     }
 
     @Override
@@ -49,11 +52,13 @@ public abstract class SchemaControllerManager implements ControllerManager {
         Object labels = getLabel(predicates);
         if (labels == null)
             return edgeControllers.entrySet().stream()
-                    .map(Map.Entry::getValue)
-                    .flatMap(edgeControllers1 ->
-                            edgeControllers1.stream().map(edgeController ->
-                                    edgeController.edges(predicates)).collect(Collectors.toList()).stream()
-                    ).flatMap(baseEdgeIterator -> {
+                    .flatMap(edgeControllers1 -> edgeControllers1.getValue().stream().map(edgeController -> {
+                                Predicates p = new Predicates(predicates);
+                                p.hasContainers.add(new HasContainer(T.label.getAccessor(), P.within(edgeControllers1.getKey())));
+                                p.labels.add(edgeControllers1.getKey());
+                                return edgeController.edges(p);
+                            }
+                    ).collect(Collectors.toList()).stream()).flatMap(baseEdgeIterator -> {
                         Iterable<BaseEdge> iterable = () -> baseEdgeIterator;
                         return StreamSupport.stream(iterable.spliterator(), false);
                     }).collect(Collectors.toList()).iterator();
@@ -65,9 +70,19 @@ public abstract class SchemaControllerManager implements ControllerManager {
                         return StreamSupport.stream(iterable.spliterator(), false);
                     }).collect(Collectors.toList()).iterator();
         else if (labels instanceof Iterable)
-            StreamSupport.stream(((Iterable<String>) labels).spliterator(), false).flatMap(label ->
+            return StreamSupport.stream(((Iterable<String>) labels).spliterator(), false).flatMap(label ->
                     edgeControllers.get(label).stream()
-                            .map(vertexController -> vertexController.edges(predicates))
+                            .map(vertexController -> {
+                                Predicates p = new Predicates(predicates);
+                                for (HasContainer hasContainer : p.hasContainers) {
+                                    if (hasContainer.getKey().equals(T.label.getAccessor())) {
+                                        p.hasContainers.remove(hasContainer);
+                                        p.hasContainers.add(new HasContainer(T.label.getAccessor(), P.within(label)));
+                                        break;
+                                    }
+                                }
+                                return vertexController.edges(p);
+                            })
                             .collect(Collectors.toList()).stream()
             ).flatMap(baseEdgeIterator -> {
                 Iterable<BaseEdge> iterable = () -> baseEdgeIterator;
@@ -77,12 +92,19 @@ public abstract class SchemaControllerManager implements ControllerManager {
         return EmptyIterator.instance();
     }
 
+    // TODO: check why not working
     @Override
     public Iterator<BaseEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
         if (edgeLabels.length == 0)
-            return edgeControllers.entrySet().stream().map(Map.Entry::getValue).flatMap(edgeControllers1 ->
-                    edgeControllers1.stream().map(edgeController ->
-                            edgeController.edges(vertices, direction, edgeLabels, predicates)).collect(Collectors.toList()).stream())
+            return edgeControllers.entrySet().stream()
+                    .flatMap(edgeControllers1 ->
+                    edgeControllers1.getValue().stream().map(edgeController -> {
+                                Predicates p = new Predicates(predicates);
+                                p.hasContainers.add(new HasContainer(T.label.getAccessor(), P.within(edgeControllers1.getKey())));
+                                p.labels.add(edgeControllers1.getKey());
+                                return edgeController.edges(vertices, direction, edgeLabels, p);
+                            }
+                        ).collect(Collectors.toList()).stream())
                     .flatMap(baseEdgeIterator -> {
                         Iterable<BaseEdge> iterable = () -> baseEdgeIterator;
                         return StreamSupport.stream(iterable.spliterator(), false);
@@ -90,7 +112,17 @@ public abstract class SchemaControllerManager implements ControllerManager {
         else
             return Stream.of(edgeLabels).flatMap(label ->
                     edgeControllers.get(label).stream()
-                            .map(vertexController -> vertexController.edges(vertices, direction, edgeLabels, predicates))
+                            .map(edgeController -> {
+                                Predicates p = new Predicates(predicates);
+                                for (HasContainer hasContainer : p.hasContainers) {
+                                    if (hasContainer.getKey().equals(T.label.getAccessor())) {
+                                        p.hasContainers.remove(hasContainer);
+                                        p.hasContainers.add(new HasContainer(T.label.getAccessor(), P.within(label)));
+                                        break;
+                                    }
+                                }
+                                return edgeController.edges(vertices, direction, edgeLabels, p);
+                            })
                             .collect(Collectors.toList()).stream()
             ).flatMap(baseEdgeIterator -> {
                 Iterable<BaseEdge> iterable = () -> baseEdgeIterator;
@@ -117,10 +149,14 @@ public abstract class SchemaControllerManager implements ControllerManager {
         Object labels = getLabel(predicates);
         if (labels == null)
             return vertexControllers.entrySet().stream()
-                    .map(Map.Entry::getValue)
                     .flatMap(vertexControllers1 ->
-                            vertexControllers1.stream().map(vertexController ->
-                                    vertexController.vertices(predicates)).collect(Collectors.toList()).stream()
+                            vertexControllers1.getValue().stream().map(vertexController -> {
+                                        Predicates p = new Predicates(predicates);
+                                        p.hasContainers.add(new HasContainer(T.label.getAccessor(), P.within(vertexControllers1.getKey())));
+                                        p.labels.add(vertexControllers1.getKey());
+                                        return vertexController.vertices(p);
+                                    }
+                            ).collect(Collectors.toList()).stream()
                     ).flatMap(baseVertexIterator -> {
                         Iterable<BaseVertex> iterable = () -> baseVertexIterator;
                         return StreamSupport.stream(iterable.spliterator(), false);
@@ -133,9 +169,19 @@ public abstract class SchemaControllerManager implements ControllerManager {
                         return StreamSupport.stream(iterable.spliterator(), false);
                     }).collect(Collectors.toList()).iterator();
         else if (labels instanceof Iterable)
-            StreamSupport.stream(((Iterable<String>) labels).spliterator(), false).flatMap(label ->
+            return StreamSupport.stream(((Iterable<String>) labels).spliterator(), false).flatMap(label ->
                     vertexControllers.get(label).stream()
-                            .map(vertexController -> vertexController.vertices(predicates))
+                            .map(vertexController -> {
+                                Predicates p = new Predicates(predicates);
+                                for (HasContainer hasContainer : p.hasContainers) {
+                                    if (hasContainer.getKey().equals(T.label.getAccessor())) {
+                                        p.hasContainers.remove(hasContainer);
+                                        p.hasContainers.add(new HasContainer(T.label.getAccessor(), P.within(label)));
+                                        break;
+                                    }
+                                }
+                                return vertexController.vertices(p);
+                            })
                             .collect(Collectors.toList()).stream()
             ).flatMap(baseVertexIterator -> {
                 Iterable<BaseVertex> iterable = () -> baseVertexIterator;
