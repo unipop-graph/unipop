@@ -1,36 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <artifactId>unipop</artifactId>
-        <groupId>unipop</groupId>
-        <version>0.1</version>
-    </parent>
-    <artifactId>unipop-jdbc</artifactId>
-    <name>Unipop :: JDBC Controllers</name>
-    <properties>
-        <elasticsearch.version>1.7.2</elasticsearch.version>
-    </properties>
+
+    <groupId>unipop</groupId>
+    <artifactId>unipop-managers</artifactId>
+    <version>0.1</version>
+
+    <name>Unipop :: Controller Managers</name>
     <dependencies>
         <dependency>
+            <groupId>com.googlecode.json-simple</groupId>
+            <artifactId>json-simple</artifactId>
+            <version>1.1.1</version>
+        </dependency>
+        <dependency>
             <groupId>unipop</groupId>
-            <artifactId>unipop-core</artifactId>
+            <artifactId>unipop-elastic</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.jooq</groupId>
-            <artifactId>jooq</artifactId>
-            <version>3.7.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jooq</groupId>
-            <artifactId>jooq-meta</artifactId>
-            <version>3.7.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.xerial</groupId>
-            <artifactId>sqlite-jdbc</artifactId>
-            <version>3.8.11.2</version>
+            <groupId>unipop</groupId>
+            <artifactId>unipop-jdbc</artifactId>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
     <build>
@@ -85,4 +78,5 @@
             </plugin>
         </plugins>
     </build>
+    
 </project>

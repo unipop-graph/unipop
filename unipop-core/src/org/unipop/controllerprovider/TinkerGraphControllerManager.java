@@ -1,5 +1,6 @@
 package org.unipop.controllerprovider;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
@@ -14,6 +15,7 @@ import org.unipop.controller.Predicates;
 import org.unipop.controller.VertexController;
 import org.unipop.structure.BaseEdge;
 import org.unipop.structure.BaseVertex;
+import org.unipop.structure.UniGraph;
 
 import java.util.Iterator;
 import java.util.List;
@@ -31,6 +33,11 @@ public abstract class TinkerGraphControllerManager implements ControllerManager 
     public TinkerGraphControllerManager() {
         this.schema = TinkerGraph.open();
         this.g = schema.traversal();
+    }
+
+    @Override
+    public void init(Map<String, Object> conf, UniGraph graph) throws Exception {
+        throw new NotImplementedException();
     }
 
     @Override

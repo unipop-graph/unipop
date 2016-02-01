@@ -4,8 +4,8 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.unipop.elastic.controller.schema.helpers.schemaProviders.GraphElementSchemaProvider;
 import org.unipop.elastic.controller.schema.helpers.schemaProviders.GraphVertexSchema;
+import org.unipop.elastic.helpers.ElasticLazyGetter;
 import org.unipop.elastic.helpers.ElasticMutations;
-import org.unipop.elastic.helpers.LazyGetter;
 import org.unipop.structure.BaseVertex;
 import org.unipop.structure.BaseVertexProperty;
 import org.unipop.structure.UniGraph;
@@ -28,16 +28,16 @@ public class SchemaVertex<TController extends SchemaVertexController> extends Ba
             UniGraph graph,
             Map<String, Object> keyValues,
             TController vertexController,
-            LazyGetter lazyGetter,
+            ElasticLazyGetter elasticLazyGetter,
             GraphElementSchemaProvider schemaProvider,
             ElasticMutations elasticMutations) {
         super(id, label, keyValues, vertexController, graph);
         this.schema = schemaProvider.getVertexSchema(this.label());
 
         this.elasticMutations = elasticMutations;
-        if (lazyGetter != null) {
-            this.lazyGetter = lazyGetter;
-            lazyGetter.register(this, label, this.schema.get().getIndices().iterator().next());
+        if (elasticLazyGetter != null) {
+            this.elasticLazyGetter = elasticLazyGetter;
+            elasticLazyGetter.register(this, label, this.schema.get().getIndices().iterator().next());
         }
     }
     //endregion
@@ -69,8 +69,8 @@ public class SchemaVertex<TController extends SchemaVertexController> extends Ba
     @Override
     public <V> VertexProperty<V> property(final String key) {
         VertexProperty<V> property = super.property(key);
-        if (property == VertexProperty.empty() && lazyGetter != null) {
-            lazyGetter.execute();
+        if (property == VertexProperty.empty() && elasticLazyGetter != null) {
+            elasticLazyGetter.execute();
             property = super.property(key);
         }
         return property;
@@ -86,8 +86,8 @@ public class SchemaVertex<TController extends SchemaVertexController> extends Ba
             }
         }
 
-        if (propertyKeys.length == 0 && lazyGetter != null) {
-            lazyGetter.execute();
+        if (propertyKeys.length == 0 && elasticLazyGetter != null) {
+            elasticLazyGetter.execute();
             return super.properties(propertyKeys);
         }
 
@@ -98,6 +98,6 @@ public class SchemaVertex<TController extends SchemaVertexController> extends Ba
     //region Fields
     protected Optional<GraphVertexSchema> schema;
     protected ElasticMutations elasticMutations;
-    protected LazyGetter lazyGetter;
+    protected ElasticLazyGetter elasticLazyGetter;
     //endregion
 }

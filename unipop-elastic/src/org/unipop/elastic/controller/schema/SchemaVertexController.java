@@ -1,5 +1,6 @@
 package org.unipop.elastic.controller.schema;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.unipop.controller.Predicates;
@@ -37,6 +38,18 @@ public class SchemaVertexController extends SchemaElementController implements V
     ) {
         super(graph, schemaProvider, client, elasticMutations, elasticGraphConfiguration, elementConverter);
         this.lazyGetterFactory = new LazyGetterFactory(client, schemaProvider);
+    }
+
+    public SchemaVertexController(){}
+
+    @Override
+    public void init(Map<String, Object> conf, UniGraph graph) throws Exception {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void close() {
+        throw new NotImplementedException();
     }
 
     //endregion
@@ -99,6 +112,7 @@ public class SchemaVertexController extends SchemaElementController implements V
         }
         return v;
     }
+
     //endregion
 
     //region help methods

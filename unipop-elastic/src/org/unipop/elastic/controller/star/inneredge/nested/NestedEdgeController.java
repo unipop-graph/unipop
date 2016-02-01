@@ -16,16 +16,17 @@ import org.unipop.elastic.controller.star.inneredge.InnerEdge;
 import org.unipop.elastic.controller.star.inneredge.InnerEdgeController;
 import org.unipop.elastic.helpers.ElasticHelper;
 import org.unipop.structure.BaseVertex;
+import org.unipop.structure.UniGraph;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class NestedEdgeController implements InnerEdgeController {
     private String vertexLabel;
-    private final String edgeLabel;
-    private final String externalVertexLabel;
-    private final Direction direction;
-    private final String externalVertexIdField;
+    private String edgeLabel;
+    private String externalVertexLabel;
+    private Direction direction;
+    private String externalVertexIdField;
     private String edgeIdField;
 
     public NestedEdgeController(String vertexLabel, String edgeLabel, Direction direction, String externalVertexIdField, String externalVertexLabel, String edgeIdField) {
@@ -35,6 +36,18 @@ public class NestedEdgeController implements InnerEdgeController {
         this.direction = direction;
         this.externalVertexIdField = externalVertexIdField;
         this.edgeIdField = edgeIdField;
+    }
+
+    public NestedEdgeController(){}
+
+    @Override
+    public void init(Map<String, Object> conf) throws Exception {
+        this.vertexLabel = conf.get("vertexLabel").toString();
+        this.edgeLabel = conf.get("edgeLabel").toString();
+        this.externalVertexLabel = conf.get("externalVertexLabel").toString();
+        this.direction = conf.get("direction").toString().toLowerCase().equals("out") ? Direction.OUT : Direction.IN;
+        this.externalVertexIdField = conf.get("externalVertexIdField").toString();
+        this.edgeIdField = conf.get("edgeIdField").toString();
     }
 
     @Override

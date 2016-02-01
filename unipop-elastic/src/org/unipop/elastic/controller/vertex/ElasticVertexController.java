@@ -30,10 +30,10 @@ public class ElasticVertexController implements VertexController {
     protected UniGraph graph;
     protected Client client;
     protected ElasticMutations elasticMutations;
-    protected final int scrollSize;
+    protected int scrollSize;
     protected TimingAccessor timing;
     private String defaultIndex;
-    private Map<Direction, LazyGetter> lazyGetters;
+    private Map<Direction, ElasticLazyGetter> lazyGetters;
 
     public ElasticVertexController(UniGraph graph, Client client, ElasticMutations elasticMutations, String defaultIndex,
                                    int scrollSize, TimingAccessor timing) {
@@ -44,6 +44,25 @@ public class ElasticVertexController implements VertexController {
         this.scrollSize = scrollSize;
         this.timing = timing;
         this.lazyGetters = new HashMap<>();
+    }
+
+    public ElasticVertexController(){}
+
+    @Override
+    public void init(Map<String, Object> conf, UniGraph graph) throws Exception {
+        this.lazyGetters = new HashMap<>();
+        this.graph = graph;
+        this.client = ((Client) conf.get("client"));
+        this.elasticMutations = ((ElasticMutations) conf.get("elasticMutations"));
+        this.timing = ((TimingAccessor) conf.get("timing"));
+        this.defaultIndex = conf.get("defaultIndex").toString();
+        this.scrollSize = Integer.parseInt(conf.getOrDefault("scrollSize", "0").toString());
+
+    }
+
+    @Override
+    public void close() {
+        client.close();
     }
 
     @Override
@@ -110,18 +129,18 @@ public class ElasticVertexController implements VertexController {
         return result;
     }
 
-    private LazyGetter getLazyGetter(Direction direction) {
-        LazyGetter lazyGetter = lazyGetters.get(direction);
-        if (lazyGetter == null || !lazyGetter.canRegister()) {
-            lazyGetter = new LazyGetter(client, timing);
+    private ElasticLazyGetter getLazyGetter(Direction direction) {
+        ElasticLazyGetter elasticLazyGetter = lazyGetters.get(direction);
+        if (elasticLazyGetter == null || !elasticLazyGetter.canRegister()) {
+            elasticLazyGetter = new ElasticLazyGetter(client, timing);
             lazyGetters.put(direction,
-                    lazyGetter);
+                    elasticLazyGetter);
         }
-        return lazyGetter;
+        return elasticLazyGetter;
     }
 
-    protected ElasticVertex createLazyVertex(Object id, String label, LazyGetter lazyGetter) {
-        return new ElasticVertex(id, label, null, this, graph, lazyGetter, elasticMutations, getDefaultIndex());
+    protected ElasticVertex createLazyVertex(Object id, String label, ElasticLazyGetter elasticLazyGetter) {
+        return new ElasticVertex(id, label, null, this, graph, elasticLazyGetter, elasticMutations, getDefaultIndex());
     }
 
     protected ElasticVertex createVertex(Object id, String label, Map<String, Object> keyValues) {

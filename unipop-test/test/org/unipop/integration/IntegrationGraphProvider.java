@@ -53,9 +53,22 @@ public class IntegrationGraphProvider extends AbstractGraphProvider {
         Node node = ElasticClientFactory.createNode(CLUSTER_NAME, false, 0);
         client = node.client();
 
-        Class.forName("org.h2.Driver");
-        this.jdbcConnection = DriverManager.getConnection("jdbc:h2:~/test", "sa", "");
-        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS PERSON(id int NOT NULL PRIMARY KEY, name varchar(100), age int, known_by int, known_weight float);");
+        Class.forName("org.sqlite.JDBC");
+        this.jdbcConnection = DriverManager.getConnection("jdbc:sqlite:test.sqlite");
+        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS PERSON(id int NOT NULL PRIMARY KEY, name varchar(100), age int);");
+        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS animal(id int NOT NULL PRIMARY KEY, name varchar(100), age int);");
+        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS SOFTWARE(id int NOT NULL PRIMARY KEY, name varchar(100), lang VARCHAR(100));");
+        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS ARTIST(id int NOT NULL PRIMARY KEY, name varchar(100));");
+        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS SONG(id int NOT NULL PRIMARY KEY, name varchar(100), songType VARCHAR(100), performances int);");
+        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS KNOWS(id VARCHAR(100) NOT NULL PRIMARY KEY, weight DOUBLE , inid int, inlabel VARCHAR(100), outid int, outlabel VARCHAR(100));");
+        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS CREATED(id VARCHAR(100) NOT NULL PRIMARY KEY, weight DOUBLE, inid int, inlabel VARCHAR(100), outid int, outlabel VARCHAR(100));");
+        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS FOLLOWEDBY(id VARCHAR(100) NOT NULL PRIMARY KEY, weight DOUBLE, inid int, inlabel VARCHAR(100), outid int, outlabel VARCHAR(100));");
+        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS SUNGBY(id VARCHAR(100) NOT NULL PRIMARY KEY, weight DOUBLE, inid int, inlabel VARCHAR(100), outid int, outlabel VARCHAR(100));");
+        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS WRITTERBY(id VARCHAR(100) NOT NULL PRIMARY KEY, weight DOUBLE, inid int, inlabel VARCHAR(100), outid int, outlabel VARCHAR(100));");
+        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS createdBy(id VARCHAR(100) NOT NULL PRIMARY KEY, acl VARCHAR(100) ,weight DOUBLE, inid int, inlabel VARCHAR(100), outid int, outlabel VARCHAR(100));");
+        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS codeveloper(id VARCHAR(100) NOT NULL PRIMARY KEY, year int, weight DOUBLE, inid int, inlabel VARCHAR(100), outid int, outlabel VARCHAR(100));");
+        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS existsWith(id VARCHAR(100) NOT NULL PRIMARY KEY, time VARCHAR(100), weight DOUBLE, inid int, inlabel VARCHAR(100), outid int, outlabel VARCHAR(100));");
+
     }
 
     @Override
@@ -77,9 +90,19 @@ public class IntegrationGraphProvider extends AbstractGraphProvider {
             String indexName = configuration.getString("graphName");
             ElasticHelper.clearIndex(client, indexName);
             g.close();
+//            File file = new File("test.sqlite");
+//            FileUtils.deleteQuietly(file);
+            jdbcConnection.createStatement().execute("DELETE FROM PERSON;");
+            jdbcConnection.createStatement().execute("DELETE FROM SOFTWARE;");
+            jdbcConnection.createStatement().execute("DELETE FROM KNOWS;");
+            jdbcConnection.createStatement().execute("DELETE FROM CREATED;");
+            jdbcConnection.createStatement().execute("DELETE FROM ARTIST;");
+            jdbcConnection.createStatement().execute("DELETE FROM SONG;");
+            jdbcConnection.createStatement().execute("DELETE FROM WRITTERBY;");
+            jdbcConnection.createStatement().execute("DELETE FROM SUNGBY;");
+            jdbcConnection.createStatement().execute("DELETE FROM FOLLOWEDBY;");
+            jdbcConnection.createStatement().execute("VACUUM");
         }
-
-        jdbcConnection.createStatement().execute("TRUNCATE TABLE PERSON;");
     }
 
     @Override

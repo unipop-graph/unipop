@@ -81,11 +81,11 @@ public abstract class BaseVertex<C extends VertexController> extends BaseElement
 
     @Override
     public void remove() {
-        super.remove();
         Iterator<Edge> edges = edges(Direction.BOTH);
         edges.forEachRemaining(edge-> {
             edge.remove();
         });
+        super.remove();
     }
 
     @Override

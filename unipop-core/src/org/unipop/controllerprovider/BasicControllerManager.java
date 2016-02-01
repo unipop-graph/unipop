@@ -1,5 +1,6 @@
 package org.unipop.controllerprovider;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -8,6 +9,7 @@ import org.unipop.controller.Predicates;
 import org.unipop.controller.VertexController;
 import org.unipop.structure.BaseEdge;
 import org.unipop.structure.BaseVertex;
+import org.unipop.structure.UniGraph;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -75,5 +77,10 @@ public abstract class BasicControllerManager implements ControllerManager {
     @Override
     public BaseVertex addVertex(Object id, String label, Map<String, Object> properties) {
         return getDefaultVertexController().addVertex(id, label, properties);
+    }
+
+    @Override
+    public void init(Map<String, Object> conf, UniGraph graph) throws Exception {
+        throw new NotImplementedException();
     }
 }

@@ -25,6 +25,8 @@ public class VirtualVertexController implements VertexController {
         this.label = label;
     }
 
+    public VirtualVertexController(){}
+
     @Override
     public Iterator<BaseVertex> vertices(Predicates predicatess) {
         Optional<HasContainer> optionalId = predicatess.hasContainers.stream().filter(has -> has.getKey().equals(T.id.getAccessor())).findAny();
@@ -58,5 +60,16 @@ public class VirtualVertexController implements VertexController {
     @Override
     public BaseVertex addVertex(Object id, String label, Map<String, Object> properties) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void init(Map<String, Object> conf, UniGraph graph) throws Exception {
+        this.graph = graph;
+        this.label = conf.get("label").toString();
+    }
+
+    @Override
+    public void close() {
+
     }
 }

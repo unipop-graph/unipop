@@ -10,6 +10,11 @@
     <name>Unipop :: Integration tests</name>
     <dependencies>
         <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+        </dependency>
+        <dependency>
             <groupId>unipop</groupId>
             <artifactId>unipop-elastic</artifactId>
             <version>${project.version}</version>
@@ -17,6 +22,11 @@
         <dependency>
             <groupId>unipop</groupId>
             <artifactId>unipop-jdbc</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>unipop</groupId>
+            <artifactId>unipop-managers</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>

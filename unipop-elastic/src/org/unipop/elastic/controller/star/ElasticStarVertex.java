@@ -5,8 +5,8 @@ import org.unipop.controller.Predicates;
 import org.unipop.elastic.controller.star.inneredge.InnerEdge;
 import org.unipop.elastic.controller.star.inneredge.InnerEdgeController;
 import org.unipop.elastic.controller.vertex.ElasticVertex;
+import org.unipop.elastic.helpers.ElasticLazyGetter;
 import org.unipop.elastic.helpers.ElasticMutations;
-import org.unipop.elastic.helpers.LazyGetter;
 import org.unipop.structure.BaseEdge;
 import org.unipop.structure.UniGraph;
 
@@ -23,12 +23,12 @@ public class ElasticStarVertex extends ElasticVertex<ElasticStarController> {
                              final String label,
                              Map<String, Object> keyValues,
                              UniGraph graph,
-                             LazyGetter lazyGetter,
+                             ElasticLazyGetter elasticLazyGetter,
                              ElasticStarController controller,
                              ElasticMutations elasticMutations,
                              String indexName,
                              Set<InnerEdgeController> innerEdgeControllers) {
-        super(id, label, keyValues, controller, graph, lazyGetter, elasticMutations, indexName);
+        super(id, label, keyValues, controller, graph, elasticLazyGetter, elasticMutations, indexName);
         this.indexName = indexName;
         this.innerEdgeControllers = innerEdgeControllers;
         innerEdges = new HashSet<>();
