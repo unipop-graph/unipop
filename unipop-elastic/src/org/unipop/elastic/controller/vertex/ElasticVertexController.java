@@ -55,7 +55,7 @@ public class ElasticVertexController implements VertexController {
         this.client = ((Client) conf.get("client"));
         this.elasticMutations = ((ElasticMutations) conf.get("elasticMutations"));
         this.timing = ((TimingAccessor) conf.get("timing"));
-        this.defaultIndex = conf.get("defaultIndex").toString();
+        this.defaultIndex = conf.getOrDefault("defaultIndex", "unipop_es1").toString();
         this.scrollSize = Integer.parseInt(conf.getOrDefault("scrollSize", "0").toString());
 
     }

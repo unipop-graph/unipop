@@ -45,9 +45,9 @@ public class NestedEdgeController implements InnerEdgeController {
         this.vertexLabel = conf.get("vertexLabel").toString();
         this.edgeLabel = conf.get("edgeLabel").toString();
         this.externalVertexLabel = conf.get("externalVertexLabel").toString();
-        this.direction = conf.get("direction").toString().toLowerCase().equals("out") ? Direction.OUT : Direction.IN;
-        this.externalVertexIdField = conf.get("externalVertexIdField").toString();
-        this.edgeIdField = conf.get("edgeIdField").toString();
+        this.direction = conf.getOrDefault("direction", "out").toString().toLowerCase().equals("out") ? Direction.OUT : Direction.IN;
+        this.externalVertexIdField = conf.getOrDefault("externalVertexIdField", "externalId").toString();
+        this.edgeIdField = conf.getOrDefault("edgeIdField", "edgeId").toString();
     }
 
     @Override

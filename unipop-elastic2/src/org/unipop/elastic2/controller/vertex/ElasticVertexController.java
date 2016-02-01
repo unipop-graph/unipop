@@ -28,7 +28,7 @@ public class ElasticVertexController implements VertexController {
     protected UniGraph graph;
     protected Client client;
     protected ElasticMutations elasticMutations;
-    protected final int scrollSize;
+    protected int scrollSize;
     protected TimingAccessor timing;
     private String defaultIndex;
     private Map<Direction, LazyGetter> lazyGetters;
@@ -44,6 +44,19 @@ public class ElasticVertexController implements VertexController {
         this.lazyGetters = new HashMap<>();
     }
 
+
+    @Override
+    public void init(Map<String, Object> conf, UniGraph graph) throws Exception {
+        this.lazyGetters = new HashMap<>();
+        this.graph = graph;
+        this.client = ((Client) conf.get("client"));
+        this.elasticMutations = ((ElasticMutations) conf.get("elasticMutations"));
+        this.timing = ((TimingAccessor) conf.get("timing"));
+        this.defaultIndex = conf.getOrDefault("defaultIndex", "unipop_es2").toString();
+        this.scrollSize = Integer.parseInt(conf.getOrDefault("scrollSize", "0").toString());
+    }
+
+
     @Override
     public BaseVertex addVertex(Object id, String label, Map<String, Object> properties) {
         BaseVertex v = createVertex(id, label, properties);
@@ -53,6 +66,11 @@ public class ElasticVertexController implements VertexController {
             throw Graph.Exceptions.vertexWithIdAlreadyExists(id);
         }
         return v;
+    }
+
+    @Override
+    public void close() {
+        client.close();
     }
 
     @Override

@@ -28,10 +28,10 @@ import java.util.Map;
 
 public class ElasticEdgeController implements org.unipop.controller.EdgeController {
     private UniGraph graph;
-    private final Client client;
-    private final ElasticMutations elasticMutations;
-    private final String indexName;
-    private final int scrollSize;
+    private Client client;
+    private ElasticMutations elasticMutations;
+    private String indexName;
+    private int scrollSize;
     private TimingAccessor timing;
 
     public ElasticEdgeController(UniGraph graph, Client client, ElasticMutations elasticMutations, String indexName,
@@ -42,6 +42,21 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
         this.indexName = indexName;
         this.scrollSize = scrollSize;
         this.timing = timing;
+    }
+
+    @Override
+    public void init(Map<String, Object> conf, UniGraph graph) throws Exception {
+        this.graph = graph;
+        this.client = ((Client) conf.get("client"));
+        this.elasticMutations = ((ElasticMutations) conf.get("elasticMutations"));
+        this.indexName = conf.getOrDefault("defaultIndex", "unipop").toString();
+        this.scrollSize = Integer.parseInt(conf.getOrDefault("scrollSize", "0").toString());
+        this.timing = ((TimingAccessor) conf.get("timing"));
+    }
+
+    @Override
+    public void close() {
+        client.close();
     }
 
     @Override

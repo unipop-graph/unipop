@@ -1,6 +1,7 @@
 package org.unipop.elastic2.controller.schema;
 
 import com.google.common.collect.FluentIterable;
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -91,7 +92,7 @@ public class SchemaVertexController extends SchemaElementController implements V
 
         Optional<GraphVertexSchema> vertexSchema = this.schemaProvider.getVertexSchema(label);
         if (!vertexSchema.isPresent()) {
-            // add to default??
+            // add to default??throw new NotImplementedException();
             return null;
         }
 
@@ -102,6 +103,16 @@ public class SchemaVertexController extends SchemaElementController implements V
             throw Graph.Exceptions.vertexWithIdAlreadyExists(id);
         }
         return v;
+    }
+
+    @Override
+    public void init(Map<String, Object> conf, UniGraph graph) throws Exception {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void close() {
+        throw new NotImplementedException();
     }
     //endregion
 

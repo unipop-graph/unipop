@@ -34,6 +34,17 @@ public class ElasticStarController extends ElasticVertexController implements Ed
         Collections.addAll(this.innerEdgeControllers, innerEdgeControllers);
     }
 
+    @SuppressWarnings("unchecked")
+    @Override
+    public void init(Map<String, Object> conf, UniGraph graph) throws Exception {
+        super.init(conf, graph);
+        for (Map<String, Object> edge : ((List<Map<String, Object>>) conf.get("edges"))) {
+            InnerEdgeController innerEdge = ((InnerEdgeController) Class.forName(edge.get("class").toString()).newInstance());
+            innerEdge.init(edge);
+            innerEdgeControllers.add(innerEdge);
+        }
+    }
+
     @Override
     protected ElasticVertex createVertex(Object id, String label, Map<String, Object> keyValues) {
         return createStarVertex(id, label, keyValues);

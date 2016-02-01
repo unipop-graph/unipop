@@ -1,6 +1,7 @@
 package org.unipop.elastic2.controller.schema;
 
 import com.google.common.collect.FluentIterable;
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.elasticsearch.action.search.SearchResponse;
@@ -150,6 +151,16 @@ public class SchemaEdgeController extends SchemaElementController implements Edg
             throw Graph.Exceptions.edgeWithIdAlreadyExists(elasticEdge.id());
         }
         return elasticEdge;
+    }
+
+    @Override
+    public void init(Map<String, Object> conf, UniGraph graph) throws Exception {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void close() {
+        throw new NotImplementedException();
     }
     //endregion
 

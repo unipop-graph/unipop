@@ -20,10 +20,10 @@ import java.util.stream.Collectors;
 
 public class NestedEdgeController implements InnerEdgeController {
     private String vertexLabel;
-    private final String edgeLabel;
-    private final String externalVertexLabel;
-    private final Direction direction;
-    private final String externalVertexIdField;
+    private String edgeLabel;
+    private String externalVertexLabel;
+    private Direction direction;
+    private String externalVertexIdField;
     private String edgeIdField;
 
     public NestedEdgeController(String vertexLabel, String edgeLabel, Direction direction, String externalVertexIdField, String externalVertexLabel, String edgeIdField) {
@@ -33,6 +33,16 @@ public class NestedEdgeController implements InnerEdgeController {
         this.direction = direction;
         this.externalVertexIdField = externalVertexIdField;
         this.edgeIdField = edgeIdField;
+    }
+
+    @Override
+    public void init(Map<String, Object> conf) throws Exception {
+        this.vertexLabel = conf.get("vertexLabel").toString();
+        this.edgeLabel = conf.get("edgeLabel").toString();
+        this.externalVertexLabel = conf.get("externalVertexLabel").toString();
+        this.direction = conf.getOrDefault("direction", "out").toString().toLowerCase().equals("out") ? Direction.OUT : Direction.IN;
+        this.externalVertexIdField = conf.getOrDefault("externalVertexIdField", "externalId").toString();
+        this.edgeIdField = conf.getOrDefault("edgeIdField", "edgeId").toString();
     }
 
     @Override
@@ -77,13 +87,12 @@ public class NestedEdgeController implements InnerEdgeController {
     public QueryBuilder getQuery(ArrayList<HasContainer> hasContainers) {
         ArrayList<HasContainer> transformed = new ArrayList<>();
 
-        for(HasContainer has : hasContainers) {
-            if(has.getKey().equals(T.label.getAccessor())){
+        for (HasContainer has : hasContainers) {
+            if (has.getKey().equals(T.label.getAccessor())) {
                 Object value = has.getValue();
                 if (!value.equals(edgeLabel) && (value instanceof List && !((List<String>) value).contains(edgeLabel)))
                     return null;
-            }
-            else if(has.getKey().equals(T.id.getAccessor()))
+            } else if (has.getKey().equals(T.id.getAccessor()))
                 transformed.add(new HasContainer(edgeLabel + "." + edgeIdField, has.getPredicate()));
             else transformed.add(new HasContainer(edgeLabel + "." + has.getKey(), has.getPredicate()));
         }

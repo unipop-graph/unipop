@@ -24,4 +24,6 @@ public interface InnerEdgeController {
     QueryBuilder getQuery(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates);
 
     Map<String, Object> allFields(List<InnerEdge> edges);
+
+    void init(Map<String, Object> conf) throws Exception;
 }

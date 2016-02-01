@@ -17,8 +17,6 @@
             <artifactId>spark-gremlin</artifactId>
             <version>${tinkerpop.version}</version>
         </dependency>
-
-
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>
             <artifactId>gremlin-core</artifactId>

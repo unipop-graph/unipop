@@ -14,7 +14,6 @@
 
     <properties>
         <elasticsearch.version>2.1.1</elasticsearch.version>
-        <tinkerpop.version>3.0.1-incubating</tinkerpop.version>
     </properties>
     <dependencies>
         <dependency>
@@ -68,17 +67,6 @@
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>18.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.tinkerpop</groupId>
-            <artifactId>gremlin-core</artifactId>
-            <version>${tinkerpop.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-core</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
     </dependencies>
     <build>
