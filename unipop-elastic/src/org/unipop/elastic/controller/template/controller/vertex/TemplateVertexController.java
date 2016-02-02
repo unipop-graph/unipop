@@ -17,9 +17,7 @@ import org.unipop.elastic.helpers.TimingAccessor;
 import org.unipop.structure.BaseVertex;
 import org.unipop.structure.UniGraph;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by sbarzilay on 02/02/16.
@@ -31,10 +29,10 @@ public class TemplateVertexController implements VertexController{
     protected ElasticMutations elasticMutations;
     protected int scrollSize;
     protected TimingAccessor timing;
-    private String defaultIndex;
-    private String templateName;
-    private ScriptService.ScriptType type;
-    private Map<String, String> defaultParams;
+    protected String defaultIndex;
+    protected String templateName;
+    protected ScriptService.ScriptType type;
+    protected Map<String, String> defaultParams;
 
     public TemplateVertexController(UniGraph graph, Client client, ElasticMutations elasticMutations, int scrollSize,
                                     TimingAccessor timing, String defaultIndex, String templateName, ScriptService.ScriptType type, String... defaultParams) {
@@ -47,9 +45,28 @@ public class TemplateVertexController implements VertexController{
         this.templateName = templateName;
         this.defaultParams = new HashMap<>();
         this.type = type;
-        if (defaultParams.length% 2 == 0)
+        if (defaultParams.length % 2 == 0)
             for (int i = 0; i < defaultParams.length; i+=2) {
                 this.defaultParams.put(defaultParams[i], defaultParams[i+1]);
+            }
+    }
+
+    @Override
+    public void init(Map<String, Object> conf, UniGraph graph) throws Exception {
+        this.graph = graph;
+        this.client = ((Client) conf.get("client"));
+        this.elasticMutations = ((ElasticMutations) conf.get("elasticMutations"));
+        this.scrollSize = Integer.parseInt(conf.getOrDefault("scrollSize", "0").toString());
+        this.timing = ((TimingAccessor) conf.get("timing"));
+        this.defaultIndex = conf.get("defaultIndex").toString();
+        this.templateName = conf.get("templateName").toString();
+        this.type = conf.getOrDefault("scriptType", "file").toString().toLowerCase().equals("file") ?
+            ScriptService.ScriptType.FILE : ScriptService.ScriptType.INDEXED;
+        List<String> paramsList = ((List<String>) conf.getOrDefault("defaultParams", new ArrayList<>()));
+        this.defaultParams = new HashMap<>();
+        if (paramsList.size() % 2 == 0)
+            for (int i = 0; i < paramsList.size(); i+=2) {
+                this.defaultParams.put(defaultParams.get(i), paramsList.get(i+1));
             }
     }
 
@@ -93,11 +110,6 @@ public class TemplateVertexController implements VertexController{
 
     @Override
     public BaseVertex addVertex(Object id, String label, Map<String, Object> properties) {
-        throw new NotImplementedException();
-    }
-
-    @Override
-    public void init(Map<String, Object> conf, UniGraph graph) throws Exception {
         throw new NotImplementedException();
     }
 

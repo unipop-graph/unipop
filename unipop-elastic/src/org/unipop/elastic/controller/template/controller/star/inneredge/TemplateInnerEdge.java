@@ -12,7 +12,7 @@ import java.util.Map;
 /**
  * Created by sbarzilay on 02/02/16.
  */
-public class TemplateInnerEdge extends BaseEdge {
+public abstract class TemplateInnerEdge<T extends TemplateInnerEdgeController> extends BaseEdge {
     public TemplateInnerEdge(Object id, String label, Map<String, Object> keyValues, Vertex outV, Vertex inV, EdgeController controller, UniGraph graph) {
         super(id, label, keyValues, outV, inV, controller, graph);
     }
