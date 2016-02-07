@@ -53,31 +53,14 @@ public class ElasticLazyGetter implements LazzyGetter{
 
         timing.start("lazyMultiGet");
 
+        MultiGetRequestBuilder multiGetRequestBuilder = client.prepareMultiGet();
+        keyToVertices.keySet().forEach(key-> multiGetRequestBuilder.add(key.indexName, key.type, key.id));
 
-        Set<String> types = new HashSet<>();
-        Set<String> indices = new HashSet<>();
-        Set<Object> ids = new HashSet<>();
-
-        keyToVertices.keySet().forEach(getKey -> {
-            types.add(getKey.type);
-            ids.add(getKey.id);
-            indices.add(getKey.indexName);
-        });
-
-        Predicates p = new Predicates();
-        p.hasContainers.add(new HasContainer(T.id.getAccessor(), P.within(ids)));
-
-        SearchRequestBuilder searchRequestBuilder = client.prepareSearch(indices.toArray(new String[indices.size()]))
-                .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), ElasticHelper.createFilterBuilder(p.hasContainers))).setSize(ids.size());
-
-        SearchResponse response = searchRequestBuilder.execute().actionGet();
-        response.getHits().forEach(hit -> {
-            keyToVertices.get(new GetKey(hit.id(), hit.type(), hit.getIndex())).forEach(baseVertex ->
-            {
-                Map<String,Object> source = hit.getSource();
-
-                baseVertex.applyLazyFields(hit.type(), source);
-            });
+        MultiGetResponse response = multiGetRequestBuilder.execute().actionGet();
+        response.forEach(hit -> {
+            List<BaseVertex> baseVertices = keyToVertices.get(new GetKey(hit.getId(), hit.getType(), hit.getIndex()));
+            Map<String, Object> hitSource = hit.getResponse().getSource();
+            baseVertices.forEach(baseVertex -> baseVertex.applyLazyFields(hit.getType(), hitSource));
         });
         timing.stop("lazyMultiGet");
 
