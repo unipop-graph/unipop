@@ -11,6 +11,7 @@ import org.elasticsearch.node.Node;
 import org.unipop.controllerprovider.ControllerManagerFactory;
 import org.unipop.elastic.controllermanagers.BasicElasticControllerManager;
 import org.unipop.elastic.controllermanagers.ElasticStarControllerManager;
+import org.unipop.elastic.controllermanagers.TemplateControllerManager;
 import org.unipop.elastic.helpers.ElasticClientFactory;
 import org.unipop.elastic.helpers.ElasticHelper;
 import org.unipop.process.strategy.DefaultStrategyRegistrar;
@@ -61,7 +62,8 @@ public class ElasticGraphProvider extends AbstractGraphProvider {
             put("elasticsearch.cluster.name", CLUSTER_NAME);
             put("elasticsearch.cluster.address", "127.0.0.1:" + client.settings().get("transport.tcp.port"));
 
-            put("controllerManagerFactory", (ControllerManagerFactory)() -> new BasicElasticControllerManager());
+//            put("controllerManagerFactory", (ControllerManagerFactory)() -> new BasicElasticControllerManager());
+            put("controllerManagerFactory", (ControllerManagerFactory)() -> new TemplateControllerManager());
 //            put("controllerManagerFactory", (ControllerManagerFactory)() -> new ElasticStarControllerManager());
             //put("controllerManagerFactory", (ControllerManagerFactory)() -> new ModernGraphControllerManager());
 
