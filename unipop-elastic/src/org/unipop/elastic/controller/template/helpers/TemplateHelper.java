@@ -57,12 +57,17 @@ public class TemplateHelper {
             if (value instanceof Iterable)
                 params.put("ids", Iterables.toArray(((Iterable) value), Object.class));
             else
-                params.put("ids",  value);
+                params.put("ids", value);
         } else if (key.equals(T.label.getAccessor())) {
-            if (value instanceof Iterable)
-                params.put("types", Iterables.toArray(((Iterable) value), Object.class));
-            else
-                params.put("types", value);
+            if (value instanceof Iterable) {
+                Iterable<Object> types = ((Iterable) value);
+                ArrayList<Map<String, Object>> typesList = new ArrayList<>();
+                types.forEach(type -> typesList.add(new HashMap<String, Object>() {{
+                    put("type", type);
+                }}));
+                params.put("types", typesList.toArray());
+            } else
+                params.put("types", new HashMap<String, Object>(){{put("type", value);}});
         } else if (biPredicate != null) {
             if (biPredicate instanceof Compare) {
                 String predicateString = biPredicate.toString();
