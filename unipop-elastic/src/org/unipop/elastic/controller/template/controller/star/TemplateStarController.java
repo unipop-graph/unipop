@@ -27,7 +27,7 @@ public class TemplateStarController extends TemplateVertexController implements 
     private Set<TemplateInnerEdgeController> edgeControllers;
 
     public TemplateStarController(UniGraph graph, Client client, ElasticMutations elasticMutations, int scrollSize, TimingAccessor timing, String defaultIndex, String templateName, ScriptService.ScriptType type, Set<TemplateInnerEdgeController> edgeControllers, String... defaultParams) {
-        super(graph, client, elasticMutations, scrollSize, timing, defaultIndex, templateName, type, defaultParams);
+        super(graph, client, elasticMutations, scrollSize, timing, defaultIndex, templateName, type);
         this.edgeControllers = edgeControllers;
     }
 
@@ -71,7 +71,7 @@ public class TemplateStarController extends TemplateVertexController implements 
 
         if (!params.isEmpty()) {
             new TemplateQueryIterator<BaseVertex>(scrollSize, predicates.limitHigh, client, this::createVertex,timing,
-                    templateName,params,type, defaultIndex)
+                    templateName,params,type, new HashSet<String>(),defaultIndex)
                         .forEachRemaining(vertex-> ((TemplateStarVertex) vertex).getInnerEdges(direction.opposite(),
                                 Arrays.asList(edgeLabels),predicates).forEach(results::add));
         }

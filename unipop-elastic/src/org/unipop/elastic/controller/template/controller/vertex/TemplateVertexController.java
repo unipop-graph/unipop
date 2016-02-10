@@ -32,10 +32,10 @@ public class TemplateVertexController implements VertexController{
     protected String defaultIndex;
     protected String templateName;
     protected ScriptService.ScriptType type;
-    protected Map<String, String> defaultParams;
+    protected Set<String> vertexPath;
 
     public TemplateVertexController(UniGraph graph, Client client, ElasticMutations elasticMutations, int scrollSize,
-                                    TimingAccessor timing, String defaultIndex, String templateName, ScriptService.ScriptType type, String... defaultParams) {
+                                    TimingAccessor timing, String defaultIndex, String templateName, ScriptService.ScriptType type) {
         this.graph = graph;
         this.client = client;
         this.elasticMutations = elasticMutations;
@@ -43,12 +43,10 @@ public class TemplateVertexController implements VertexController{
         this.timing = timing;
         this.defaultIndex = defaultIndex;
         this.templateName = templateName;
-        this.defaultParams = new HashMap<>();
         this.type = type;
-        if (defaultParams.length % 2 == 0)
-            for (int i = 0; i < defaultParams.length; i+=2) {
-                this.defaultParams.put(defaultParams[i], defaultParams[i+1]);
-            }
+        this.vertexPath = new HashSet<>();
+        vertexPath.add("hits.hits");
+        vertexPath.add("aggregations.langs.buckets");
     }
 
     @Override
@@ -62,12 +60,6 @@ public class TemplateVertexController implements VertexController{
         this.templateName = conf.get("templateName").toString();
         this.type = conf.getOrDefault("scriptType", "file").toString().toLowerCase().equals("file") ?
             ScriptService.ScriptType.FILE : ScriptService.ScriptType.INDEXED;
-        List<String> paramsList = ((List<String>) conf.getOrDefault("defaultParams", new ArrayList<>()));
-        this.defaultParams = new HashMap<>();
-        if (paramsList.size() % 2 == 0)
-            for (int i = 0; i < paramsList.size(); i+=2) {
-                this.defaultParams.put(defaultParams.get(i), paramsList.get(i+1));
-            }
     }
 
     @SuppressWarnings("unchecked")
@@ -86,6 +78,7 @@ public class TemplateVertexController implements VertexController{
                 templateName,
                 TemplateHelper.createTemplateParams(predicates.hasContainers),
                 type,
+                vertexPath,
                 defaultIndex);
     }
 

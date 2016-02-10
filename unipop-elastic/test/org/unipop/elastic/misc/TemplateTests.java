@@ -31,6 +31,6 @@ public class TemplateTests {
 
     @Test
     public void test() {
-        g.V().hasLabel("person","software").forEachRemaining(System.out::println);
+        g.V().hasLabel("person","software").valueMap().forEachRemaining(System.out::println);
     }
 }

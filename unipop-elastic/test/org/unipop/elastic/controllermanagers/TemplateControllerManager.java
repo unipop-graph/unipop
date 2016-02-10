@@ -46,7 +46,7 @@ public class TemplateControllerManager extends BasicControllerManager
         timing = new TimingAccessor();
         elasticMutations = new ElasticMutations(false, client, timing);
         edgeController = new TemplateEdgeController(graph, client, elasticMutations, indexName, 0, timing, "test4", ScriptService.ScriptType.FILE);
-        vertexController = new TemplateVertexController(graph,client, elasticMutations, 0, timing, indexName, "test3", ScriptService.ScriptType.FILE, T.id.getAccessor(), "ids", "name", "names");
+        vertexController = new TemplateVertexController(graph,client, elasticMutations, 0, timing, indexName, "test3", ScriptService.ScriptType.FILE);
     }
 
     @Override
