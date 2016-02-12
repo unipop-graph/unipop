@@ -1,4 +1,4 @@
-package org.unipop.elastic.controllermanagers;
+package org.unipop.elastic2.controllermanagers;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
@@ -12,13 +12,12 @@ import org.unipop.controller.Predicates;
 import org.unipop.controller.VertexController;
 import org.unipop.controller.virtualvertex.VirtualVertexController;
 import org.unipop.controllerprovider.ControllerManager;
-import org.unipop.elastic.controller.edge.ElasticEdgeController;
-import org.unipop.elastic.controller.template.controller.vertex.TemplateVertexController;
-import org.unipop.elastic.controller.vertex.ElasticVertexController;
-import org.unipop.elastic.helpers.ElasticClientFactory;
-import org.unipop.elastic.helpers.ElasticHelper;
-import org.unipop.elastic.helpers.ElasticMutations;
-import org.unipop.elastic.helpers.TimingAccessor;
+import org.unipop.elastic2.controller.edge.ElasticEdgeController;
+import org.unipop.elastic2.controller.template.controller.vertex.TemplateVertexController;
+import org.unipop.elastic2.helpers.ElasticClientFactory;
+import org.unipop.elastic2.helpers.ElasticHelper;
+import org.unipop.elastic2.helpers.ElasticMutations;
+import org.unipop.elastic2.helpers.TimingAccessor;
 import org.unipop.structure.BaseEdge;
 import org.unipop.structure.BaseVertex;
 import org.unipop.structure.UniGraph;

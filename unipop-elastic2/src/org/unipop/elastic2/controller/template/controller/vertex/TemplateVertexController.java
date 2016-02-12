@@ -1,4 +1,4 @@
-package org.unipop.elastic.controller.template.controller.vertex;
+package org.unipop.elastic2.controller.template.controller.vertex;
 
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -10,10 +10,10 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.script.ScriptService;
 import org.unipop.controller.Predicates;
 import org.unipop.controller.VertexController;
-import org.unipop.elastic.controller.template.helpers.TemplateHelper;
-import org.unipop.elastic.controller.template.helpers.TemplateQueryIterator;
-import org.unipop.elastic.helpers.ElasticMutations;
-import org.unipop.elastic.helpers.TimingAccessor;
+import org.unipop.elastic2.controller.template.helpers.TemplateHelper;
+import org.unipop.elastic2.controller.template.helpers.TemplateQueryIterator;
+import org.unipop.elastic2.helpers.ElasticMutations;
+import org.unipop.elastic2.helpers.TimingAccessor;
 import org.unipop.structure.BaseVertex;
 import org.unipop.structure.UniGraph;
 

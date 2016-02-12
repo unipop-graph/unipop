@@ -1,4 +1,4 @@
-package org.unipop.elastic.controller.template.helpers;
+package org.unipop.elastic2.controller.template.helpers;
 
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.elasticsearch.action.search.SearchRequestBuilder;
@@ -8,13 +8,17 @@ import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.script.ScriptService;
+import org.elasticsearch.script.Template;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
-import org.unipop.elastic.helpers.TimingAccessor;
+import org.unipop.elastic2.helpers.TimingAccessor;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by sbarzilay on 02/02/16.
@@ -41,9 +45,9 @@ public class TemplateQueryIterator<E extends Element> implements Iterator<E> {
 
         SearchRequestBuilder searchRequestBuilder;
 
-        searchRequestBuilder = client.prepareSearch(indices)
-                .setTemplateName(templateName).setTemplateType(type)
-                .setTemplateParams(templateParams);
+
+        searchRequestBuilder = client.prepareSearch(indices).setTemplate(new Template(templateName, ScriptService.ScriptType.FILE,"mustache" ,null,templateParams));
+
 
         SearchResponse searchResponse = searchRequestBuilder.execute().actionGet();
 

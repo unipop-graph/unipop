@@ -1,15 +1,11 @@
-package org.unipop.elastic.misc;
+package org.unipop.elastic2.misc;
 
 import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.junit.Test;
 import org.unipop.controllerprovider.ControllerManagerFactory;
-import org.unipop.elastic.controllermanagers.AggsControllerManager;
-import org.unipop.elastic.controllermanagers.ImdbControllerManager;
-import org.unipop.elastic.controllermanagers.TemplateControllerManager;
-import org.unipop.elastic.helpers.ElasticClientFactory;
+import org.unipop.elastic2.controllermanagers.ImdbControllerManager;
+import org.unipop.elastic2.helpers.ElasticClientFactory;
 import org.unipop.process.strategy.SimplifiedStrategyRegistrar;
 import org.unipop.structure.UniGraph;
 
@@ -33,6 +29,6 @@ public class TemplateTests {
 
     @Test
     public void test() {
-        g.V().hasLabel("genre").valueMap().forEachRemaining(System.out::println);
+        g.V().hasLabel("movie").valueMap().forEachRemaining(System.out::println);
     }
 }

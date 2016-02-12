@@ -1,4 +1,4 @@
-package org.unipop.elastic.controller.template.controller.edge;
+package org.unipop.elastic2.controller.template.controller.edge;
 
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -13,15 +13,18 @@ import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.elasticsearch.script.ScriptService;
 import org.unipop.controller.EdgeController;
 import org.unipop.controller.Predicates;
-import org.unipop.elastic.controller.template.helpers.TemplateHelper;
-import org.unipop.elastic.controller.template.helpers.TemplateQueryIterator;
-import org.unipop.elastic.helpers.ElasticMutations;
-import org.unipop.elastic.helpers.TimingAccessor;
+import org.unipop.elastic2.controller.template.helpers.TemplateHelper;
+import org.unipop.elastic2.controller.template.helpers.TemplateQueryIterator;
+import org.unipop.elastic2.helpers.ElasticMutations;
+import org.unipop.elastic2.helpers.TimingAccessor;
 import org.unipop.structure.BaseEdge;
 import org.unipop.structure.BaseVertex;
 import org.unipop.structure.UniGraph;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 

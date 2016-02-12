@@ -15,6 +15,8 @@ import org.unipop.elastic.helpers.ElasticMutations;
 import org.unipop.elastic.helpers.TimingAccessor;
 import org.unipop.structure.UniGraph;
 
+import java.util.HashMap;
+
 /**
  * Created by sbarzilay on 02/02/16.
  */
@@ -46,7 +48,7 @@ public class TemplateControllerManager extends BasicControllerManager
         timing = new TimingAccessor();
         elasticMutations = new ElasticMutations(false, client, timing);
         edgeController = new TemplateEdgeController(graph, client, elasticMutations, indexName, 0, timing, "test4", ScriptService.ScriptType.FILE);
-        vertexController = new TemplateVertexController(graph,client, elasticMutations, 0, timing, indexName, "test3", ScriptService.ScriptType.FILE);
+        vertexController = new TemplateVertexController(graph,client, elasticMutations, 0, timing, indexName, "test3", ScriptService.ScriptType.FILE, new HashMap<>());
     }
 
     @Override

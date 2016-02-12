@@ -1,11 +1,10 @@
-package org.unipop.elastic.controller.template.helpers;
+package org.unipop.elastic2.controller.template.helpers;
 
 import com.google.common.collect.Iterables;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.T;
-import org.unipop.controller.ExistsP;
 import org.unipop.controller.Predicates;
 
 import java.util.ArrayList;
@@ -26,7 +25,7 @@ public class TemplateHelper {
         predicates.hasContainers.forEach(has -> addParam(filters, has));
 
         params.put("filters", filters);
-        params.put("limit", Math.min(100000,predicates.limitHigh));
+        params.put("limit", Math.min(10000,predicates.limitHigh));
 
         return params;
     }

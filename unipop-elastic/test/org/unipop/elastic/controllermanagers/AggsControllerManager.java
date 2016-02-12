@@ -22,6 +22,7 @@ import org.unipop.structure.BaseEdge;
 import org.unipop.structure.BaseVertex;
 import org.unipop.structure.UniGraph;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -50,7 +51,7 @@ public class AggsControllerManager extends BasicControllerManager{
         elasticMutations = new ElasticMutations(false, client, timing);
         edgeController = new ElasticEdgeController(graph, client, elasticMutations, indexName, 0, timing);
 //        vertexController = new ElasticVertexController(graph, client, elasticMutations, indexName, 0, timing);
-        vertexController = new TemplateVertexController(graph, client, elasticMutations, 0, timing, indexName, "dyn_template", ScriptService.ScriptType.FILE);
+        vertexController = new TemplateVertexController(graph, client, elasticMutations, 0, timing, indexName, "dyn_template", ScriptService.ScriptType.FILE, new HashMap<>());
     }
 
     @Override

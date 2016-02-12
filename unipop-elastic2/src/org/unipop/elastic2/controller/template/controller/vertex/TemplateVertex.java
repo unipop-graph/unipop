@@ -1,7 +1,7 @@
-package org.unipop.elastic.controller.template.controller.vertex;
+package org.unipop.elastic2.controller.template.controller.vertex;
 
 import org.apache.tinkerpop.gremlin.structure.Property;
-import org.unipop.elastic.helpers.ElasticMutations;
+import org.unipop.elastic2.helpers.ElasticMutations;
 import org.unipop.structure.BaseVertex;
 import org.unipop.structure.BaseVertexProperty;
 import org.unipop.structure.UniGraph;
