@@ -7,6 +7,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSo
 import org.junit.Test;
 import org.unipop.controllerprovider.ControllerManagerFactory;
 import org.unipop.elastic.controllermanagers.AggsControllerManager;
+import org.unipop.elastic.controllermanagers.ImdbControllerManager;
 import org.unipop.elastic.controllermanagers.TemplateControllerManager;
 import org.unipop.elastic.helpers.ElasticClientFactory;
 import org.unipop.structure.UniGraph;
@@ -24,13 +25,13 @@ public class TemplateTests {
         conf.addProperty("elasticsearch.client", ElasticClientFactory.ClientType.TRANSPORT_CLIENT);
         conf.addProperty("elasticsearch.cluster.name", "elasticsearch");
         conf.addProperty("elasticsearch.cluster.address", "127.0.0.1:9300");
-        conf.addProperty("controllerManagerFactory", (ControllerManagerFactory) () -> new AggsControllerManager());
+        conf.addProperty("controllerManagerFactory", (ControllerManagerFactory) () -> new ImdbControllerManager());
         graph = new UniGraph(conf);
         g = graph.traversal();
     }
 
     @Test
     public void test() {
-        g.V().hasLabel("person","software").valueMap().forEachRemaining(System.out::println);
+        g.V().valueMap().forEachRemaining(System.out::println);
     }
 }

@@ -18,11 +18,13 @@ import org.unipop.structure.BaseVertex;
 import org.unipop.structure.UniGraph;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  * Created by sbarzilay on 02/02/16.
  */
-public class TemplateVertexController implements VertexController{
+public class TemplateVertexController implements VertexController {
 
     protected UniGraph graph;
     protected Client client;
@@ -35,7 +37,7 @@ public class TemplateVertexController implements VertexController{
     protected Set<String> vertexPath;
 
     public TemplateVertexController(UniGraph graph, Client client, ElasticMutations elasticMutations, int scrollSize,
-                                    TimingAccessor timing, String defaultIndex, String templateName, ScriptService.ScriptType type) {
+                                    TimingAccessor timing, String defaultIndex, String templateName, ScriptService.ScriptType type, String... paths) {
         this.graph = graph;
         this.client = client;
         this.elasticMutations = elasticMutations;
@@ -45,8 +47,9 @@ public class TemplateVertexController implements VertexController{
         this.templateName = templateName;
         this.type = type;
         this.vertexPath = new HashSet<>();
-        vertexPath.add("hits.hits");
-        vertexPath.add("aggregations.langs.buckets");
+        for (String path : paths) {
+            vertexPath.add(path);
+        }
     }
 
     @Override
@@ -59,27 +62,66 @@ public class TemplateVertexController implements VertexController{
         this.defaultIndex = conf.get("defaultIndex").toString();
         this.templateName = conf.get("templateName").toString();
         this.type = conf.getOrDefault("scriptType", "file").toString().toLowerCase().equals("file") ?
-            ScriptService.ScriptType.FILE : ScriptService.ScriptType.INDEXED;
+                ScriptService.ScriptType.FILE : ScriptService.ScriptType.INDEXED;
     }
 
     @SuppressWarnings("unchecked")
     protected TemplateVertex createVertex(Object id, String label, Map<String, Object> keyValues) {
-        return new TemplateVertex(id, label, keyValues, this, graph, elasticMutations, defaultIndex);
+        Map<String, Object> parsedKeyValues = new HashMap<>();
+        keyValues.forEach((key, value) -> {
+            if (value instanceof Map) {
+                Map<String, Object> map = (Map<String, Object>) value;
+                if (map.containsKey("value"))
+                    parsedKeyValues.put(key, map.get("value"));
+
+            } else
+                parsedKeyValues.put(key, value);
+        });
+        return new TemplateVertex(id, label, parsedKeyValues, this, graph, elasticMutations, defaultIndex);
+    }
+
+    private Object getLabel(Predicates predicates) {
+        for (HasContainer hasContainer : predicates.hasContainers) {
+            if (hasContainer.getKey().equals(T.label.getAccessor()))
+                return hasContainer.getValue();
+        }
+        return null;
     }
 
     @Override
     public Iterator<BaseVertex> vertices(Predicates predicates) {
         elasticMutations.refresh(defaultIndex);
-        return new TemplateQueryIterator<>(scrollSize,
+        Iterator<BaseVertex> temp =new TemplateQueryIterator<>(scrollSize,
                 predicates.limitHigh,
                 client,
                 this::createVertex,
                 timing,
                 templateName,
-                TemplateHelper.createTemplateParams(predicates.hasContainers),
+                TemplateHelper.createTemplateParams(predicates),
                 type,
                 vertexPath,
                 defaultIndex);
+        Iterable<BaseVertex> vertices = () -> new TemplateQueryIterator<>(scrollSize,
+                predicates.limitHigh,
+                client,
+                this::createVertex,
+                timing,
+                templateName,
+                TemplateHelper.createTemplateParams(predicates),
+                type,
+                vertexPath,
+                defaultIndex);
+
+        Object labels = getLabel(predicates);
+        Set<String> labelsSet = new HashSet<>();
+        if (labels != null) {
+            if (labels instanceof Iterable) {
+                ((Iterable<String>) labels).forEach(labelsSet::add);
+            } else
+                labelsSet.add(labels.toString());
+        }
+
+        return StreamSupport.stream(vertices.spliterator(), false).filter(vertex -> labelsSet.isEmpty() || labelsSet.contains(vertex.label())).collect(Collectors.toList()).iterator();
     }
 
     @Override

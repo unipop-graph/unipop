@@ -85,7 +85,7 @@ public class TemplateEdgeController implements EdgeController {
                 this::createEdge,
                 timing,
                 templateName,
-                TemplateHelper.createTemplateParams(predicates.hasContainers),
+                TemplateHelper.createTemplateParams(predicates),
                 type,
                 new HashSet<>(),
                 indexName);
@@ -109,7 +109,7 @@ public class TemplateEdgeController implements EdgeController {
                 this::createEdge,
                 timing,
                 templateName,
-                TemplateHelper.createTemplateParams(predicates.hasContainers),
+                TemplateHelper.createTemplateParams(predicates),
                 type,
                 new HashSet<>(),
                 indexName);
