@@ -10,8 +10,10 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.node.Node;
 import org.unipop.controllerprovider.ControllerManagerFactory;
 import org.unipop.elastic2.controllermanagers.BasicElasticControllerManager;
+import org.unipop.elastic2.controllermanagers.ElasticStarControllerManager;
 import org.unipop.elastic2.helpers.ElasticClientFactory;
 import org.unipop.elastic2.helpers.ElasticHelper;
+import org.unipop.process.strategy.SimplifiedStrategyRegistrar;
 import org.unipop.structure.*;
 
 import java.io.File;
@@ -58,11 +60,11 @@ public class ElasticGraphProvider extends AbstractGraphProvider {
             put("elasticsearch.cluster.name", CLUSTER_NAME);
             put("elasticsearch.cluster.address", "127.0.0.1:" + client.settings().get("transport.tcp.port"));
 
-            put("controllerManagerFactory", (ControllerManagerFactory)() -> new BasicElasticControllerManager());
-            //put("controllerManagerFactory", (ControllerManagerFactory)() -> new ElasticStarControllerManager());
+//            put("controllerManagerFactory", (ControllerManagerFactory)() -> new BasicElasticControllerManager());
+            put("controllerManagerFactory", (ControllerManagerFactory) () -> new ElasticStarControllerManager());
             //put("controllerManagerFactory", (ControllerManagerFactory)() -> new ModernGraphControllerManager());
 
-            //put("strategyRegistrar", new SimplifiedStrategyRegistrar());
+            put("strategyRegistrar", new SimplifiedStrategyRegistrar());
         }};
     }
 

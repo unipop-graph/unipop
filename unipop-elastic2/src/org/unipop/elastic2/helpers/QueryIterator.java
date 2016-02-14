@@ -31,12 +31,12 @@ public class QueryIterator<E extends Element> implements Iterator<E> {
 
         this.timing.start("query");
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch(indices)
-                .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), query));
+                .setQuery(query);
 
         if(scrollSize > 0)
             searchRequestBuilder.setScroll(new TimeValue(60000))
             .setSize(maxSize < scrollSize ? (int) maxSize : scrollSize);
-        else searchRequestBuilder.setSize(maxSize < Integer.MAX_VALUE ? (int) maxSize : Integer.MAX_VALUE);
+        else searchRequestBuilder.setSize(maxSize < 10000 ? (int) maxSize : 10000);
 
         this.scrollResponse = searchRequestBuilder.execute().actionGet();
 

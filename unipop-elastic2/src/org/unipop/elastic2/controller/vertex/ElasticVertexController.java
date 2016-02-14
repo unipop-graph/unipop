@@ -77,7 +77,7 @@ public class ElasticVertexController implements VertexController {
     public Iterator<BaseVertex> vertices(Predicates predicates) {
         elasticMutations.refresh(defaultIndex);
         BoolQueryBuilder boolQuery = ElasticHelper.createQueryBuilder(predicates.hasContainers);
-        boolQuery.must(QueryBuilders.missingQuery(ElasticEdge.InId));
+        boolQuery.filter(QueryBuilders.missingQuery(ElasticEdge.InId));
         return new QueryIterator<>(boolQuery, scrollSize, predicates.limitHigh, client, this::createVertex, timing, getDefaultIndex());
 //        return new QueryIterator<>(boolQuery, scrollSize, 10000, client, this::createVertex, timing, getDefaultIndex());
     }

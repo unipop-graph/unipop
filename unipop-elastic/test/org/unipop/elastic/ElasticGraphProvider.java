@@ -63,11 +63,11 @@ public class ElasticGraphProvider extends AbstractGraphProvider {
             put("elasticsearch.cluster.address", "127.0.0.1:" + client.settings().get("transport.tcp.port"));
 
 //            put("controllerManagerFactory", (ControllerManagerFactory)() -> new BasicElasticControllerManager());
-            put("controllerManagerFactory", (ControllerManagerFactory)() -> new TemplateControllerManager());
-//            put("controllerManagerFactory", (ControllerManagerFactory)() -> new ElasticStarControllerManager());
+//            put("controllerManagerFactory", (ControllerManagerFactory)() -> new TemplateControllerManager());
+            put("controllerManagerFactory", (ControllerManagerFactory) () -> new ElasticStarControllerManager());
             //put("controllerManagerFactory", (ControllerManagerFactory)() -> new ModernGraphControllerManager());
 
-//            put("strategyRegistrar", new SimplifiedStrategyRegistrar());
+            put("strategyRegistrar", new SimplifiedStrategyRegistrar());
         }};
     }
 
