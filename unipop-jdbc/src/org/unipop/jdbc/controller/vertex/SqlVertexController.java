@@ -62,11 +62,16 @@ public class SqlVertexController implements VertexController {
         return dslContext;
     }
 
-    @Override
-    public Iterator<BaseVertex> vertices(Predicates predicates) {
+    public SelectJoinStep<Record> createSelect(Predicates predicates){
         SelectJoinStep<Record> select = dslContext.select().from(tableName);
         predicates.hasContainers.forEach(hasContainer -> select.where(JooqHelper.createCondition(hasContainer)));
         select.limit(0, predicates.limitHigh < Long.MAX_VALUE ? (int)predicates.limitHigh : Integer.MAX_VALUE);
+        return select;
+    }
+
+    @Override
+    public Iterator<BaseVertex> vertices(Predicates predicates) {
+        SelectJoinStep<Record> select = createSelect(predicates);
         try {
             return select.fetch(vertexMapper).iterator();
         }
@@ -109,6 +114,10 @@ public class SqlVertexController implements VertexController {
         dslContext.insertInto(table(tableName), CollectionUtils.collect(properties.keySet(), DSL::field))
                 .values(properties.values()).execute();
 
+        return createVertex(id, label, properties);
+    }
+
+    protected SqlVertex createVertex(Object id, String label, Map<String, Object> properties){
         return new SqlVertex(id, label, properties, null, tableName, this, graph);
     }
 

@@ -33,13 +33,13 @@ import static org.junit.Assert.assertTrue;
 public class Misc extends AbstractGremlinTest {
 
     public Misc() throws InterruptedException, ExecutionException, ClassNotFoundException, SQLException, IOException {
-        GraphManager.setGraphProvider(new JsonGraphProvider());
+        GraphManager.setGraphProvider(new IntegrationGraphProvider());
     }
 
     @Test
     @LoadGraphWith(MODERN)
     public void g_V_drop() throws Exception {
-        final Traversal traversal = g.V().out("knows", "created");
+        final Traversal traversal = g.V("4").outE().valueMap(true);
         check(traversal);
     }
 

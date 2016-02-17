@@ -14,11 +14,11 @@ import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.sql;
 import static org.jooq.impl.DSL.table;
 
-public class SqlVertex extends BaseVertex<SqlVertexController>{
+public class SqlVertex<T extends SqlVertexController> extends BaseVertex<T>{
 
     private SqlLazyGetter sqlLazyGetter;
 
-    protected SqlVertex(Object id, String label, Map<String, Object> keyValues, SqlLazyGetter lazyGetter, String tableName, SqlVertexController controller, UniGraph graph) {
+    protected SqlVertex(Object id, String label, Map<String, Object> keyValues, SqlLazyGetter lazyGetter, String tableName, T controller, UniGraph graph) {
         super(id, label, keyValues, controller, graph);
         this.sqlLazyGetter = lazyGetter;
         if (sqlLazyGetter != null)

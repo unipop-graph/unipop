@@ -55,9 +55,9 @@ public class IntegrationGraphProvider extends AbstractGraphProvider {
 
         Class.forName("org.sqlite.JDBC");
         this.jdbcConnection = DriverManager.getConnection("jdbc:sqlite:test.sqlite");
-        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS PERSON(id int NOT NULL PRIMARY KEY, name varchar(100), age int);");
+        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS PERSON(id int , name varchar(100), age int, knows int, edgeid int, weight DOUBLE );");
         this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS animal(id int NOT NULL PRIMARY KEY, name varchar(100), age int);");
-        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS SOFTWARE(id int NOT NULL PRIMARY KEY, name varchar(100), lang VARCHAR(100));");
+        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS SOFTWARE(id int , name varchar(100), lang VARCHAR(100), created int, edgeid int, weight DOUBLE);");
         this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS ARTIST(id int NOT NULL PRIMARY KEY, name varchar(100));");
         this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS SONG(id int NOT NULL PRIMARY KEY, name varchar(100), songType VARCHAR(100), performances int);");
         this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS KNOWS(id VARCHAR(100) NOT NULL PRIMARY KEY, weight DOUBLE , inid int, inlabel VARCHAR(100), outid int, outlabel VARCHAR(100));");
@@ -87,11 +87,9 @@ public class IntegrationGraphProvider extends AbstractGraphProvider {
     @Override
     public void clear(final Graph g, final Configuration configuration) throws Exception {
         if (g != null) {
-            String indexName = configuration.getString("graphName");
-            ElasticHelper.clearIndex(client, indexName);
+//            String indexName = configuration.getString("graphName");
+//            ElasticHelper.clearIndex(client, indexName);
             g.close();
-//            File file = new File("test.sqlite");
-//            FileUtils.deleteQuietly(file);
             jdbcConnection.createStatement().execute("DELETE FROM PERSON;");
             jdbcConnection.createStatement().execute("DELETE FROM SOFTWARE;");
             jdbcConnection.createStatement().execute("DELETE FROM KNOWS;");
