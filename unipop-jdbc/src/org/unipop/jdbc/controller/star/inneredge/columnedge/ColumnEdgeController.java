@@ -22,15 +22,15 @@ import static org.jooq.impl.DSL.table;
  * Created by sbarzilay on 2/17/16.
  */
 public class ColumnEdgeController implements InnerEdgeController {
-    private String vertexLabel;
     private String edgeLabel;
     private String externalVertexLabel;
     private Direction direction;
     private Set<String> edgeProperties;
     private DSLContext context;
 
+    public ColumnEdgeController(){}
+
     public ColumnEdgeController(String vertexLabel, String edgeLabel, String externalVertexLabel, Direction direction, Connection connection, String... edgeProperties) {
-        this.vertexLabel = vertexLabel;
         this.edgeLabel = edgeLabel;
         this.externalVertexLabel = externalVertexLabel;
         this.direction = direction;
@@ -99,6 +99,8 @@ public class ColumnEdgeController implements InnerEdgeController {
 
     @Override
     public void init(Map<String, Object> conf) throws Exception {
-
+        this.edgeLabel = conf.get("edgeLabel").toString();
+        this.externalVertexLabel = conf.get("externalVertexLabel").toString();
+        this.direction = conf.getOrDefault("direction", "out").toString().toLowerCase().equals("out") ? Direction.OUT : Direction.IN;
     }
 }

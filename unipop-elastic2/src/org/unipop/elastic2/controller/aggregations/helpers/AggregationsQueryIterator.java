@@ -1,4 +1,4 @@
-package org.unipop.elastic2.controller.template.helpers;
+package org.unipop.elastic2.controller.aggregations.helpers;
 
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.elasticsearch.action.search.SearchRequestBuilder;
@@ -24,21 +24,21 @@ import java.util.Map;
  * Created by sbarzilay on 02/02/16.
  *
  */
-public class TemplateQueryIterator<E extends Element> implements Iterator<E> {
+public class AggregationsQueryIterator<E extends Element> implements Iterator<E> {
     private long allowedRemaining;
     private final Parser<E> parser;
     Iterator<JSONObject> objectIterator;
 
     @SuppressWarnings("unchecked")
-    public TemplateQueryIterator(long maxSize,
-                                 Client client,
-                                 Parser<E> parser,
-                                 TimingAccessor timing,
-                                 String templateName,
-                                 Map<String, Object> templateParams,
-                                 ScriptService.ScriptType type,
-                                 Map<String, String> paths,
-                                 String... indices) {
+    public AggregationsQueryIterator(long maxSize,
+                                     Client client,
+                                     Parser<E> parser,
+                                     TimingAccessor timing,
+                                     String templateName,
+                                     Map<String, Object> templateParams,
+                                     ScriptService.ScriptType type,
+                                     Map<String, String> vertexPaths,
+                                     String... indices) {
         this.allowedRemaining = maxSize;
         this.parser = parser;
         timing.start("template");
@@ -46,7 +46,7 @@ public class TemplateQueryIterator<E extends Element> implements Iterator<E> {
         SearchRequestBuilder searchRequestBuilder;
 
 
-        searchRequestBuilder = client.prepareSearch(indices).setTemplate(new Template(templateName, ScriptService.ScriptType.FILE,"mustache" ,null,templateParams));
+        searchRequestBuilder = client.prepareSearch(indices).setTemplate(new Template(templateName, type,"mustache" ,null,templateParams));
 
 
         SearchResponse searchResponse = searchRequestBuilder.execute().actionGet();
@@ -59,18 +59,20 @@ public class TemplateQueryIterator<E extends Element> implements Iterator<E> {
             builder.endObject();
             JSONObject jsonResponse = (JSONObject) JSONValue.parse(builder.string());
             List<JSONObject> objects = new ArrayList<>();
-            paths.keySet().forEach(path ->{
+            vertexPaths.keySet().forEach(path ->{
                 String[] seg = path.split("\\.");
                 JSONObject ele = jsonResponse;
                 boolean shouldAdd = true;
                 for (String element : seg){
                     Object temp = ele.get(element);
-                    if (temp instanceof JSONObject)
+                    if (temp instanceof JSONObject) {
                         ele = ((JSONObject) temp);
+                        ele.put("label", vertexPaths.get(path));
+                    }
                     else if (temp instanceof JSONArray) {
                         ((JSONArray) temp).forEach(jsonElement -> {
                             JSONObject object = ((JSONObject) jsonElement);
-                            object.put("label", paths.get(path));
+                            object.put("label", vertexPaths.get(path));
                             objects.add(object);
                         });
                         shouldAdd = false;

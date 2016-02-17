@@ -2,6 +2,7 @@ package org.unipop.elastic2.misc;
 
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.junit.Test;
 import org.unipop.controllerprovider.ControllerManagerFactory;
 import org.unipop.elastic2.controllermanagers.ImdbControllerManager;
@@ -29,6 +30,6 @@ public class TemplateTests {
 
     @Test
     public void test() {
-        g.V().hasLabel("movie").valueMap().forEachRemaining(System.out::println);
+        g.V().outE().as("edge").otherV().as("vertex").select("edge", "vertex").by(__.valueMap(true)).forEachRemaining(System.out::println);
     }
 }

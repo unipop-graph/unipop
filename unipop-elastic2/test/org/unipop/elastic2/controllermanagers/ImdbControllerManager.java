@@ -10,10 +10,8 @@ import org.elasticsearch.script.ScriptService;
 import org.unipop.controller.EdgeController;
 import org.unipop.controller.Predicates;
 import org.unipop.controller.VertexController;
-import org.unipop.controller.virtualvertex.VirtualVertexController;
 import org.unipop.controllerprovider.ControllerManager;
-import org.unipop.elastic2.controller.edge.ElasticEdgeController;
-import org.unipop.elastic2.controller.template.controller.vertex.TemplateVertexController;
+import org.unipop.elastic2.controller.aggregations.controller.vertex.AggregationsVertexController;
 import org.unipop.elastic2.helpers.ElasticClientFactory;
 import org.unipop.elastic2.helpers.ElasticHelper;
 import org.unipop.elastic2.helpers.ElasticMutations;
@@ -41,7 +39,7 @@ public class ImdbControllerManager implements ControllerManager{
     @Override
     public void init(UniGraph graph, Configuration configuration) throws Exception {
         client = ElasticClientFactory.create(configuration);
-        String indexName = "imdb";
+        String indexName = "modern";
         ElasticHelper.createIndex(indexName, client);
 
         timing = new TimingAccessor();
@@ -50,15 +48,12 @@ public class ImdbControllerManager implements ControllerManager{
         vertexControllers = new HashMap<>();
         Map<String,String> paths = new HashMap<>();
         paths.put("hits.hits", "");
-        paths.put("aggregations.all.genre.buckets", "genre");
-        VertexController movie = new TemplateVertexController(graph, client, elasticMutations, 0, timing, indexName, "dyn_template", ScriptService.ScriptType.FILE, paths);
-        vertexControllers.put("movie", movie);
-        vertexControllers.put("genre", movie);
-        VertexController virtual = new VirtualVertexController(graph, "actor");
-        vertexControllers.put("actor", virtual);
-        vertexControllers.put("director", virtual);
+        paths.put("aggregations.ages.buckets", "ages");
+        VertexController movie = new AggregationsVertexController(graph, client, elasticMutations, 0, timing, indexName, "aggs_test", ScriptService.ScriptType.FILE, paths);
+        vertexControllers.put("person", movie);
+        vertexControllers.put("ages", movie);
 
-        edgeController = new ElasticEdgeController(graph, client, elasticMutations, indexName, 0, timing);
+        edgeController = ((EdgeController) movie);
 
     }
 
@@ -114,7 +109,7 @@ public class ImdbControllerManager implements ControllerManager{
     public Iterator<BaseVertex> vertices(Predicates predicates) {
         String label = getLabel(predicates.hasContainers);
         if (label == null)
-            return vertexControllers.get("movie").vertices(predicates);
+            return vertexControllers.get("person").vertices(predicates);
         return vertexControllers.get(label).vertices(predicates);
     }
 

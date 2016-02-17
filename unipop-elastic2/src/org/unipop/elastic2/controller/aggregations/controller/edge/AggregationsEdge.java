@@ -1,4 +1,4 @@
-package org.unipop.elastic2.controller.template.controller.star.inneredge;
+package org.unipop.elastic2.controller.aggregations.controller.edge;
 
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -10,10 +10,10 @@ import org.unipop.structure.UniGraph;
 import java.util.Map;
 
 /**
- * Created by sbarzilay on 02/02/16.
+ * Created by sbarzilay on 2/17/16.
  */
-public abstract class TemplateInnerEdge<T extends TemplateInnerEdgeController> extends BaseEdge {
-    public TemplateInnerEdge(Object id, String label, Map<String, Object> keyValues, Vertex outV, Vertex inV, EdgeController controller, UniGraph graph) {
+public class AggregationsEdge extends BaseEdge{
+    public AggregationsEdge(Object id, String label, Map<String, Object> keyValues, Vertex outV, Vertex inV, EdgeController controller, UniGraph graph) {
         super(id, label, keyValues, outV, inV, controller, graph);
     }
 

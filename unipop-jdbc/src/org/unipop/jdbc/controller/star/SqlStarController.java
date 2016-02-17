@@ -47,6 +47,16 @@ public class SqlStarController extends SqlVertexController implements EdgeContro
     public SqlStarController() {
     }
 
+    @Override
+    public void init(Map<String, Object> conf, UniGraph graph) throws Exception {
+        super.init(conf, graph);
+        for (Map<String, Object> edge : ((List<Map<String, Object>>) conf.get("edges"))) {
+            InnerEdgeController innerEdge = ((InnerEdgeController) Class.forName(edge.get("class").toString()).newInstance());
+            innerEdge.init(edge);
+            innerEdgeControllers.add(innerEdge);
+        }
+    }
+
     public String getTableName() {
         return tableName;
     }
@@ -128,8 +138,6 @@ public class SqlStarController extends SqlVertexController implements EdgeContro
     public BaseEdge addEdge(Object edgeId, String label, BaseVertex outV, BaseVertex inV, Map<String, Object> properties) {
         return getControllerByLabel(label).addEdge(edgeId, label, outV, inV, properties);
     }
-
-    private SqlStarController self = this;
 
     private class StarVertexMapper implements RecordMapper<Record, BaseVertex> {
 

@@ -1,4 +1,4 @@
-package org.unipop.elastic2.controller.template.helpers;
+package org.unipop.elastic2.controller.aggregations.helpers;
 
 import com.google.common.collect.Iterables;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
@@ -16,7 +16,7 @@ import java.util.function.BiPredicate;
 /**
  * Created by sbarzilay on 02/02/16.
  */
-public class TemplateHelper {
+public class AggregationsHelper {
     public static Map<String, Object> createTemplateParams(Predicates predicates) {
         Map<String, Object> params = new HashMap<>();
 
