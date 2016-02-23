@@ -54,8 +54,10 @@ public class SqlStarController extends SqlVertexController implements EdgeContro
     @Override
     public void init(Map<String, Object> conf, UniGraph graph) throws Exception {
         super.init(conf, graph);
+        vertexMapper = new StarVertexMapper();
         for (Map<String, Object> edge : ((List<Map<String, Object>>) conf.get("edges"))) {
             InnerEdgeController innerEdge = ((InnerEdgeController) Class.forName(edge.get("class").toString()).newInstance());
+            edge.put("context", dslContext);
             innerEdge.init(edge);
             innerEdgeControllers.add(innerEdge);
         }

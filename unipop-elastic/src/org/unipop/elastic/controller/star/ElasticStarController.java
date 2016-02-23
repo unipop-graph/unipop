@@ -36,6 +36,8 @@ import java.util.stream.StreamSupport;
 public class ElasticStarController extends ElasticVertexController implements EdgeController {
     private Set<InnerEdgeController> innerEdgeControllers = new HashSet<>();
 
+
+
     public ElasticStarController(UniGraph graph, Client client, ElasticMutations elasticMutations, String defaultIndex,
                                  int scrollSize, TimingAccessor timing, InnerEdgeController... innerEdgeControllers) {
         super(graph, client, elasticMutations, defaultIndex, scrollSize, timing);

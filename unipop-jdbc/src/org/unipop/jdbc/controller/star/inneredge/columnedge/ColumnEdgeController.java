@@ -14,6 +14,7 @@ import scala.tools.cmd.gen.AnyVals;
 
 import java.sql.Connection;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.table;
@@ -102,5 +103,7 @@ public class ColumnEdgeController implements InnerEdgeController {
         this.edgeLabel = conf.get("edgeLabel").toString();
         this.externalVertexLabel = conf.get("externalVertexLabel").toString();
         this.direction = conf.getOrDefault("direction", "out").toString().toLowerCase().equals("out") ? Direction.OUT : Direction.IN;
+        this.context = ((DSLContext) conf.get("context"));
+        this.edgeProperties = ((ArrayList<String>) conf.get("properties")).stream().collect(Collectors.toSet());
     }
 }
