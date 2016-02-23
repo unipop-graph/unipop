@@ -1,5 +1,6 @@
 package org.unipop.jdbc.controller.star;
 
+import com.google.common.collect.Lists;
 import org.apache.commons.collections.iterators.EmptyIterator;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -12,6 +13,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.jooq.*;
 import org.unipop.controller.EdgeController;
 import org.unipop.controller.Predicates;
+import org.unipop.jdbc.controller.star.inneredge.InnerEdge;
 import org.unipop.jdbc.controller.star.inneredge.InnerEdgeController;
 import org.unipop.jdbc.controller.vertex.SqlVertex;
 import org.unipop.jdbc.controller.vertex.SqlVertexController;
@@ -25,6 +27,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+
+import static org.jooq.impl.DSL.field;
 
 
 /**
@@ -62,6 +66,14 @@ public class SqlStarController extends SqlVertexController implements EdgeContro
     }
 
     @Override
+    protected SqlVertex createVertex(Direction direction, Object vertexId, String vertexLabel) {
+        Predicates predicates = new Predicates();
+        predicates.hasContainers.add(new HasContainer(T.id.getAccessor(), P.eq(vertexId)));
+        predicates.hasContainers.add(new HasContainer(T.label.getAccessor(), P.eq(vertexLabel)));
+        return ((SqlStarVertex) vertices(predicates).next());
+    }
+
+    @Override
     protected SqlVertex createVertex(Object id, String label, Map<String, Object> properties) {
         SqlStarVertex starVertex = new SqlStarVertex(id, label, null, null, tableName, this, graph, propertiesNames);
         properties.forEach(starVertex::addPropertyLocal);
@@ -72,38 +84,79 @@ public class SqlStarController extends SqlVertexController implements EdgeContro
     public Iterator<BaseVertex> vertices(Predicates predicates) {
         SelectJoinStep<Record> select = createSelect(predicates);
         try {
-            return select.fetch(vertexMapper).stream().distinct().collect(Collectors.toList()).iterator();
+            Map<Object, List<BaseVertex>> group = select.fetch(vertexMapper).stream().collect(Collectors.groupingBy(baseVertex -> baseVertex.id()));
+            List<BaseVertex> groupedVertices = new ArrayList<>();
+            group.values().forEach(baseVertices -> {
+                SqlStarVertex star = (SqlStarVertex) baseVertices.get(0);
+                baseVertices.forEach(baseVertex -> ((SqlStarVertex) baseVertex).getInnerEdges(new Predicates()).forEach(baseEdge -> star.addInnerEdge(((InnerEdge) baseEdge))));
+                groupedVertices.add(star);
+            });
+            return groupedVertices.iterator();
         }
         catch (Exception e){
             return EmptyIterator.INSTANCE;
         }
     }
 
+    private HasContainer getHasId(Predicates predicates){
+        for (HasContainer hasContainer : predicates.hasContainers) {
+            if (hasContainer.getKey().equals(T.id.getAccessor()))
+                return hasContainer;
+        }
+        return null;
+    }
+
     @Override
     public Iterator<BaseEdge> edges(Predicates predicates) {
         SelectJoinStep<Record> select = dslContext.select().from(tableName);
+        HasContainer id = getHasId(predicates);
+        if (id != null){
+            select.where(field("EDGEID").in(((Iterable) id.getValue())));
+            predicates.hasContainers.remove(id);
+        }
         predicates.hasContainers.forEach(has -> select.where(JooqHelper.createCondition(has)));
-        return select.fetch(vertexMapper).stream().flatMap(vertex -> ((SqlStarVertex) vertex).getInnerEdges(predicates).stream()).iterator();
+        List<BaseVertex> vertices = select.fetch(vertexMapper);
+        if (id != null)
+            predicates.hasContainers.add(id);
+        return vertices.stream().flatMap(vertex -> ((SqlStarVertex) vertex).getInnerEdges(predicates).stream()).collect(Collectors.toSet()).iterator();
     }
 
     @Override
     public Iterator<BaseEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
 
-        Stream<BaseEdge> innerEdges = StreamSupport.stream(Arrays.asList(vertices).stream().filter(vertex1 -> vertex1 instanceof SqlStarVertex)
-                .map(vertex2 -> ((SqlStarVertex) vertex2).getInnerEdges(direction, Arrays.asList(edgeLabels), predicates)).spliterator(), false).flatMap(Collection::stream);
+        Set<BaseEdge> innerEdges = StreamSupport.stream(Arrays.asList(vertices).stream().filter(vertex1 -> vertex1 instanceof SqlStarVertex)
+                .map(vertex2 -> ((SqlStarVertex) vertex2).getInnerEdges(direction, Arrays.asList(edgeLabels), predicates)).spliterator(), false).flatMap(Collection::stream).collect(Collectors.toSet());
 
         SelectJoinStep<Record> select = dslContext.select().from(tableName);
         Set<Object> ids = Stream.of(vertices).map(Element::id).collect(Collectors.toSet());
         ArrayList<HasContainer> hasContainers = new ArrayList<>();
         predicates.hasContainers.forEach(hasContainers::add);
+        Set<String> controllersLabels = innerEdgeControllers.stream().map(InnerEdgeController::getEdgeLabel).collect(Collectors.toSet());
         for (String edgeLabel : edgeLabels) {
-            hasContainers.add(new HasContainer(edgeLabel, P.within(ids)));
+            if (controllersLabels.contains(edgeLabel))
+                hasContainers.add(new HasContainer(edgeLabel, P.within(ids)));
+        }
+        if (edgeLabels.length == 0){
+            for (String edgeLabel : controllersLabels)
+                hasContainers.add(new HasContainer(edgeLabel, P.within(ids)));
+        }
+        HasContainer id = getHasId(predicates);
+        if (id != null){
+            if (id.getValue() instanceof Iterable)
+                select.where(field("EDGEID").in(((Iterable) id.getValue())));
+            else if (id.getValue() instanceof String)
+                select.where(field("EDGEID").in(id.getValue()));
+            hasContainers.remove(id);
         }
         hasContainers.forEach(has -> select.where(JooqHelper.createCondition(has)));
 
-        Stream<BaseEdge> outerEdges = select.fetch(vertexMapper).stream()
-                .flatMap(vertex -> ((SqlStarVertex) vertex).getInnerEdges(direction.opposite(), Arrays.asList(edgeLabels), predicates).stream());
-        return Stream.of(innerEdges, outerEdges).flatMap(stream -> stream.collect(Collectors.toList()).stream()).iterator();
+        Predicates p = new Predicates();
+        p.hasContainers = hasContainers;
+        List<BaseVertex> baseVertices = select.fetch(vertexMapper);
+
+        Set<BaseEdge> outerEdges = baseVertices.stream()
+                .flatMap(vertex -> ((SqlStarVertex) vertex).getInnerEdges(direction.opposite(), Arrays.asList(edgeLabels), predicates).stream()).collect(Collectors.toSet());
+        return Stream.of(innerEdges, outerEdges).flatMap(baseEdges -> baseEdges.stream()).collect(Collectors.toSet()).iterator();
 
     }
 
@@ -147,16 +200,20 @@ public class SqlStarController extends SqlVertexController implements EdgeContro
             Map<String, Object> stringObjectMap = new HashMap<>();
             record.intoMap().forEach((key, value) -> stringObjectMap.put(key.toLowerCase(), value));
             SqlStarVertex star = (SqlStarVertex) createVertex(stringObjectMap.get("id"), tableName.toLowerCase(), stringObjectMap);
-            SelectJoinStep<Record> select = dslContext.select().from(tableName);
-            select.where(JooqHelper.createCondition(new HasContainer(T.id.getAccessor(), P.eq(stringObjectMap.get("id")))));
-            select.fetch().forEach(vertex -> {
-                Map<String, Object> vertexStringObjectMap = new HashMap<>();
-                record.intoMap().forEach((key, value) -> vertexStringObjectMap.put(key.toLowerCase(), value));
-                innerEdgeControllers.forEach(innerEdgeController -> {
-                    if (vertexStringObjectMap.get(innerEdgeController.getEdgeLabel()) != null)
-                        innerEdgeController.parseEdge(star, vertexStringObjectMap);
+            innerEdgeControllers.forEach(innerEdgeController -> {
+                    if (stringObjectMap.get(innerEdgeController.getEdgeLabel()) != null)
+                        innerEdgeController.parseEdge(star, stringObjectMap);
                 });
-            });
+//            SelectJoinStep<Record> select = dslContext.select().from(tableName);
+//            select.where(JooqHelper.createCondition(new HasContainer(T.id.getAccessor(), P.eq(stringObjectMap.get("id")))));
+//            select.fetch().forEach(vertex -> {
+//                Map<String, Object> vertexStringObjectMap = new HashMap<>();
+//                record.intoMap().forEach((key, value) -> vertexStringObjectMap.put(key.toLowerCase(), value));
+//                innerEdgeControllers.forEach(innerEdgeController -> {
+//                    if (vertexStringObjectMap.get(innerEdgeController.getEdgeLabel()) != null)
+//                        innerEdgeController.parseEdge(star, vertexStringObjectMap);
+//                });
+//            });
             return star;
         }
     }

@@ -93,6 +93,10 @@ public class SqlVertexController implements VertexController {
     @Override
     public BaseVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
         //return dslContext.select().from(tableName).where(field("id").eq(vertexId)).fetchOne(vertexMapper);
+        return createVertex(direction, vertexId, vertexLabel);
+    }
+
+    protected SqlVertex createVertex(Direction direction, Object vertexId, String vertexLabel){
         return new SqlVertex(vertexId, vertexLabel, null, getLazyGetter(direction), tableName, this, graph);
     }
 

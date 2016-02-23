@@ -47,7 +47,7 @@ public class IntegrationControllerManager implements ControllerManager {
         this.jdbcConnection = DriverManager.getConnection("jdbc:sqlite:test.sqlite");
 
         ColumnEdgeController knows = new ColumnEdgeController("person", "knows", "person", Direction.OUT, jdbcConnection, "weight");
-        ColumnEdgeController created = new ColumnEdgeController("person", "created", "software", Direction.IN, jdbcConnection, "weight");
+        ColumnEdgeController created = new ColumnEdgeController("software", "created", "person", Direction.IN, jdbcConnection, "weight");
 
         SqlStarController person = new SqlStarController("PERSON", graph, jdbcConnection, new HashSet<String>() {{
             add("name");
@@ -62,19 +62,19 @@ public class IntegrationControllerManager implements ControllerManager {
         SqlVertexController artist = new SqlVertexController("ARTIST", graph, jdbcConnection);
 
         vertexController.put("person", person);
-        vertexController.put("animal", animal);
+//        vertexController.put("animal", animal);
         vertexController.put("software", software);
-        vertexController.put("song", song);
-        vertexController.put("artist", artist);
+//        vertexController.put("song", song);
+//        vertexController.put("artist", artist);
 
         edgeController.put("knows", person);
         edgeController.put("created", software);
-        edgeController.put("followedBy", new SqlEdgeController("FOLLOWEDBY", "inid", "inlabel", "outid", "outlabel", "followedBy", graph, jdbcConnection));
-        edgeController.put("sungBy", new SqlEdgeController("SUNGBY", "inid", "inlabel", "outid", "outlabel", "sungBy", graph, jdbcConnection));
-        edgeController.put("writtenBy", new SqlEdgeController("WRITTERBY", "inid", "inlabel", "outid", "outlabel", "writtenBy", graph, jdbcConnection));
-        edgeController.put("createdBy", new SqlEdgeController("createdBy", "inid", "inlabel", "outid", "outlabel", "createdBy", graph, jdbcConnection));
-        edgeController.put("co-developer", new SqlEdgeController("codeveloper", "inid", "inlabel", "outid", "outlabel", "co-developer", graph, jdbcConnection));
-        edgeController.put("existsWith", new SqlEdgeController("existsWith", "inid", "inlabel", "outid", "outlabel", "existsWith", graph, jdbcConnection));
+//        edgeController.put("followedBy", new SqlEdgeController("FOLLOWEDBY", "inid", "inlabel", "outid", "outlabel", "followedBy", graph, jdbcConnection));
+//        edgeController.put("sungBy", new SqlEdgeController("SUNGBY", "inid", "inlabel", "outid", "outlabel", "sungBy", graph, jdbcConnection));
+//        edgeController.put("writtenBy", new SqlEdgeController("WRITTERBY", "inid", "inlabel", "outid", "outlabel", "writtenBy", graph, jdbcConnection));
+//        edgeController.put("createdBy", new SqlEdgeController("createdBy", "inid", "inlabel", "outid", "outlabel", "createdBy", graph, jdbcConnection));
+//        edgeController.put("co-developer", new SqlEdgeController("codeveloper", "inid", "inlabel", "outid", "outlabel", "co-developer", graph, jdbcConnection));
+//        edgeController.put("existsWith", new SqlEdgeController("existsWith", "inid", "inlabel", "outid", "outlabel", "existsWith", graph, jdbcConnection));
     }
 
     @Override
@@ -103,7 +103,7 @@ public class IntegrationControllerManager implements ControllerManager {
                             StreamSupport.stream(Spliterators.
                                             spliteratorUnknownSize(edgeController1.edges(predicates),
                                                     Spliterator.ORDERED),
-                                    false)).collect(Collectors.toList()).iterator();
+                                    false)).collect(Collectors.toSet()).iterator();
         } else {
             return edgeController.get(label).edges(predicates);
         }
@@ -120,7 +120,7 @@ public class IntegrationControllerManager implements ControllerManager {
                                             spliteratorUnknownSize(edgeController1.
                                                             edges(vertices, direction, edgeLabels, predicates),
                                                     Spliterator.ORDERED),
-                                    false)).collect(Collectors.toList()).iterator();
+                                    false)).collect(Collectors.toSet()).iterator();
         } else {
             List<String> edges = Arrays.asList(edgeLabels);
             return edgeController.entrySet()
@@ -132,7 +132,7 @@ public class IntegrationControllerManager implements ControllerManager {
                                             spliteratorUnknownSize(edgeController1.
                                                             edges(vertices, direction, edgeLabels, predicates),
                                                     Spliterator.ORDERED),
-                                    false)).collect(Collectors.toList()).iterator();
+                                    false)).collect(Collectors.toSet()).iterator();
         }
     }
 
