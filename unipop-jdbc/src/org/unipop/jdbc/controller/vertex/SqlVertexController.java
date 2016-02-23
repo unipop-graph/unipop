@@ -80,7 +80,7 @@ public class SqlVertexController implements VertexController {
         }
     }
 
-    private SqlLazyGetter getLazyGetter(Direction direction) {
+    protected SqlLazyGetter getLazyGetter(Direction direction) {
         SqlLazyGetter sqlLazyGetter = lazyGetters.get(direction);
         if (sqlLazyGetter == null || !sqlLazyGetter.canRegister()) {
             sqlLazyGetter = new SqlLazyGetter(dslContext);

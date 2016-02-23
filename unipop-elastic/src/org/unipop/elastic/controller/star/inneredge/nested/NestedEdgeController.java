@@ -22,12 +22,12 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class NestedEdgeController implements InnerEdgeController {
-    private String vertexLabel;
-    private String edgeLabel;
-    private String externalVertexLabel;
-    private Direction direction;
-    private String externalVertexIdField;
-    private String edgeIdField;
+    protected String vertexLabel;
+    protected String edgeLabel;
+    protected String externalVertexLabel;
+    protected Direction direction;
+    protected String externalVertexIdField;
+    protected String edgeIdField;
 
     public NestedEdgeController(String vertexLabel, String edgeLabel, Direction direction, String externalVertexIdField, String externalVertexLabel, String edgeIdField) {
         this.vertexLabel = vertexLabel;
@@ -76,7 +76,7 @@ public class NestedEdgeController implements InnerEdgeController {
         } else throw new IllegalArgumentException(nested.toString());
     }
 
-    private InnerEdge parseEdge(ElasticStarVertex vertex, Map<String, Object> keyValues) {
+    protected InnerEdge parseEdge(ElasticStarVertex vertex, Map<String, Object> keyValues) {
         Object externalVertexId = keyValues.get(externalVertexIdField);
         Object edgeId = keyValues.get(edgeIdField);
         BaseVertex externalVertex = vertex.getGraph().getControllerManager().vertex(direction.opposite(), externalVertexId, externalVertexLabel);
