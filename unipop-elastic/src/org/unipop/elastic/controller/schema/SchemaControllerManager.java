@@ -2,19 +2,11 @@ package org.unipop.elastic.controller.schema;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.NotImplementedException;
-import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.elasticsearch.client.Client;
 import org.unipop.controller.EdgeController;
-import org.unipop.controller.Predicates;
 import org.unipop.controller.VertexController;
 import org.unipop.controllerprovider.BasicControllerManager;
-import org.unipop.controllerprovider.ControllerManager;
 import org.unipop.elastic.controller.schema.helpers.ElasticGraphConfiguration;
 import org.unipop.elastic.controller.schema.helpers.LazyGetterFactory;
 import org.unipop.elastic.controller.schema.helpers.ReflectionHelper;
@@ -30,13 +22,11 @@ import org.unipop.elastic.helpers.ElasticClientFactory;
 import org.unipop.elastic.helpers.ElasticHelper;
 import org.unipop.elastic.helpers.ElasticMutations;
 import org.unipop.elastic.helpers.TimingAccessor;
-import org.unipop.structure.BaseEdge;
-import org.unipop.structure.BaseVertex;
-import org.unipop.structure.UniGraph;
+import org.unipop.structure.*;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
@@ -95,6 +85,11 @@ public class SchemaControllerManager extends BasicControllerManager {
     }
 
     @Override
+    public List<BaseElement> properties(List<BaseElement> elements) {
+        throw new NotImplementedException();
+    }
+
+    @Override
     public void commit() {
         this.elasticMutations.commit();
     }
@@ -133,5 +128,36 @@ public class SchemaControllerManager extends BasicControllerManager {
     public void init(Map<String, Object> conf, UniGraph graph) throws Exception {
         throw new NotImplementedException();
     }
+
+    @Override
+    public void addPropertyToVertex(BaseVertex vertex, BaseVertexProperty vertexProperty) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void removePropertyFromVertex(BaseVertex vertex, Property property) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void removeVertex(BaseVertex vertex) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public List<BaseElement> vertexProperties(List<BaseVertex> vertices) {
+        throw new sun.reflect.generics.reflectiveObjects.NotImplementedException();
+    }
+
+    @Override
+    public void update(BaseVertex vertex, boolean force) {
+        throw new sun.reflect.generics.reflectiveObjects.NotImplementedException();
+    }
+
+    @Override
+    public String getResource() {
+        throw new NotImplementedException();
+    }
+
     //endregion
 }

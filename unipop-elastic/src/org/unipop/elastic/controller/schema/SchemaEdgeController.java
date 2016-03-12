@@ -162,6 +162,7 @@ public class SchemaEdgeController extends SchemaElementController implements Edg
         }
         return elasticEdge;
     }
+
     //endregion
 
     //region help methods

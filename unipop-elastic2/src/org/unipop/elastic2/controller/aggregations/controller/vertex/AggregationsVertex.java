@@ -3,6 +3,7 @@ package org.unipop.elastic2.controller.aggregations.controller.vertex;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.unipop.controller.Predicates;
+import org.unipop.controllerprovider.ControllerManager;
 import org.unipop.elastic2.controller.aggregations.controller.edge.AggregationsEdge;
 import org.unipop.elastic2.helpers.ElasticMutations;
 import org.unipop.structure.BaseEdge;
@@ -19,13 +20,13 @@ import java.util.stream.Collectors;
 /**
  * Created by sbarzilay on 02/02/16.
  */
-public class AggregationsVertex<T extends AggregationsVertexController> extends BaseVertex<T>{
+public class AggregationsVertex extends BaseVertex{
     private ElasticMutations elasticMutations;
     private String index;
     Set<AggregationsEdge> innerEdges;
 
-    protected AggregationsVertex(Object id, String label, Map<String, Object> keyValues, T controller, UniGraph graph, ElasticMutations elasticMutations, String index) {
-        super(id, label, keyValues, controller, graph);
+    protected AggregationsVertex(Object id, String label, Map<String, Object> keyValues, ControllerManager manager, UniGraph graph, ElasticMutations elasticMutations, String index) {
+        super(id, label, keyValues, manager, graph);
         this.elasticMutations = elasticMutations;
         this.index = index;
         this.innerEdges = new HashSet<>();

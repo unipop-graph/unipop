@@ -3,10 +3,7 @@ package org.unipop.elastic2.controller.schema;
 import com.google.common.collect.FluentIterable;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
@@ -24,10 +21,13 @@ import org.unipop.elastic2.controller.schema.helpers.schemaProviders.GraphElemen
 import org.unipop.elastic2.controller.schema.helpers.schemaProviders.GraphVertexSchema;
 import org.unipop.elastic2.helpers.AggregationHelper;
 import org.unipop.elastic2.helpers.ElasticMutations;
+import org.unipop.structure.BaseElement;
 import org.unipop.structure.BaseVertex;
+import org.unipop.structure.BaseVertexProperty;
 import org.unipop.structure.UniGraph;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -54,7 +54,7 @@ public class SchemaVertexController extends SchemaElementController implements V
 
     @Override
     public BaseVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
-        return new SchemaVertex(vertexId, vertexLabel, graph, null, this, lazyGetterFactory.getLazyGetter(vertexLabel), schemaProvider, this.elasticMutations);
+        return new SchemaVertex(vertexId, vertexLabel, graph, null, graph.getControllerManager(), lazyGetterFactory.getLazyGetter(vertexLabel), schemaProvider, this.elasticMutations);
     }
 
     @Override
@@ -88,7 +88,7 @@ public class SchemaVertexController extends SchemaElementController implements V
 
     @Override
     public BaseVertex addVertex(Object id, String label, Map<String, Object> properties) {
-        BaseVertex v = new SchemaVertex(id, label, graph, properties, this, lazyGetterFactory.getLazyGetter(label), this.schemaProvider, this.elasticMutations);
+        BaseVertex v = new SchemaVertex(id, label, graph, properties, graph.getControllerManager(), lazyGetterFactory.getLazyGetter(label), this.schemaProvider, this.elasticMutations);
 
         Optional<GraphVertexSchema> vertexSchema = this.schemaProvider.getVertexSchema(label);
         if (!vertexSchema.isPresent()) {
@@ -107,6 +107,36 @@ public class SchemaVertexController extends SchemaElementController implements V
 
     @Override
     public void init(Map<String, Object> conf, UniGraph graph) throws Exception {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void addPropertyToVertex(BaseVertex vertex, BaseVertexProperty vertexProperty) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void removePropertyFromVertex(BaseVertex vertex, Property property) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void removeVertex(BaseVertex vertex) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public List<BaseElement> vertexProperties(List<BaseVertex> vertices) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void update(BaseVertex vertex, boolean force) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public String getResource() {
         throw new NotImplementedException();
     }
 

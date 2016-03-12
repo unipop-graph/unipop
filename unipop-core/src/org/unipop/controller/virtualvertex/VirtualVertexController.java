@@ -3,14 +3,14 @@ package org.unipop.controller.virtualvertex;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
-import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.unipop.controller.Predicates;
 import org.unipop.controller.VertexController;
-import org.unipop.structure.BaseVertex;
-import org.unipop.structure.UniGraph;
+import org.unipop.structure.*;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.*;
 
@@ -38,13 +38,19 @@ public class VirtualVertexController implements VertexController {
         String label = optionalLabel.isPresent() ? optionalLabel.get().getValue().toString() : Vertex.DEFAULT_LABEL;
 
         Set<BaseVertex> vertices = new HashSet<>();
-        ids.forEach(id-> vertices.add(new VirtualVertex(id, label, null, this, graph)));
+        ids.forEach(id-> {
+            UniVertex uniVertex = new UniVertex(id, label, null, graph.getControllerManager(), graph);
+            uniVertex.addTransientProperty(new TransientProperty(uniVertex, "resource", getResource()));
+            vertices.add(uniVertex);
+        });
         return vertices.iterator();
     }
 
     @Override
     public BaseVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
-        return new VirtualVertex(vertexId, vertexLabel, null, this, graph);
+        UniVertex uniVertex = new UniVertex(vertexId, vertexLabel, null, graph.getControllerManager(), graph);
+        uniVertex.addTransientProperty(new TransientProperty(uniVertex, "resource", getResource()));
+        return uniVertex;
     }
 
     @Override
@@ -66,6 +72,36 @@ public class VirtualVertexController implements VertexController {
     public void init(Map<String, Object> conf, UniGraph graph) throws Exception {
         this.graph = graph;
         this.label = conf.get("label").toString();
+    }
+
+    @Override
+    public void addPropertyToVertex(BaseVertex vertex, BaseVertexProperty vertexProperty) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void removePropertyFromVertex(BaseVertex vertex, Property property) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void removeVertex(BaseVertex vertex) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public List<BaseElement> vertexProperties(List<BaseVertex> vertices) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void update(BaseVertex vertex, boolean force) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public String getResource() {
+        return "virtual";
     }
 
     @Override

@@ -3,18 +3,18 @@ package org.unipop.structure;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
-import org.unipop.controller.VertexController;
+import org.unipop.controllerprovider.ControllerManager;
 
 import java.util.Iterator;
 import java.util.Map;
 
-public abstract class BaseVertex<C extends VertexController> extends BaseElement implements Vertex {
+public abstract class BaseVertex extends BaseElement implements Vertex {
 
-    private C controller;
+    private ControllerManager manager;
 
-    protected BaseVertex(Object id, String label, Map<String, Object> keyValues, C controller, UniGraph graph) {
+    protected BaseVertex(Object id, String label, Map<String, Object> keyValues, ControllerManager controller, UniGraph graph) {
         super(id, label, graph, keyValues);
-        this.controller = controller;
+        this.manager = controller;
     }
 
     @Override
@@ -104,7 +104,7 @@ public abstract class BaseVertex<C extends VertexController> extends BaseElement
         if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, this.id);
     }
 
-    public C getController() {
-        return controller;
+    public ControllerManager getManager() {
+        return manager;
     }
 }

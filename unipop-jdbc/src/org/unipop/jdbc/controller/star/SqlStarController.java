@@ -1,6 +1,5 @@
 package org.unipop.jdbc.controller.star;
 
-import com.google.common.collect.Lists;
 import org.apache.commons.collections.iterators.EmptyIterator;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -12,15 +11,11 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.jooq.*;
 import org.unipop.controller.EdgeController;
+import org.unipop.controller.InnerEdgeController;
 import org.unipop.controller.Predicates;
-import org.unipop.jdbc.controller.star.inneredge.InnerEdge;
-import org.unipop.jdbc.controller.star.inneredge.InnerEdgeController;
-import org.unipop.jdbc.controller.vertex.SqlVertex;
 import org.unipop.jdbc.controller.vertex.SqlVertexController;
 import org.unipop.jdbc.utils.JooqHelper;
-import org.unipop.structure.BaseEdge;
-import org.unipop.structure.BaseVertex;
-import org.unipop.structure.UniGraph;
+import org.unipop.structure.*;
 
 import java.sql.Connection;
 import java.util.*;
@@ -67,19 +62,18 @@ public class SqlStarController extends SqlVertexController implements EdgeContro
         return tableName;
     }
 
-    @Override
-    protected SqlVertex createVertex(Direction direction, Object vertexId, String vertexLabel) {
-        Predicates predicates = new Predicates();
-        predicates.hasContainers.add(new HasContainer(T.id.getAccessor(), P.eq(vertexId)));
-        predicates.hasContainers.add(new HasContainer(T.label.getAccessor(), P.eq(vertexLabel)));
-        return ((SqlStarVertex) vertices(predicates).next());
+    protected UniStarVertex createVertex(Object id, String label, Map<String, Object> properties) {
+        UniStarVertex starVertex = new UniStarVertex(id, label, null,graph.getControllerManager(), graph, innerEdgeControllers);
+        starVertex.addTransientProperty(new TransientProperty(starVertex, "resource", getResource()));
+        properties.forEach(starVertex::addPropertyLocal);
+        return starVertex;
     }
 
     @Override
-    protected SqlVertex createVertex(Object id, String label, Map<String, Object> properties) {
-        SqlStarVertex starVertex = new SqlStarVertex(id, label, null, null, tableName, this, graph, propertiesNames);
-        properties.forEach(starVertex::addPropertyLocal);
-        return starVertex;
+    public BaseVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
+        UniDelayedStarVertex uniVertex = new UniDelayedStarVertex(vertexId, vertexLabel, graph.getControllerManager(), graph, innerEdgeControllers);
+        uniVertex.addTransientProperty(new TransientProperty(uniVertex, "resource", getResource()));
+        return uniVertex;
     }
 
     @Override
@@ -89,8 +83,8 @@ public class SqlStarController extends SqlVertexController implements EdgeContro
             Map<Object, List<BaseVertex>> group = select.fetch(vertexMapper).stream().collect(Collectors.groupingBy(baseVertex -> baseVertex.id()));
             List<BaseVertex> groupedVertices = new ArrayList<>();
             group.values().forEach(baseVertices -> {
-                SqlStarVertex star = (SqlStarVertex) baseVertices.get(0);
-                baseVertices.forEach(baseVertex -> ((SqlStarVertex) baseVertex).getInnerEdges(new Predicates()).forEach(baseEdge -> star.addInnerEdge(((InnerEdge) baseEdge))));
+                UniStarVertex star = (UniStarVertex) baseVertices.get(0);
+                baseVertices.forEach(baseVertex -> ((UniStarVertex) baseVertex).getInnerEdges(new Predicates()).forEach(baseEdge -> star.addInnerEdge(((UniInnerEdge) baseEdge))));
                 groupedVertices.add(star);
             });
             return groupedVertices.iterator();
@@ -117,17 +111,23 @@ public class SqlStarController extends SqlVertexController implements EdgeContro
             predicates.hasContainers.remove(id);
         }
         predicates.hasContainers.forEach(has -> select.where(JooqHelper.createCondition(has)));
-        List<BaseVertex> vertices = select.fetch(vertexMapper);
+        Map<Object, List<BaseVertex>> group = select.fetch(vertexMapper).stream().collect(Collectors.groupingBy(baseVertex -> baseVertex.id()));
+        List<BaseVertex> groupedVertices = new ArrayList<>();
+        group.values().forEach(baseVertices -> {
+            UniStarVertex star = (UniStarVertex) baseVertices.get(0);
+            baseVertices.forEach(baseVertex -> ((UniStarVertex) baseVertex).getInnerEdges(new Predicates()).forEach(baseEdge -> star.addInnerEdge(((UniInnerEdge) baseEdge))));
+            groupedVertices.add(star);
+        });
         if (id != null)
             predicates.hasContainers.add(id);
-        return vertices.stream().flatMap(vertex -> ((SqlStarVertex) vertex).getInnerEdges(predicates).stream()).collect(Collectors.toSet()).iterator();
+        return groupedVertices.stream().flatMap(vertex -> ((UniStarVertex) vertex).getInnerEdges(predicates).stream()).collect(Collectors.toSet()).iterator();
     }
 
     @Override
     public Iterator<BaseEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
 
-        Set<BaseEdge> innerEdges = StreamSupport.stream(Arrays.asList(vertices).stream().filter(vertex1 -> vertex1 instanceof SqlStarVertex)
-                .map(vertex2 -> ((SqlStarVertex) vertex2).getInnerEdges(direction, Arrays.asList(edgeLabels), predicates)).spliterator(), false).flatMap(Collection::stream).collect(Collectors.toSet());
+        Set<BaseEdge> innerEdges = StreamSupport.stream(Arrays.asList(vertices).stream().filter(vertex1 -> vertex1 instanceof UniStarVertex)
+                .map(vertex2 -> ((UniStarVertex) vertex2).getInnerEdges(direction, Arrays.asList(edgeLabels), predicates)).spliterator(), false).flatMap(Collection::stream).collect(Collectors.toSet());
 
         SelectJoinStep<Record> select = dslContext.select().from(tableName);
         Set<Object> ids = Stream.of(vertices).map(Element::id).collect(Collectors.toSet());
@@ -154,12 +154,33 @@ public class SqlStarController extends SqlVertexController implements EdgeContro
 
         Predicates p = new Predicates();
         p.hasContainers = hasContainers;
-        List<BaseVertex> baseVertices = select.fetch(vertexMapper);
+        Map<Object, List<BaseVertex>> group = select.fetch(vertexMapper).stream().collect(Collectors.groupingBy(baseVertex -> baseVertex.id()));
+        List<BaseVertex> groupedVertices = new ArrayList<>();
+        group.values().forEach(baseVertices -> {
+            UniStarVertex star = (UniStarVertex) baseVertices.get(0);
+            baseVertices.forEach(baseVertex -> ((UniStarVertex) baseVertex).getInnerEdges(new Predicates()).forEach(baseEdge -> star.addInnerEdge(((UniInnerEdge) baseEdge))));
+            groupedVertices.add(star);
+        });
 
-        Set<BaseEdge> outerEdges = baseVertices.stream()
-                .flatMap(vertex -> ((SqlStarVertex) vertex).getInnerEdges(direction.opposite(), Arrays.asList(edgeLabels), predicates).stream()).collect(Collectors.toSet());
+        Set<BaseEdge> outerEdges = groupedVertices.stream()
+                .flatMap(vertex -> ((UniStarVertex) vertex).getInnerEdges(direction.opposite(), Arrays.asList(edgeLabels), predicates).stream()).collect(Collectors.toSet());
         return Stream.of(innerEdges, outerEdges).flatMap(baseEdges -> baseEdges.stream()).collect(Collectors.toSet()).iterator();
 
+    }
+
+    @Override
+    protected void addProperty(List<BaseVertex> vertices, String key, Object value) {
+        super.addProperty(vertices, key, value);
+        if (value instanceof List) {
+            InnerEdgeController innerEdgeController1 = innerEdgeControllers.stream().filter(innerEdgeController -> innerEdgeController.getEdgeLabel().equals(key)).findFirst().get();
+            List<Map<String, Object>> edges = (List<Map<String, Object>>) value;
+            vertices.forEach(vertex -> edges.forEach(edge -> innerEdgeController1.parseEdge(((UniStarVertex) vertex), edge)));
+        }
+    }
+
+    @Override
+    public void update(BaseVertex vertex, boolean force) {
+        throw new NotImplementedException();
     }
 
     @Override
@@ -201,7 +222,7 @@ public class SqlStarController extends SqlVertexController implements EdgeContro
             //Change keys to lower-case. TODO: make configurable mapping
             Map<String, Object> stringObjectMap = new HashMap<>();
             record.intoMap().forEach((key, value) -> stringObjectMap.put(key.toLowerCase(), value));
-            SqlStarVertex star = (SqlStarVertex) createVertex(stringObjectMap.get("id"), tableName.toLowerCase(), stringObjectMap);
+            UniStarVertex star = createVertex(stringObjectMap.get("id"), tableName.toLowerCase(), stringObjectMap);
             innerEdgeControllers.forEach(innerEdgeController -> {
                     if (stringObjectMap.get(innerEdgeController.getEdgeLabel()) != null)
                         innerEdgeController.parseEdge(star, stringObjectMap);

@@ -1,33 +1,23 @@
 package org.unipop.elastic.controllermanagers;
 
 import org.apache.commons.configuration.Configuration;
-import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.Property;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.script.ScriptService;
 import org.unipop.controller.EdgeController;
-import org.unipop.controller.Predicates;
 import org.unipop.controller.VertexController;
 import org.unipop.controllerprovider.BasicControllerManager;
-import org.unipop.controllerprovider.ControllerManager;
 import org.unipop.elastic.controller.edge.ElasticEdgeController;
 import org.unipop.elastic.controller.template.controller.vertex.TemplateVertexController;
-import org.unipop.elastic.controller.vertex.ElasticVertexController;
 import org.unipop.elastic.helpers.ElasticClientFactory;
 import org.unipop.elastic.helpers.ElasticHelper;
 import org.unipop.elastic.helpers.ElasticMutations;
 import org.unipop.elastic.helpers.TimingAccessor;
-import org.unipop.structure.BaseEdge;
-import org.unipop.structure.BaseVertex;
-import org.unipop.structure.UniGraph;
+import org.unipop.structure.*;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
+import java.util.List;
 
 /**
  * Created by sbarzilay on 2/10/16.
@@ -55,6 +45,11 @@ public class AggsControllerManager extends BasicControllerManager{
     }
 
     @Override
+    public List<BaseElement> properties(List<BaseElement> elements) {
+        throw new org.apache.commons.lang.NotImplementedException();
+    }
+
+    @Override
     public void commit() {
         elasticMutations.commit();
     }
@@ -67,6 +62,36 @@ public class AggsControllerManager extends BasicControllerManager{
     @Override
     protected EdgeController getDefaultEdgeController() {
         return edgeController;
+    }
+
+    @Override
+    public void addPropertyToVertex(BaseVertex vertex, BaseVertexProperty vertexProperty) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void removePropertyFromVertex(BaseVertex vertex, Property property) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void removeVertex(BaseVertex vertex) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public List<BaseElement> vertexProperties(List<BaseVertex> vertices) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void update(BaseVertex vertex, boolean force) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public String getResource() {
+        throw new NotImplementedException();
     }
 
     @Override

@@ -1,6 +1,7 @@
 package org.unipop.elastic.controller.template.controller.vertex;
 
 import org.apache.tinkerpop.gremlin.structure.Property;
+import org.unipop.controllerprovider.ControllerManager;
 import org.unipop.elastic.helpers.ElasticMutations;
 import org.unipop.structure.BaseVertex;
 import org.unipop.structure.BaseVertexProperty;
@@ -11,12 +12,12 @@ import java.util.Map;
 /**
  * Created by sbarzilay on 02/02/16.
  */
-public class TemplateVertex<T extends TemplateVertexController> extends BaseVertex<T>{
+public class TemplateVertex extends BaseVertex{
     private ElasticMutations elasticMutations;
     private String index;
 
-    protected TemplateVertex(Object id, String label, Map<String, Object> keyValues, T controller, UniGraph graph, ElasticMutations elasticMutations, String index) {
-        super(id, label, keyValues, controller, graph);
+    protected TemplateVertex(Object id, String label, Map<String, Object> keyValues, ControllerManager manager, UniGraph graph, ElasticMutations elasticMutations, String index) {
+        super(id, label, keyValues, manager, graph);
         this.elasticMutations = elasticMutations;
         this.index = index;
     }

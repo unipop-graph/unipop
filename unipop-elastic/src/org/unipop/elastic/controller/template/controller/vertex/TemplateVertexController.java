@@ -5,6 +5,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.script.ScriptService;
@@ -14,7 +15,9 @@ import org.unipop.elastic.controller.template.helpers.TemplateHelper;
 import org.unipop.elastic.controller.template.helpers.TemplateQueryIterator;
 import org.unipop.elastic.helpers.ElasticMutations;
 import org.unipop.elastic.helpers.TimingAccessor;
+import org.unipop.structure.BaseElement;
 import org.unipop.structure.BaseVertex;
+import org.unipop.structure.BaseVertexProperty;
 import org.unipop.structure.UniGraph;
 
 import java.util.*;
@@ -62,6 +65,36 @@ public class TemplateVertexController implements VertexController {
                 ScriptService.ScriptType.FILE : ScriptService.ScriptType.INDEXED;
     }
 
+    @Override
+    public void addPropertyToVertex(BaseVertex vertex, BaseVertexProperty vertexProperty) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void removePropertyFromVertex(BaseVertex vertex, Property property) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void removeVertex(BaseVertex vertex) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public List<BaseElement> vertexProperties(List<BaseVertex> vertices) {
+        throw new sun.reflect.generics.reflectiveObjects.NotImplementedException();
+    }
+
+    @Override
+    public void update(BaseVertex vertex, boolean force) {
+        throw new sun.reflect.generics.reflectiveObjects.NotImplementedException();
+    }
+
+    @Override
+    public String getResource() {
+        return defaultIndex;
+    }
+
     @SuppressWarnings("unchecked")
     protected TemplateVertex createVertex(Object id, String label, Map<String, Object> keyValues) {
         Map<String, Object> parsedKeyValues = new HashMap<>();
@@ -74,7 +107,7 @@ public class TemplateVertexController implements VertexController {
             } else
                 parsedKeyValues.put(key, value);
         });
-        return new TemplateVertex(id, label, parsedKeyValues, this, graph, elasticMutations, defaultIndex);
+        return new TemplateVertex(id, label, parsedKeyValues, graph.getControllerManager(), graph, elasticMutations, defaultIndex);
     }
 
     private Object getLabel(Predicates predicates) {

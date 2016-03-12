@@ -1,7 +1,7 @@
 package org.unipop.elastic.controllermanagers;
 
 import org.apache.commons.configuration.Configuration;
-import org.apache.tinkerpop.gremlin.structure.T;
+import org.apache.tinkerpop.gremlin.structure.Property;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.script.ScriptService;
 import org.unipop.controller.EdgeController;
@@ -13,9 +13,11 @@ import org.unipop.elastic.helpers.ElasticClientFactory;
 import org.unipop.elastic.helpers.ElasticHelper;
 import org.unipop.elastic.helpers.ElasticMutations;
 import org.unipop.elastic.helpers.TimingAccessor;
-import org.unipop.structure.UniGraph;
+import org.unipop.structure.*;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * Created by sbarzilay on 02/02/16.
@@ -52,8 +54,43 @@ public class TemplateControllerManager extends BasicControllerManager
     }
 
     @Override
+    public List<BaseElement> properties(List<BaseElement> elements) {
+        throw new org.apache.commons.lang.NotImplementedException();
+    }
+
+    @Override
     public void commit() {
         elasticMutations.commit();
+    }
+
+    @Override
+    public void addPropertyToVertex(BaseVertex vertex, BaseVertexProperty vertexProperty) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void removePropertyFromVertex(BaseVertex vertex, Property property) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void removeVertex(BaseVertex vertex) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public List<BaseElement> vertexProperties(List<BaseVertex> vertices) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void update(BaseVertex vertex, boolean force) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public String getResource() {
+        throw new NotImplementedException();
     }
 
     @Override

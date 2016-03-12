@@ -1,6 +1,8 @@
 package org.unipop.elastic2.controllermanagers;
 
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.NotImplementedException;
+import org.apache.tinkerpop.gremlin.structure.Property;
 import org.elasticsearch.client.Client;
 import org.unipop.controller.EdgeController;
 import org.unipop.controller.VertexController;
@@ -11,7 +13,10 @@ import org.unipop.elastic2.helpers.ElasticClientFactory;
 import org.unipop.elastic2.helpers.ElasticHelper;
 import org.unipop.elastic2.helpers.ElasticMutations;
 import org.unipop.elastic2.helpers.TimingAccessor;
-import org.unipop.structure.UniGraph;
+import org.unipop.structure.*;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class BasicElasticControllerManager extends BasicControllerManager {
 
@@ -35,6 +40,14 @@ public class BasicElasticControllerManager extends BasicControllerManager {
     }
 
     @Override
+    public List<BaseElement> properties(List<BaseElement> elements) {
+        List<BaseVertex> vertices = elements.stream().filter(element -> element instanceof UniDelayedVertex)
+                .map(element -> ((BaseVertex) element)).collect(Collectors.toList());
+
+        return vertexProperties(vertices);
+    }
+
+    @Override
     protected VertexController getDefaultVertexController() {
         return vertexController;
     }
@@ -46,6 +59,36 @@ public class BasicElasticControllerManager extends BasicControllerManager {
 
     @Override
     public void commit() { elasticMutations.commit(); }
+
+    @Override
+    public void addPropertyToVertex(BaseVertex vertex, BaseVertexProperty vertexProperty) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void removePropertyFromVertex(BaseVertex vertex, Property property) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void removeVertex(BaseVertex vertex) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public List<BaseElement> vertexProperties(List<BaseVertex> vertices) {
+        return vertexController.vertexProperties(vertices);
+    }
+
+    @Override
+    public void update(BaseVertex vertex, boolean force) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public String getResource() {
+        throw new NotImplementedException();
+    }
 
     @Override
     public void close() {

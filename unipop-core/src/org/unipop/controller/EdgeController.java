@@ -2,9 +2,7 @@ package org.unipop.controller;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.unipop.structure.BaseEdge;
-import org.unipop.structure.BaseVertex;
-import org.unipop.structure.UniGraph;
+import org.unipop.structure.*;
 
 import java.util.*;
 

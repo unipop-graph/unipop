@@ -36,19 +36,14 @@ import static org.junit.Assert.assertTrue;
 public class Misc extends AbstractGremlinTest {
 
     public Misc() throws InterruptedException, ExecutionException, ClassNotFoundException, SQLException, IOException {
-        GraphManager.setGraphProvider(new IntegrationGraphProvider());
+        GraphManager.setGraphProvider(new JsonGraphProvider());
     }
 
     @Test
     @LoadGraphWith(MODERN)
     public void g_V_drop() throws Exception {
-        final Traversal traversal = g.V().union(
-                repeat(union(
-                        out("created"),
-                        in("created"))).times(2),
-                repeat(union(
-                        in("created"),
-                        out("created"))).times(2)).label().groupCount();
+        Thread.sleep(1000);
+        final Traversal traversal = g.V().out().out().valueMap();
         check(traversal);
     }
 

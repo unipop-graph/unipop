@@ -15,7 +15,7 @@ public abstract class BaseElement implements Element{
     protected final Object id;
     protected String label;
     protected final UniGraph graph;
-    protected boolean removed = false;
+    public boolean removed = false;
 
     public BaseElement(final Object id, final String label, UniGraph graph, Map<String, Object> keyValues) {
         this.graph = graph;

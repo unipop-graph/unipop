@@ -65,7 +65,7 @@ public class ElasticGraphProvider extends AbstractGraphProvider {
 //            put("controllerManagerFactory", (ControllerManagerFactory)() -> new BasicElasticControllerManager());
 //            put("controllerManagerFactory", (ControllerManagerFactory)() -> new TemplateControllerManager());
             put("controllerManagerFactory", (ControllerManagerFactory) () -> new ElasticStarControllerManager());
-            //put("controllerManagerFactory", (ControllerManagerFactory)() -> new ModernGraphControllerManager());
+//            put("controllerManagerFactory", (ControllerManagerFactory)() -> new ModernGraphControllerManager());
 
             put("strategyRegistrar", new SimplifiedStrategyRegistrar());
         }};

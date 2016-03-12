@@ -9,11 +9,12 @@ import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
+import org.unipop.structure.BaseElement;
 
 import java.util.Iterator;
 import java.util.Map;
 
-public class QueryIterator<E extends Element> implements Iterator<E> {
+public class QueryIterator<E extends BaseElement> implements Iterator<E> {
 
     private SearchResponse scrollResponse;
     private long allowedRemaining;
@@ -48,6 +49,7 @@ public class QueryIterator<E extends Element> implements Iterator<E> {
         hits = scrollResponse.getHits().iterator();
         this.timing.stop("query");
     }
+
 
     @Override
     public boolean hasNext() {

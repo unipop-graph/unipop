@@ -21,9 +21,12 @@ import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.elasticsearch.search.SearchHit;
 import org.unipop.elastic.helpers.AggregationHelper;
 import org.unipop.elastic.helpers.ElasticMutations;
+import org.unipop.structure.BaseElement;
 import org.unipop.structure.BaseVertex;
+import org.unipop.structure.BaseVertexProperty;
 import org.unipop.structure.UniGraph;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -48,6 +51,36 @@ public class SchemaVertexController extends SchemaElementController implements V
     }
 
     @Override
+    public void addPropertyToVertex(BaseVertex vertex, BaseVertexProperty vertexProperty) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void removePropertyFromVertex(BaseVertex vertex, Property property) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void removeVertex(BaseVertex vertex) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public List<BaseElement> vertexProperties(List<BaseVertex> vertices) {
+        throw new sun.reflect.generics.reflectiveObjects.NotImplementedException();
+    }
+
+    @Override
+    public void update(BaseVertex vertex, boolean force) {
+        throw new sun.reflect.generics.reflectiveObjects.NotImplementedException();
+    }
+
+    @Override
+    public String getResource() {
+        throw new NotImplementedException();
+    }
+
+    @Override
     public void close() {
         throw new NotImplementedException();
     }
@@ -62,7 +95,7 @@ public class SchemaVertexController extends SchemaElementController implements V
 
     @Override
     public BaseVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
-        return new SchemaVertex(vertexId, vertexLabel, graph, null, this, lazyGetterFactory.getLazyGetter(vertexLabel), schemaProvider, this.elasticMutations);
+        return new SchemaVertex(vertexId, vertexLabel, graph, null, graph.getControllerManager(), lazyGetterFactory.getLazyGetter(vertexLabel), schemaProvider, this.elasticMutations);
     }
 
     @Override
@@ -96,7 +129,7 @@ public class SchemaVertexController extends SchemaElementController implements V
 
     @Override
     public BaseVertex addVertex(Object id, String label, Map<String, Object> properties) {
-        BaseVertex v = new SchemaVertex(id, label, graph, properties, this, lazyGetterFactory.getLazyGetter(label), this.schemaProvider, this.elasticMutations);
+        BaseVertex v = new SchemaVertex(id, label, graph, properties, graph.getControllerManager(), lazyGetterFactory.getLazyGetter(label), this.schemaProvider, this.elasticMutations);
 
         Optional<GraphVertexSchema> vertexSchema = this.schemaProvider.getVertexSchema(label);
         if (!vertexSchema.isPresent()) {

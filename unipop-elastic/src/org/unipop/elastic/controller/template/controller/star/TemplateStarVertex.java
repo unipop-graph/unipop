@@ -2,7 +2,8 @@ package org.unipop.elastic.controller.template.controller.star;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.unipop.controller.Predicates;
-import org.unipop.elastic.controller.star.inneredge.InnerEdge;
+
+import org.unipop.controllerprovider.ControllerManager;
 import org.unipop.elastic.controller.template.controller.star.inneredge.TemplateInnerEdge;
 import org.unipop.elastic.controller.template.controller.vertex.TemplateVertex;
 import org.unipop.elastic.helpers.ElasticMutations;
@@ -18,11 +19,11 @@ import java.util.stream.Collectors;
 /**
  * Created by sbarzilay on 02/02/16.
  */
-public class TemplateStarVertex extends TemplateVertex<TemplateStarController>{
+public class TemplateStarVertex extends TemplateVertex{
     private Set<TemplateInnerEdge> innerEdges;
 
-    protected TemplateStarVertex(Object id, String label, Map keyValues, TemplateStarController controller, UniGraph graph, ElasticMutations elasticMutations, String index) {
-        super(id, label, keyValues, controller, graph, elasticMutations, index);
+    protected TemplateStarVertex(Object id, String label, Map keyValues, ControllerManager manager, UniGraph graph, ElasticMutations elasticMutations, String index) {
+        super(id, label, keyValues, manager, graph, elasticMutations, index);
         innerEdges = new HashSet<>();
     }
 
