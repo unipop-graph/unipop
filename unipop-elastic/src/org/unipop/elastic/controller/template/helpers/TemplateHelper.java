@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.unipop.controller.ExistsP;
+import org.unipop.controller.Predicates;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,6 +18,19 @@ import java.util.function.BiPredicate;
  * Created by sbarzilay on 02/02/16.
  */
 public class TemplateHelper {
+    public static Map<String, Object> createTemplateParams(Predicates predicates) {
+        Map<String, Object> params = new HashMap<>();
+
+        Map<String, Object> filters = new HashMap<>();
+
+        predicates.hasContainers.forEach(has -> addParam(filters, has));
+
+        params.put("filters", filters);
+        params.put("limit", Math.min(100000,predicates.limitHigh));
+
+        return params;
+    }
+
     public static Map<String, Object> createTemplateParams(List<HasContainer> hasContainers) {
         Map<String, Object> params = new HashMap<>();
 

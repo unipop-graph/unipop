@@ -4,36 +4,40 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.common.xcontent.ToXContent;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.script.ScriptService;
-import org.elasticsearch.search.SearchHit;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
 import org.unipop.elastic.helpers.TimingAccessor;
 
-import java.util.Iterator;
-import java.util.Map;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * Created by sbarzilay on 02/02/16.
+ *
  */
 public class TemplateQueryIterator<E extends Element> implements Iterator<E> {
-    private SearchResponse scrollResponse;
     private long allowedRemaining;
     private final Parser<E> parser;
-    private TimingAccessor timing;
-    private final int scrollSize;
-    private Client client;
-    private Iterator<SearchHit> hits;
+    Iterator<JSONObject> objectIterator;
 
-    public TemplateQueryIterator(int scrollSize, long maxSize, Client client,
-                         Parser<E> parser, TimingAccessor timing, String templateName, Map<String, Object> templateParams, ScriptService.ScriptType type, String... indices) {
-        this.scrollSize = scrollSize;
-        this.client = client;
+    @SuppressWarnings("unchecked")
+    public TemplateQueryIterator(long maxSize,
+                                 Client client,
+                                 Parser<E> parser,
+                                 TimingAccessor timing,
+                                 String templateName,
+                                 Map<String, Object> templateParams,
+                                 ScriptService.ScriptType type,
+                                 Map<String, String> paths,
+                                 String... indices) {
         this.allowedRemaining = maxSize;
         this.parser = parser;
-        this.timing = timing;
-
-        this.timing.start("template");
+        timing.start("template");
 
         SearchRequestBuilder searchRequestBuilder;
 
@@ -41,37 +45,62 @@ public class TemplateQueryIterator<E extends Element> implements Iterator<E> {
                 .setTemplateName(templateName).setTemplateType(type)
                 .setTemplateParams(templateParams);
 
-        if (scrollSize > 0)
-            searchRequestBuilder.setScroll(new TimeValue(60000))
-                    .setSize(maxSize < scrollSize ? (int) maxSize : scrollSize);
-        else searchRequestBuilder.setSize(maxSize < 100000 ? (int) maxSize : 100000);
+        SearchResponse searchResponse = searchRequestBuilder.execute().actionGet();
 
-        this.scrollResponse = searchRequestBuilder.execute().actionGet();
+        XContentBuilder builder;
+        try {
+            builder = XContentFactory.jsonBuilder();
+            builder.startObject();
+            searchResponse.toXContent(builder, ToXContent.EMPTY_PARAMS);
+            builder.endObject();
+            JSONObject jsonResponse = (JSONObject) JSONValue.parse(builder.string());
+            List<JSONObject> objects = new ArrayList<>();
+            paths.keySet().forEach(path ->{
+                String[] seg = path.split("\\.");
+                JSONObject ele = jsonResponse;
+                boolean shouldAdd = true;
+                for (String element : seg){
+                    Object temp = ele.get(element);
+                    if (temp instanceof JSONObject)
+                        ele = ((JSONObject) temp);
+                    else if (temp instanceof JSONArray) {
+                        ((JSONArray) temp).forEach(jsonElement -> {
+                            JSONObject object = ((JSONObject) jsonElement);
+                            object.put("label", paths.get(path));
+                            objects.add(object);
+                        });
+                        shouldAdd = false;
+                    }
+                }
+                if (shouldAdd)
+                    objects.add(ele);
+                else shouldAdd = true;
+            });
+            objectIterator = objects.iterator();
+        } catch (IOException e) {
+            throw new RuntimeException("something went wrong");
+        }
 
-        hits = scrollResponse.getHits().iterator();
-        this.timing.stop("template");
+        timing.stop("template");
     }
 
     @Override
     public boolean hasNext() {
-        if (allowedRemaining <= 0) return false;
-        if (hits.hasNext()) return true;
-
-        if (scrollSize > 0) {
-            timing.start("templateScroll");
-            scrollResponse = client.prepareSearchScroll(scrollResponse.getScrollId()).setScroll(new TimeValue(600000)).execute().actionGet();
-            hits = scrollResponse.getHits().iterator();
-            timing.stop("templateScroll");
-        }
-
-        return hits.hasNext();
+        return allowedRemaining > 0 && objectIterator.hasNext();
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public E next() {
         allowedRemaining--;
-        SearchHit hit = hits.next();
-        return parser.parse(hit.id(), hit.getType(), hit.getSource());
+        Map<String, Object> object = objectIterator.next();
+        if (object.containsKey("_source")){
+            Map<String, Object> source = ((Map<String, Object>) object.get("_source"));
+            return parser.parse(object.get("_id").toString(), object.get("_type").toString(), source);
+        }
+        else{
+            return parser.parse(object.hashCode(), object.get("label").toString(), object);
+        }
     }
 
     public interface Parser<E> {

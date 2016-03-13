@@ -4,7 +4,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
@@ -13,21 +12,13 @@ import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.elasticsearch.index.query.*;
 import org.javatuples.Pair;
 import org.unipop.controller.Predicates;
-import org.unipop.controller.aggregation.SemanticKeyTraversal;
-import org.unipop.controller.aggregation.SemanticReducerTraversal;
 import org.unipop.elastic.controller.schema.helpers.AggregationBuilder;
 import org.unipop.elastic.controller.schema.helpers.SearchAggregationIterable;
-import org.unipop.elastic.controller.schema.helpers.SearchBuilder;
 import org.unipop.elastic.controller.schema.helpers.aggregationConverters.*;
 import org.unipop.elastic.helpers.*;
-import org.unipop.structure.BaseEdge;
-import org.unipop.structure.BaseVertex;
-import org.unipop.structure.UniGraph;
+import org.unipop.structure.*;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 public class ElasticEdgeController implements org.unipop.controller.EdgeController {
     private UniGraph graph;
@@ -47,7 +38,8 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
         this.timing = timing;
     }
 
-    public ElasticEdgeController(){}
+    public ElasticEdgeController() {
+    }
 
     @Override
     public void init(Map<String, Object> conf, UniGraph graph) throws Exception {

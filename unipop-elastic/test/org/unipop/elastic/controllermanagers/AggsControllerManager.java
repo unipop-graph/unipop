@@ -1,41 +1,31 @@
 package org.unipop.elastic.controllermanagers;
 
 import org.apache.commons.configuration.Configuration;
-import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.Property;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.script.ScriptService;
 import org.unipop.controller.EdgeController;
-import org.unipop.controller.Predicates;
 import org.unipop.controller.VertexController;
 import org.unipop.controllerprovider.BasicControllerManager;
-import org.unipop.controllerprovider.ControllerManager;
 import org.unipop.elastic.controller.edge.ElasticEdgeController;
 import org.unipop.elastic.controller.template.controller.vertex.TemplateVertexController;
-import org.unipop.elastic.controller.vertex.ElasticVertexController;
 import org.unipop.elastic.helpers.ElasticClientFactory;
 import org.unipop.elastic.helpers.ElasticHelper;
 import org.unipop.elastic.helpers.ElasticMutations;
 import org.unipop.elastic.helpers.TimingAccessor;
-import org.unipop.structure.BaseEdge;
-import org.unipop.structure.BaseVertex;
-import org.unipop.structure.UniGraph;
+import org.unipop.structure.*;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
+import java.util.HashMap;
+import java.util.List;
 
 /**
  * Created by sbarzilay on 2/10/16.
  */
-public class AggsControllerManager implements ControllerManager{
+public class AggsControllerManager extends BasicControllerManager{
 
     private EdgeController edgeController;
     private VertexController vertexController;
-    private VertexController aggs;
     private Client client;
     private ElasticMutations elasticMutations;
     private TimingAccessor timing;
@@ -50,8 +40,13 @@ public class AggsControllerManager implements ControllerManager{
         timing = new TimingAccessor();
         elasticMutations = new ElasticMutations(false, client, timing);
         edgeController = new ElasticEdgeController(graph, client, elasticMutations, indexName, 0, timing);
-        vertexController = new ElasticVertexController(graph, client, elasticMutations, indexName, 0, timing);
-        aggs = new TemplateVertexController(graph, client, elasticMutations, 0, timing, indexName, "dyn_template", ScriptService.ScriptType.FILE);
+//        vertexController = new ElasticVertexController(graph, client, elasticMutations, indexName, 0, timing);
+        vertexController = new TemplateVertexController(graph, client, elasticMutations, 0, timing, indexName, "dyn_template", ScriptService.ScriptType.FILE, new HashMap<>());
+    }
+
+    @Override
+    public List<BaseElement> properties(List<BaseElement> elements) {
+        throw new org.apache.commons.lang.NotImplementedException();
     }
 
     @Override
@@ -60,71 +55,43 @@ public class AggsControllerManager implements ControllerManager{
     }
 
     @Override
-    public Iterator<BaseEdge> edges(Predicates predicates) {
-        return edgeController.edges(predicates);
+    protected VertexController getDefaultVertexController() {
+        return vertexController;
     }
 
     @Override
-    public Iterator<BaseEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
-        return edgeController.edges(vertices, direction, edgeLabels, predicates);
+    protected EdgeController getDefaultEdgeController() {
+        return edgeController;
     }
 
     @Override
-    public long edgeCount(Predicates predicates) {
-        return 0;
+    public void addPropertyToVertex(BaseVertex vertex, BaseVertexProperty vertexProperty) {
+        throw new NotImplementedException();
     }
 
     @Override
-    public long edgeCount(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
-        return 0;
+    public void removePropertyFromVertex(BaseVertex vertex, Property property) {
+        throw new NotImplementedException();
     }
 
     @Override
-    public Map<String, Object> edgeGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
-        return null;
+    public void removeVertex(BaseVertex vertex) {
+        throw new NotImplementedException();
     }
 
     @Override
-    public Map<String, Object> edgeGroupBy(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
-        return null;
+    public List<BaseElement> vertexProperties(List<BaseVertex> vertices) {
+        throw new NotImplementedException();
     }
 
     @Override
-    public BaseEdge addEdge(Object edgeId, String label, BaseVertex outV, BaseVertex inV, Map<String, Object> properties) {
-        return null;
+    public void update(BaseVertex vertex, boolean force) {
+        throw new NotImplementedException();
     }
 
     @Override
-    public Iterator<BaseVertex> vertices(Predicates predicates) {
-        return Stream.of(vertexController, aggs).flatMap(controller -> {
-            Iterable<BaseVertex> iter = () -> controller.vertices(predicates);
-            return StreamSupport.stream(iter.spliterator(), false);
-        }).collect(Collectors.toList()).iterator();
-    }
-
-    @Override
-    public BaseVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
-        return Stream.of(vertexController, aggs).map(controller -> controller.vertex(direction, vertexId, vertexLabel)).findFirst().get();
-    }
-
-    @Override
-    public long vertexCount(Predicates predicates) {
-        return 0;
-    }
-
-    @Override
-    public Map<String, Object> vertexGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
-        return null;
-    }
-
-    @Override
-    public BaseVertex addVertex(Object id, String label, Map<String, Object> properties) {
-        return null;
-    }
-
-    @Override
-    public void init(Map<String, Object> conf, UniGraph graph) throws Exception {
-
+    public String getResource() {
+        throw new NotImplementedException();
     }
 
     @Override

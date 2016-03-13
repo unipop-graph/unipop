@@ -8,6 +8,6 @@ import org.unipop.integration.JsonGraphProvider;
 import org.unipop.structure.UniGraph;
 
 @RunWith(ProcessStandardSuite.class)
-@GraphProviderClass(provider = JsonGraphProvider.class, graph = UniGraph.class)
+@GraphProviderClass(provider = IntegrationGraphProvider.class, graph = UniGraph.class)
 public class IntegrationProcessSuite {
 }

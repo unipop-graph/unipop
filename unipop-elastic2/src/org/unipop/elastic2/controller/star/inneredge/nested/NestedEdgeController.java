@@ -6,33 +6,31 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.unipop.controller.Predicates;
-import org.unipop.elastic2.controller.star.ElasticStarVertex;
-import org.unipop.elastic2.controller.star.inneredge.InnerEdge;
-import org.unipop.elastic2.controller.star.inneredge.InnerEdgeController;
 import org.unipop.elastic2.helpers.ElasticHelper;
-import org.unipop.structure.BaseVertex;
+import org.unipop.structure.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class NestedEdgeController implements InnerEdgeController {
-    private String vertexLabel;
-    private String edgeLabel;
-    private String externalVertexLabel;
-    private Direction direction;
-    private String externalVertexIdField;
-    private String edgeIdField;
+public class NestedEdgeController implements org.unipop.controller.InnerEdgeController {
+    protected String vertexLabel;
+    protected String edgeLabel;
+    protected String externalVertexLabel;
+    protected Direction direction;
+    protected String externalVertexIdField;
+    protected String edgeIdField;
+    protected Map<String, Object> transientProperties;
 
-    public NestedEdgeController(String vertexLabel, String edgeLabel, Direction direction, String externalVertexIdField, String externalVertexLabel, String edgeIdField) {
+    public NestedEdgeController(String vertexLabel, String edgeLabel, Direction direction, String externalVertexIdField, String externalVertexLabel, String edgeIdField, Map<String, Object> transientProperties) {
         this.vertexLabel = vertexLabel;
         this.edgeLabel = edgeLabel;
         this.externalVertexLabel = externalVertexLabel;
         this.direction = direction;
         this.externalVertexIdField = externalVertexIdField;
         this.edgeIdField = edgeIdField;
+        this.transientProperties = transientProperties;
     }
 
     @Override
@@ -46,11 +44,11 @@ public class NestedEdgeController implements InnerEdgeController {
     }
 
     @Override
-    public InnerEdge addEdge(Object edgeId, String label, BaseVertex outV, BaseVertex inV, Map<String, Object> properties) {
+    public UniInnerEdge addEdge(Object edgeId, String label, BaseVertex outV, BaseVertex inV, Map<String, Object> properties) {
         if (!label.equals(edgeLabel)) return null;
-        ElasticStarVertex starVertex = (ElasticStarVertex) (direction.equals(Direction.IN) ? inV : outV);
+        UniStarVertex starVertex = (UniStarVertex) (direction.equals(Direction.IN) ? inV : outV);
         if (!starVertex.label().equals(vertexLabel)) return null;
-        NestedEdge edge = new NestedEdge(starVertex, edgeId, edgeLabel, this, outV, inV);
+        UniInnerEdge edge = new UniInnerEdge(starVertex, edgeId, edgeLabel, this, outV, inV);
         properties.forEach((key, value) -> edge.addPropertyLocal(key, value));
         starVertex.addInnerEdge(edge);
         starVertex.update(false);
@@ -58,12 +56,12 @@ public class NestedEdgeController implements InnerEdgeController {
     }
 
     @Override
-    public Set<InnerEdge> parseEdges(ElasticStarVertex vertex, Map<String, Object> keyValues) {
+    public Set<UniInnerEdge> parseEdges(UniStarVertex vertex, Map<String, Object> keyValues) {
         Object nested = keyValues.get(edgeLabel);
         if (nested == null) return SetUtils.emptySet();
         keyValues.remove(edgeLabel);
         if (nested instanceof Map) {
-            InnerEdge edge = parseEdge(vertex, (Map<String, Object>) nested);
+            UniInnerEdge edge = parseEdge(vertex, (Map<String, Object>) nested);
             return Collections.singleton(edge);
         } else if (nested instanceof List) {
             List<Map<String, Object>> edgesMaps = (List<Map<String, Object>>) nested;
@@ -71,20 +69,22 @@ public class NestedEdgeController implements InnerEdgeController {
         } else throw new IllegalArgumentException(nested.toString());
     }
 
-    private InnerEdge parseEdge(ElasticStarVertex vertex, Map<String, Object> keyValues) {
+    @Override
+    public UniInnerEdge parseEdge(UniStarVertex vertex, Map<String, Object> keyValues) {
         Object externalVertexId = keyValues.get(externalVertexIdField);
         Object edgeId = keyValues.get(edgeIdField);
-        BaseVertex externalVertex = vertex.getGraph().getControllerManager().vertex(direction.opposite(), externalVertexId, externalVertexLabel);
+        UniVertex externalVertex = (UniVertex) vertex.getGraph().getControllerManager().vertex(direction.opposite(), externalVertexId, externalVertexLabel);
+        transientProperties.forEach((key,value)-> externalVertex.addTransientProperty(new TransientProperty(externalVertex, key, value)));
         BaseVertex outV = direction.equals(Direction.OUT) ? vertex : externalVertex;
         BaseVertex inV = direction.equals(Direction.IN) ? vertex : externalVertex;
-        NestedEdge edge = new NestedEdge(vertex, edgeId, edgeLabel, this, outV, inV);
+        UniInnerEdge edge = new UniInnerEdge(vertex, edgeId, edgeLabel, this, outV, inV);
         keyValues.forEach((key, value) -> edge.addPropertyLocal(key, value));
         vertex.addInnerEdge(edge);
         return edge;
     }
 
     @Override
-    public QueryBuilder getQuery(ArrayList<HasContainer> hasContainers) {
+    public Object getFilter(ArrayList<HasContainer> hasContainers) {
         ArrayList<HasContainer> transformed = new ArrayList<>();
 
         for (HasContainer has : hasContainers) {
@@ -103,7 +103,7 @@ public class NestedEdgeController implements InnerEdgeController {
     }
 
     @Override
-    public QueryBuilder getQuery(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
+    public Object getFilter(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
         if (!direction.opposite().equals(this.direction) && !direction.equals(Direction.BOTH)) return null;
         if (edgeLabels.length > 0 && !Arrays.asList(edgeLabels).contains(edgeLabel)) return null;
 
@@ -117,20 +117,30 @@ public class NestedEdgeController implements InnerEdgeController {
 
         ArrayList<HasContainer> hasContainers = (ArrayList<HasContainer>) predicates.hasContainers.clone();
         hasContainers.add(new HasContainer(externalVertexIdField, P.within(ids.toArray())));
-        return getQuery(hasContainers);
+        return getFilter(hasContainers);
     }
 
     @Override
-    public Map<String, Object> allFields(List<InnerEdge> edges) {
+    public Map<String, Object> allFields(List<UniInnerEdge> edges) {
         Map<String, Object>[] edgesMap = new Map[edges.size()];
         for (int i = 0; i < edges.size(); i++) {
-            InnerEdge innerEdge = edges.get(i);
+            UniInnerEdge innerEdge = edges.get(i);
             Map<String, Object> fields = innerEdge.allFields();
             fields.put(externalVertexIdField, innerEdge.vertices(direction.opposite()).next().id());
             fields.put(edgeIdField, innerEdge.id());
             edgesMap[i] = fields;
         }
         return Collections.singletonMap(edgeLabel, edgesMap);
+    }
+
+    @Override
+    public String getEdgeLabel() {
+        return edgeLabel;
+    }
+
+    @Override
+    public Direction getDirection() {
+        return direction;
     }
 
     @Override

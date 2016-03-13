@@ -1,9 +1,11 @@
 package org.unipop.elastic2.controllermanagers;
 
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticsearch.client.Client;
@@ -17,8 +19,12 @@ import org.unipop.elastic2.helpers.ElasticClientFactory;
 import org.unipop.elastic2.helpers.ElasticHelper;
 import org.unipop.elastic2.helpers.ElasticMutations;
 import org.unipop.elastic2.helpers.TimingAccessor;
+import org.unipop.structure.BaseElement;
+import org.unipop.structure.BaseVertex;
+import org.unipop.structure.BaseVertexProperty;
 import org.unipop.structure.UniGraph;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.inject;
@@ -47,6 +53,11 @@ public class ModernGraphControllerManager extends TinkerGraphControllerManager {
         Vertex software = schema.addVertex(T.label, "software", controller, vertexController);
         person.addEdge("created", software, controller, edgeController);
 
+    }
+
+    @Override
+    public List<BaseElement> properties(List<BaseElement> elements) {
+        throw new NotImplementedException();
     }
 
     @Override
@@ -98,5 +109,34 @@ public class ModernGraphControllerManager extends TinkerGraphControllerManager {
     @Override
     public Map<String, Object> vertexGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
         return null;
+    }
+
+    @Override
+    public void addPropertyToVertex(BaseVertex vertex, BaseVertexProperty vertexProperty) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void removePropertyFromVertex(BaseVertex vertex, Property property) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void removeVertex(BaseVertex vertex) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public List<BaseElement> vertexProperties(List<BaseVertex> vertices) {
+        throw new NotImplementedException();    }
+
+    @Override
+    public void update(BaseVertex vertex, boolean force) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public String getResource() {
+        throw new NotImplementedException();
     }
 }

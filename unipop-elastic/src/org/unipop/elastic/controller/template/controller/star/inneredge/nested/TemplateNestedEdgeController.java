@@ -69,7 +69,7 @@ public class TemplateNestedEdgeController implements TemplateInnerEdgeController
         keyValues.remove(externalIdField);
         keyValues.remove(externalLabelField);
 
-        TemplateInnerEdge edge = new TemplateNestedEdge(keyValues.get(edgeIdField), edgeLabel, null, outV, inV, vertex.getController(), vertex.getGraph());
+        TemplateInnerEdge edge = new TemplateNestedEdge(keyValues.get(edgeIdField), edgeLabel, null, outV, inV, vertex.getManager(), vertex.getGraph());
         keyValues.remove(edgeIdField);
         keyValues.forEach(edge::addPropertyLocal);
         vertex.addInneredge(edge);

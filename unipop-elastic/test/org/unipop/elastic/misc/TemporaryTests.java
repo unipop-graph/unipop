@@ -4,20 +4,25 @@ import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.GraphManager;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 import org.unipop.elastic.ElasticGraphProvider;
-import org.unipop.process.traversal.Text;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
-import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.GRATEFUL;
 import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource.computer;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
+import static org.junit.Assert.*;
 
 public class TemporaryTests extends AbstractGremlinTest {
 
@@ -27,46 +32,59 @@ public class TemporaryTests extends AbstractGremlinTest {
 
     @Test
     @LoadGraphWith(MODERN)
-    public void g_V_Drop() throws Exception {
-        GraphTraversal traversal =  g.V().and(has("age", P.gt(27)), outE().count().is(P.gte(2l))).values("name");
-        check(traversal);
-    }
-
-    @Test
-    @LoadGraphWith(MODERN)
-    public void g_VX2X_inE() {
-        GraphTraversal traversal = g.V().repeat(out()).times(2).valueMap();
-        //GraphTraversal traversal = g.V().out().out().valueMap();
-
-//        int counter = 0;
-//
-//        while(traversal.hasNext()) {
-//            ++counter;
-//            Vertex vertex = (Vertex)traversal.next();
-//            Assert.assertTrue(vertex.value("name").equals("lop") || vertex.value("name").equals("ripple"));
-//        }
-//
-//        Assert.assertEquals(2L, (long)counter);
-//        Assert.assertFalse(traversal.hasNext());
-
-        check(traversal);
-    }
-
-    @Test
-    @LoadGraphWith(MODERN)
-    public void g_V_repeat() {
-        GraphTraversal<Vertex, Vertex> traversal = g.V().repeat(out()).times(1);
-        check(traversal);
-    }
-
-    @Test
-    @LoadGraphWith(MODERN)
     public void test() {
-        GraphTraversal t = g.V().hasId("1").hasLabel("person").has("name", "mark");
+        Traversal t = g.V().out().out().valueMap();
+
         check(t);
     }
 
-    private void check(GraphTraversal traversal) {
+    public static <T> void checkResults(final List<T> expectedResults, final Traversal<?, T> traversal) {
+        final List<T> results = traversal.toList();
+        assertFalse(traversal.hasNext());
+        if(expectedResults.size() != results.size()) {
+            System.out.println("Expected results: " + expectedResults);
+            System.out.println("Actual results:   " + results);
+            assertEquals("Checking result size", expectedResults.size(), results.size());
+        }
+
+        for (T t : results) {
+            if (t instanceof Map) {
+                assertTrue("Checking map result existence: " + t, expectedResults.stream().filter(e -> e instanceof Map).filter(e -> internalCheckMap((Map) e, (Map) t)).findAny().isPresent());
+            } else {
+                assertTrue("Checking result existence: " + t, expectedResults.contains(t));
+            }
+        }
+        final Map<T, Long> expectedResultsCount = new HashMap<>();
+        final Map<T, Long> resultsCount = new HashMap<>();
+        assertEquals("Checking indexing is equivalent", expectedResultsCount.size(), resultsCount.size());
+        expectedResults.forEach(t -> MapHelper.incr(expectedResultsCount, t, 1l));
+        results.forEach(t -> MapHelper.incr(resultsCount, t, 1l));
+        expectedResultsCount.forEach((k, v) -> assertEquals("Checking result group counts", v, resultsCount.get(k)));
+        assertFalse(traversal.hasNext());
+    }
+
+    private static <A, B> boolean internalCheckMap(final Map<A, B> expectedMap, final Map<A, B> actualMap) {
+        final List<Map.Entry<A, B>> actualList = actualMap.entrySet().stream().sorted((a, b) -> a.getKey().toString().compareTo(b.getKey().toString())).collect(Collectors.toList());
+        final List<Map.Entry<A, B>> expectedList = expectedMap.entrySet().stream().sorted((a, b) -> a.getKey().toString().compareTo(b.getKey().toString())).collect(Collectors.toList());
+
+        if (expectedList.size() > actualList.size()) {
+            return false;
+        } else if (actualList.size() > expectedList.size()) {
+            return false;
+        }
+
+        for (int i = 0; i < actualList.size(); i++) {
+            if (!actualList.get(i).getKey().equals(expectedList.get(i).getKey())) {
+                return false;
+            }
+            if (!actualList.get(i).getValue().equals(expectedList.get(i).getValue())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void check(Traversal traversal) {
         System.out.println("pre-strategy:" + traversal);
         traversal.hasNext();
         System.out.println("post-strategy:" + traversal);

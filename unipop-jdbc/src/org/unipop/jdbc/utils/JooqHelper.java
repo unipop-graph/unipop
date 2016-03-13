@@ -8,6 +8,9 @@ import org.jooq.Condition;
 import org.jooq.Field;
 import org.jooq.impl.DSL;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.BiPredicate;
 
@@ -53,9 +56,9 @@ public class JooqHelper {
             else if (predicate == Contains.within){
                 if(value == null) return field.isNotNull();
                 else
-                    return field.in(value);
+                    return field.in(((Collection) value).toArray());
             }
         }
-        throw new IllegalArgumentException("predicate not supported by unipop: " + predicate.toString());
+        throw new IllegalArgumentException("predicate not supported by unipop: has");
     }
 }

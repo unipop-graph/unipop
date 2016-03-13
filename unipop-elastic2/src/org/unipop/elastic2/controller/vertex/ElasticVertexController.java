@@ -1,8 +1,10 @@
 package org.unipop.elastic2.controller.vertex;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Property;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
@@ -10,6 +12,7 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.SearchHits;
 import org.unipop.controller.Predicates;
 import org.unipop.controller.VertexController;
 import org.unipop.elastic2.controller.edge.ElasticEdge;
@@ -17,12 +20,11 @@ import org.unipop.elastic2.controller.schema.helpers.AggregationBuilder;
 import org.unipop.elastic2.controller.schema.helpers.SearchAggregationIterable;
 import org.unipop.elastic2.controller.schema.helpers.aggregationConverters.CompositeAggregation;
 import org.unipop.elastic2.helpers.*;
-import org.unipop.structure.BaseVertex;
-import org.unipop.structure.UniGraph;
+import org.unipop.structure.*;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 public class ElasticVertexController implements VertexController {
     protected UniGraph graph;
@@ -56,6 +58,67 @@ public class ElasticVertexController implements VertexController {
         this.scrollSize = Integer.parseInt(conf.getOrDefault("scrollSize", "0").toString());
     }
 
+    @Override
+    public void addPropertyToVertex(BaseVertex vertex, BaseVertexProperty vertexProperty) {
+        try {
+            elasticMutations.updateElement(vertex, defaultIndex, null, false);
+        }
+        catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void removePropertyFromVertex(BaseVertex vertex, Property property) {
+        elasticMutations.addElement(vertex, defaultIndex, null, false);
+    }
+
+    @Override
+    public void removeVertex(BaseVertex vertex) {
+        elasticMutations.deleteElement(vertex, defaultIndex, null);
+    }
+
+    @Override
+    public List<BaseElement> vertexProperties(List<BaseVertex> vertices) {
+        if (vertices.isEmpty())
+            return new ArrayList<>();
+        SearchRequestBuilder searchRequestBuilder = client.prepareSearch(defaultIndex);
+        Map<String, List<BaseVertex>> verticesByIds = vertices.stream().filter(vertex -> !((UniVertex) vertex).hasProperty())
+                .collect(Collectors.groupingBy(vertex -> vertex.id().toString()));
+        Set<String> types = vertices.stream().map(vertex -> vertex.label()).collect(Collectors.toSet());
+        if (!verticesByIds.isEmpty()) {
+            searchRequestBuilder.setQuery(QueryBuilders.boolQuery().filter(QueryBuilders.idsQuery(types.toArray(new String[types.size()]))
+                    .addIds(verticesByIds.keySet().toArray(new String[verticesByIds.size()]))));
+
+            searchRequestBuilder.setSize(verticesByIds.size());
+
+            SearchResponse searchResponse = searchRequestBuilder.execute().actionGet();
+            SearchHits hits = searchResponse.getHits();
+
+            hits.forEach(hit -> {
+                Map<String, Object> source = hit.getSource();
+                if (source != null)
+                    source.forEach((key, value) ->
+                            addProperty(verticesByIds.get(hit.getId().toString()), key, value));
+            });
+        }
+        return vertices.stream().map(vertex -> ((BaseElement) vertex)).collect(Collectors.toList());
+    }
+
+    protected void addProperty(List<BaseVertex> vertices, String key, Object value){
+        vertices.forEach(vertex -> vertex.addPropertyLocal(key, value));
+    }
+
+    @Override
+    public void update(BaseVertex vertex, boolean force) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public String getResource() {
+        return defaultIndex;
+    }
+
 
     @Override
     public BaseVertex addVertex(Object id, String label, Map<String, Object> properties) {
@@ -77,7 +140,7 @@ public class ElasticVertexController implements VertexController {
     public Iterator<BaseVertex> vertices(Predicates predicates) {
         elasticMutations.refresh(defaultIndex);
         BoolQueryBuilder boolQuery = ElasticHelper.createQueryBuilder(predicates.hasContainers);
-        boolQuery.must(QueryBuilders.missingQuery(ElasticEdge.InId));
+        boolQuery.mustNot(QueryBuilders.existsQuery(ElasticEdge.InId));
         return new QueryIterator<>(boolQuery, scrollSize, predicates.limitHigh, client, this::createVertex, timing, getDefaultIndex());
 //        return new QueryIterator<>(boolQuery, scrollSize, 10000, client, this::createVertex, timing, getDefaultIndex());
     }
@@ -91,7 +154,7 @@ public class ElasticVertexController implements VertexController {
     public long vertexCount(Predicates predicates) {
         elasticMutations.refresh(defaultIndex);
         BoolQueryBuilder boolQuery = ElasticHelper.createQueryBuilder(predicates.hasContainers);
-        boolQuery.must(QueryBuilders.missingQuery(ElasticEdge.InId));
+        boolQuery.mustNot(QueryBuilders.existsQuery(ElasticEdge.InId));
 
         try {
             SearchResponse response = client.prepareSearch().setIndices(defaultIndex)
@@ -108,7 +171,7 @@ public class ElasticVertexController implements VertexController {
     public Map<String, Object> vertexGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
         elasticMutations.refresh(defaultIndex);
         BoolQueryBuilder boolQuery = ElasticHelper.createQueryBuilder(predicates.hasContainers);
-        boolQuery.must(QueryBuilders.missingQuery(ElasticEdge.InId));
+        boolQuery.mustNot(QueryBuilders.existsQuery(ElasticEdge.InId));
 
         AggregationBuilder aggregationBuilder = new AggregationBuilder();
         AggregationHelper.applyAggregationBuilder(aggregationBuilder, keyTraversal, reducerTraversal, 0, 0, "global_ordinal_hash");
@@ -137,12 +200,12 @@ public class ElasticVertexController implements VertexController {
         return lazyGetter;
     }
 
-    protected ElasticVertex createLazyVertex(Object id, String label,  LazyGetter lazyGetter) {
-        return new ElasticVertex(id, label, null, this, graph, lazyGetter, elasticMutations, getDefaultIndex());
+    protected UniVertex createLazyVertex(Object id, String label,  LazyGetter lazyGetter) {
+        return new UniDelayedVertex(id, label, graph.getControllerManager(), graph);
     }
 
-    protected ElasticVertex createVertex(Object id, String label, Map<String, Object> keyValues) {
-        return new ElasticVertex(id, label, keyValues, this, graph, null, elasticMutations, getIndex(keyValues));
+    protected UniVertex createVertex(Object id, String label, Map<String, Object> keyValues) {
+        return new UniVertex(id, label, keyValues, graph.getControllerManager(), graph);
     }
 
     protected String getDefaultIndex() {

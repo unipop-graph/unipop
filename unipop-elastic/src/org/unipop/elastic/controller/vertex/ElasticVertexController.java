@@ -3,6 +3,7 @@ package org.unipop.elastic.controller.vertex;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Property;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
@@ -12,6 +13,7 @@ import org.elasticsearch.index.query.BoolFilterBuilder;
 import org.elasticsearch.index.query.FilterBuilders;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.SearchHits;
 import org.unipop.controller.Predicates;
 import org.unipop.controller.VertexController;
 import org.unipop.elastic.controller.edge.ElasticEdge;
@@ -19,12 +21,12 @@ import org.unipop.elastic.controller.schema.helpers.AggregationBuilder;
 import org.unipop.elastic.controller.schema.helpers.SearchAggregationIterable;
 import org.unipop.elastic.controller.schema.helpers.aggregationConverters.*;
 import org.unipop.elastic.helpers.*;
-import org.unipop.structure.BaseVertex;
-import org.unipop.structure.UniGraph;
+import org.unipop.structure.*;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 public class ElasticVertexController implements VertexController {
     protected UniGraph graph;
@@ -46,7 +48,8 @@ public class ElasticVertexController implements VertexController {
         this.lazyGetters = new HashMap<>();
     }
 
-    public ElasticVertexController(){}
+    public ElasticVertexController() {
+    }
 
     @Override
     public void init(Map<String, Object> conf, UniGraph graph) throws Exception {
@@ -58,6 +61,67 @@ public class ElasticVertexController implements VertexController {
         this.defaultIndex = conf.getOrDefault("defaultIndex", "unipop_es1").toString();
         this.scrollSize = Integer.parseInt(conf.getOrDefault("scrollSize", "0").toString());
 
+    }
+
+    @Override
+    public void addPropertyToVertex(BaseVertex vertex, BaseVertexProperty vertexProperty) {
+        try {
+            elasticMutations.updateElement(vertex, defaultIndex, null, false);
+        }
+        catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void removePropertyFromVertex(BaseVertex vertex, Property property) {
+        elasticMutations.addElement(vertex, defaultIndex, null, false);
+    }
+
+    @Override
+    public void removeVertex(BaseVertex vertex) {
+        elasticMutations.deleteElement(vertex, defaultIndex, null);
+    }
+
+    @Override
+    public List<BaseElement> vertexProperties(List<BaseVertex> vertices) {
+        if (vertices.isEmpty())
+            return new ArrayList<>();
+        SearchRequestBuilder searchRequestBuilder = client.prepareSearch(defaultIndex);
+        Map<String, List<BaseVertex>> verticesByIds = vertices.stream().filter(vertex -> !((UniVertex) vertex).hasProperty())
+                .collect(Collectors.groupingBy(vertex -> vertex.id().toString()));
+        Set<String> types = vertices.stream().map(vertex -> vertex.label()).collect(Collectors.toSet());
+        if (!verticesByIds.isEmpty()) {
+            searchRequestBuilder.setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(),
+                    FilterBuilders.idsFilter(types.toArray(new String[types.size()]))
+                            .addIds(verticesByIds.keySet().toArray(new String[verticesByIds.size()]))));
+            searchRequestBuilder.setSize(verticesByIds.size());
+
+            SearchResponse searchResponse = searchRequestBuilder.execute().actionGet();
+            SearchHits hits = searchResponse.getHits();
+
+            hits.forEach(hit -> {
+                Map<String, Object> source = hit.getSource();
+                if (source != null)
+                    source.forEach((key, value) ->
+                            addProperty(verticesByIds.get(hit.getId().toString()), key, value));
+            });
+        }
+        return vertices.stream().map(vertex -> ((BaseElement) vertex)).collect(Collectors.toList());
+    }
+
+    protected void addProperty(List<BaseVertex> vertices, String key, Object value){
+        vertices.forEach(vertex -> vertex.addPropertyLocal(key, value));
+    }
+
+    @Override
+    public void update(BaseVertex vertex, boolean force) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public String getResource() {
+        return defaultIndex;
     }
 
     @Override
@@ -80,8 +144,8 @@ public class ElasticVertexController implements VertexController {
     public Iterator<BaseVertex> vertices(Predicates predicates) {
         elasticMutations.refresh(defaultIndex);
         QueryBuilder query = ElasticHelper.createQuery(predicates.hasContainers, FilterBuilders.missingFilter(ElasticEdge.InId));
-            return new QueryIterator<>(query, scrollSize, predicates.limitHigh, client,
-                    this::createVertex, timing, getDefaultIndex());
+        return new QueryIterator<>(query, scrollSize, predicates.limitHigh, client,
+                this::createVertex, timing, getDefaultIndex());
     }
 
     @Override
@@ -139,12 +203,16 @@ public class ElasticVertexController implements VertexController {
         return elasticLazyGetter;
     }
 
-    protected ElasticVertex createLazyVertex(Object id, String label, ElasticLazyGetter elasticLazyGetter) {
-        return new ElasticVertex(id, label, null, this, graph, elasticLazyGetter, elasticMutations, getDefaultIndex());
+    protected UniVertex createLazyVertex(Object id, String label, ElasticLazyGetter elasticLazyGetter) {
+        UniDelayedVertex uniDelayedVertex = new UniDelayedVertex(id, label, graph.getControllerManager(), graph);
+        uniDelayedVertex.addTransientProperty(new TransientProperty(uniDelayedVertex, "resource", getResource()));
+        return uniDelayedVertex;
     }
 
-    protected ElasticVertex createVertex(Object id, String label, Map<String, Object> keyValues) {
-        return new ElasticVertex(id, label, keyValues, this, graph, null, elasticMutations, getIndex(keyValues));
+    protected UniVertex createVertex(Object id, String label, Map<String, Object> keyValues) {
+        UniVertex uniVertex = new UniVertex(id, label, keyValues, graph.getControllerManager(), graph);
+        uniVertex.addTransientProperty(new TransientProperty(uniVertex, "resource", getResource()));
+        return uniVertex;
     }
 
     protected String getDefaultIndex() {

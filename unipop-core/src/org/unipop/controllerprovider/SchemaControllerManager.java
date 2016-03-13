@@ -5,14 +5,14 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.unipop.controller.EdgeController;
 import org.unipop.controller.Predicates;
 import org.unipop.controller.VertexController;
-import org.unipop.structure.BaseEdge;
-import org.unipop.structure.BaseVertex;
+import org.unipop.structure.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -92,7 +92,6 @@ public abstract class SchemaControllerManager implements ControllerManager {
         return EmptyIterator.instance();
     }
 
-    // TODO: check why not working
     @Override
     public Iterator<BaseEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
         if (edgeLabels.length == 0)
@@ -230,6 +229,72 @@ public abstract class SchemaControllerManager implements ControllerManager {
 
     @Override
     public Map<String, Object> vertexGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
+        throw new NotImplementedException();
+    }
+
+    private VertexController getVertexControllerByResource(UniVertex vertex){
+        return vertexControllers.get(vertex.label())
+                .stream()
+                .filter(vertexController ->
+                        vertex.getTransientProperties().get("resource").value().equals(vertexController.getResource()))
+                .findFirst().get();
+    }
+
+    private VertexController getVertexControllerByResource(String resource){
+        return vertexControllers.values()
+                .stream()
+                .flatMap(Collection::stream)
+                .filter(vertexController ->
+                        resource.equals(vertexController.getResource()))
+                .findFirst().get();
+    }
+
+    @Override
+    public void addPropertyToVertex(BaseVertex vertex, BaseVertexProperty vertexProperty) {
+        UniVertex uniVertex = (UniVertex) vertex;
+        getVertexControllerByResource(uniVertex).addPropertyToVertex(vertex, vertexProperty);
+    }
+
+    @Override
+    public void removePropertyFromVertex(BaseVertex vertex, Property property) {
+        UniVertex uniVertex = (UniVertex) vertex;
+        getVertexControllerByResource(uniVertex).removePropertyFromVertex(vertex, property);
+    }
+
+    @Override
+    public void removeVertex(BaseVertex vertex) {
+        UniVertex uniVertex = (UniVertex) vertex;
+        getVertexControllerByResource(uniVertex).removeVertex(vertex);
+    }
+
+    @Override
+    public void update(BaseVertex vertex, boolean force) {
+        UniVertex uniVertex = (UniVertex) vertex;
+        getVertexControllerByResource(uniVertex).update(vertex, force);
+    }
+
+    @Override
+    public List<BaseElement> properties(List<BaseElement> elements) {
+        List<BaseVertex> vertices = elements.stream().filter(element -> !((UniVertex) element).hasProperty())
+                .map(element -> ((BaseVertex) element)).collect(Collectors.toList());
+
+        return vertexProperties(vertices);
+    }
+
+    @Override
+    public List<BaseElement> vertexProperties(List<BaseVertex> vertices) {
+        List<BaseElement> finalElements = new ArrayList<>();
+        Map<Object, List<BaseVertex>> resource = vertices.stream().collect(Collectors.groupingBy(vertex -> ((UniVertex) vertex).getTransientProperties().get("resource").value()));
+
+        resource.forEach((key, value) -> {
+            getVertexControllerByResource(key.toString()).vertexProperties(value).forEach(finalElements::add);
+        });
+
+        return finalElements;
+    }
+
+    @Override
+    public String getResource() {
         throw new NotImplementedException();
     }
 
