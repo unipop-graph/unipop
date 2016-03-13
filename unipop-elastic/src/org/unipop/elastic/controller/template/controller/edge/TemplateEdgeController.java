@@ -57,6 +57,7 @@ public class TemplateEdgeController implements EdgeController {
             }
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void init(Map<String, Object> conf, UniGraph graph) throws Exception {
         this.graph = graph;
@@ -97,7 +98,7 @@ public class TemplateEdgeController implements EdgeController {
                 this::createEdge,
                 timing,
                 templateName,
-                TemplateHelper.createTemplateParams(predicates.hasContainers, defaultParams),
+                TemplateHelper.createTemplateParams(predicates.hasContainers),
                 type,
                 indexName);
     }
@@ -120,7 +121,7 @@ public class TemplateEdgeController implements EdgeController {
                 this::createEdge,
                 timing,
                 templateName,
-                TemplateHelper.createTemplateParams(predicates.hasContainers, defaultParams),
+                TemplateHelper.createTemplateParams(predicates.hasContainers),
                 type,
                 indexName);
     }

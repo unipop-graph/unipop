@@ -84,7 +84,7 @@ public class TemplateVertexController implements VertexController{
                 this::createVertex,
                 timing,
                 templateName,
-                TemplateHelper.createTemplateParams(predicates.hasContainers, defaultParams),
+                TemplateHelper.createTemplateParams(predicates.hasContainers),
                 type,
                 defaultIndex);
     }
