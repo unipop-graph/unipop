@@ -2,7 +2,7 @@ package org.unipop.elastic.controller.schema;
 
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-import org.unipop.controllerprovider.ControllerManager;
+import org.unipop.controller.provider.ControllerProvider;
 import org.unipop.elastic.controller.schema.helpers.schemaProviders.GraphElementSchemaProvider;
 import org.unipop.elastic.controller.schema.helpers.schemaProviders.GraphVertexSchema;
 import org.unipop.elastic.helpers.ElasticLazyGetter;
@@ -28,7 +28,7 @@ public class SchemaVertex extends BaseVertex {
             String label,
             UniGraph graph,
             Map<String, Object> keyValues,
-            ControllerManager manager,
+            ControllerProvider manager,
             ElasticLazyGetter elasticLazyGetter,
             GraphElementSchemaProvider schemaProvider,
             ElasticMutations elasticMutations) {

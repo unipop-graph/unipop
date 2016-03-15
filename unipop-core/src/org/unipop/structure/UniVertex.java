@@ -1,8 +1,8 @@
 package org.unipop.structure;
 
 import org.apache.tinkerpop.gremlin.structure.Property;
-import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-import org.unipop.controllerprovider.ControllerManager;
+import org.unipop.controller.VertexController;
+import org.unipop.controller.provider.ControllerProvider;
 
 import java.util.*;
 
@@ -11,14 +11,14 @@ import java.util.*;
  */
 public class UniVertex extends BaseVertex {
     Map<String, TransientProperty> transientProperties;
-    public UniVertex(Object id, String label, Map<String, Object> keyValues, ControllerManager manager, UniGraph graph) {
-        super(id, label, keyValues, manager, graph);
+    public UniVertex(Object id, String label, Map<String, Object> keyValues, VertexController controller, UniGraph graph) {
+        super(id, label, keyValues, controller, graph);
         transientProperties = new HashMap<>();
     }
 
     @Override
     protected void innerAddProperty(BaseVertexProperty vertexProperty) {
-        getManager().addPropertyToVertex(this, vertexProperty);
+        controller.addPropertyToVertex(this, vertexProperty);
     }
 
     public void addTransientProperty(TransientProperty transientProperty){
@@ -35,11 +35,11 @@ public class UniVertex extends BaseVertex {
 
     @Override
     protected void innerRemoveProperty(Property property) {
-        getManager().removePropertyFromVertex(this, property);
+        controller.removePropertyFromVertex(this, property);
     }
 
     @Override
     protected void innerRemove() {
-        getManager().removeVertex(this);
+        controller.removeVertex(this);
     }
 }

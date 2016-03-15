@@ -142,7 +142,7 @@ public class AggregationsVertexController implements VertexController, EdgeContr
     @SuppressWarnings("unchecked")
     protected AggregationsVertex createVertex(Object id, String label, Map<String, Object> keyValues) {
         Map<String, Object> parsedKeyValues = new HashMap<>();
-        AggregationsVertex vertex = new AggregationsVertex(id, label, parsedKeyValues, graph.getControllerManager(), graph, elasticMutations, defaultIndex);
+        AggregationsVertex vertex = new AggregationsVertex(id, label, parsedKeyValues, graph.getControllerProvider(), graph, elasticMutations, defaultIndex);
         keyValues.forEach((key, value) -> {
             if (value instanceof Map) {
                 Map<String, Object> map = (Map<String, Object>) value;
@@ -161,7 +161,7 @@ public class AggregationsVertexController implements VertexController, EdgeContr
                                     else
                                         edgeProperties.put(edgeKey.toString(), edgeValue);
                                 });
-                                AggregationsVertex innerVertex = new AggregationsVertex(innerId, "template", null, graph.getControllerManager(), graph, elasticMutations, defaultIndex);
+                                AggregationsVertex innerVertex = new AggregationsVertex(innerId, "template", null, graph.getControllerProvider(), graph, elasticMutations, defaultIndex);
                                 AggregationsEdge innerEdge = new AggregationsEdge(innerId.hashCode(), "templateEdge", edgeProperties, vertex, innerVertex, this, graph);
                                 vertex.addInnerEdge(innerEdge);
                             }

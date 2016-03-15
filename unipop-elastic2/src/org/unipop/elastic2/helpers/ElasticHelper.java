@@ -20,7 +20,7 @@ import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.index.query.*;
-import org.unipop.controller.ExistsP;
+import org.unipop.process.predicate.ExistsP;
 
 import java.io.IOException;
 import java.util.List;

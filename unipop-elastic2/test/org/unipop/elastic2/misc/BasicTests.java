@@ -1,21 +1,15 @@
 package org.unipop.elastic2.misc;
 
-import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.common.settings.Settings;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.unipop.controllerprovider.ControllerManagerFactory;
 import org.unipop.elastic2.ElasticGraphProvider;
-import org.unipop.elastic2.controllermanagers.BasicElasticControllerManager;
-import org.unipop.elastic2.helpers.ElasticClientFactory;
 import org.unipop.elastic2.helpers.ElasticHelper;
 
 import java.io.IOException;

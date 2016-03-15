@@ -2,7 +2,6 @@ package org.unipop.elastic2.schema.misc;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
-import org.unipop.controllerprovider.ControllerManagerFactory;
 import org.unipop.elastic2.ElasticGraphProvider;
 import org.unipop.elastic2.controller.schema.SchemaControllerManager;
 import org.unipop.elastic2.controller.schema.helpers.ElasticGraphConfiguration;

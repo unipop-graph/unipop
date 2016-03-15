@@ -201,11 +201,11 @@ public class ElasticVertexController implements VertexController {
     }
 
     protected UniVertex createLazyVertex(Object id, String label,  LazyGetter lazyGetter) {
-        return new UniDelayedVertex(id, label, graph.getControllerManager(), graph);
+        return new UniDelayedVertex(id, label, graph.getControllerProvider(), graph);
     }
 
     protected UniVertex createVertex(Object id, String label, Map<String, Object> keyValues) {
-        return new UniVertex(id, label, keyValues, graph.getControllerManager(), graph);
+        return new UniVertex(id, label, keyValues, graph.getControllerProvider(), graph);
     }
 
     protected String getDefaultIndex() {

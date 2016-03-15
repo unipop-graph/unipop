@@ -8,11 +8,9 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.node.Node;
-import org.unipop.controllerprovider.ControllerManagerFactory;
 import org.unipop.elastic.helpers.ElasticClientFactory;
-import org.unipop.elastic.helpers.ElasticHelper;
 import org.unipop.integration.controllermanagers.IntegrationControllerManager;
-import org.unipop.process.strategy.SimplifiedStrategyRegistrar;
+import org.unipop.process.strategyregistrar.StandardStrategyRegistrar;
 import org.unipop.structure.*;
 
 import java.io.File;
@@ -80,7 +78,7 @@ public class IntegrationGraphProvider extends AbstractGraphProvider {
             put("elasticsearch.cluster.name", CLUSTER_NAME);
             put("elasticsearch.cluster.address", "127.0.0.1:" + client.settings().get("transport.tcp.port"));
             put("controllerManagerFactory", (ControllerManagerFactory) IntegrationControllerManager::new);
-            put("strategyRegistrar", new SimplifiedStrategyRegistrar());
+            put("strategyRegistrar", new StandardStrategyRegistrar());
         }};
     }
 

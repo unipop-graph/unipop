@@ -4,21 +4,24 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
+import org.unipop.controller.Controller;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-public abstract class BaseElement implements Element{
+public abstract class BaseElement<C extends Controller> implements Element{
     protected HashMap<String, Property> properties = new HashMap<>();
     protected final Object id;
     protected String label;
     protected final UniGraph graph;
+    protected final C controller;
     public boolean removed = false;
 
-    public BaseElement(final Object id, final String label, UniGraph graph, Map<String, Object> keyValues) {
+    public BaseElement(final Object id, final String label, UniGraph graph, Map<String, Object> keyValues, C controller) {
         this.graph = graph;
+        this.controller = controller;
         this.id = id != null ? id.toString() : new com.eaio.uuid.UUID().toString();
         this.label = label;
         if(keyValues != null)

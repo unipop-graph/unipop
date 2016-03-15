@@ -2,8 +2,6 @@ package org.unipop.elastic.schema.misc;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
-import org.unipop.controllerprovider.ControllerManager;
-import org.unipop.controllerprovider.ControllerManagerFactory;
 import org.unipop.elastic.ElasticGraphProvider;
 import org.unipop.elastic.controller.schema.SchemaControllerManager;
 import org.unipop.elastic.controller.schema.helpers.ElasticGraphConfiguration;
@@ -22,7 +20,7 @@ public class ModernSchemaGraphProvider extends ElasticGraphProvider {
     @Override
     public Configuration newGraphConfiguration(String graphName, Class<?> test, String testMethodName, Map<String, Object> configurationOverrides, LoadGraphWith.GraphData loadGraphWith) {
         Configuration configuration = super.newGraphConfiguration(graphName, test, testMethodName, configurationOverrides, loadGraphWith);
-        configuration.setProperty("controllerManagerFactory", (ControllerManagerFactory)() -> new SchemaControllerManager());
+        configuration.setProperty("controllerProvider", new SchemaControllerManager());
 
         ElasticGraphConfiguration elasticConfiguration = new ElasticGraphConfiguration(configuration);
         elasticConfiguration.setElasticGraphSchemaProviderFactory(() -> new ModernGraphElementSchemaProvider(graphName.toLowerCase()));

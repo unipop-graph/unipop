@@ -1,16 +1,11 @@
 package org.unipop.elastic.misc;
 
 import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.junit.Test;
-import org.unipop.controllerprovider.ControllerManagerFactory;
-import org.unipop.elastic.controllermanagers.AggsControllerManager;
-import org.unipop.elastic.controllermanagers.ImdbControllerManager;
-import org.unipop.elastic.controllermanagers.TemplateControllerManager;
+import org.unipop.elastic.controllerprovider.ImdbControllerProvider;
 import org.unipop.elastic.helpers.ElasticClientFactory;
-import org.unipop.process.strategy.SimplifiedStrategyRegistrar;
+import org.unipop.process.strategyregistrar.StandardStrategyRegistrar;
 import org.unipop.structure.UniGraph;
 
 /**
@@ -20,13 +15,12 @@ public class TemplateTests {
 
     private GraphTraversalSource g;
 
-    public TemplateTests() throws InstantiationException {
+    public TemplateTests() throws Exception {
         BaseConfiguration conf = new BaseConfiguration();
         conf.addProperty("elasticsearch.client", ElasticClientFactory.ClientType.TRANSPORT_CLIENT);
         conf.addProperty("elasticsearch.cluster.name", "elasticsearch");
         conf.addProperty("elasticsearch.cluster.address", "127.0.0.1:9300");
-        conf.addProperty("controllerManagerFactory", (ControllerManagerFactory) ImdbControllerManager::new);
-        conf.addProperty("strategyRegistrarClass", SimplifiedStrategyRegistrar.class.getCanonicalName());
+        conf.addProperty("controllerProvider", new ImdbControllerProvider());
         UniGraph graph = new UniGraph(conf);
         g = graph.traversal();
     }

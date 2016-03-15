@@ -73,7 +73,7 @@ public class NestedEdgeController implements org.unipop.controller.InnerEdgeCont
     public UniInnerEdge parseEdge(UniStarVertex vertex, Map<String, Object> keyValues) {
         Object externalVertexId = keyValues.get(externalVertexIdField);
         Object edgeId = keyValues.get(edgeIdField);
-        UniVertex externalVertex = (UniVertex) vertex.getGraph().getControllerManager().vertex(direction.opposite(), externalVertexId, externalVertexLabel);
+        UniVertex externalVertex = (UniVertex) vertex.getGraph().getControllerProvider().vertex(direction.opposite(), externalVertexId, externalVertexLabel);
         transientProperties.forEach((key,value)-> externalVertex.addTransientProperty(new TransientProperty(externalVertex, key, value)));
         BaseVertex outV = direction.equals(Direction.OUT) ? vertex : externalVertex;
         BaseVertex inV = direction.equals(Direction.IN) ? vertex : externalVertex;

@@ -2,23 +2,14 @@ package org.unipop.manager;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.NotImplementedException;
-import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Property;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticsearch.client.Client;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.unipop.controller.EdgeController;
-import org.unipop.controller.Predicates;
 import org.unipop.controller.VertexController;
-import org.unipop.controllerprovider.SchemaControllerManager;
 import org.unipop.elastic.helpers.ElasticClientFactory;
 import org.unipop.elastic.helpers.ElasticMutations;
 import org.unipop.elastic.helpers.TimingAccessor;
-import org.unipop.structure.BaseElement;
-import org.unipop.structure.BaseVertex;
-import org.unipop.structure.BaseVertexProperty;
 import org.unipop.structure.UniGraph;
 
 import java.io.FileReader;

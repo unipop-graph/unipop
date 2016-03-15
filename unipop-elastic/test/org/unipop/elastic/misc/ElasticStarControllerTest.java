@@ -1,19 +1,18 @@
 package org.unipop.elastic.misc;
 
 import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.unipop.elastic.controllermanagers.ElasticStarControllerManager;
+import org.unipop.elastic.controllerprovider.ElasticStarControllerProvider;
 import org.unipop.elastic.helpers.ElasticClientFactory;
 import org.unipop.structure.UniGraph;
 
 public class ElasticStarControllerTest {
     UniGraph graph;
 
-    public ElasticStarControllerTest() throws InstantiationException {
+    public ElasticStarControllerTest() throws Exception {
         BaseConfiguration conf = new BaseConfiguration();
-        conf.addProperty("controllerManager", ElasticStarControllerManager.class.getCanonicalName());
+        conf.addProperty("controllerProvider", ElasticStarControllerProvider.class.getCanonicalName());
         conf.addProperty("elasticsearch.client", ElasticClientFactory.ClientType.TRANSPORT_CLIENT);
         graph = new UniGraph(conf);
     }

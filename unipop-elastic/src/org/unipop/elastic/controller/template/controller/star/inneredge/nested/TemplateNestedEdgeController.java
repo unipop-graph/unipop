@@ -61,7 +61,7 @@ public class TemplateNestedEdgeController implements TemplateInnerEdgeController
 
     @Override
     public TemplateInnerEdge parseEdge(TemplateStarVertex vertex, Map<String, Object> keyValues) {
-        BaseVertex externalVertex = vertex.getGraph().getControllerManager()
+        BaseVertex externalVertex = vertex.getGraph().getControllerProvider()
                 .vertex(direction.opposite(), keyValues.get(externalIdField), keyValues.get(externalLabelField).toString());
         BaseVertex outV = direction.equals(Direction.OUT) ? vertex : externalVertex;
         BaseVertex inV = direction.equals(Direction.IN) ? vertex : externalVertex;

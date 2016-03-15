@@ -17,12 +17,9 @@ import org.elasticsearch.search.SearchHits;
 import org.unipop.controller.Predicates;
 import org.unipop.controller.VertexController;
 import org.unipop.elastic.controller.edge.ElasticEdge;
-import org.unipop.elastic.controller.schema.helpers.AggregationBuilder;
-import org.unipop.elastic.controller.schema.helpers.SearchAggregationIterable;
-import org.unipop.elastic.controller.schema.helpers.aggregationConverters.*;
 import org.unipop.elastic.helpers.*;
+import org.unipop.elastic.helpers.aggregationConverters.CompositeAggregation;
 import org.unipop.structure.*;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -61,6 +58,11 @@ public class ElasticVertexController implements VertexController {
         this.defaultIndex = conf.getOrDefault("defaultIndex", "unipop_es1").toString();
         this.scrollSize = Integer.parseInt(conf.getOrDefault("scrollSize", "0").toString());
 
+    }
+
+    @Override
+    public void commit() {
+        elasticMutations.commit();
     }
 
     @Override
@@ -112,16 +114,6 @@ public class ElasticVertexController implements VertexController {
 
     protected void addProperty(List<BaseVertex> vertices, String key, Object value){
         vertices.forEach(vertex -> vertex.addPropertyLocal(key, value));
-    }
-
-    @Override
-    public void update(BaseVertex vertex, boolean force) {
-        throw new NotImplementedException();
-    }
-
-    @Override
-    public String getResource() {
-        return defaultIndex;
     }
 
     @Override
@@ -204,14 +196,12 @@ public class ElasticVertexController implements VertexController {
     }
 
     protected UniVertex createLazyVertex(Object id, String label, ElasticLazyGetter elasticLazyGetter) {
-        UniDelayedVertex uniDelayedVertex = new UniDelayedVertex(id, label, graph.getControllerManager(), graph);
-        uniDelayedVertex.addTransientProperty(new TransientProperty(uniDelayedVertex, "resource", getResource()));
+        UniDelayedVertex uniDelayedVertex = new UniDelayedVertex(id, label, this, graph);
         return uniDelayedVertex;
     }
 
     protected UniVertex createVertex(Object id, String label, Map<String, Object> keyValues) {
-        UniVertex uniVertex = new UniVertex(id, label, keyValues, graph.getControllerManager(), graph);
-        uniVertex.addTransientProperty(new TransientProperty(uniVertex, "resource", getResource()));
+        UniVertex uniVertex = new UniVertex(id, label, keyValues, this, graph);
         return uniVertex;
     }
 

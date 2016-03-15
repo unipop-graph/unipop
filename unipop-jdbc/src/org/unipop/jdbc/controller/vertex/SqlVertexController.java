@@ -155,7 +155,7 @@ public class SqlVertexController implements VertexController {
     @Override
     public BaseVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
         //return dslContext.select().from(tableName).where(field("id").eq(vertexId)).fetchOne(vertexMapper);
-        UniDelayedVertex uniVertex = new UniDelayedVertex(vertexId, vertexLabel, graph.getControllerManager(), graph);
+        UniDelayedVertex uniVertex = new UniDelayedVertex(vertexId, vertexLabel, graph.getControllerProvider(), graph);
         uniVertex.addTransientProperty(new TransientProperty(uniVertex, "resource", getResource()));
         return uniVertex;
     }
@@ -182,7 +182,7 @@ public class SqlVertexController implements VertexController {
     }
 
     protected UniVertex createVertex(Object id, String label, Map<String, Object> properties) {
-        UniVertex uniVertex = new UniVertex(id, label, properties, graph.getControllerManager(), graph);
+        UniVertex uniVertex = new UniVertex(id, label, properties, graph.getControllerProvider(), graph);
         uniVertex.addTransientProperty(new TransientProperty(uniVertex, "resource", getResource()));
         return uniVertex;
     }
@@ -196,7 +196,7 @@ public class SqlVertexController implements VertexController {
             //Change keys to lower-case. TODO: make configurable mapping
             Map<String, Object> stringObjectMap = new HashMap<>();
             record.intoMap().forEach((key, value) -> stringObjectMap.put(key.toLowerCase(), value));
-            UniVertex uniVertex = new UniVertex(stringObjectMap.get("id"), tableName.toLowerCase(), stringObjectMap, graph.getControllerManager(), graph);
+            UniVertex uniVertex = new UniVertex(stringObjectMap.get("id"), tableName.toLowerCase(), stringObjectMap, graph.getControllerProvider(), graph);
             uniVertex.addTransientProperty(new TransientProperty(uniVertex, "resource", getResource()));
             return uniVertex;
         }

@@ -12,10 +12,8 @@ import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.elasticsearch.index.query.*;
 import org.javatuples.Pair;
 import org.unipop.controller.Predicates;
-import org.unipop.elastic.controller.schema.helpers.AggregationBuilder;
-import org.unipop.elastic.controller.schema.helpers.SearchAggregationIterable;
-import org.unipop.elastic.controller.schema.helpers.aggregationConverters.*;
 import org.unipop.elastic.helpers.*;
+import org.unipop.elastic.helpers.aggregationConverters.CompositeAggregation;
 import org.unipop.structure.*;
 
 import java.util.*;
@@ -49,6 +47,11 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
         this.indexName = conf.getOrDefault("defaultIndex", "unipop").toString();
         this.scrollSize = Integer.parseInt(conf.getOrDefault("scrollSize", "0").toString());
         this.timing = ((TimingAccessor) conf.get("timing"));
+    }
+
+    @Override
+    public void commit() {
+        elasticMutations.commit();
     }
 
     @Override
@@ -244,8 +247,8 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
     }
 
     private BaseEdge createEdge(Object id, String label, Map<String, Object> fields) {
-        BaseVertex outV = this.graph.getControllerManager().vertex(Direction.OUT, fields.get(ElasticEdge.OutId), fields.get(ElasticEdge.OutLabel).toString());
-        BaseVertex inV = this.graph.getControllerManager().vertex(Direction.IN, fields.get(ElasticEdge.InId), fields.get(ElasticEdge.InLabel).toString());
+        BaseVertex outV = this.graph.getControllerProvider().vertex(Direction.OUT, fields.get(ElasticEdge.OutId), fields.get(ElasticEdge.OutLabel).toString());
+        BaseVertex inV = this.graph.getControllerProvider().vertex(Direction.IN, fields.get(ElasticEdge.InId), fields.get(ElasticEdge.InLabel).toString());
         BaseEdge edge = new ElasticEdge(id, label, fields, outV, inV, this, graph, elasticMutations, indexName);
         return edge;
     }

@@ -2,23 +2,13 @@ package org.unipop.integration.controllermanagers;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.NotImplementedException;
-import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.elasticsearch.client.Client;
+import org.unipop.controller.provider.ControllerProvider;
 import org.unipop.controller.EdgeController;
 import org.unipop.controller.Predicates;
 import org.unipop.controller.VertexController;
-import org.unipop.controllerprovider.ControllerManager;
-import org.unipop.controllerprovider.TinkerGraphControllerManager;
-import org.unipop.elastic.controller.edge.ElasticEdgeController;
-import org.unipop.elastic.controller.vertex.ElasticVertexController;
-import org.unipop.elastic.helpers.ElasticClientFactory;
-import org.unipop.elastic.helpers.ElasticHelper;
-import org.unipop.elastic.helpers.ElasticMutations;
-import org.unipop.elastic.helpers.TimingAccessor;
-import org.unipop.jdbc.controller.edge.SqlEdgeController;
 import org.unipop.jdbc.controller.star.SqlStarController;
 import org.unipop.jdbc.controller.star.inneredge.columnedge.ColumnEdgeController;
 import org.unipop.jdbc.controller.vertex.SqlVertexController;
@@ -31,7 +21,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-public class IntegrationControllerManager implements ControllerManager {
+public class IntegrationControllerManager implements ControllerProvider {
     private Map<String, EdgeController> edgeController;
     private Map<String, VertexController> vertexController;
     private Connection jdbcConnection;

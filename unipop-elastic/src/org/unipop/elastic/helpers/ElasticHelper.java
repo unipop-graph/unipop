@@ -23,8 +23,8 @@ import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.index.query.*;
 import org.javatuples.Pair;
-import org.unipop.controller.ExistsP;
-import org.unipop.process.traversal.Text;
+import org.unipop.process.predicate.ExistsP;
+import org.unipop.process.predicate.Text;
 
 import java.io.IOException;
 import java.util.ArrayList;

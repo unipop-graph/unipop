@@ -4,7 +4,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.unipop.controller.ExistsP;
+import org.unipop.process.predicate.ExistsP;
 
 import java.util.Arrays;
 import java.util.stream.StreamSupport;

@@ -6,7 +6,7 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.elasticsearch.client.Client;
 import org.unipop.controller.EdgeController;
 import org.unipop.controller.VertexController;
-import org.unipop.controllerprovider.BasicControllerManager;
+import org.unipop.controller.standard.BasicControllerManager;
 import org.unipop.elastic2.controller.edge.ElasticEdgeController;
 import org.unipop.elastic2.controller.vertex.ElasticVertexController;
 import org.unipop.elastic2.helpers.ElasticClientFactory;

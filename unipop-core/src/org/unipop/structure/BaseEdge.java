@@ -10,15 +10,13 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 
-public abstract class BaseEdge extends BaseElement implements Edge {
+public abstract class BaseEdge extends BaseElement<EdgeController> implements Edge {
 
     protected Vertex inVertex;
     protected Vertex outVertex;
-    private EdgeController controller;
 
     public BaseEdge(final Object id, final String label, Map<String, Object> keyValues, Vertex outV, Vertex inV, EdgeController controller, final UniGraph graph) {
-        super(id, label, graph, keyValues);
-        this.controller = controller;
+        super(id, label, graph, keyValues, controller);
         ElementHelper.validateLabel(label);
         this.outVertex = outV;
         this.inVertex = inV;

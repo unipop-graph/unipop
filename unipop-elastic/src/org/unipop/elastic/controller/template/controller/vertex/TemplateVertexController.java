@@ -107,7 +107,7 @@ public class TemplateVertexController implements VertexController {
             } else
                 parsedKeyValues.put(key, value);
         });
-        return new TemplateVertex(id, label, parsedKeyValues, graph.getControllerManager(), graph, elasticMutations, defaultIndex);
+        return new TemplateVertex(id, label, parsedKeyValues, graph.getControllerProvider(), graph, elasticMutations, defaultIndex);
     }
 
     private Object getLabel(Predicates predicates) {

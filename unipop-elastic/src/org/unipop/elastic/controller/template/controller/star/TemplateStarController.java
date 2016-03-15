@@ -43,7 +43,7 @@ public class TemplateStarController extends TemplateVertexController implements 
 
     @Override
     protected TemplateVertex createVertex(Object id, String label, Map<String, Object> keyValues) {
-        TemplateStarVertex star = new TemplateStarVertex(id, label, keyValues, graph.getControllerManager(), graph, elasticMutations, defaultIndex);
+        TemplateStarVertex star = new TemplateStarVertex(id, label, keyValues, graph.getControllerProvider(), graph, elasticMutations, defaultIndex);
         edgeControllers.forEach(edgeController -> edgeController.parseEdges(star, keyValues));
         return star;
     }

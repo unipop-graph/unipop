@@ -39,8 +39,7 @@ public class VirtualVertexController implements VertexController {
 
         Set<BaseVertex> vertices = new HashSet<>();
         ids.forEach(id-> {
-            UniVertex uniVertex = new UniVertex(id, label, null, graph.getControllerManager(), graph);
-            uniVertex.addTransientProperty(new TransientProperty(uniVertex, "resource", getResource()));
+            UniVertex uniVertex = new UniVertex(id, label, null, this, graph);
             vertices.add(uniVertex);
         });
         return vertices.iterator();
@@ -48,8 +47,7 @@ public class VirtualVertexController implements VertexController {
 
     @Override
     public BaseVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
-        UniVertex uniVertex = new UniVertex(vertexId, vertexLabel, null, graph.getControllerManager(), graph);
-        uniVertex.addTransientProperty(new TransientProperty(uniVertex, "resource", getResource()));
+        UniVertex uniVertex = new UniVertex(vertexId, vertexLabel, null, this, graph);
         return uniVertex;
     }
 
@@ -75,6 +73,11 @@ public class VirtualVertexController implements VertexController {
     }
 
     @Override
+    public void commit() {
+
+    }
+
+    @Override
     public void addPropertyToVertex(BaseVertex vertex, BaseVertexProperty vertexProperty) {
         throw new NotImplementedException();
     }
@@ -92,16 +95,6 @@ public class VirtualVertexController implements VertexController {
     @Override
     public List<BaseElement> vertexProperties(List<BaseVertex> vertices) {
         throw new NotImplementedException();
-    }
-
-    @Override
-    public void update(BaseVertex vertex, boolean force) {
-        throw new NotImplementedException();
-    }
-
-    @Override
-    public String getResource() {
-        return "virtual";
     }
 
     @Override

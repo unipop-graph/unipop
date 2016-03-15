@@ -3,10 +3,9 @@ package org.unipop.elastic.helpers;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.javatuples.Pair;
-import org.unipop.controller.aggregation.SemanticKeyTraversal;
-import org.unipop.controller.aggregation.SemanticReducerTraversal;
-import org.unipop.elastic.controller.schema.helpers.AggregationBuilder;
-import org.unipop.elastic.controller.schema.helpers.aggregationConverters.*;
+import org.unipop.elastic.helpers.aggregationConverters.*;
+import org.unipop.process.group.traversal.SemanticKeyTraversal;
+import org.unipop.process.group.traversal.SemanticReducerTraversal;
 
 import java.util.HashMap;
 import java.util.Map;

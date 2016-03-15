@@ -9,10 +9,10 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.script.ScriptService;
+import org.unipop.controller.provider.ControllerProvider;
 import org.unipop.controller.EdgeController;
 import org.unipop.controller.Predicates;
 import org.unipop.controller.VertexController;
-import org.unipop.controllerprovider.ControllerManager;
 import org.unipop.elastic2.controller.aggregations.controller.vertex.AggregationsVertexController;
 import org.unipop.elastic2.helpers.ElasticClientFactory;
 import org.unipop.elastic2.helpers.ElasticHelper;
@@ -25,7 +25,7 @@ import java.util.*;
 /**
  * Created by sbarzilay on 2/12/16.
  */
-public class ImdbControllerManager implements ControllerManager{
+public class ImdbControllerManager implements ControllerProvider {
 
     Map<String, VertexController> vertexControllers;
     EdgeController edgeController;

@@ -63,7 +63,7 @@ public class SqlStarController extends SqlVertexController implements EdgeContro
     }
 
     protected UniStarVertex createVertex(Object id, String label, Map<String, Object> properties) {
-        UniStarVertex starVertex = new UniStarVertex(id, label, null,graph.getControllerManager(), graph, innerEdgeControllers);
+        UniStarVertex starVertex = new UniStarVertex(id, label, null,graph.getControllerProvider(), graph, innerEdgeControllers);
         starVertex.addTransientProperty(new TransientProperty(starVertex, "resource", getResource()));
         properties.forEach(starVertex::addPropertyLocal);
         return starVertex;
@@ -71,7 +71,7 @@ public class SqlStarController extends SqlVertexController implements EdgeContro
 
     @Override
     public BaseVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
-        UniDelayedStarVertex uniVertex = new UniDelayedStarVertex(vertexId, vertexLabel, graph.getControllerManager(), graph, innerEdgeControllers);
+        UniDelayedStarVertex uniVertex = new UniDelayedStarVertex(vertexId, vertexLabel, graph.getControllerProvider(), graph, innerEdgeControllers);
         uniVertex.addTransientProperty(new TransientProperty(uniVertex, "resource", getResource()));
         return uniVertex;
     }

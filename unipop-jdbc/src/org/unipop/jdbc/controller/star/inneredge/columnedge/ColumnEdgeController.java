@@ -82,7 +82,7 @@ public class ColumnEdgeController implements InnerEdgeController {
 
     @Override
     public UniInnerEdge parseEdge(UniStarVertex vertex, Map<String, Object> keyValues) {
-        UniVertex externalVertex = (UniVertex) vertex.getGraph().getControllerManager().vertex(direction.opposite(), keyValues.get(edgeLabel), externalVertexLabel);
+        UniVertex externalVertex = (UniVertex) vertex.getGraph().getControllerProvider().vertex(direction.opposite(), keyValues.get(edgeLabel), externalVertexLabel);
         transientProperties.forEach((key,value) -> externalVertex.addTransientProperty(new TransientProperty(externalVertex, key, value)));
         BaseVertex inV = direction.equals(Direction.IN) ? vertex : externalVertex;
         BaseVertex outV = direction.equals(Direction.OUT) ? vertex : externalVertex;

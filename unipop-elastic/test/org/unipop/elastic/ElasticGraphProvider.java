@@ -8,14 +8,13 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.node.Node;
-import org.unipop.controllerprovider.ControllerManagerFactory;
-import org.unipop.elastic.controllermanagers.BasicElasticControllerManager;
-import org.unipop.elastic.controllermanagers.ElasticStarControllerManager;
-import org.unipop.elastic.controllermanagers.TemplateControllerManager;
+import org.unipop.controller.provider.ControllerProvider;
+import org.unipop.elastic.controllerprovider.BasicElasticControllerProvider;
+import org.unipop.elastic.controllerprovider.ElasticStarControllerProvider;
 import org.unipop.elastic.helpers.ElasticClientFactory;
 import org.unipop.elastic.helpers.ElasticHelper;
-import org.unipop.process.strategy.DefaultStrategyRegistrar;
-import org.unipop.process.strategy.SimplifiedStrategyRegistrar;
+import org.unipop.process.strategyregistrar.OptimizedStrategyRegistrar;
+import org.unipop.process.strategyregistrar.StandardStrategyRegistrar;
 import org.unipop.structure.*;
 
 import java.io.File;
@@ -62,12 +61,9 @@ public class ElasticGraphProvider extends AbstractGraphProvider {
             put("elasticsearch.cluster.name", CLUSTER_NAME);
             put("elasticsearch.cluster.address", "127.0.0.1:" + client.settings().get("transport.tcp.port"));
 
-//            put("controllerManagerFactory", (ControllerManagerFactory)() -> new BasicElasticControllerManager());
-//            put("controllerManagerFactory", (ControllerManagerFactory)() -> new TemplateControllerManager());
-            put("controllerManagerFactory", (ControllerManagerFactory) () -> new ElasticStarControllerManager());
-//            put("controllerManagerFactory", (ControllerManagerFactory)() -> new ModernGraphControllerManager());
-
-            put("strategyRegistrar", new SimplifiedStrategyRegistrar());
+            ControllerProvider controllerProvider = new BasicElasticControllerProvider();
+            put("controllerProvider",  controllerProvider );
+            //put("strategyRegistrar", new OptimizedStrategyRegistrar());
         }};
     }
 

@@ -3,7 +3,7 @@ package org.unipop.elastic.controller.template.controller.star;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.unipop.controller.Predicates;
 
-import org.unipop.controllerprovider.ControllerManager;
+import org.unipop.controller.provider.ControllerProvider;
 import org.unipop.elastic.controller.template.controller.star.inneredge.TemplateInnerEdge;
 import org.unipop.elastic.controller.template.controller.vertex.TemplateVertex;
 import org.unipop.elastic.helpers.ElasticMutations;
@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 public class TemplateStarVertex extends TemplateVertex{
     private Set<TemplateInnerEdge> innerEdges;
 
-    protected TemplateStarVertex(Object id, String label, Map keyValues, ControllerManager manager, UniGraph graph, ElasticMutations elasticMutations, String index) {
+    protected TemplateStarVertex(Object id, String label, Map keyValues, ControllerProvider manager, UniGraph graph, ElasticMutations elasticMutations, String index) {
         super(id, label, keyValues, manager, graph, elasticMutations, index);
         innerEdges = new HashSet<>();
     }

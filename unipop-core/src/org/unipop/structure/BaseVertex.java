@@ -3,18 +3,18 @@ package org.unipop.structure;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
-import org.unipop.controllerprovider.ControllerManager;
+import org.unipop.controller.Controller;
+import org.unipop.controller.EdgeController;
+import org.unipop.controller.VertexController;
+import org.unipop.controller.provider.ControllerProvider;
 
 import java.util.Iterator;
 import java.util.Map;
 
-public abstract class BaseVertex extends BaseElement implements Vertex {
+public abstract class BaseVertex extends BaseElement<VertexController> implements Vertex {
 
-    private ControllerManager manager;
-
-    protected BaseVertex(Object id, String label, Map<String, Object> keyValues, ControllerManager controller, UniGraph graph) {
-        super(id, label, graph, keyValues);
-        this.manager = controller;
+    protected BaseVertex(Object id, String label, Map<String, Object> keyValues, VertexController controller, UniGraph graph) {
+        super(id, label, graph, keyValues, controller);
     }
 
     @Override
@@ -75,7 +75,9 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
         Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
         stringObjectMap.remove("id");
         stringObjectMap.remove("label");
-        BaseEdge edge = graph.getControllerManager().addEdge(idValue, label, this, (BaseVertex) vertex, stringObjectMap);
+        BaseEdge edge = graph.getControllerProvider().getControllers(EdgeController.class)
+                .map(controller -> controller.addEdge(idValue, label, this, (BaseVertex) vertex, stringObjectMap))
+                .findFirst().get();
         return edge;
     }
 
@@ -102,9 +104,5 @@ public abstract class BaseVertex extends BaseElement implements Vertex {
     @Override
     protected void checkRemoved() {
         if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, this.id);
-    }
-
-    public ControllerManager getManager() {
-        return manager;
     }
 }

@@ -6,7 +6,7 @@ import org.unipop.structure.*;
 
 import java.util.*;
 
-public interface EdgeController {
+public interface EdgeController extends Controller {
     Iterator<BaseEdge> edges(Predicates predicates);
     Iterator<BaseEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates);
 
@@ -17,8 +17,4 @@ public interface EdgeController {
     Map<String, Object> edgeGroupBy(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal);
 
     BaseEdge addEdge(Object edgeId, String label, BaseVertex outV, BaseVertex inV, Map<String, Object> properties);
-
-    void init(Map<String, Object> conf, UniGraph graph) throws Exception;
-
-    void close();
 }

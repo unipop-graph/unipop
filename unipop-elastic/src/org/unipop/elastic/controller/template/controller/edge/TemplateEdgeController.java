@@ -65,10 +65,10 @@ public class TemplateEdgeController implements EdgeController {
     }
 
     private BaseEdge createEdge(Object id, String label, Map<String, Object> fields) {
-        BaseVertex outV = this.graph.getControllerManager().vertex(Direction.OUT,
+        BaseVertex outV = this.graph.getControllerProvider().vertex(Direction.OUT,
                 fields.get("outId"),
                 fields.get("outLabel").toString());
-        BaseVertex inV = this.graph.getControllerManager().vertex(Direction.IN,
+        BaseVertex inV = this.graph.getControllerProvider().vertex(Direction.IN,
                 fields.get("inId"),
                 fields.get("inLabel").toString());
         BaseEdge edge = new TemplateEdge(id, label, null, outV, inV, this, graph, elasticMutations, indexName);

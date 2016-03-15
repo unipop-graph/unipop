@@ -5,7 +5,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.T;
-import org.unipop.controller.ExistsP;
 import org.unipop.controller.Predicates;
 
 import java.util.ArrayList;

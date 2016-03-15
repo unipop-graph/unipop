@@ -4,10 +4,9 @@ import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.junit.Test;
-import org.unipop.controllerprovider.ControllerManagerFactory;
 import org.unipop.elastic2.controllermanagers.ImdbControllerManager;
 import org.unipop.elastic2.helpers.ElasticClientFactory;
-import org.unipop.process.strategy.SimplifiedStrategyRegistrar;
+import org.unipop.process.strategyregistrar.StandardStrategyRegistrar;
 import org.unipop.structure.UniGraph;
 
 /**
@@ -23,7 +22,7 @@ public class TemplateTests {
         conf.addProperty("elasticsearch.cluster.name", "elasticsearch");
         conf.addProperty("elasticsearch.cluster.address", "127.0.0.1:9300");
         conf.addProperty("controllerManagerFactory", (ControllerManagerFactory) ImdbControllerManager::new);
-        conf.addProperty("strategyRegistrarClass", SimplifiedStrategyRegistrar.class.getCanonicalName());
+        conf.addProperty("strategyRegistrarClass", StandardStrategyRegistrar.class.getCanonicalName());
         UniGraph graph = new UniGraph(conf);
         g = graph.traversal();
     }
