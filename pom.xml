@@ -18,8 +18,19 @@
         <sourceDirectory>${basedir}/src</sourceDirectory>
         <testSourceDirectory>${basedir}/test</testSourceDirectory>
         <directory>${basedir}/target</directory>
-        <pluginManagement>
             <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>attach-sources</id>
+                            <goals>
+                                <goal>jar-no-fork</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
@@ -29,9 +40,6 @@
                         <target>1.8</target>
                     </configuration>
                 </plugin>
-            </plugins>
-        </pluginManagement>
-        <plugins>
             <plugin>
                 <artifactId>maven-enforcer-plugin</artifactId>
                 <version>1.3.1</version>
