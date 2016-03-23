@@ -62,17 +62,17 @@ public class BasicElasticControllerManager extends BasicControllerManager {
 
     @Override
     public void addPropertyToVertex(BaseVertex vertex, BaseVertexProperty vertexProperty) {
-        throw new NotImplementedException();
+        vertexController.addPropertyToVertex(vertex, vertexProperty);
     }
 
     @Override
     public void removePropertyFromVertex(BaseVertex vertex, Property property) {
-        throw new NotImplementedException();
+        vertexController.removePropertyFromVertex(vertex, property);
     }
 
     @Override
     public void removeVertex(BaseVertex vertex) {
-        throw new NotImplementedException();
+        vertexController.removeVertex(vertex);
     }
 
     @Override
@@ -82,7 +82,7 @@ public class BasicElasticControllerManager extends BasicControllerManager {
 
     @Override
     public void update(BaseVertex vertex, boolean force) {
-        throw new NotImplementedException();
+        vertexController.update(vertex, force);
     }
 
     @Override

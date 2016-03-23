@@ -9,14 +9,13 @@ import org.elasticsearch.action.count.CountResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.index.query.FilterBuilder;
-import org.elasticsearch.index.query.FilterBuilders;
-import org.elasticsearch.index.query.OrFilterBuilder;
+import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.filter.InternalFilter;
 import org.elasticsearch.search.aggregations.bucket.nested.InternalNested;
 import org.elasticsearch.search.aggregations.bucket.nested.NestedBuilder;
+import org.elasticsearch.search.aggregations.metrics.valuecount.InternalValueCount;
 import org.unipop.controller.EdgeController;
 import org.unipop.controller.InnerEdgeController;
 import org.unipop.controller.Predicates;
@@ -165,16 +164,61 @@ public class ElasticStarController extends ElasticVertexController implements Ed
         return results.iterator();
     }
 
-    @Override
-    public long vertexCount(Predicates predicates) {
-        CountResponse count = client.prepareCount(getDefaultIndex()).setQuery(ElasticHelper.createQuery(predicates.hasContainers)).execute().actionGet();
-        return count.getCount();
-    }
+//    @Override
+//    public long vertexCount(Predicates predicates) {
+//        CountResponse count = client.prepareCount(getDefaultIndex()).setQuery(ElasticHelper.createQuery(predicates.hasContainers)).execute().actionGet();
+//        return count.getCount();
+//    }
 
     @Override
     public long edgeCount(Predicates predicates) {
-        throw new NotImplementedException();
+        OrFilterBuilder orFilter = null;
+        elasticMutations.refresh();
 
+        long[] results = {0};
+        for (org.unipop.controller.InnerEdgeController controller : innerEdgeControllers) {
+            FilterBuilder filter = (FilterBuilder) controller.getFilter(predicates.hasContainers);
+            if (filter != null && predicates.hasContainers.size() > 0) {
+                if (orFilter == null) orFilter = FilterBuilders.orFilter();
+                orFilter.add(filter);
+            }
+        }
+        QueryBuilder query = QueryBuilders.matchAllQuery();
+        if (orFilter != null) {
+            elasticMutations.refresh();
+            query = ElasticHelper.createQuery(new ArrayList<>(), orFilter);
+
+        }
+        final OrFilterBuilder finalOrFilter = orFilter;
+        final QueryBuilder finalQuery = query;
+        SearchRequestBuilder searchRequestBuilder = client.prepareSearch(getDefaultIndex()).setQuery(finalQuery);
+        innerEdgeControllers.forEach(innerEdgeController -> {
+            String edge = innerEdgeController.getEdgeLabel();
+            NestedBuilder aggregation = AggregationBuilders.nested(edge).path(edge);
+            if (finalOrFilter != null && predicates.hasContainers.size() > 0) {
+                aggregation.subAggregation(AggregationBuilders.filter("filter")
+                        .filter(ElasticHelper.createFilterBuilder(predicates.hasContainers))
+                        .subAggregation(AggregationBuilders.count("count").script("doc")));
+            } else {
+                aggregation.subAggregation(AggregationBuilders.count("count").script("doc"));
+            }
+            searchRequestBuilder.addAggregation(aggregation);
+        });
+
+        SearchResponse searchResponse = searchRequestBuilder.execute().actionGet();
+        System.out.println(searchResponse);
+        innerEdgeControllers.forEach(innerEdgeController -> {
+            String edge = innerEdgeController.getEdgeLabel();
+            Map<String, Aggregation> nestedAggregationResult = ((InternalNested) searchResponse.getAggregations().asMap().get(edge)).getAggregations().asMap();
+            if (finalOrFilter != null && predicates.hasContainers.size() > 0) {
+                results[0] += ((InternalValueCount) ((InternalFilter) nestedAggregationResult.get("filter")).getAggregations().get("count")).getValue();
+            } else {
+                results[0] += ((InternalValueCount) nestedAggregationResult.get("count")).getValue();
+
+            }
+        });
+
+        return results[0];
     }
 
     public Vertex[] getVerticesByIds(Vertex[] vertices, Set<Object> ids) {
@@ -188,35 +232,68 @@ public class ElasticStarController extends ElasticVertexController implements Ed
 
     @Override
     public long edgeCount(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
-        final long[] count = {0};
-        innerEdgeControllers.forEach(innerEdgeController -> {
-            List<Object> idsList = Stream.of(vertices).map(Element::id).collect(Collectors.toList());
-            innerEdgeController.getFilter(vertices, direction, edgeLabels, predicates);
-            SearchRequestBuilder requestBuilder = client.prepareSearch(getDefaultIndex())
-                    .setQuery(ElasticHelper.createQuery(new ArrayList<>(), (FilterBuilder) innerEdgeController.getFilter(vertices, direction, edgeLabels, predicates)));
-            HashMap<Object, Integer> idsCount = new HashMap<>();
-            idsList.forEach(id -> idsCount.put(id, (idsCount.containsKey(id) ? idsCount.get(id) : 0) + 1));
-            ArrayList<NestedBuilder> aggs = new ArrayList<>();
-            int aggregationsCounter = 1;
-            while (!idsCount.isEmpty()) {
-                NestedBuilder agg = AggregationBuilders.nested(Integer.toString(aggregationsCounter))
-                        .path(innerEdgeController.getEdgeLabel());
-                agg.subAggregation(AggregationBuilders.filter("filtered").filter((FilterBuilder) innerEdgeController.getFilter(getVerticesByIds(vertices, idsCount.keySet()), direction, edgeLabels, predicates)));
-                aggs.add(agg);
-                idsCount.keySet().forEach(id -> idsCount.put(id, idsCount.get(id) - 1));
-                Object[] idArray = idsCount.keySet().toArray();
-                for (int i = 0; i < idArray.length; i++) {
-                    if (idsCount.get(idArray[i]) == 0) idsCount.remove(idArray[i]);
-                }
-                aggregationsCounter++;
-            }
-            aggs.forEach(requestBuilder::addAggregation);
-            SearchResponse response = requestBuilder.execute().actionGet();
-            List<Aggregation> agg = response.getAggregations().asList();
-            agg.forEach(ag -> count[0] += ((InternalFilter) ((InternalNested) ag).getAggregations().get("filtered")).getDocCount());
+        final long[] results = {0};
+        List<String> labels = Arrays.asList(edgeLabels);
+        List<BaseVertex> delayedVertices = Stream.of(vertices)
+                .filter(vertex1 -> !((UniVertex) vertex1).hasProperty())
+                .map(vertex1 -> ((BaseVertex) vertex1)).collect(Collectors.toList());
+        vertexProperties(delayedVertices);
 
+        if (!direction.equals(Direction.BOTH))
+            for (Vertex vertex : vertices) {
+                if (vertex instanceof UniStarVertex)
+                    results[0] += (((UniStarVertex) vertex).getInnerEdges(direction, labels, predicates)).size();
+            }
+
+        OrFilterBuilder orFilter = null;
+
+        for (org.unipop.controller.InnerEdgeController controller : innerEdgeControllers) {
+            FilterBuilder filter = (FilterBuilder) controller.getFilter(vertices, direction, edgeLabels, predicates);
+            if (filter != null) {
+                if (orFilter == null) orFilter = FilterBuilders.orFilter();
+                orFilter.add(filter);
+            }
+        }
+        QueryBuilder query = QueryBuilders.matchAllQuery();
+        if (orFilter != null) {
+            elasticMutations.refresh();
+            query = ElasticHelper.createQuery(new ArrayList<>(), orFilter);
+
+        }
+        final OrFilterBuilder finalOrFilter = orFilter;
+        final QueryBuilder finalQuery = query;
+        SearchRequestBuilder searchRequestBuilder = client.prepareSearch(getDefaultIndex()).setQuery(finalQuery);
+        innerEdgeControllers.forEach(innerEdgeController -> {
+            String edge = innerEdgeController.getEdgeLabel();
+            if (innerEdgeController.getDirection().equals(direction)) {
+                NestedBuilder aggregation = AggregationBuilders.nested(edge).path(edge);
+                if (finalOrFilter != null && predicates.hasContainers.size() > 0) {
+                    aggregation.subAggregation(AggregationBuilders.filter("filter")
+                            .filter(ElasticHelper.createFilterBuilder(predicates.hasContainers))
+                            .subAggregation(AggregationBuilders.count("count").script("doc")));
+                } else {
+                    aggregation.subAggregation(AggregationBuilders.count("count").script("doc"));
+                }
+                searchRequestBuilder.addAggregation(aggregation);
+
+            }
         });
-        return count[0];
+        SearchResponse searchResponse = searchRequestBuilder.execute().actionGet();
+        innerEdgeControllers.forEach(innerEdgeController -> {
+            if (!innerEdgeController.getDirection().equals(direction)) {
+                String edge = innerEdgeController.getEdgeLabel();
+                Map<String, Aggregation> nestedAggregationResult = ((InternalNested) searchResponse.getAggregations().asMap().get(edge)).getAggregations().asMap();
+                if (finalOrFilter != null && predicates.hasContainers.size() > 0) {
+                    results[0] += ((InternalValueCount) ((InternalFilter) nestedAggregationResult.get("filter")).getAggregations().get("count")).getValue();
+                } else {
+                    results[0] += ((InternalValueCount) nestedAggregationResult.get("count")).getValue();
+                }
+            }
+        });
+
+
+//        System.out.println(searchResponse);
+        return results[0];
     }
 
     @Override
