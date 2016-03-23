@@ -162,7 +162,11 @@ public class SqlVertexController implements VertexController {
 
     @Override
     public long vertexCount(Predicates predicates) {
-        return 0;
+        SelectJoinStep<Record1<Integer>> count = dslContext.selectCount().from(tableName);
+        predicates.hasContainers.forEach(hasContainer -> count.where(JooqHelper.createCondition(hasContainer)));
+        count.limit(0, predicates.limitHigh < Long.MAX_VALUE ? (int) predicates.limitHigh : Integer.MAX_VALUE);
+
+        return count.fetchOne(0, long.class);
     }
 
     @Override

@@ -24,6 +24,8 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static org.jooq.impl.DSL.field;
+import static org.jooq.impl.DSL.groupingSets;
+import static org.jooq.impl.DSL.log;
 
 
 /**
@@ -92,6 +94,18 @@ public class SqlStarController extends SqlVertexController implements EdgeContro
         catch (Exception e){
             return EmptyIterator.INSTANCE;
         }
+    }
+
+    @Override
+    public long vertexCount(Predicates predicates) {
+        SelectJoinStep<Record> select = dslContext.select().from(tableName);
+        predicates.hasContainers.forEach(hasContainer -> select.where(JooqHelper.createCondition(hasContainer)));
+        select.limit(0, predicates.limitHigh < Long.MAX_VALUE ? (int) predicates.limitHigh : Integer.MAX_VALUE);
+        select.groupBy(field("id"));
+
+        SelectJoinStep<Record1<Integer>> count = dslContext.selectCount().from(select);
+
+        return count.fetchOne(0, long.class);
     }
 
     private HasContainer getHasId(Predicates predicates){
@@ -185,12 +199,40 @@ public class SqlStarController extends SqlVertexController implements EdgeContro
 
     @Override
     public long edgeCount(Predicates predicates) {
-        throw new NotImplementedException();
+        SelectJoinStep<Record1<Integer>> count = dslContext.selectCount().from(tableName);
+        predicates.hasContainers.forEach(hasContainer -> count.where(JooqHelper.createCondition(hasContainer)));
+        Set<String> edgeLabels = innerEdgeControllers.stream().map(InnerEdgeController::getEdgeLabel).collect(Collectors.toSet());
+        edgeLabels.forEach(edgeLabel -> count.where(field(edgeLabel).isNotNull()));
+        count.limit(0, predicates.limitHigh < Long.MAX_VALUE ? (int) predicates.limitHigh : Integer.MAX_VALUE);
+
+        return count.fetchOne(0, long.class);
     }
 
     @Override
     public long edgeCount(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
-        throw new NotImplementedException();
+        SelectJoinStep<Record1<Integer>> count = dslContext.selectCount().from(tableName);
+        Set<Object> ids = Stream.of(vertices).map(Element::id).collect(Collectors.toSet());
+        ArrayList<HasContainer> hasContainers = new ArrayList<>();
+        predicates.hasContainers.forEach(hasContainers::add);
+        Set<String> controllersLabels = innerEdgeControllers.stream().map(InnerEdgeController::getEdgeLabel).collect(Collectors.toSet());
+        for (String edgeLabel : edgeLabels) {
+            if (controllersLabels.contains(edgeLabel))
+                hasContainers.add(new HasContainer(edgeLabel, P.within(ids)));
+        }
+        if (edgeLabels.length == 0){
+            hasContainers.addAll(controllersLabels.stream().map(edgeLabel -> new HasContainer(edgeLabel, P.within(ids))).collect(Collectors.toList()));
+        }
+        HasContainer id = getHasId(predicates);
+        if (id != null){
+            if (id.getValue() instanceof Iterable)
+                count.where(field("EDGEID").in(((Iterable) id.getValue())));
+            else if (id.getValue() instanceof String)
+                count.where(field("EDGEID").in(id.getValue()));
+            hasContainers.remove(id);
+        }
+        hasContainers.forEach(has -> count.where(JooqHelper.createCondition(has)));
+
+        return count.fetchOne(0, long.class);
     }
 
     @Override

@@ -149,12 +149,28 @@ public class IntegrationControllerManager implements ControllerManager {
 
     @Override
     public long edgeCount(Predicates predicates) {
-        return 0;
+        String label = getLabel(predicates);
+        if (label == null) {
+            return edgeController.entrySet()
+                    .stream()
+                    .map(Map.Entry::getValue)
+                    .mapToLong(edgeController1 -> edgeController1.edgeCount(predicates)).sum();
+        } else {
+            return edgeController.get(label).edgeCount(predicates);
+        }
     }
 
     @Override
     public long edgeCount(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
-        return 0;
+        String label = getLabel(predicates);
+        if (label == null) {
+            return edgeController.entrySet()
+                    .stream()
+                    .map(Map.Entry::getValue)
+                    .mapToLong(edgeController1 -> edgeController1.edgeCount(vertices, direction, edgeLabels, predicates)).sum();
+        } else {
+            return edgeController.get(label).edgeCount(predicates);
+        }
     }
 
     @Override
@@ -205,7 +221,17 @@ public class IntegrationControllerManager implements ControllerManager {
 
     @Override
     public long vertexCount(Predicates predicates) {
-        return 0;
+        String label = getLabel(predicates);
+
+        if (label == null) {
+            return vertexController.entrySet()
+                    .stream()
+                    .map(Map.Entry::getValue)
+                    .mapToLong(vertexController1 ->
+                            vertexController1.vertexCount(predicates)).sum();
+        } else {
+            return vertexController.get(label).vertexCount(predicates);
+        }
     }
 
     @Override
@@ -243,9 +269,9 @@ public class IntegrationControllerManager implements ControllerManager {
         Map<String, List<BaseVertex>> groupedElements = vertices.stream().map(baseElement -> baseElement).collect(Collectors.groupingBy(Element::label));
         List<BaseElement> finalElements = new ArrayList<>();
         // key = label
-        groupedElements.forEach((key, value) ->{
+        groupedElements.forEach((key, value) -> {
             Map<Object, List<BaseVertex>> groupedByResorceVertices = value.stream().collect(Collectors.groupingBy(vertex -> ((UniVertex) vertex).getTransientProperties().get("resource").value()));
-            groupedByResorceVertices.forEach((resource, vertexList) ->{
+            groupedByResorceVertices.forEach((resource, vertexList) -> {
                 if (vertexController.get(key).getResource().equals(resource))
                     vertexController.get(key).vertexProperties(value).forEach(finalElements::add);
             });
