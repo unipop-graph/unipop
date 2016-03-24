@@ -12,7 +12,7 @@ public class ElasticStarControllerTest {
 
     public ElasticStarControllerTest() throws Exception {
         BaseConfiguration conf = new BaseConfiguration();
-        conf.addProperty("controllerProvider", ElasticStarControllerProvider.class.getCanonicalName());
+        conf.addProperty("controllerManager", ElasticStarControllerProvider.class.getCanonicalName());
         conf.addProperty("elasticsearch.client", ElasticClientFactory.ClientType.TRANSPORT_CLIENT);
         graph = new UniGraph(conf);
     }

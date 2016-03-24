@@ -6,35 +6,36 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierS
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.unipop.controller.provider.ControllerProvider;
+import org.unipop.controller.EdgeController;
+import org.unipop.controller.VertexController;
+import org.unipop.structure.manager.ControllerManager;
 import org.unipop.controller.Predicates;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by Gilad on 02/11/2015.
  */
 public class UniGraphCountStep<E extends Element> extends ReducingBarrierStep<E, Long> {
     //region Constructor
-    public UniGraphCountStep(Traversal.Admin traversal, Class elementClass, Predicates predicates, Object[] ids, String[] edgeLabels, Optional<Direction> direction, ControllerProvider controllerProvider) {
+    public UniGraphCountStep(Traversal.Admin traversal, Class elementClass, Predicates predicates, Object[] ids, String[] edgeLabels, Optional<Direction> direction, ControllerManager controllerManager) {
         super(traversal);
 
-        this.controllerProvider = controllerProvider;
-        this.direction = direction;
+        this.controllerManager = controllerManager;
+        this.direction = direction.get();
         this.elementClass = elementClass;
         this.bulk = new ArrayList<>();
+
+        List<CountController> countControllers = controllerManager.getControllers(CountController.class);
+        List<EdgeCountController> edgeCountControllers = controllerManager.getControllers(EdgeCountController.class);
 
         this.setSeedSupplier(() -> {
             if (!this.previousStep.equals(EmptyStep.instance())) {
                 return 0L;
             }
 
-            if (Vertex.class.isAssignableFrom(elementClass)) {
-                return this.controllerProvider.vertexCount(predicates);
-            } else {
-                return this.controllerProvider.edgeCount(predicates);
-            }
-
+            return countControllers.stream().collect(Collectors.summingLong(controller -> controller.count(predicates)));
         });
 
 
@@ -46,7 +47,9 @@ public class UniGraphCountStep<E extends Element> extends ReducingBarrierStep<E,
             Long bulkElementCount = 0L;
             //TODO: configure bulk size dynamically
             if (bulk.size() > 100 || !this.starts.hasNext()) {
-                bulkElementCount = this.controllerProvider.edgeCount(bulk.stream().map(e -> (Vertex)e).toArray(size -> new Vertex[size]), direction.get(), edgeLabels, predicates);
+                Vertex[] vertices = bulk.toArray(new Vertex[0]);
+                bulkElementCount = edgeCountControllers.stream().collect(Collectors.summingLong(edgeController ->
+                        edgeController.count(vertices, this.direction, edgeLabels, predicates)));
                 bulk.clear();
             }
 
@@ -56,8 +59,8 @@ public class UniGraphCountStep<E extends Element> extends ReducingBarrierStep<E,
     //endregion
 
     //region Fields
-    private ControllerProvider controllerProvider;
-    private Optional<Direction> direction;
+    private ControllerManager controllerManager;
+    private Direction direction;
     private Class elementClass;
     private Collection<E> bulk;
     //endregion

@@ -20,7 +20,7 @@ public class TemplateTests {
         conf.addProperty("elasticsearch.client", ElasticClientFactory.ClientType.TRANSPORT_CLIENT);
         conf.addProperty("elasticsearch.cluster.name", "elasticsearch");
         conf.addProperty("elasticsearch.cluster.address", "127.0.0.1:9300");
-        conf.addProperty("controllerProvider", new ImdbControllerProvider());
+        conf.addProperty("controllerManager", new ImdbControllerProvider());
         UniGraph graph = new UniGraph(conf);
         g = graph.traversal();
     }

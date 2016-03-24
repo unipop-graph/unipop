@@ -1,26 +1,17 @@
 package org.unipop.elastic.controllerprovider;
 
 import org.apache.commons.configuration.Configuration;
-import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Property;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.script.ScriptService;
-import org.unipop.controller.provider.ControllerProvider;
-import org.unipop.controller.EdgeController;
-import org.unipop.controller.Predicates;
+import org.unipop.structure.manager.ControllerProvider;
 import org.unipop.controller.VertexController;
 import org.unipop.controller.virtualvertex.VirtualVertexController;
-import org.unipop.elastic.controller.edge.ElasticEdgeController;
 import org.unipop.elastic.controller.template.controller.vertex.TemplateVertexController;
 import org.unipop.elastic.helpers.ElasticClientFactory;
 import org.unipop.elastic.helpers.ElasticHelper;
 import org.unipop.elastic.helpers.ElasticMutations;
 import org.unipop.elastic.helpers.TimingAccessor;
 import org.unipop.structure.*;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.*;
 

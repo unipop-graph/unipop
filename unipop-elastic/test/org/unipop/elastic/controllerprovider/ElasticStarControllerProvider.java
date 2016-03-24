@@ -2,7 +2,7 @@ package org.unipop.elastic.controllerprovider;
 
 import org.apache.commons.configuration.Configuration;
 import org.elasticsearch.client.Client;
-import org.unipop.controller.provider.ControllerProvider;
+import org.unipop.structure.manager.ControllerProvider;
 import org.unipop.elastic.controller.star.ElasticStarController;
 import org.unipop.elastic.helpers.ElasticClientFactory;
 import org.unipop.elastic.helpers.ElasticHelper;

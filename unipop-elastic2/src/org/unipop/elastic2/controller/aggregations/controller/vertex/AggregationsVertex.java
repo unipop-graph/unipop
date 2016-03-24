@@ -2,7 +2,7 @@ package org.unipop.elastic2.controller.aggregations.controller.vertex;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Property;
-import org.unipop.controller.provider.ControllerProvider;
+import org.unipop.structure.manager.ControllerProvider;
 import org.unipop.controller.Predicates;
 import org.unipop.elastic2.controller.aggregations.controller.edge.AggregationsEdge;
 import org.unipop.elastic2.helpers.ElasticMutations;

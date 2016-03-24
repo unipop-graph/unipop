@@ -2,7 +2,7 @@ package org.unipop.elastic.controllerprovider;
 
 import org.apache.commons.configuration.Configuration;
 import org.elasticsearch.client.Client;
-import org.unipop.controller.provider.ControllerProvider;
+import org.unipop.structure.manager.ControllerProvider;
 import org.unipop.elastic.controller.edge.ElasticEdgeController;
 import org.unipop.elastic.controller.vertex.ElasticVertexController;
 import org.unipop.elastic.helpers.ElasticClientFactory;
@@ -29,9 +29,9 @@ public class ModernGraphControllerProvider extends ControllerProvider {
         this.addController(vertexController);
 
         //TODO: Schema
-//        Vertex person = schema.addVertex(T.label, "person", controller, vertexController);
+//        Vertex person = Schema.addVertex(T.label, "person", controller, vertexController);
 //        person.addEdge("knows", person, controller, edgeController);
-//        Vertex software = schema.addVertex(T.label, "software", controller, vertexController);
+//        Vertex software = Schema.addVertex(T.label, "software", controller, vertexController);
 //        person.addEdge("created", software, controller, edgeController);
 
     }

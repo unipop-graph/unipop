@@ -31,7 +31,6 @@ public abstract class BaseElement<C extends Controller> implements Element{
     public Property addPropertyLocal(String key, Object value) {
         if(key == null || value == null) return null;
 
-        checkRemoved();
         if (shouldAddProperty(key)) {
             ElementHelper.validateProperty(key, value);
             Property property = createProperty(key, value);
@@ -63,7 +62,6 @@ public abstract class BaseElement<C extends Controller> implements Element{
 
     @Override
     public <V> Property<V> property(final String key) {
-        checkRemoved();
         return this.properties.containsKey(key) ? this.properties.get(key) : Property.<V>empty();
     }
 
@@ -78,7 +76,7 @@ public abstract class BaseElement<C extends Controller> implements Element{
         return ElementHelper.areEqual(this, object);
     }
 
-    protected Iterator innerPropertyIterator(String[] propertyKeys) {
+    protected Iterator propertyIterator(String[] propertyKeys) {
         HashMap<String, Property> properties = (HashMap<String, Property>) this.properties.clone();
 
         if (propertyKeys.length > 0)
@@ -90,10 +88,8 @@ public abstract class BaseElement<C extends Controller> implements Element{
 
     public void removeProperty(Property property) {
         properties.remove(property.key());
-        this.innerRemoveProperty(property);
+        controller.removeProperty(this, property);
     }
-
-    protected abstract void innerRemoveProperty(Property property);
 
     protected abstract Property createProperty(String key, Object value);
 
@@ -101,15 +97,9 @@ public abstract class BaseElement<C extends Controller> implements Element{
         return !key.equals("label") && !key.equals("id");
     }
 
-    protected abstract void checkRemoved();
-
-    protected abstract void innerRemove();
-
     @Override
     public void remove() {
-        checkRemoved();
-        innerRemove();
-        this.removed = true;
+        controller.remove(this);
     }
 
     public Map<String, Object> allFields() {

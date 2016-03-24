@@ -11,17 +11,6 @@ import java.util.List;
 import java.util.Map;
 
 public interface VertexController extends Controller {
-    Iterator<BaseVertex> vertices(Predicates predicates);
     BaseVertex vertex(Direction direction, Object vertexId, String vertexLabel);
-
-    Map<String, Object> vertexGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal);
-    long vertexCount(Predicates predicates);
-
     BaseVertex addVertex(Object id, String label, Map<String, Object> properties);
-    void removeVertex(BaseVertex vertex);
-
-    void addPropertyToVertex(BaseVertex vertex, BaseVertexProperty vertexProperty);
-    void removePropertyFromVertex(BaseVertex vertex, Property property);
-
-    List<BaseElement> vertexProperties(List<BaseVertex> vertices);
 }

@@ -2,6 +2,7 @@ package org.unipop.elastic.helpers;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
@@ -25,11 +26,13 @@ import org.elasticsearch.index.query.*;
 import org.javatuples.Pair;
 import org.unipop.process.predicate.ExistsP;
 import org.unipop.process.predicate.Text;
+import org.elasticsearch.index.query.QueryBuilder;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 
 public class ElasticHelper {
 
@@ -147,11 +150,14 @@ public class ElasticHelper {
         return boolFilter;
     }
 
-    private static void addFilter(BoolFilterBuilder boolFilterBuilder, HasContainer has) {
+    public static void addFilter(BoolFilterBuilder boolFilterBuilder, HasContainer has) {
         String key = has.getKey();
-        Object value = has.getValue();
-        BiPredicate<?, ?> biPredicate = has.getBiPredicate();
-
+        P<?> predicate = has.getPredicate();
+        addFilter(boolFilterBuilder, key, predicate);
+    }
+    public static void addFilter(BoolFilterBuilder boolFilterBuilder, String key, P predicate) {
+        Object value = predicate.getValue();
+        BiPredicate<?, ?> biPredicate = predicate.getBiPredicate();
         if (key.equals(T.id.getAccessor())) {
             IdsFilterBuilder idsFilterBuilder = FilterBuilders.idsFilter();
             if (value instanceof Iterable) {
@@ -215,7 +221,7 @@ public class ElasticHelper {
             else if (biPredicate instanceof Text) {
 
             } else throw new IllegalArgumentException("predicate not supported by unipop: " + biPredicate.toString());
-        } else if (has.getPredicate() instanceof ExistsP) {
+        } else if (predicate instanceof ExistsP) {
             boolFilterBuilder.must(FilterBuilders.existsFilter(key));
         } else {
             //todo: add descriptive unsupported has container description

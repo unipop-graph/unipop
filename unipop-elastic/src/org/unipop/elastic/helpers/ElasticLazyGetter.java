@@ -1,15 +1,7 @@
 package org.unipop.elastic.helpers;
 
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
-import org.apache.tinkerpop.gremlin.structure.T;
 import org.elasticsearch.action.get.*;
-import org.elasticsearch.action.search.SearchRequestBuilder;
-import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.unipop.controller.Predicates;
-import org.unipop.helpers.LazzyGetter;
 import org.unipop.structure.BaseVertex;
 
 import java.util.*;

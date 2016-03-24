@@ -33,7 +33,7 @@ public class JSONSchemaControllerManager extends SchemaControllerManager {
             mutations = new ElasticMutations(false, elasticClient, timing);
         }
 
-        String json = configuration.getString("schema");
+        String json = configuration.getString("Schema");
         JSONParser parser = new JSONParser();
         Object obj = parser.parse(new FileReader(json));
         JSONObject jsonObject = (JSONObject) obj;

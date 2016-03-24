@@ -3,7 +3,7 @@ package org.unipop.elastic.suite;
 import org.apache.tinkerpop.gremlin.GraphProviderClass;
 import org.junit.runner.RunWith;
 import org.unipop.elastic.ElasticGraphProvider;
-import org.unipop.elastic.schema.misc.CustomTestSuite;
+import org.unipop.elastic.schema.ElementSchema.misc.CustomTestSuite;
 import org.unipop.structure.UniGraph;
 
 /**

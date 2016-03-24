@@ -1,11 +1,13 @@
 package org.unipop.elastic.helpers;
 
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.delete.DeleteRequestBuilder;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.Client;
+import org.unipop.elastic.schema.ElementSchema;
 import org.unipop.structure.BaseElement;
 
 import java.util.HashSet;
@@ -50,9 +52,11 @@ public class ElasticMutations {
     }
 
 
-    public void updateElement(BaseElement element, String index, String routing, boolean upsert) throws ExecutionException, InterruptedException {
-        UpdateRequest updateRequest = new UpdateRequest(index, element.label(), element.id().toString())
-                .doc(element.allFields()).routing(routing);
+    public void updateElement(Element element, boolean upsert)  {
+        ElementSchema schema = element.<ElementSchema>value("~schema");
+        String index = element.<String>value("~index");
+        UpdateRequest updateRequest = new UpdateRequest(index, element.value("~type"), element.value("~id"))
+                .doc(schema.getFields(element)).routing(element.<String>property("~routing").orElse(null));
 
         isDirty = true;
         indicesToRefresh.add(index);
@@ -65,8 +69,11 @@ public class ElasticMutations {
     }
 
 
-    public void deleteElement(BaseElement element, String index, String routing) {
-        DeleteRequestBuilder deleteRequestBuilder = client.prepareDelete(index, element.label(), element.id().toString()).setRouting(routing);
+    public void deleteElement(Element element) {
+        String index = element.<String>value("~index");
+        DeleteRequestBuilder deleteRequestBuilder = client
+                .prepareDelete(index, element.value("~type"), element.value("~id"))
+                .setRouting(element.<String>property("~routing").orElse(null));
 
         isDirty = true;
         indicesToRefresh.add(index);

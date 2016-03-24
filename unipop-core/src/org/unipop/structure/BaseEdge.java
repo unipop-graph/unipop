@@ -29,7 +29,6 @@ public abstract class BaseEdge extends BaseElement<EdgeController> implements Ed
 
     @Override
     public <V> Property<V> property(String key, V value) {
-        checkRemoved();
         ElementHelper.validateProperty(key, value);
         BaseProperty<V> vertexProperty = (BaseProperty<V>) addPropertyLocal(key, value);
         innerAddProperty(vertexProperty);
@@ -38,7 +37,6 @@ public abstract class BaseEdge extends BaseElement<EdgeController> implements Ed
 
     @Override
     public Iterator<Vertex> vertices(Direction direction) {
-        checkRemoved();
         if(direction.equals(Direction.OUT)) return IteratorUtils.singletonIterator(outVertex);
         if(direction.equals(Direction.IN)) return IteratorUtils.singletonIterator(inVertex);
         return Arrays.asList(outVertex, inVertex).iterator();
@@ -49,14 +47,7 @@ public abstract class BaseEdge extends BaseElement<EdgeController> implements Ed
 
     @Override
     public Iterator<Property> properties(String... propertyKeys) {
-        checkRemoved();
-        return innerPropertyIterator(propertyKeys);
-    }
-
-    @Override
-    protected void checkRemoved() {
-        if (this.removed)
-            throw Element.Exceptions.elementAlreadyRemoved(Edge.class, this.id);
+        return propertyIterator(propertyKeys);
     }
 
     @Override

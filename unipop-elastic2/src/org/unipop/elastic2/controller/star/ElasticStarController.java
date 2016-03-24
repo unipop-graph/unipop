@@ -51,11 +51,11 @@ public class ElasticStarController extends ElasticVertexController implements Ed
 
     @Override
     protected UniVertex createLazyVertex(Object id, String label, LazyGetter lazyGetter) {
-        return new UniDelayedStarVertex(id, label, graph.getControllerProvider(), graph, innerEdgeControllers);
+        return new UniDelayedStarVertex(id, label, graph.getControllerManager(), graph, innerEdgeControllers);
     }
 
     private UniStarVertex createStarVertex(Object id, String label, Map<String, Object> keyValues) {
-        UniStarVertex vertex = new UniStarVertex(id, label, null, graph.getControllerProvider(), graph, innerEdgeControllers);
+        UniStarVertex vertex = new UniStarVertex(id, label, null, graph.getControllerManager(), graph, innerEdgeControllers);
         if (keyValues != null) {
             innerEdgeControllers.stream().map(controller -> controller.parseEdges(vertex, keyValues)).flatMap(Collection::stream).forEach(vertex::addInnerEdge);
             keyValues.entrySet().forEach((field) -> vertex.addPropertyLocal(field.getKey(), field.getValue()));

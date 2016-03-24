@@ -20,7 +20,7 @@ public class ModernSchemaGraphProvider extends ElasticGraphProvider {
     @Override
     public Configuration newGraphConfiguration(String graphName, Class<?> test, String testMethodName, Map<String, Object> configurationOverrides, LoadGraphWith.GraphData loadGraphWith) {
         Configuration configuration = super.newGraphConfiguration(graphName, test, testMethodName, configurationOverrides, loadGraphWith);
-        configuration.setProperty("controllerProvider", new SchemaControllerManager());
+        configuration.setProperty("controllerManager", new SchemaControllerManager());
 
         ElasticGraphConfiguration elasticConfiguration = new ElasticGraphConfiguration(configuration);
         elasticConfiguration.setElasticGraphSchemaProviderFactory(() -> new ModernGraphElementSchemaProvider(graphName.toLowerCase()));

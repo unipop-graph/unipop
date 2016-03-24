@@ -1,6 +1,5 @@
 package org.unipop.structure;
 
-import groovyjarjarcommonscli.MissingArgumentException;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
@@ -13,16 +12,18 @@ import org.apache.tinkerpop.gremlin.util.iterator.ArrayIterator;
 import org.unipop.controller.Controller;
 import org.unipop.controller.EdgeController;
 import org.unipop.controller.VertexController;
-import org.unipop.controller.provider.ConfigurationControllerProvider;
-import org.unipop.controller.provider.ControllerProvider;
+import org.unipop.structure.manager.ConfigurationControllerManager;
+import org.unipop.structure.manager.ControllerManager;
+import org.unipop.structure.manager.ControllerProvider;
 import org.unipop.controller.Predicates;
-import org.unipop.process.strategyregistrar.OptimizedStrategyRegistrar;
 import org.unipop.process.strategyregistrar.StandardStrategyRegistrar;
 import org.unipop.process.strategyregistrar.StrategyRegistrar;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.unipop.helpers.StreamUtils.asStream;
 
@@ -70,43 +71,41 @@ import static org.unipop.helpers.StreamUtils.asStream;
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
 @Graph.OptIn("org.unipop.elastic.schema.misc.CustomTestSuite")
 public class UniGraph implements Graph {
+    private List<VertexController> vertexControllers;
+    private List<EdgeController> edgeControllers;
+
     //for testSuite
     public static UniGraph open(final Configuration configuration) throws Exception {
         return new UniGraph(configuration);
     }
 
     private UnipopFeatures features = new UnipopFeatures();
-    private final Configuration configuration;
-    private ControllerProvider controllerProvider;
+    private Configuration configuration;
+    private ControllerManager controllerManager;
     private StrategyRegistrar strategyRegistrar;
 
     public UniGraph(Configuration configuration) throws Exception {
         configuration.setProperty(Graph.GRAPH, UniGraph.class.getName());
         this.configuration = configuration;
 
-        this.strategyRegistrar = determineStartegyRegistrar(configuration);
-        this.strategyRegistrar.register();
+        ConfigurationControllerManager configurationControllerManager = new ConfigurationControllerManager(this, configuration);
+        StrategyRegistrar strategyRegistrar = determineStartegyRegistrar(configuration);
 
-        this.controllerProvider = determineControllerProvider(configuration);
-        if(controllerProvider == null) {
-            throw new MissingArgumentException("No ControllerProvider configured.");//this.controllerProvider = new SimpleControllerProvider();
-        }
-        this.getControllerProvider().init(this, configuration);
+        init(configurationControllerManager, strategyRegistrar);
     }
 
-    private ControllerProvider determineControllerProvider(Configuration configuration) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-        ControllerProvider controllerProvider = (ControllerProvider)configuration.getProperty("controllerProvider");
-        if (controllerProvider == null) {
-            String controllerProviderClass = configuration.getString("controllerProviderClass");
-            if (StringUtils.isNotBlank(controllerProviderClass)) {
-                controllerProvider = Class.forName(controllerProviderClass).asSubclass(ControllerProvider.class).newInstance();
-            }
-        }
-        if (controllerProvider == null) {
-            controllerProvider = new ConfigurationControllerProvider();
-        }
+    public UniGraph(ControllerManager controllerManager, StrategyRegistrar strategyRegistrar) throws Exception {
+        init(controllerManager, strategyRegistrar);
 
-        return controllerProvider;
+    }
+
+    private void init(ControllerManager controllerManager, StrategyRegistrar strategyRegistrar) {
+        this.strategyRegistrar = strategyRegistrar;
+        this.strategyRegistrar.register();
+
+        this.controllerManager = controllerManager;
+        this.vertexControllers = controllerManager.getControllers(VertexController.class);
+        this.edgeControllers = controllerManager.getControllers(EdgeController.class);
     }
 
     private StrategyRegistrar determineStartegyRegistrar(Configuration configuration) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
@@ -125,8 +124,8 @@ public class UniGraph implements Graph {
         return strategyRegistrar;
     }
 
-    public ControllerProvider getControllerProvider() {
-        return controllerProvider;
+    public ControllerManager getControllerManager() {
+        return controllerManager;
     }
 
     @Override
@@ -136,12 +135,12 @@ public class UniGraph implements Graph {
 
     @Override
     public String toString() {
-        return StringFactory.graphString(this, controllerProvider.toString());
+        return StringFactory.graphString(this, controllerManager.toString());
     }
 
     @Override
     public void close() {
-        controllerProvider.getControllers().forEach(Controller::close);
+        controllerManager.close();
     }
 
     @Override
@@ -172,26 +171,23 @@ public class UniGraph implements Graph {
 
     @Override
     public Iterator<Vertex> vertices(Object... ids) {
-        if (ids.length > 1 && !ids[0].getClass().equals(ids[1].getClass())) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
-        if (ids.length > 0 && Vertex.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator(ids);
-
-        Predicates predicates = new Predicates();
-        if(ids.length > 0) predicates.hasContainers.add(new HasContainer(T.id.getAccessor(), P.within(ids)));
-
-        return controllerProvider.getControllers(VertexController.class)
-                .<Vertex>flatMap(controller -> asStream(controller.vertices(predicates))).iterator();
+        return this.query(vertexControllers, ids);
     }
 
     @Override
     public Iterator<Edge> edges(Object... ids) {
+        return this.query(edgeControllers, ids);
+    }
+
+    private <E extends Element, C extends Controller<E>> Iterator<E> query(List<C> controllers, Object[] ids) {
         if (ids.length > 1 && !ids[0].getClass().equals(ids[1].getClass())) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
         if (ids.length > 0 && Vertex.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator(ids);
 
         Predicates predicates = new Predicates();
         if(ids.length > 0) predicates.hasContainers.add(new HasContainer(T.id.getAccessor(), P.within(ids)));
 
-        return controllerProvider.getControllers(EdgeController.class)
-                .<Edge>flatMap(controller -> asStream(controller.edges(predicates))).iterator();
+        Class<? extends Controller> c = VertexController.class;
+        return controllers.stream().<E>flatMap(controller -> asStream(controller.query(predicates))).iterator();
     }
 
     @Override
@@ -201,7 +197,7 @@ public class UniGraph implements Graph {
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
         stringObjectMap.remove("id");
         stringObjectMap.remove("label");
-        return controllerProvider.getControllers(VertexController.class)
+        return controllerManager.getControllers(VertexController.class).stream()
                 .map(controller -> controller.addVertex(idValue, label, stringObjectMap))
                 .findFirst().get();
     }

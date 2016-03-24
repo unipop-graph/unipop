@@ -1,0 +1,72 @@
+{
+  "providers": [
+    {
+      "type": "elastic",
+      "clientType": "Transport",
+      "clusterName": "unipop",
+      "address": "127.0.0.1:9300",
+      "schemas": [
+        {
+          "type": "document",
+          "element": "vertex",
+          "index": "unipop",
+          "type": "@type",
+          "id": ["@id", "@type"],
+          "label": "@type",
+          "properties": {
+          },
+          "dynamicProperties": true
+        },
+        {
+          "type": "document",
+          "element": "edge",
+          "index": "unipop",
+          "id": "@id",
+          "label": "@type",
+          "outId": "@outId",
+          "outLabel": "@outLabel",
+          "inId": "@inId",
+          "inLabel": "@outLabel",
+          "properties": {
+          },
+          "dynamicProperties": true
+        }
+      ]
+    },
+    {
+      "type": "jdbc",
+      "driver": "org.sqlite.JDBC",
+      "SQLDialect": "SQLITE",
+      "connectionString": "jdbc:sqlite:test.sqlite",
+      "schemas": [
+        {
+          "type": "table",
+          "element": "vertex",
+          "table": "person",
+          "properties": {
+            "id": "@ID",
+            "label": "person",
+            "name": "@NAME"
+          },
+          "dynamicProperties": false,
+          "edges": [
+            {
+              "type": "property",
+              "direction": "OUT",
+              "label": "knows",
+              "id": ["@ID", "@KNOWNBY"],
+              "vertex": {
+                "label": "person",
+                "id": "@KNOWNBY",
+                "properties": {
+                  "weight": "@WEIGHT"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "bulk": 500
+}

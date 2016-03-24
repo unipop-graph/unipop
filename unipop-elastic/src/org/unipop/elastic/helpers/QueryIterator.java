@@ -14,7 +14,7 @@ import org.unipop.structure.BaseElement;
 import java.util.Iterator;
 import java.util.Map;
 
-public class QueryIterator<E extends BaseElement> implements Iterator<E> {
+public class QueryIterator<E extends Element> implements Iterator<E> {
 
     private SearchResponse scrollResponse;
     private long allowedRemaining;
@@ -34,10 +34,7 @@ public class QueryIterator<E extends BaseElement> implements Iterator<E> {
 
         this.timing.start("query");
 
-        SearchRequestBuilder searchRequestBuilder;
-
-        searchRequestBuilder = client.prepareSearch(indices)
-                .setQuery(query);
+        SearchRequestBuilder searchRequestBuilder = client.prepareSearch().setQuery(query);
 
         if (scrollSize > 0)
             searchRequestBuilder.setScroll(new TimeValue(60000))
@@ -70,10 +67,10 @@ public class QueryIterator<E extends BaseElement> implements Iterator<E> {
     public E next() {
         allowedRemaining--;
         SearchHit hit = hits.next();
-        return parser.parse(hit.id(), hit.getType(), hit.getSource());
+        return parser.parse(hit);
     }
 
     public interface Parser<E> {
-        E parse(Object id, String label, Map<String, Object> keyValues);
+        E parse(SearchHit hit);
     }
 }

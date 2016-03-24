@@ -54,7 +54,7 @@ public class SchemaVertexController extends SchemaElementController implements V
 
     @Override
     public BaseVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
-        return new SchemaVertex(vertexId, vertexLabel, graph, null, graph.getControllerProvider(), lazyGetterFactory.getLazyGetter(vertexLabel), schemaProvider, this.elasticMutations);
+        return new SchemaVertex(vertexId, vertexLabel, graph, null, graph.getControllerManager(), lazyGetterFactory.getLazyGetter(vertexLabel), schemaProvider, this.elasticMutations);
     }
 
     @Override
@@ -88,7 +88,7 @@ public class SchemaVertexController extends SchemaElementController implements V
 
     @Override
     public BaseVertex addVertex(Object id, String label, Map<String, Object> properties) {
-        BaseVertex v = new SchemaVertex(id, label, graph, properties, graph.getControllerProvider(), lazyGetterFactory.getLazyGetter(label), this.schemaProvider, this.elasticMutations);
+        BaseVertex v = new SchemaVertex(id, label, graph, properties, graph.getControllerManager(), lazyGetterFactory.getLazyGetter(label), this.schemaProvider, this.elasticMutations);
 
         Optional<GraphVertexSchema> vertexSchema = this.schemaProvider.getVertexSchema(label);
         if (!vertexSchema.isPresent()) {
@@ -126,7 +126,7 @@ public class SchemaVertexController extends SchemaElementController implements V
     }
 
     @Override
-    public List<BaseElement> vertexProperties(List<BaseVertex> vertices) {
+    public List<BaseElement> vertexProperties(Iterator<BaseVertex> vertices) {
         throw new NotImplementedException();
     }
 

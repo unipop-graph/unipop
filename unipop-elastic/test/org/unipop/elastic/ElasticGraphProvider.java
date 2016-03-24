@@ -8,13 +8,10 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.node.Node;
-import org.unipop.controller.provider.ControllerProvider;
+import org.unipop.structure.manager.ControllerProvider;
 import org.unipop.elastic.controllerprovider.BasicElasticControllerProvider;
-import org.unipop.elastic.controllerprovider.ElasticStarControllerProvider;
 import org.unipop.elastic.helpers.ElasticClientFactory;
 import org.unipop.elastic.helpers.ElasticHelper;
-import org.unipop.process.strategyregistrar.OptimizedStrategyRegistrar;
-import org.unipop.process.strategyregistrar.StandardStrategyRegistrar;
 import org.unipop.structure.*;
 
 import java.io.File;
@@ -62,7 +59,7 @@ public class ElasticGraphProvider extends AbstractGraphProvider {
             put("elasticsearch.cluster.address", "127.0.0.1:" + client.settings().get("transport.tcp.port"));
 
             ControllerProvider controllerProvider = new BasicElasticControllerProvider();
-            put("controllerProvider",  controllerProvider );
+            put("controllerManager",  controllerProvider );
             //put("strategyRegistrar", new OptimizedStrategyRegistrar());
         }};
     }

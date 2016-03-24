@@ -1,12 +1,11 @@
 package org.unipop.process.group;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierStep;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.unipop.controller.provider.ControllerProvider;
+import org.unipop.structure.manager.ControllerManager;
+import org.unipop.structure.manager.ControllerProvider;
 import org.unipop.controller.Predicates;
 
 import java.util.*;
@@ -23,58 +22,60 @@ public class UniGraphGroupStep<E extends Element> extends ReducingBarrierStep<E,
             Object[] ids,
             String[] edgeLabels,
             Optional<Direction> direction,
-            ControllerProvider queryHandler) {
+            ControllerManager controllerManager) {
         super(traversal);
 
-        this.controllerProvider = queryHandler;
+        this.controllerManager = controllerManager;
         this.bulk = new ArrayList<>();
 
-        this.setSeedSupplier(() -> {
-            if (!this.previousStep.equals(EmptyStep.instance())) {
-                return new HashMap<>();
-            }
-
-            if (Vertex.class.isAssignableFrom(elementClass)) {
-                return this.controllerProvider.vertexGroupBy(
-                        predicates,
-                        keyTraversal,
-                        valuesTraversal,
-                        reducerTraversal);
-            } else {
-                return this.controllerProvider.edgeGroupBy(
-                        predicates,
-                        keyTraversal,
-                        valuesTraversal,
-                        reducerTraversal);
-            }
-        });
-
-        this.setBiFunction((seed, traverser) -> {
-            E element = traverser.get();
-            bulk.add(element);
-
-            Map<String, Object> bulkGroupBy = null;
-            //TODO: configure bulk size dynamically
-            if (bulk.size() > 100 || !this.starts.hasNext()) {
-                bulkGroupBy = this.controllerProvider.edgeGroupBy(
-                        (Vertex[]) bulk.toArray(),
-                        direction.get(),
-                        edgeLabels,
-                        predicates,
-                        keyTraversal,
-                        valuesTraversal,
-                        reducerTraversal);
-
-                bulk.clear();
-            }
-
-            // merge the result with the seed
-            for(Map.Entry<String, Object> entry : bulkGroupBy.entrySet()) {
-                seed.put(entry.getKey(), entry.getValue());
-            }
-
-            return seed;
-        });
+//        this.setSeedSupplier(() -> {
+//            return null;
+//            if (!this.previousStep.equals(EmptyStep.instance())) {
+//                return new HashMap<>();
+//            }
+//
+//            if (Vertex.class.isAssignableFrom(elementClass)) {
+//                return this.controllerManager.getControllers(GroupController.class).vertexGroupBy(
+//                        predicates,
+//                        keyTraversal,
+//                        valuesTraversal,
+//                        reducerTraversal);
+//            } else {
+//                return this.controllerManager.edgeGroupBy(
+//                        predicates,
+//                        keyTraversal,
+//                        valuesTraversal,
+//                        reducerTraversal);
+//            }
+//        });
+//
+//        this.setBiFunction((seed, traverser) -> {
+//            E element = traverser.get();
+//            bulk.add(element);
+//
+//            Map<String, Object> bulkGroupBy = null;
+//            //TODO: configure bulk size dynamically
+//            if (bulk.size() > 100 || !this.starts.hasNext()) {
+//                bulkGroupBy = this.controllerManager.edgeGroupBy(
+//                        (Vertex[]) bulk.toArray(),
+//                        direction.get(),
+//                        edgeLabels,
+//                        predicates,
+//                        keyTraversal,
+//                        valuesTraversal,
+//                        reducerTraversal);
+//
+//                bulk.clear();
+//            }
+//
+//            // merge the result with the seed
+//            for(Map.Entry<String, Object> entry : bulkGroupBy.entrySet()) {
+//                seed.get(entry.getKey())
+//                seed.put(entry.getKey(), entry.getValue());
+//            }
+//
+//            return seed;
+//        });
     }
     //endregion
 
@@ -105,7 +106,7 @@ public class UniGraphGroupStep<E extends Element> extends ReducingBarrierStep<E,
     //endregion
 
     //region Fields
-    private ControllerProvider controllerProvider;
+    private ControllerManager controllerManager;
     private Collection<E> bulk;
 
     private Traversal keyTraversal;

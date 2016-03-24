@@ -1,20 +1,13 @@
 package org.unipop.controller;
 
-import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.unipop.structure.*;
 
 import java.util.*;
 
 public interface EdgeController extends Controller {
-    Iterator<BaseEdge> edges(Predicates predicates);
-    Iterator<BaseEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates);
-
-    long edgeCount(Predicates predicates);
-    long edgeCount(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates);
-
-    Map<String, Object> edgeGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal);
-    Map<String, Object> edgeGroupBy(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal);
-
-    BaseEdge addEdge(Object edgeId, String label, BaseVertex outV, BaseVertex inV, Map<String, Object> properties);
+    Iterator<Edge>  edges(BaseVertex vertex, Direction direction, String[] edgeLabels);
+    <E extends Element> Iterator<Traverser<E>>  edges(List<Traverser.Admin<Vertex>> vertices, Direction direction, String[] edgeLabels, Predicates predicates);
+    Edge addEdge(Object edgeId, String label, BaseVertex outV, BaseVertex inV, Map<String, Object> properties);
 }

@@ -27,7 +27,7 @@ public class UniGraphVertexStepStrategy extends AbstractTraversalStrategy<Traver
         UniGraph uniGraph = (UniGraph) graph;
 
         TraversalHelper.getStepsOfClass(VertexStep.class, traversal).forEach(vertexStep -> {
-            UniGraphVertexStep uniGraphVertexStep = new UniGraphVertexStep(vertexStep, new Predicates(), uniGraph.getControllerProvider());
+            UniGraphVertexStep uniGraphVertexStep = new UniGraphVertexStep(vertexStep, new Predicates(), uniGraph.getControllerManager());
             TraversalHelper.replaceStep(vertexStep, uniGraphVertexStep, traversal);
         });
     }

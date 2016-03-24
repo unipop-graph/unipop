@@ -37,6 +37,7 @@ public class UniGraphPredicatesStrategy extends AbstractTraversalStrategy<Traver
         return priorStrategies;
     }
 
+
     @Override
     public void apply(Traversal.Admin<?, ?> traversal) {
         if(traversal.getEngine().isComputer()) {

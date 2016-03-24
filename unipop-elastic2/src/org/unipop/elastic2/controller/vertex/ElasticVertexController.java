@@ -79,7 +79,7 @@ public class ElasticVertexController implements VertexController {
     }
 
     @Override
-    public List<BaseElement> vertexProperties(List<BaseVertex> vertices) {
+    public List<BaseElement> vertexProperties(Iterator<BaseVertex> vertices) {
         if (vertices.isEmpty())
             return new ArrayList<>();
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch(defaultIndex);
@@ -201,11 +201,11 @@ public class ElasticVertexController implements VertexController {
     }
 
     protected UniVertex createLazyVertex(Object id, String label,  LazyGetter lazyGetter) {
-        return new UniDelayedVertex(id, label, graph.getControllerProvider(), graph);
+        return new UniDelayedVertex(id, label, graph.getControllerManager(), graph);
     }
 
     protected UniVertex createVertex(Object id, String label, Map<String, Object> keyValues) {
-        return new UniVertex(id, label, keyValues, graph.getControllerProvider(), graph);
+        return new UniVertex(id, label, keyValues, graph.getControllerManager(), graph);
     }
 
     protected String getDefaultIndex() {

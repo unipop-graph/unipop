@@ -8,7 +8,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversal
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.unipop.controller.Predicates;
-import org.unipop.process.start.UniGraphStartStep;
 import org.unipop.structure.UniGraph;
 
 public class UniGraphStartStepStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy{
@@ -27,7 +26,7 @@ public class UniGraphStartStepStrategy extends AbstractTraversalStrategy<Travers
 
         TraversalHelper.getStepsOfClass(GraphStep.class, traversal).forEach(graphStep -> {
             if(graphStep.getIds().length > 0) return; //let Graph.vertices(ids) handle it.
-            final UniGraphStartStep<?,?> uniGraphStartStep = new UniGraphStartStep<>(graphStep, new Predicates(), uniGraph.getControllerProvider());
+            final UniGraphStartStep<?,?> uniGraphStartStep = new UniGraphStartStep<>(graphStep, new Predicates(), uniGraph.getControllerManager());
             TraversalHelper.replaceStep(graphStep, (Step) uniGraphStartStep, traversal);
         });
     }

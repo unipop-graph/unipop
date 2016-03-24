@@ -9,7 +9,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.jooq.*;
 import org.jooq.impl.DSL;
-import org.unipop.controller.provider.ControllerProvider;
+import org.unipop.structure.manager.ControllerProvider;
 import org.unipop.controller.EdgeController;
 import org.unipop.controller.Predicates;
 import org.unipop.jdbc.utils.JooqHelper;
@@ -164,7 +164,7 @@ public class SqlEdgeController implements EdgeController{
             //Change keys to lower-case. TODO: make configurable mapping
             Map<String, Object> stringObjectMap = new HashMap<>();
             record.intoMap().forEach((key, value) -> stringObjectMap.put(key.toLowerCase(), value));
-            ControllerProvider manager = graph.getControllerProvider();
+            ControllerProvider manager = graph.getControllerManager();
             Vertex inV = manager.vertex(Direction.IN, stringObjectMap.get(inIdField), stringObjectMap.get(inLabelField).toString());
             Vertex outV = manager.vertex(Direction.OUT, stringObjectMap.get(outIdField), stringObjectMap.get(outLabelField).toString());
             stringObjectMap.remove(inIdField);

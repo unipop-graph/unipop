@@ -7,7 +7,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementExce
  * Created by Gilad on 02/11/2015.
  */
 public class SemanticKeyTraversal implements Traversal {
-    private enum Type {
+    public enum Type {
         property
     }
 

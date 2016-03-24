@@ -6,7 +6,6 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.jooq.SelectJoinStep;
-import org.unipop.helpers.LazzyGetter;
 import org.unipop.jdbc.utils.JooqHelper;
 import org.unipop.structure.BaseVertex;
 

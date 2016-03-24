@@ -1,6 +1,10 @@
 package org.unipop.process.vertex;
 
-import org.unipop.controller.provider.ControllerProvider;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.UnmodifiableIterator;
+import org.unipop.controller.EdgeController;
+import org.unipop.structure.manager.ControllerManager;
+import org.unipop.structure.manager.ControllerProvider;
 import org.unipop.controller.Predicates;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
@@ -10,27 +14,27 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.*;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
-import org.unipop.structure.BaseEdge;
-import org.unipop.structure.BaseVertex;
+import org.unipop.helpers.StreamUtils;
 
 import java.util.*;
 
 public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, E> {
     private final Predicates predicates;
-    protected final ControllerProvider controllerProvider;
+    protected final ControllerManager controllerManager;
     private final Direction direction;
     private final Class returnClass;
     private final String[] edgeLabels;
     private final int bulk;
+    private final List<EdgeController> controllers;
     private MutableMetrics metrics;
-    private Iterator<Traverser<E>> results = EmptyIterator.instance();
+    private Iterator<Traverser<E>> results;
 
-    public UniGraphVertexStep(VertexStep vertexStep, Predicates predicates, ControllerProvider controllerProvider) {
+    public UniGraphVertexStep(VertexStep vertexStep, Predicates predicates, ControllerManager controllerManager) {
         super(vertexStep.getTraversal());
         this.direction = vertexStep.getDirection();
         this.returnClass = vertexStep.getReturnClass();
         this.predicates = predicates;
-        this.controllerProvider = controllerProvider;
+        this.controllerManager = controllerManager;
         vertexStep.getLabels().forEach(label -> this.addLabel(label.toString()));
         predicates.labels.forEach(this::addLabel);
         this.edgeLabels = vertexStep.getEdgeLabels();
@@ -41,11 +45,12 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
         if(metrics.isPresent()) this.metrics = (MutableMetrics) metrics.get().getMetrics(this.getId());
 
         this.bulk = getTraversal().getGraph().get().configuration().getInt("bulk", 100);
+        this.controllers = this.controllerManager.getControllers(EdgeController.class);
     }
 
     @Override
     protected Traverser<E> processNextStart() {
-        while (!results.hasNext() && starts.hasNext())
+        if(results == null)
             results = query(starts);
 
         if(results.hasNext())
@@ -55,46 +60,12 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
     }
 
     private Iterator<Traverser<E>> query(Iterator<Traverser.Admin<Vertex>> traversers) {
-        ResultsContainer results = new ResultsContainer();
-        List<Traverser.Admin<Vertex>> copyTraversers = new ArrayList<>();
-        List<BaseVertex> vertices = new ArrayList<>();
-
-        while(traversers.hasNext() && vertices.size() <= bulk)
-        {
-            Traverser.Admin<Vertex> traverser = traversers.next();
-            vertices.add((BaseVertex) traverser.get());
-            copyTraversers.add(traverser);
-        }
-
-        results.addResults(controllerProvider.edges(vertices.toArray(new BaseVertex[0]), getDirection(), getEdgeLabels(), getPredicates()));
-
-        List<Traverser<E>> returnTraversers = new ArrayList<>();
-        copyTraversers.forEach(traverser -> {
-            ArrayList<E> list = results.get(traverser.get().id().toString());
-            if (list != null) for (E element : list)
-                returnTraversers.add(traverser.split(element, this));
-        });
-        return returnTraversers.iterator();
-    }
-
-    private class ResultsContainer {
-        Map<Object, ArrayList<E>> idToResults = new HashMap<>();
-
-        public void addResults(Iterator<BaseEdge> edgeIterator) {
-            edgeIterator.forEachRemaining(edge -> edge.vertices(getDirection()).forEachRemaining(vertex -> {
-                ArrayList<E> list = idToResults.get(vertex.id());
-                if (list == null || !(list instanceof List)) {
-                    list = new ArrayList();
-                    idToResults.put(vertex.id(), list);
-                }
-                Element element = !Vertex.class.equals(returnClass) ? edge : vertexToVertex(vertex, edge, getDirection());
-                list.add((E) element);
-            }));
-        }
-
-        public ArrayList<E> get(String key) {
-            return idToResults.get(key);
-        }
+        UnmodifiableIterator<List<Traverser.Admin<Vertex>>> partitionedTraversers = Iterators.partition(starts, bulk);
+        return StreamUtils.asStream(partitionedTraversers).<Iterator<Traverser<E>>>map(traverserPartition ->
+            controllers.stream()
+                    .<Iterator<Traverser<E>>>map(controller -> controller.<E>edges(traverserPartition, direction, edgeLabels, predicates))
+                    .<Traverser<E>>flatMap(StreamUtils::asStream).iterator())
+            .<Traverser<E>>flatMap(StreamUtils::asStream).iterator();
     }
 
     private Vertex vertexToVertex(Vertex originalVertex, Edge edge, Direction direction) {
@@ -145,7 +116,6 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
     public String[] getEdgeLabels() {
         return edgeLabels;
     }
-
 
     public Direction getDirection() {
         return direction;

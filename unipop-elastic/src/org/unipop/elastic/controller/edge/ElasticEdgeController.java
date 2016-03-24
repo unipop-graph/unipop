@@ -247,8 +247,8 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
     }
 
     private BaseEdge createEdge(Object id, String label, Map<String, Object> fields) {
-        BaseVertex outV = this.graph.getControllerProvider().vertex(Direction.OUT, fields.get(ElasticEdge.OutId), fields.get(ElasticEdge.OutLabel).toString());
-        BaseVertex inV = this.graph.getControllerProvider().vertex(Direction.IN, fields.get(ElasticEdge.InId), fields.get(ElasticEdge.InLabel).toString());
+        BaseVertex outV = this.graph.getControllerManager().vertex(Direction.OUT, fields.get(ElasticEdge.OutId), fields.get(ElasticEdge.OutLabel).toString());
+        BaseVertex inV = this.graph.getControllerManager().vertex(Direction.IN, fields.get(ElasticEdge.InId), fields.get(ElasticEdge.InLabel).toString());
         BaseEdge edge = new ElasticEdge(id, label, fields, outV, inV, this, graph, elasticMutations, indexName);
         return edge;
     }

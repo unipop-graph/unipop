@@ -86,7 +86,7 @@ public class ElasticVertexController implements VertexController {
     }
 
     @Override
-    public List<BaseElement> vertexProperties(List<BaseVertex> vertices) {
+    public List<BaseElement> vertexProperties(Iterator<BaseVertex> vertices) {
         if (vertices.isEmpty())
             return new ArrayList<>();
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch(defaultIndex);

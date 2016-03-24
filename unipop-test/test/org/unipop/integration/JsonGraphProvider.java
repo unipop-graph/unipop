@@ -91,7 +91,7 @@ public class JsonGraphProvider extends AbstractGraphProvider {
         controllers.add(knows);
         obj.put("controllers", controllers);
 
-        FileWriter schema = new FileWriter("schema.json");
+        FileWriter schema = new FileWriter("Schema.json");
         schema.write(obj.toJSONString());
         schema.flush();
         schema.close();
@@ -108,7 +108,7 @@ public class JsonGraphProvider extends AbstractGraphProvider {
             put("controllerManagerFactory", (ControllerManagerFactory) JSONSchemaControllerManager::new);
             put("strategyRegistrar", new StandardStrategyRegistrar());
             put("elastic", true);
-            put("schema", "schema.json");
+            put("Schema", "Schema.json");
         }};
     }
 
@@ -126,7 +126,7 @@ public class JsonGraphProvider extends AbstractGraphProvider {
             indexName = "unipop";
             ElasticHelper.clearIndex(client, indexName);
             g.close();
-//            File file = new File("schema.json");
+//            File file = new File("Schema.json");
 //            FileUtils.deleteQuietly(file);
         }
     }

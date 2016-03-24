@@ -2,8 +2,8 @@ package org.unipop.elastic.schema.suite;
 
 import org.apache.tinkerpop.gremlin.GraphProviderClass;
 import org.junit.runner.RunWith;
-import org.unipop.elastic.schema.misc.CustomTestSuite;
-import org.unipop.elastic.schema.misc.ModernSchemaGraphProvider;
+import org.unipop.elastic.schema.ElementSchema.misc.CustomTestSuite;
+import org.unipop.elastic.schema.ElementSchema.misc.ModernSchemaGraphProvider;
 import org.unipop.structure.UniGraph;
 
 /**

@@ -3,17 +3,16 @@ package org.unipop.structure;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
-import org.unipop.controller.Controller;
 import org.unipop.controller.EdgeController;
 import org.unipop.controller.VertexController;
-import org.unipop.controller.provider.ControllerProvider;
+import org.unipop.helpers.StreamUtils;
 
 import java.util.Iterator;
 import java.util.Map;
 
-public abstract class BaseVertex extends BaseElement<VertexController> implements Vertex {
+public class BaseVertex extends BaseElement<VertexController> implements Vertex {
 
-    protected BaseVertex(Object id, String label, Map<String, Object> keyValues, VertexController controller, UniGraph graph) {
+    public BaseVertex(Object id, String label, Map<String, Object> keyValues, VertexController controller, UniGraph graph) {
         super(id, label, graph, keyValues, controller);
     }
 
@@ -24,7 +23,6 @@ public abstract class BaseVertex extends BaseElement<VertexController> implement
 
     @Override
     public <V> VertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value, final Object... keyValues) {
-        checkRemoved();
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         ElementHelper.validateProperty(key, value);
         if(keyValues != null && keyValues.length > 0) throw VertexProperty.Exceptions.metaPropertiesNotSupported();
@@ -33,7 +31,11 @@ public abstract class BaseVertex extends BaseElement<VertexController> implement
 
     @Override
     public Iterator<Edge> edges(Direction direction, String... edgeLabels) {
-        return graph.traversal().V(this).toE(direction, edgeLabels);
+        return graph.getControllerManager().getControllers(EdgeController.class).stream()
+                .<Iterator<Edge>>map(controller -> controller.edges(this, direction, edgeLabels))
+                .flatMap(StreamUtils::asStream)
+                .iterator();
+
     }
 
     @Override
@@ -41,26 +43,16 @@ public abstract class BaseVertex extends BaseElement<VertexController> implement
         return graph.traversal().V(this).toE(direction, edgeLabels).toV(direction.opposite());
     }
 
-    public void applyLazyFields(String label, Map<String, Object> properties) {
-        setLabel(label);
-        properties.entrySet().forEach((field) ->
-                addPropertyLocal(field.getKey(), field.getValue()));
-    }
-
     @Override
     public <V> VertexProperty<V> property(String key, V value) {
-        checkRemoved();
         ElementHelper.validateProperty(key, value);
         BaseVertexProperty vertexProperty = (BaseVertexProperty) addPropertyLocal(key, value);
-        innerAddProperty(vertexProperty);
+        controller.addProperty(this, vertexProperty);
         return vertexProperty;
     }
 
-    protected abstract void innerAddProperty(BaseVertexProperty vertexProperty);
-
     @Override
     public <V> VertexProperty<V> property(final String key) {
-        checkRemoved();
         if (this.properties.containsKey(key)) {
             return (VertexProperty<V>) this.properties.get(key);
         }
@@ -70,15 +62,13 @@ public abstract class BaseVertex extends BaseElement<VertexController> implement
     @Override
     public Edge addEdge(final String label, final Vertex vertex, final Object... keyValues) {
         if (null == vertex) throw Graph.Exceptions.argumentCanNotBeNull("vertex");
-        checkRemoved();
         Map<String, Object> stringObjectMap = UniGraph.asMap(keyValues);
         Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
         stringObjectMap.remove("id");
         stringObjectMap.remove("label");
-        BaseEdge edge = graph.getControllerProvider().getControllers(EdgeController.class)
+        return graph.getControllerManager().getControllers(EdgeController.class).stream()
                 .map(controller -> controller.addEdge(idValue, label, this, (BaseVertex) vertex, stringObjectMap))
                 .findFirst().get();
-        return edge;
     }
 
     @Override
@@ -97,12 +87,7 @@ public abstract class BaseVertex extends BaseElement<VertexController> implement
 
     @Override
     public <V> Iterator<VertexProperty<V>> properties(final String... propertyKeys) {
-        checkRemoved();
-        return innerPropertyIterator(propertyKeys);
+        return propertyIterator(propertyKeys);
     }
 
-    @Override
-    protected void checkRemoved() {
-        if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, this.id);
-    }
 }
