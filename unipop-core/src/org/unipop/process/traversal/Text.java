@@ -9,6 +9,34 @@ import java.util.function.BiPredicate;
  * Created by sbarzilay on 12/15/15.
  */
 public enum Text implements BiPredicate<Object, Object> {
+    PREFIX{
+        @Override
+        public boolean test(final Object first, final Object second) {
+            return second.toString().matches(first.toString().replace("?", ".?").replace("*", ".*?"));
+        }
+
+        /**
+         * The negative of {@code LIKE} is {@link #UNLIKE}.
+         */
+        @Override
+        public Text negate() {
+            return UNREGEXP;
+        }
+    },
+    UNPREFIX{
+        @Override
+        public boolean test(final Object first, final Object second) {
+            return !second.toString().matches(first.toString().replace("?", ".?").replace("*", ".*?"));
+        }
+
+        /**
+         * The negative of {@code LIKE} is {@link #UNLIKE}.
+         */
+        @Override
+        public Text negate() {
+            return PREFIX;
+        }
+    },
     LIKE {
         @Override
         public boolean test(final Object first, final Object second) {
@@ -100,4 +128,6 @@ public enum Text implements BiPredicate<Object, Object> {
     public static <V> P<V> unregexp(final V value) { return new P(Text.UNREGEXP, value); }
     public static <V> P<V> fuzzy(final V value) { return new P(Text.FUZZY, value); }
     public static <V> P<V> unfuzzy(final V value) { return new P(Text.UNFUZZY, value); }
+    public static <V> P<V> prefix(final V value) { return new P(Text.PREFIX, value); }
+    public static <V> P<V> unprefix(final V value) { return new P(Text.UNPREFIX, value); }
 }

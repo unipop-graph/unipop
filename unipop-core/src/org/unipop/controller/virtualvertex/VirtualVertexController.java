@@ -91,7 +91,7 @@ public class VirtualVertexController implements VertexController {
 
     @Override
     public List<BaseElement> vertexProperties(List<BaseVertex> vertices) {
-        throw new NotImplementedException();
+        return new ArrayList<>();
     }
 
     @Override

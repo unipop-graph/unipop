@@ -56,7 +56,6 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
     }
 
     private Iterator<Traverser<E>> query(Iterator<Traverser.Admin<Vertex>> traversers) {
-        ResultsContainer results = new ResultsContainer();
         List<Traverser.Admin<Vertex>> copyTraversers = new ArrayList<>();
         List<BaseVertex> vertices = new ArrayList<>();
 
@@ -87,14 +86,6 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
             return returnTraversers.stream();
         });
 
-//        results.addResults(controllerManager.edges(vertices.toArray(new BaseVertex[0]), getDirection(), getEdgeLabels(), getPredicates()));
-
-//        List<Traverser<E>> returnTraversers = new ArrayList<>();
-//        copyTraversers.forEach(traverser -> {
-//            ArrayList<E> list = results.get(traverser.get().id().toString());
-//            if (list != null) for (E element : list)
-//                returnTraversers.add(traverser.split(element, this));
-//        });
         return traverserStream.iterator();
     }
 

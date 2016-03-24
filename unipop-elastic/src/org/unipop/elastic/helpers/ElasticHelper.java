@@ -136,6 +136,12 @@ public class ElasticHelper {
             case "UNFUZZY":
                 queryBuilders.add(new Pair<>(QueryBuilders.fuzzyQuery(has.getKey(), has.getValue().toString()), false));
                 break;
+            case "PREFIX":
+                queryBuilders.add(new Pair<>(QueryBuilders.prefixQuery(has.getKey(), has.getValue().toString()), true));
+                break;
+            case "UNPREFIX":
+                queryBuilders.add(new Pair<>(QueryBuilders.prefixQuery(has.getKey(), has.getValue().toString()), false));
+                break;
             default:
                 throw new IllegalArgumentException("predicate not supported in has step: " + has.getBiPredicate().toString());
         }

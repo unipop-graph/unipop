@@ -12,6 +12,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 import org.unipop.elastic.ElasticGraphProvider;
+import org.unipop.process.traversal.Text;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -34,7 +35,7 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void test() {
-        Traversal traversal = g.V().out().out();
+        Traversal traversal = g.E().has("inid", Text.prefix("www.sdasd.")).outV().valueMap();
 
         check(traversal);
     }
