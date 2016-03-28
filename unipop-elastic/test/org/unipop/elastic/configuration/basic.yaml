@@ -1,0 +1,82 @@
+providers:
+  - !elastic
+   clientType: Transport
+   clusterName: unipop
+   address: 127.0.0.1:9300
+   vertices:
+    - !document
+      index: unipop
+      _type: type
+      id: [$id, $type]
+      label: $type
+      properties:
+      dynamicProperties: true
+      edges:
+       - !property
+        id: [$id, $knownBy]
+        label: knows
+        weight: $weight
+        vertex:
+         type: refer
+         referType: document
+         id: $knownBy
+         label: person
+         properties:
+       - !nested
+        path: edges
+        id: [$id, $edges.id]
+        label: $edges.label
+        properties:
+        dynamicProperties: true
+        vertex:
+         type: virtual
+         id: $edges.vertexId
+         label:
+          value: $edges.vertexLabel
+          excluded: foo
+         properties:
+   edges:
+    - !document
+      index: unipop
+      _type: $type
+      id: $id
+      label:
+       value: $type
+       included: person
+      properties:
+      dynamicProperties: true
+      outVertex:
+       type: refer
+       id: $outId
+       label: $outLabel
+       properties:
+      inVertex:
+       type: refer
+       id: $inId
+       label: $inLabel
+       properties:
+  - !jdbc
+   driver: org.sqlite.JDBC
+   SQLDialect: SQLITE
+   connectionString: jdbc:sqlite:test.sqlite
+   vertices:
+    - !table
+     table: person
+     id: $ID
+     label: person
+     properties:
+       name: $NAME
+     dynamicProperties: false
+     edges:
+      - !property
+         direction: OUT
+         id: [$ID, $KNOWNBY]
+         label: knows
+         properties:
+           weight: $WEIGHT
+         vertex:
+           type: refer
+           id: $KNOWNBY
+           label: person
+           properties:
+bulk: 500
