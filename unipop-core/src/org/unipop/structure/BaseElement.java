@@ -4,19 +4,19 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
-import org.unipop.controller.Controller;
+import org.unipop.controller.ElementController;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-public abstract class BaseElement<C extends Controller> implements Element{
+public abstract class BaseElement<C extends ElementController> implements Element{
     protected HashMap<String, Property> properties = new HashMap<>();
     protected final Object id;
     protected String label;
     protected final UniGraph graph;
-    protected final C controller;
+    protected C controller;
     public boolean removed = false;
 
     public BaseElement(final Object id, final String label, UniGraph graph, Map<String, Object> keyValues, C controller) {
@@ -29,15 +29,12 @@ public abstract class BaseElement<C extends Controller> implements Element{
     }
 
     public Property addPropertyLocal(String key, Object value) {
-        if(key == null || value == null) return null;
+        if(key == null) return null;
 
-        if (shouldAddProperty(key)) {
-            ElementHelper.validateProperty(key, value);
-            Property property = createProperty(key, value);
-            properties.put(key, property);
-            return property;
-        }
-        return null;
+        ElementHelper.validateProperty(key, value);
+        Property property = createProperty(key, value);
+        properties.put(key, property);
+        return property;
     }
 
     @Override
@@ -93,19 +90,9 @@ public abstract class BaseElement<C extends Controller> implements Element{
 
     protected abstract Property createProperty(String key, Object value);
 
-    protected boolean shouldAddProperty(String key) {
-        return !key.equals("label") && !key.equals("id");
-    }
-
     @Override
     public void remove() {
         controller.remove(this);
-    }
-
-    public Map<String, Object> allFields() {
-        Map<String, Object> map = new HashMap<>();
-        properties.forEach((key, value) ->  map.put(key, value.value()));
-        return map;
     }
 
     public void setLabel(String label) {

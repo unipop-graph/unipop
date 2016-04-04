@@ -228,12 +228,12 @@ public class SqlStarController extends SqlVertexController implements EdgeContro
                         innerEdgeController.parseEdge(star, stringObjectMap);
                 });
 //            SelectJoinStep<Record> select = dslContext.select().from(tableName);
-//            select.where(JooqHelper.createCondition(new HasContainer(T.id.getAccessor(), P.eq(stringObjectMap.get("id")))));
+//            select.where(JooqHelper.createCondition(new HasContainer(T.id.getAccessor(), P.eq(stringObjectMap.getValue("id")))));
 //            select.fetch().forEach(vertex -> {
 //                Map<String, Object> vertexStringObjectMap = new HashMap<>();
 //                record.intoMap().forEach((key, value) -> vertexStringObjectMap.put(key.toLowerCase(), value));
 //                innerEdgeControllers.forEach(innerEdgeController -> {
-//                    if (vertexStringObjectMap.get(innerEdgeController.getEdgeLabel()) != null)
+//                    if (vertexStringObjectMap.getValue(innerEdgeController.getEdgeLabel()) != null)
 //                        innerEdgeController.parseEdge(star, vertexStringObjectMap);
 //                });
 //            });

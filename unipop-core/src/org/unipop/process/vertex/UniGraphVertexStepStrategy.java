@@ -5,8 +5,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.unipop.controller.Predicates;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.unipop.structure.UniGraph;
 
 /**
@@ -27,7 +28,8 @@ public class UniGraphVertexStepStrategy extends AbstractTraversalStrategy<Traver
         UniGraph uniGraph = (UniGraph) graph;
 
         TraversalHelper.getStepsOfClass(VertexStep.class, traversal).forEach(vertexStep -> {
-            UniGraphVertexStep uniGraphVertexStep = new UniGraphVertexStep(vertexStep, new Predicates(), uniGraph.getControllerManager());
+            UniGraphVertexStep uniGraphVertexStep = new UniGraphVertexStep(vertexStep, uniGraph.getControllerManager());
+
             TraversalHelper.replaceStep(vertexStep, uniGraphVertexStep, traversal);
         });
     }

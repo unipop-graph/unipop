@@ -6,7 +6,7 @@ providers:
    vertices:
     - !document
       index: unipop
-      _type: type
+      type: type
       id: [$id, $type]
       label: $type
       properties:
@@ -16,8 +16,7 @@ providers:
         id: [$id, $knownBy]
         label: knows
         weight: $weight
-        vertex:
-         type: refer
+        vertex: !refer
          referType: document
          id: $knownBy
          label: person
@@ -28,8 +27,7 @@ providers:
         label: $edges.label
         properties:
         dynamicProperties: true
-        vertex:
-         type: virtual
+        vertex: !virtual
          id: $edges.vertexId
          label:
           value: $edges.vertexLabel
@@ -38,20 +36,18 @@ providers:
    edges:
     - !document
       index: unipop
-      _type: $type
+      type: $type
       id: $id
       label:
        value: $type
        included: person
       properties:
       dynamicProperties: true
-      outVertex:
-       type: refer
+      outVertex: !refer
        id: $outId
        label: $outLabel
        properties:
-      inVertex:
-       type: refer
+      inVertex: !refer
        id: $inId
        label: $inLabel
        properties:
@@ -74,8 +70,7 @@ providers:
          label: knows
          properties:
            weight: $WEIGHT
-         vertex:
-           type: refer
+         vertex: !refer
            id: $KNOWNBY
            label: person
            properties:

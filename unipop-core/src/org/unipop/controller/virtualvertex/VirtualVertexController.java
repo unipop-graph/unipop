@@ -28,11 +28,11 @@
 //    public Iterator<Vertex> query(Predicates predicates, Class<Vertex> returnType) {
 //        Optional<HasContainer> optionalId = predicates.hasContainers.stream().filter(has -> has.getKey().equals(T.id.getAccessor())).findAny();
 //        if(!optionalId.isPresent()) return EmptyIterator.instance();
-//        Object idValue = optionalId.get().getValue();
+//        Object idValue = optionalId.getValue().getValue();
 //        Iterable ids = idValue instanceof Iterable ? (Iterable) idValue : Collections.singleton(idValue);
 //
 //        Optional<HasContainer> optionalLabel = predicates.hasContainers.stream().filter(has -> has.getKey().equals(T.label.getAccessor())).findAny();
-//        String label = optionalLabel.isPresent() ? optionalLabel.get().getValue().toString() : Vertex.DEFAULT_LABEL;
+//        String label = optionalLabel.isPresent() ? optionalLabel.getValue().getValue().toString() : Vertex.DEFAULT_LABEL;
 //
 //        Set<Vertex> vertices = new HashSet<>();
 //        ids.forEach(id-> {
@@ -71,7 +71,7 @@
 //    @Override
 //    public void init(Map<String, Object> conf, UniGraph graph) throws Exception {
 //        this.graph = graph;
-//        this.label = conf.get("label").toString();
+//        this.label = conf.getValue("label").toString();
 //    }
 //
 //    @Override

@@ -2,14 +2,13 @@ package org.unipop.process.count;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierStep;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.unipop.controller.EdgeController;
-import org.unipop.controller.VertexController;
-import org.unipop.structure.manager.ControllerManager;
 import org.unipop.controller.Predicates;
+import org.unipop.structure.manager.ControllerManager;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -19,9 +18,9 @@ import java.util.stream.Collectors;
  */
 public class UniGraphCountStep<E extends Element> extends ReducingBarrierStep<E, Long> {
     //region Constructor
-    public UniGraphCountStep(Traversal.Admin traversal, Class elementClass, Predicates predicates, Object[] ids, String[] edgeLabels, Optional<Direction> direction, ControllerManager controllerManager) {
+    public UniGraphCountStep(Traversal.Admin traversal, Class elementClass, List<HasContainer> hasContainers, Object[] ids, String[] edgeLabels, Optional<Direction> direction, ControllerManager controllerManager) {
         super(traversal);
-
+        this.hasContainers = hasContainers;
         this.controllerManager = controllerManager;
         this.direction = direction.get();
         this.elementClass = elementClass;
@@ -29,12 +28,12 @@ public class UniGraphCountStep<E extends Element> extends ReducingBarrierStep<E,
 
         List<CountController> countControllers = controllerManager.getControllers(CountController.class);
         List<EdgeCountController> edgeCountControllers = controllerManager.getControllers(EdgeCountController.class);
+        Predicates predicates = new Predicates(null, edgeLabels,ids, hasContainers, 0);
 
         this.setSeedSupplier(() -> {
             if (!this.previousStep.equals(EmptyStep.instance())) {
                 return 0L;
             }
-
             return countControllers.stream().collect(Collectors.summingLong(controller -> controller.count(predicates)));
         });
 
@@ -58,6 +57,7 @@ public class UniGraphCountStep<E extends Element> extends ReducingBarrierStep<E,
     }
     //endregion
 
+    private final List<HasContainer> hasContainers;
     //region Fields
     private ControllerManager controllerManager;
     private Direction direction;

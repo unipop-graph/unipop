@@ -9,13 +9,9 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.ArrayIterator;
-import org.unipop.controller.Controller;
-import org.unipop.controller.EdgeController;
-import org.unipop.controller.VertexController;
+import org.unipop.controller.*;
 import org.unipop.structure.manager.ConfigurationControllerManager;
 import org.unipop.structure.manager.ControllerManager;
-import org.unipop.structure.manager.ControllerProvider;
-import org.unipop.controller.Predicates;
 import org.unipop.process.strategyregistrar.StandardStrategyRegistrar;
 import org.unipop.process.strategyregistrar.StrategyRegistrar;
 
@@ -23,7 +19,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.unipop.helpers.StreamUtils.asStream;
 
@@ -71,8 +66,7 @@ import static org.unipop.helpers.StreamUtils.asStream;
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
 @Graph.OptIn("org.unipop.elastic.schema.misc.CustomTestSuite")
 public class UniGraph implements Graph {
-    private List<VertexController> vertexControllers;
-    private List<EdgeController> edgeControllers;
+
 
     //for testSuite
     public static UniGraph open(final Configuration configuration) throws Exception {
@@ -83,6 +77,7 @@ public class UniGraph implements Graph {
     private Configuration configuration;
     private ControllerManager controllerManager;
     private StrategyRegistrar strategyRegistrar;
+    private List<QueryController> queryControllers;
 
     public UniGraph(Configuration configuration) throws Exception {
         configuration.setProperty(Graph.GRAPH, UniGraph.class.getName());
@@ -92,6 +87,8 @@ public class UniGraph implements Graph {
         StrategyRegistrar strategyRegistrar = determineStartegyRegistrar(configuration);
 
         init(configurationControllerManager, strategyRegistrar);
+
+        this.queryControllers = controllerManager.getControllers(QueryController.class);
     }
 
     public UniGraph(ControllerManager controllerManager, StrategyRegistrar strategyRegistrar) throws Exception {
@@ -104,8 +101,6 @@ public class UniGraph implements Graph {
         this.strategyRegistrar.register();
 
         this.controllerManager = controllerManager;
-        this.vertexControllers = controllerManager.getControllers(VertexController.class);
-        this.edgeControllers = controllerManager.getControllers(EdgeController.class);
     }
 
     private StrategyRegistrar determineStartegyRegistrar(Configuration configuration) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
@@ -171,23 +166,21 @@ public class UniGraph implements Graph {
 
     @Override
     public Iterator<Vertex> vertices(Object... ids) {
-        return this.query(vertexControllers, ids);
+        return this.query(Vertex.class, ids);
     }
 
     @Override
     public Iterator<Edge> edges(Object... ids) {
-        return this.query(edgeControllers, ids);
+        return this.query(Edge.class, ids);
     }
 
-    private <E extends Element, C extends Controller<E>> Iterator<E> query(List<C> controllers, Object[] ids) {
+    private <E extends Element> Iterator<E> query(Class<E> returnType, Object[] ids) {
         if (ids.length > 1 && !ids[0].getClass().equals(ids[1].getClass())) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
         if (ids.length > 0 && Vertex.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator(ids);
 
-        Predicates predicates = new Predicates();
-        if(ids.length > 0) predicates.hasContainers.add(new HasContainer(T.id.getAccessor(), P.within(ids)));
+        Predicates<E> predicates = new Predicates<>(returnType, new String[0], ids, null, 0);
 
-        Class<? extends Controller> c = VertexController.class;
-        return controllers.stream().<E>flatMap(controller -> asStream(controller.query(predicates))).iterator();
+        return queryControllers.stream().<E>flatMap(controller -> asStream(controller.query(predicates))).iterator();
     }
 
     @Override

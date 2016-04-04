@@ -7,12 +7,12 @@ import java.util.*;
 
 public class Predicates<E extends Element> {
     private Class<E> elementType;
-    private Set<Object> ids;
-    private ArrayList<HasContainer> hasContainers = new ArrayList<>();
+    private Object[] ids;
+    private List<HasContainer> hasContainers;
     private long limitHigh = Long.MAX_VALUE;
-    private Set<String> labels = new HashSet<>();
+    private String[] labels;
 
-    public Predicates(Class<E> elementType, Set<String> labels, Set<Object> ids, ArrayList<HasContainer> hasContainers, long limitHigh) {
+    public Predicates(Class<E> elementType, String[] labels, Object[] ids, List<HasContainer> hasContainers, long limitHigh) {
         this.elementType = elementType;
         this.ids = ids;
         this.hasContainers = hasContainers;
@@ -24,11 +24,11 @@ public class Predicates<E extends Element> {
         return elementType;
     }
 
-    public Set<Object> getIds() {
+    public Object[] getIds() {
         return ids;
     }
 
-    public ArrayList<HasContainer> getHasContainers() {
+    public List<HasContainer> getHasContainers() {
         return hasContainers;
     }
 
@@ -36,7 +36,7 @@ public class Predicates<E extends Element> {
         return limitHigh;
     }
 
-    public Set<String> getLabels() {
+    public String[] getLabels() {
         return labels;
     }
 }

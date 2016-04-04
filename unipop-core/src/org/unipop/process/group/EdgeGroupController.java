@@ -8,6 +8,6 @@ import org.unipop.controller.Predicates;
 
 import java.util.Map;
 
-public interface EdgeGroupController extends GroupController<Edge> {
+public interface EdgeGroupController extends GroupController {
     Map<String, Object> groupBy(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal);
 }

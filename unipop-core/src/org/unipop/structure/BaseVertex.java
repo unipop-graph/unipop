@@ -1,18 +1,21 @@
 package org.unipop.structure;
 
+import org.apache.commons.collections.ListUtils;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.unipop.controller.EdgeController;
+import org.unipop.controller.Predicates;
 import org.unipop.controller.VertexController;
 import org.unipop.helpers.StreamUtils;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 
-public class BaseVertex extends BaseElement<VertexController> implements Vertex {
+public class BaseVertex<C extends VertexController> extends BaseElement<C> implements Vertex {
 
-    public BaseVertex(Object id, String label, Map<String, Object> keyValues, VertexController controller, UniGraph graph) {
+    public BaseVertex(Object id, String label, Map<String, Object> keyValues, C controller, UniGraph graph) {
         super(id, label, graph, keyValues, controller);
     }
 
@@ -31,11 +34,11 @@ public class BaseVertex extends BaseElement<VertexController> implements Vertex 
 
     @Override
     public Iterator<Edge> edges(Direction direction, String... edgeLabels) {
+        Predicates<Edge> edgePredicates = new Predicates<>(Edge.class, edgeLabels, null, null, 0);
         return graph.getControllerManager().getControllers(EdgeController.class).stream()
-                .<Iterator<Edge>>map(controller -> controller.edges(this, direction, edgeLabels))
+                .<Iterator<Edge>>map(controller -> controller.edges(Collections.singletonList(this), direction, edgePredicates))
                 .flatMap(StreamUtils::asStream)
                 .iterator();
-
     }
 
     @Override

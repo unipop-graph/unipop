@@ -26,7 +26,7 @@ public class UniGraphStartStepStrategy extends AbstractTraversalStrategy<Travers
 
         TraversalHelper.getStepsOfClass(GraphStep.class, traversal).forEach(graphStep -> {
             if(graphStep.getIds().length > 0) return; //let Graph.vertices(ids) handle it.
-            final UniGraphStartStep<?,?> uniGraphStartStep = new UniGraphStartStep<>(graphStep, new Predicates(), uniGraph.getControllerManager());
+            final UniGraphStartStep<?,?> uniGraphStartStep = new UniGraphStartStep<>(graphStep, uniGraph.getControllerManager());
             TraversalHelper.replaceStep(graphStep, (Step) uniGraphStartStep, traversal);
         });
     }

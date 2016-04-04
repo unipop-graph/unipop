@@ -44,7 +44,7 @@ public class UniGraphCountStepStrategy extends AbstractTraversalStrategy<Travers
                 elasticCountStep = new UniGraphCountStep(
                         traversal,
                         elasticVertexStep.getReturnClass(),
-                        elasticVertexStep.getPredicates(),
+                        elasticVertexStep.getHasContainers(),
                         new Object[0],
                         elasticVertexStep.getEdgeLabels(),
                         Optional.of(elasticVertexStep.getDirection()), elasticGraph.getControllerManager());
@@ -54,7 +54,7 @@ public class UniGraphCountStepStrategy extends AbstractTraversalStrategy<Travers
                 elasticCountStep = new UniGraphCountStep(
                         traversal,
                         elasticGraphStep.getReturnClass(),
-                        elasticGraphStep.getPredicates(),
+                        elasticGraphStep.getHasContainers(),
                         elasticGraphStep.getIds(),
                         new String[0],
                         Optional.empty(), elasticGraph.getControllerManager());

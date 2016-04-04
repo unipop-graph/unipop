@@ -1,8 +1,9 @@
 package org.unipop.process.start;
 
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.unipop.controller.*;
+import org.unipop.process.predicate.ReceivesHasContainers;
 import org.unipop.structure.manager.ControllerManager;
-import org.unipop.structure.manager.ControllerProvider;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.StandardTraversalMetrics;
@@ -10,22 +11,20 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.unipop.helpers.StreamUtils;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
-public class UniGraphStartStep<S,E extends Element> extends GraphStep<S,E> {
+public class UniGraphStartStep<S,E extends Element> extends GraphStep<S,E> implements ReceivesHasContainers<S, E>{
 
-    private final Predicates predicates;
     List<QueryController>  controllers;
     private MutableMetrics metrics;
+    private ArrayList<HasContainer> hasContainers = new ArrayList<>();
 
-    public UniGraphStartStep(GraphStep originalStep, Predicates predicates, ControllerManager controllerManager) {
+    public UniGraphStartStep(GraphStep<S, E> originalStep, ControllerManager controllerManager) {
         super(originalStep.getTraversal(), originalStep.getReturnClass(), originalStep.isStartStep(),originalStep.getIds());
-        originalStep.getLabels().forEach(label -> this.addLabel(label.toString()));
-        predicates.labels.forEach(this::addLabel);
-        this.predicates = predicates;
+        originalStep.getLabels().forEach(this::addLabel);
         Optional<StandardTraversalMetrics> metrics = this.getTraversal().asAdmin().getSideEffects().<StandardTraversalMetrics>get(TraversalMetrics.METRICS_KEY);
         if(metrics.isPresent()) this.metrics = (MutableMetrics) metrics.get().getMetrics(this.getId());
         this.controllers = controllerManager.getControllers(QueryController.class);
@@ -33,14 +32,17 @@ public class UniGraphStartStep<S,E extends Element> extends GraphStep<S,E> {
     }
 
     private Iterator<E> query() {
-        return controllers.stream().map(controller -> controller.query(predicates, returnClass)).flatMap(StreamUtils::asStream).iterator();
+        Predicates<E> predicates = new Predicates<>(returnClass, null, this.getIds(), hasContainers, 0);
+        return controllers.stream().map(controller -> controller.query(predicates)).flatMap(StreamUtils::asStream).iterator();
     }
 
-    public Class<E> getReturnClass() {
-        return this.returnClass;
+    @Override
+    public void addHasContainer(HasContainer hasContainer) {
+        this.hasContainers.add(hasContainer);
     }
 
-    public Predicates getPredicates() {
-        return predicates;
+    @Override
+    public List<HasContainer> getHasContainers() {
+        return hasContainers;
     }
 }

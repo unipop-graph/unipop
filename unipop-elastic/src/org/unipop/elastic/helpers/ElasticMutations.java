@@ -7,12 +7,11 @@ import org.elasticsearch.action.delete.DeleteRequestBuilder;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.Client;
-import org.unipop.elastic.schema.ElementSchema;
-import org.unipop.structure.BaseElement;
+import org.unipop.elastic.schema.ElasticElementSchema;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 
 public class ElasticMutations {
 
@@ -39,9 +38,15 @@ public class ElasticMutations {
         indicesToRefresh.clear();
     }
 
-    public void addElement(BaseElement element, String index, String routing,  boolean create) {
-        IndexRequestBuilder indexRequest = client.prepareIndex(index, element.label(), element.id().toString())
-                .setSource(element.allFields()).setRouting(routing).setCreate(create);
+    public <E extends Element> void addElement(E element, boolean create) {
+        ElasticElementSchema<E> schema = element.<ElasticElementSchema<E>>value("~schema");
+        String index = element.<String>value("~index");
+        String type = element.value("~type");
+        String id = element.value("~id").toString();
+        String routing = element.<String>property("~routing").orElse(null);
+        Map<String, Object> fields = schema.toFields(element);
+        IndexRequestBuilder indexRequest = client.prepareIndex(index, type, id)
+                .setSource(fields).setRouting(routing).setCreate(create);
 
         isDirty = true;
         indicesToRefresh.add(index);
@@ -52,11 +57,15 @@ public class ElasticMutations {
     }
 
 
-    public void updateElement(Element element, boolean upsert)  {
-        ElementSchema schema = element.<ElementSchema>value("~schema");
+    public <E extends Element> void updateElement(E element, boolean upsert)  {
+        ElasticElementSchema<E> schema = element.<ElasticElementSchema<E>>value("~schema");
         String index = element.<String>value("~index");
-        UpdateRequest updateRequest = new UpdateRequest(index, element.value("~type"), element.value("~id"))
-                .doc(schema.getFields(element)).routing(element.<String>property("~routing").orElse(null));
+        String type = element.value("~type");
+        String id = element.value("~id").toString();
+        String routing = element.<String>property("~routing").orElse(null);
+        Map<String, Object> fields = schema.toFields(element);
+
+        UpdateRequest updateRequest = new UpdateRequest(index,type, id).doc(fields).routing(routing);
 
         isDirty = true;
         indicesToRefresh.add(index);
@@ -70,10 +79,13 @@ public class ElasticMutations {
 
 
     public void deleteElement(Element element) {
+        ElasticElementSchema schema = element.<ElasticElementSchema>value("~schema");
         String index = element.<String>value("~index");
-        DeleteRequestBuilder deleteRequestBuilder = client
-                .prepareDelete(index, element.value("~type"), element.value("~id"))
-                .setRouting(element.<String>property("~routing").orElse(null));
+        String type = element.value("~type");
+        String id = element.value("~id").toString();
+        String routing = element.<String>property("~routing").orElse(null);
+
+        DeleteRequestBuilder deleteRequestBuilder = client.prepareDelete(index, type, id).setRouting(routing);
 
         isDirty = true;
         indicesToRefresh.add(index);

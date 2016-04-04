@@ -50,7 +50,7 @@ public class UniGraphGroupStep<E extends Element> extends ReducingBarrierStep<E,
 //        });
 //
 //        this.setBiFunction((seed, traverser) -> {
-//            E element = traverser.get();
+//            E element = traverser.getValue();
 //            bulk.add(element);
 //
 //            Map<String, Object> bulkGroupBy = null;
@@ -58,7 +58,7 @@ public class UniGraphGroupStep<E extends Element> extends ReducingBarrierStep<E,
 //            if (bulk.size() > 100 || !this.starts.hasNext()) {
 //                bulkGroupBy = this.controllerManager.edgeGroupBy(
 //                        (Vertex[]) bulk.toArray(),
-//                        direction.get(),
+//                        direction.getValue(),
 //                        edgeLabels,
 //                        predicates,
 //                        keyTraversal,
@@ -70,7 +70,7 @@ public class UniGraphGroupStep<E extends Element> extends ReducingBarrierStep<E,
 //
 //            // merge the result with the seed
 //            for(Map.Entry<String, Object> entry : bulkGroupBy.entrySet()) {
-//                seed.get(entry.getKey())
+//                seed.getValue(entry.getKey())
 //                seed.put(entry.getKey(), entry.getValue());
 //            }
 //

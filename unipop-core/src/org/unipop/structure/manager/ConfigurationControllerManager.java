@@ -3,7 +3,7 @@ package org.unipop.structure.manager;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationUtils;
 import org.apache.commons.configuration.HierarchicalConfiguration;
-import org.unipop.controller.Controller;
+import org.unipop.controller.ElementController;
 import org.unipop.structure.UniGraph;
 
 import java.util.HashSet;
@@ -13,7 +13,7 @@ import java.util.Set;
 public class ConfigurationControllerManager implements ControllerManager {
 
     protected Set<ControllerProvider> controllerProviders = new HashSet<>();
-    protected Set<Controller> controllers = new HashSet<>();
+    protected Set<ElementController> controllers = new HashSet<>();
 
     public ConfigurationControllerManager(UniGraph graph, Configuration configuration) throws Exception {
         HierarchicalConfiguration hierarchicalConfiguration = ConfigurationUtils.convertToHierarchical(configuration);
@@ -30,7 +30,7 @@ public class ConfigurationControllerManager implements ControllerManager {
     }
 
     @Override
-    public Set<Controller> getControllers() {
+    public Set<ElementController> getControllers() {
         return controllers;
     }
 
