@@ -9,6 +9,5 @@ import java.util.Map;
 
 public interface ElasticEdgeSchema extends ElasticElementSchema<Edge> {
     Filter getFilter(List<Vertex> vertex, Predicates predicates);
-
-    Edge createEdge(Object edgeId, String label, Map<String, Object> properties, Vertex outV, Vertex inV);
+    Edge createEdge(Map<String, Object> properties, Vertex outV, Vertex inV);
 }

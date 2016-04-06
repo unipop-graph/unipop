@@ -3,6 +3,7 @@ package org.unipop.structure;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Property;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.unipop.controller.ElementController;
 
@@ -11,21 +12,22 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-public abstract class BaseElement<C extends ElementController> implements Element{
+public abstract class BaseElement implements Element{
     protected HashMap<String, Property> properties = new HashMap<>();
     protected final Object id;
     protected String label;
     protected final UniGraph graph;
-    protected C controller;
     public boolean removed = false;
 
-    public BaseElement(final Object id, final String label, UniGraph graph, Map<String, Object> keyValues, C controller) {
+    public BaseElement(Map<String, Object> keyValues, UniGraph graph) {
         this.graph = graph;
-        this.controller = controller;
+        Object id = ElementHelper.getIdValue(keyValues).orElse(null);
+        final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
+        keyValues.remove("id");
+        keyValues.remove("label");
         this.id = id != null ? id.toString() : new com.eaio.uuid.UUID().toString();
         this.label = label;
-        if(keyValues != null)
-            keyValues.forEach(this::addPropertyLocal);
+        keyValues.forEach(this::addPropertyLocal);
     }
 
     public Property addPropertyLocal(String key, Object value) {
@@ -82,17 +84,16 @@ public abstract class BaseElement<C extends ElementController> implements Elemen
         return properties.values().iterator();
     }
 
-
     public void removeProperty(Property property) {
         properties.remove(property.key());
-        controller.removeProperty(this, property);
+        this.graph.getControllerManager().getControllers(ElementController.class).forEach(controller -> controller.removeProperty(this, property));
     }
 
     protected abstract Property createProperty(String key, Object value);
 
     @Override
     public void remove() {
-        controller.remove(this);
+        this.graph.getControllerManager().getControllers(ElementController.class).forEach(controller -> controller.remove(this));
     }
 
     public void setLabel(String label) {

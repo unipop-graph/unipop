@@ -3,15 +3,13 @@ package org.unipop.structure;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.ArrayIterator;
 import org.unipop.controller.*;
-import org.unipop.structure.manager.ConfigurationControllerManager;
-import org.unipop.structure.manager.ControllerManager;
+import org.unipop.controller.manager.ConfigurationControllerManager;
+import org.unipop.controller.manager.ControllerManager;
 import org.unipop.process.strategyregistrar.StandardStrategyRegistrar;
 import org.unipop.process.strategyregistrar.StrategyRegistrar;
 
@@ -20,7 +18,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import static org.unipop.helpers.StreamUtils.asStream;
+import static org.unipop.common.util.StreamUtils.asStream;
 
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest$GraphSONTest", method = "shouldReadLegacyGraphSON",
         reason = "https://github.com/rmagen/elastic-gremlin/issues/52")
@@ -64,7 +62,7 @@ import static org.unipop.helpers.StreamUtils.asStream;
         reason = "Takes too long.")
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_STANDARD)
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
-@Graph.OptIn("org.unipop.elastic.schema.misc.CustomTestSuite")
+@Graph.OptIn("org.unipop.elastic.schema.tests.CustomTestSuite")
 public class UniGraph implements Graph {
 
 
@@ -77,7 +75,7 @@ public class UniGraph implements Graph {
     private Configuration configuration;
     private ControllerManager controllerManager;
     private StrategyRegistrar strategyRegistrar;
-    private List<QueryController> queryControllers;
+    private List<ElementController> queryControllers;
 
     public UniGraph(Configuration configuration) throws Exception {
         configuration.setProperty(Graph.GRAPH, UniGraph.class.getName());
@@ -88,7 +86,7 @@ public class UniGraph implements Graph {
 
         init(configurationControllerManager, strategyRegistrar);
 
-        this.queryControllers = controllerManager.getControllers(QueryController.class);
+        this.queryControllers = controllerManager.getControllers(ElementController.class);
     }
 
     public UniGraph(ControllerManager controllerManager, StrategyRegistrar strategyRegistrar) throws Exception {
@@ -186,12 +184,9 @@ public class UniGraph implements Graph {
     @Override
     public Vertex addVertex(final Object... keyValues) {
         Map<String, Object> stringObjectMap = asMap(keyValues);
-        Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
-        final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
-        stringObjectMap.remove("id");
-        stringObjectMap.remove("label");
+
         return controllerManager.getControllers(VertexController.class).stream()
-                .map(controller -> controller.addVertex(idValue, label, stringObjectMap))
+                .map(controller -> controller.addVertex(stringObjectMap))
                 .findFirst().get();
     }
 

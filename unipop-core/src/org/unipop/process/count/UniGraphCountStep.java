@@ -8,7 +8,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.unipop.controller.Predicates;
-import org.unipop.structure.manager.ControllerManager;
+import org.unipop.controller.manager.ControllerManager;
 
 import java.util.*;
 import java.util.stream.Collectors;

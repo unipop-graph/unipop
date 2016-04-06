@@ -4,8 +4,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierStep;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.unipop.structure.manager.ControllerManager;
-import org.unipop.structure.manager.ControllerProvider;
+import org.unipop.controller.manager.ControllerManager;
 import org.unipop.controller.Predicates;
 
 import java.util.*;

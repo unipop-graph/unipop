@@ -10,13 +10,13 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 
-public abstract class BaseEdge extends BaseElement<EdgeController> implements Edge {
+public class BaseEdge extends BaseElement implements Edge {
 
     protected Vertex inVertex;
     protected Vertex outVertex;
 
-    public BaseEdge(final Object id, final String label, Map<String, Object> keyValues, Vertex outV, Vertex inV, EdgeController controller, final UniGraph graph) {
-        super(id, label, graph, keyValues, controller);
+    public BaseEdge(Map<String, Object> keyValues, Vertex outV, Vertex inV, final UniGraph graph) {
+        super(keyValues, graph);
         ElementHelper.validateLabel(label);
         this.outVertex = outV;
         this.inVertex = inV;
@@ -31,7 +31,6 @@ public abstract class BaseEdge extends BaseElement<EdgeController> implements Ed
     public <V> Property<V> property(String key, V value) {
         ElementHelper.validateProperty(key, value);
         BaseProperty<V> vertexProperty = (BaseProperty<V>) addPropertyLocal(key, value);
-        innerAddProperty(vertexProperty);
         return vertexProperty;
     }
 
@@ -43,8 +42,6 @@ public abstract class BaseEdge extends BaseElement<EdgeController> implements Ed
     }
 
 
-    protected abstract void innerAddProperty(BaseProperty vertexProperty);
-
     @Override
     public Iterator<Property> properties(String... propertyKeys) {
         return propertyIterator(propertyKeys);
@@ -53,9 +50,5 @@ public abstract class BaseEdge extends BaseElement<EdgeController> implements Ed
     @Override
     public String toString() {
         return StringFactory.edgeString(this);
-    }
-
-    public EdgeController getController() {
-        return controller;
     }
 }

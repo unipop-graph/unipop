@@ -7,7 +7,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.ExpandableStepIt
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
-import org.unipop.structure.manager.ControllerManager;
+import org.unipop.controller.manager.ControllerManager;
 
 import java.util.*;
 

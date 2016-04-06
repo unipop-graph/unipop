@@ -4,7 +4,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.UnmodifiableIterator;
 import org.unipop.controller.EdgeController;
 import org.unipop.process.predicate.ReceivesHasContainers;
-import org.unipop.structure.manager.ControllerManager;
+import org.unipop.controller.manager.ControllerManager;
 import org.unipop.controller.Predicates;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
@@ -14,7 +14,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.*;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
-import org.unipop.helpers.StreamUtils;
+import org.unipop.common.util.StreamUtils;
 
 import java.util.*;
 

@@ -10,19 +10,19 @@
           "type": "document",
           "index": "unipop",
           "_type": "@type",
-          "id": ["@id", "@type"],
-          "label": "@type",
+          "id": ["@_id", "@_type"],
+          "label": "@_type",
           "properties": {},
           "dynamicProperties": true,
           "edges": [{
-            "type": "property",
+            "type": "document",
             "id": ["@id, @knownBy"],
             "label": "knows",
             "properties": {
               "weight": "@weight"
             },
             "vertex": {
-              "type": "refer",
+              "type": "ref",
               "referType": "document",
               "id": "@knownBy",
               "label": "person",
@@ -59,13 +59,13 @@
           "properties": {},
           "dynamicProperties": true,
           "outVertex": {
-            "type": "refer",
+            "type": "ref",
             "id": "@outId",
             "label": "@outLabel",
             "properties": {}
           },
           "inVertex": {
-            "type": "refer",
+            "type": "ref",
             "id": "@inId",
             "label": "@inLabel",
             "properties": {}
@@ -90,16 +90,16 @@
           "dynamicProperties": false,
           "edges": [
             {
-              "type": "property",
+              "type": "table",
               "direction": "OUT",
-              "id": ["@ID", "@KNOWNBY"],
+              "id": ["@ID", "@KNOWN_BY"],
               "label": "knows",
               "properties": {
                 "weight": "@WEIGHT"
               },
               "vertex": {
-                "type": "refer",
-                "id": "@KNOWNBY",
+                "type": "ref",
+                "id": "@KNOWN_BY",
                 "label": "person",
                 "properties": {}
               }

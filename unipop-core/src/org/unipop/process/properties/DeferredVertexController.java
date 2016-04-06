@@ -1,7 +1,7 @@
 package org.unipop.process.properties;
 
 import org.unipop.controller.VertexController;
-import org.unipop.structure.DeferredVertex;
+import org.unipop.common.refer.DeferredVertex;
 
 import java.util.Iterator;
 

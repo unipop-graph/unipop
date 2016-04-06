@@ -9,7 +9,7 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.script.ScriptService;
-import org.unipop.structure.manager.ControllerProvider;
+import org.unipop.controller.manager.ControllerProvider;
 import org.unipop.controller.EdgeController;
 import org.unipop.controller.Predicates;
 import org.unipop.controller.VertexController;

@@ -3,13 +3,13 @@ package org.unipop.process.start;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.unipop.controller.*;
 import org.unipop.process.predicate.ReceivesHasContainers;
-import org.unipop.structure.manager.ControllerManager;
+import org.unipop.controller.manager.ControllerManager;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.StandardTraversalMetrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.unipop.helpers.StreamUtils;
+import org.unipop.common.util.StreamUtils;
 
 import java.util.ArrayList;
 import java.util.Iterator;

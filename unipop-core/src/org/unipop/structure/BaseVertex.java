@@ -1,22 +1,21 @@
 package org.unipop.structure;
 
-import org.apache.commons.collections.ListUtils;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.unipop.controller.EdgeController;
+import org.unipop.controller.ElementController;
 import org.unipop.controller.Predicates;
-import org.unipop.controller.VertexController;
-import org.unipop.helpers.StreamUtils;
+import org.unipop.common.util.StreamUtils;
 
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 
-public class BaseVertex<C extends VertexController> extends BaseElement<C> implements Vertex {
+public class BaseVertex extends BaseElement implements Vertex {
 
-    public BaseVertex(Object id, String label, Map<String, Object> keyValues, C controller, UniGraph graph) {
-        super(id, label, graph, keyValues, controller);
+    public BaseVertex(Map<String, Object> keyValues, UniGraph graph) {
+        super(keyValues,graph);
     }
 
     @Override
@@ -50,7 +49,7 @@ public class BaseVertex<C extends VertexController> extends BaseElement<C> imple
     public <V> VertexProperty<V> property(String key, V value) {
         ElementHelper.validateProperty(key, value);
         BaseVertexProperty vertexProperty = (BaseVertexProperty) addPropertyLocal(key, value);
-        controller.addProperty(this, vertexProperty);
+        graph.getControllerManager().getControllers(ElementController.class).forEach(controller -> controller.removeProperty(this, vertexProperty));
         return vertexProperty;
     }
 
@@ -66,11 +65,9 @@ public class BaseVertex<C extends VertexController> extends BaseElement<C> imple
     public Edge addEdge(final String label, final Vertex vertex, final Object... keyValues) {
         if (null == vertex) throw Graph.Exceptions.argumentCanNotBeNull("vertex");
         Map<String, Object> stringObjectMap = UniGraph.asMap(keyValues);
-        Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
-        stringObjectMap.remove("id");
-        stringObjectMap.remove("label");
+        stringObjectMap.put(T.label.getAccessor(), label);
         return graph.getControllerManager().getControllers(EdgeController.class).stream()
-                .map(controller -> controller.addEdge(idValue, label, this, (BaseVertex) vertex, stringObjectMap))
+                .map(controller -> controller.addEdge(this, (BaseVertex) vertex, stringObjectMap))
                 .findFirst().get();
     }
 

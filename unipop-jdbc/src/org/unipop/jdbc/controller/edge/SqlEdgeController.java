@@ -9,7 +9,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.jooq.*;
 import org.jooq.impl.DSL;
-import org.unipop.structure.manager.ControllerProvider;
+import org.unipop.controller.manager.ControllerProvider;
 import org.unipop.controller.EdgeController;
 import org.unipop.controller.Predicates;
 import org.unipop.jdbc.utils.JooqHelper;
