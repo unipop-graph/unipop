@@ -9,6 +9,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.ComputerAwareSte
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalUtil;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
@@ -30,6 +31,7 @@ public class UniGraphRepeatStep<S> extends ComputerAwareStep<S, S> implements Tr
 
     public UniGraphRepeatStep(Traversal.Admin traversal, RepeatStep repeatStep) {
         super(traversal);
+        labels = repeatStep.getLabels();
         untilTraversal = repeatStep.getUntilTraversal();
         emitTraversal = repeatStep.getEmitTraversal();
         repeatTraversal = (Traversal.Admin<S, S>) repeatStep.getGlobalChildren().get(0);
@@ -39,6 +41,26 @@ public class UniGraphRepeatStep<S> extends ComputerAwareStep<S, S> implements Tr
             integrateChild(untilTraversal);
         untilFirst = repeatStep.untilFirst;
         emitFirst = repeatStep.emitFirst;
+    }
+
+    @Override
+    public String toString() {
+        if (this.untilFirst && this.emitFirst)
+            return StringFactory.stepString(this, untilString(), emitString(), this.repeatTraversal);
+        else if (this.emitFirst)
+            return StringFactory.stepString(this, emitString(), this.repeatTraversal, untilString());
+        else if (this.untilFirst)
+            return StringFactory.stepString(this, untilString(), this.repeatTraversal, emitString());
+        else
+            return StringFactory.stepString(this, this.repeatTraversal, untilString(), emitString());
+    }
+
+    private final String untilString() {
+        return null == this.untilTraversal ? "until(false)" : "until(" + this.untilTraversal + ')';
+    }
+
+    private final String emitString() {
+        return null == this.emitTraversal ? "emit(false)" : "emit(" + this.emitTraversal + ')';
     }
 
     @Override
@@ -59,6 +81,7 @@ public class UniGraphRepeatStep<S> extends ComputerAwareStep<S, S> implements Tr
         if (utilFirst == this.untilFirst && null != this.untilTraversal) {
             traversers.forEach(traverser -> {
                 if (TraversalUtil.test(traverser, this.untilTraversal)) {
+                    if (emitFirst && !untilFirst) return;
                     traverser.asAdmin().resetLoops();
                     resultList.add(traverser);
                 } else returnTraversers.add(traverser);
@@ -67,18 +90,15 @@ public class UniGraphRepeatStep<S> extends ComputerAwareStep<S, S> implements Tr
         return returnTraversers;
     }
 
-    public final List<Traverser<S>> doEmit(final List<Traverser.Admin<S>> traversers, boolean emitFirst) {
-        List<Traverser<S>> returnTraversers = new ArrayList<>();
+    public final void doEmit(final List<Traverser.Admin<S>> traversers, boolean emitFirst) {
         if (emitFirst == this.emitFirst && null != this.emitTraversal) {
             traversers.forEach(traverser -> {
                 if (TraversalUtil.test(traverser, this.emitTraversal)) {
                     traverser.asAdmin().resetLoops();
                     resultList.add(traverser);
-                } else
-                    returnTraversers.add(traverser);
+                }
             });
         }
-        return returnTraversers;
     }
 
     @Override
@@ -108,7 +128,7 @@ public class UniGraphRepeatStep<S> extends ComputerAwareStep<S, S> implements Tr
                 traversersList.forEach(this.repeatTraversal::addStart);
                 List<Traverser.Admin<S>> splits = new ArrayList<>();
                 traversersList.forEach(t -> splits.add(t.split()));
-                if (untilTraversal == null || !untils.isEmpty())
+                if (untilTraversal == null || !untilFirst || !untils.isEmpty())
                     doEmit(splits, true);
             }
         }

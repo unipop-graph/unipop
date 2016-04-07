@@ -29,17 +29,17 @@ import java.util.Map;
 //        reason = "https://github.com/rmagen/elastic-gremlin/issues/52")
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest$GraphMLTest", method = "shouldReadGraphMLUnorderedElements",
         reason = "https://github.com/rmagen/elastic-gremlin/issues/52")
-@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoGraphTest", method = "shouldReadWriteClassic", specific="graphml",
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoGraphTest", method = "shouldReadWriteClassic", specific = "graphml",
         reason = "https://github.com/rmagen/elastic-gremlin/issues/52")
-@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoGraphTest", method = "shouldReadWriteClassicToFileWithHelpers", specific="graphml",
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoGraphTest", method = "shouldReadWriteClassicToFileWithHelpers", specific = "graphml",
         reason = "https://github.com/rmagen/elastic-gremlin/issues/52")
-@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoGraphTest", method = "shouldMigrateClassicGraph", specific="graphml",
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoGraphTest", method = "shouldMigrateClassicGraph", specific = "graphml",
         reason = "https://github.com/rmagen/elastic-gremlin/issues/52")
-@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoGraphTest", method = "shouldReadWriteClassic", specific="gryo",
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoGraphTest", method = "shouldReadWriteClassic", specific = "gryo",
         reason = "https://github.com/rmagen/elastic-gremlin/issues/52")
-@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoGraphTest", method = "shouldReadWriteClassicToFileWithHelpers", specific="gryo",
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoGraphTest", method = "shouldReadWriteClassicToFileWithHelpers", specific = "gryo",
         reason = "https://github.com/rmagen/elastic-gremlin/issues/52")
-@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoGraphTest", method = "shouldMigrateClassicGraph", specific="gryo",
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoGraphTest", method = "shouldMigrateClassicGraph", specific = "gryo",
         reason = "https://github.com/rmagen/elastic-gremlin/issues/52")
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.VertexTest$BasicVertexTest", method = "shouldNotGetConcurrentModificationException",
         reason = "java.lang.IllegalStateException: Edge with id ... was removed.")
@@ -61,6 +61,8 @@ import java.util.Map;
         reason = "Takes too long.")
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest", method = "g_V_repeatXoutX_timesX5X_asXaX_outXwrittenByX_asXbX_selectXa_bX_count",
         reason = "Takes too long.")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatTest", method = "g_V_repeatXbothX_timesX10X_asXaX_out_asXbX_selectXa_bX",
+        reason = "takes too long")
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_STANDARD)
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
 @Graph.OptIn("org.unipop.elastic.schema.misc.CustomTestSuite")
@@ -84,11 +86,11 @@ public class UniGraph implements Graph {
             this.strategyRegistrar.register();
 
             this.controllerManager = determineControllerManager(configuration);
-            if(controllerManager == null) {
+            if (controllerManager == null) {
                 throw new MissingArgumentException("No ControllerManager configured.");//this.controllerManager = new SimpleControllerProvider();
             }
             this.getControllerManager().init(this, configuration);
-        } catch(Exception ex) {
+        } catch (Exception ex) {
             InstantiationException instantiationException = new InstantiationException();
             instantiationException.addSuppressed(ex);
             throw instantiationException;
@@ -99,7 +101,9 @@ public class UniGraph implements Graph {
         return controllerManager;
     }
 
-    public void commit() { controllerManager.commit(); }
+    public void commit() {
+        controllerManager.commit();
+    }
 
     @Override
     public Configuration configuration() {
@@ -144,10 +148,11 @@ public class UniGraph implements Graph {
 
     @Override
     public Iterator<Vertex> vertices(Object... ids) {
-        if(ids.length == 0) return transform(controllerManager.vertices(new Predicates()));
+        if (ids.length == 0) return transform(controllerManager.vertices(new Predicates()));
 
-        if (ids.length > 1 && !ids[0].getClass().equals(ids[1].getClass())) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
-        if (Vertex.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator(ids);
+        if (ids.length > 1 && !ids[0].getClass().equals(ids[1].getClass()))
+            throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
+        if (Vertex.class.isAssignableFrom(ids[0].getClass())) return new ArrayIterator(ids);
         HasContainer hasContainer = new HasContainer(T.id.getAccessor(), P.within(ids));
         Predicates predicates = new Predicates();
         predicates.hasContainers.add(hasContainer);
@@ -156,10 +161,11 @@ public class UniGraph implements Graph {
 
     @Override
     public Iterator<Edge> edges(Object... ids) {
-        if(ids.length == 0) return transform(controllerManager.edges(new Predicates()));
+        if (ids.length == 0) return transform(controllerManager.edges(new Predicates()));
 
-        if (ids.length > 1 && !ids[0].getClass().equals(ids[1].getClass())) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
-        if (Edge.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator(ids);
+        if (ids.length > 1 && !ids[0].getClass().equals(ids[1].getClass()))
+            throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
+        if (Edge.class.isAssignableFrom(ids[0].getClass())) return new ArrayIterator(ids);
         HasContainer hasContainer = new HasContainer(T.id.getAccessor(), P.within(ids));
         Predicates predicates = new Predicates();
         predicates.hasContainers.add(hasContainer);
@@ -176,14 +182,14 @@ public class UniGraph implements Graph {
         return controllerManager.addVertex(idValue, label, stringObjectMap);
     }
 
-    private <E,S>Iterator<E> transform(Iterator<S> source){
+    private <E, S> Iterator<E> transform(Iterator<S> source) {
         return new TransformIterator<>(source, input -> (E) input);
     }
 
     private ControllerManager determineControllerManager(Configuration configuration) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
         ControllerManager controllerManager = null;
 
-        ControllerManagerFactory controllerManagerFactory = (ControllerManagerFactory)configuration.getProperty("controllerManagerFactory");
+        ControllerManagerFactory controllerManagerFactory = (ControllerManagerFactory) configuration.getProperty("controllerManagerFactory");
         if (controllerManagerFactory == null) {
             String controllerManagerfactoryClass = configuration.getString("controllerManagerFactoryClass");
             if (StringUtils.isNotBlank(controllerManagerfactoryClass)) {
@@ -199,7 +205,7 @@ public class UniGraph implements Graph {
     }
 
     private StrategyRegistrar determineStartegyRegistrar(Configuration configuration) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
-        StrategyRegistrar strategyRegistrar = (StrategyRegistrar)configuration.getProperty("strategyRegistrar");
+        StrategyRegistrar strategyRegistrar = (StrategyRegistrar) configuration.getProperty("strategyRegistrar");
         if (strategyRegistrar == null) {
             String strategyRegistrarClass = configuration.getString("strategyRegistrarClass");
             if (StringUtils.isNotBlank(strategyRegistrarClass)) {
@@ -214,7 +220,7 @@ public class UniGraph implements Graph {
         return strategyRegistrar;
     }
 
-    public static Map<String, Object> asMap(Object[] keyValues){
+    public static Map<String, Object> asMap(Object[] keyValues) {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         Map<String, Object> map = new HashMap<>();
         if (keyValues != null) {
@@ -222,7 +228,7 @@ public class UniGraph implements Graph {
             for (int i = 0; i < keyValues.length; i = i + 2) {
                 String key = keyValues[i].toString();
                 Object value = keyValues[i + 1];
-                ElementHelper.validateProperty(key,value);
+                ElementHelper.validateProperty(key, value);
                 map.put(key, value);
             }
         }
