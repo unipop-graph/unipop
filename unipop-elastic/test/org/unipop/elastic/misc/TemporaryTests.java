@@ -4,6 +4,7 @@ import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.GraphManager;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -15,6 +16,7 @@ import org.unipop.elastic.ElasticGraphProvider;
 import org.unipop.process.traversal.Text;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,15 +37,36 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void test() {
-        Traversal traversal = g.V().choose(label().is("person"), union(out().values("lang"), out().values("name")), in().label());//.groupCount();
-
+        Traversal<Vertex, Path> traversal = g.V().emit().repeat(out()).times(2).path();
+//        assertPath(traversal);
         check(traversal);
+    }
+
+    private static void assertPath(final Traversal<Vertex, Path> traversal) {
+        int path1 = 0;
+        int path2 = 0;
+        int path3 = 0;
+        while (traversal.hasNext()) {
+            final Path path = traversal.next();
+            if (path.size() == 1) {
+                path1++;
+            } else if (path.size() == 2) {
+                path2++;
+            } else if (path.size() == 3) {
+                path3++;
+            } else {
+                fail("Only path lengths of 1, 2, or 3 should be seen");
+            }
+        }
+        assertEquals(6, path1);
+        assertEquals(6, path2);
+        assertEquals(2, path3);
     }
 
     public static <T> void checkResults(final List<T> expectedResults, final Traversal<?, T> traversal) {
         final List<T> results = traversal.toList();
         assertFalse(traversal.hasNext());
-        if(expectedResults.size() != results.size()) {
+        if (expectedResults.size() != results.size()) {
             System.out.println("Expected results: " + expectedResults);
             System.out.println("Actual results:   " + results);
             assertEquals("Checking result size", expectedResults.size(), results.size());
@@ -93,9 +116,9 @@ public class TemporaryTests extends AbstractGremlinTest {
 
         //traversal.profile().cap(TraversalMetrics.METRICS_KEY);
         int count = 0;
-        while(traversal.hasNext()) {
+        while (traversal.hasNext()) {
             System.out.println(traversal.next());
-            count ++;
+            count++;
         }
         System.out.println(count);
     }

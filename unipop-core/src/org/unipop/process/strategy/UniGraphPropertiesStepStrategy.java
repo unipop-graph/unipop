@@ -3,6 +3,7 @@ package org.unipop.process.strategy;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.FilterStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.*;
@@ -17,6 +18,7 @@ import org.unipop.process.UniGraphPropertiesSideEffectStep;
 import org.unipop.structure.UniGraph;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 
@@ -91,14 +93,17 @@ public class UniGraphPropertiesStepStrategy extends AbstractTraversalStrategy<Tr
             TraversalHelper.insertBeforeStep(uniGraphPropertiesSideEffectStep, sideEffectStep, traversal);
         });
 
-        Step step = TraversalHelper.getLastStepOfAssignableClass(Step.class, traversal).get();
-        UniGraphPropertiesSideEffectStep uniGraphPropertiesSideEffectStep = new UniGraphPropertiesSideEffectStep(traversal, uniGraph.getControllerManager());
-        if (!(step instanceof ComputerAwareStep.EndStep) &&
-                !(step instanceof PropertiesStep) &&
-                !(step instanceof HasNextStep) &&
-                !(step instanceof PropertyMapStep) &&
-                !(step instanceof PropertyValueStep) &&
-                !(step instanceof UniGraphCountStep))
-            TraversalHelper.insertAfterStep(uniGraphPropertiesSideEffectStep, step, traversal);
+        Optional<Step> step = TraversalHelper.getLastStepOfAssignableClass(Step.class, traversal);
+        if (step.isPresent()) {
+            UniGraphPropertiesSideEffectStep uniGraphPropertiesSideEffectStep = new UniGraphPropertiesSideEffectStep(traversal, uniGraph.getControllerManager());
+            if (!(step.get() instanceof ComputerAwareStep.EndStep) &&
+                    !(step.get() instanceof PropertiesStep) &&
+                    !(step.get() instanceof HasNextStep) &&
+                    !(step.get() instanceof PropertyMapStep) &&
+                    !(step.get() instanceof PropertyValueStep) &&
+                    !(step.get() instanceof RepeatStep.RepeatEndStep) &&
+                    !(step.get() instanceof UniGraphCountStep))
+                TraversalHelper.insertAfterStep(uniGraphPropertiesSideEffectStep, step.get(), traversal);
+        }
     }
 }

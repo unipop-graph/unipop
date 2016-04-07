@@ -16,7 +16,9 @@ public class SimplifiedStrategyRegistrar implements StrategyRegistrar {
                     new UniGraphVertexStepStrategy(),
                     new UniGraphPredicatesStrategy(),
                     new UniGraphPropertiesStepStrategy(),
-                    new UniGraphUnionStepStrategy()
+                    new UniGraphUnionStepStrategy(),
+                    new UniGraphCoalesceStepStrategy(),
+                    new UniGraphRepeatStepStrategy()
             );
 
             TraversalStrategies.GlobalCache.getStrategies(Graph.class).toList().forEach(strategies::addStrategies);

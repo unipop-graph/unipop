@@ -49,8 +49,8 @@ public class UniGraphUnionStep<S, E> extends BranchStep<S, E, TraversalOptionPar
                     throw FastNoSuchElementException.instance();
                 }
             }
-            this.first = false;
             if (starts.hasNext()) {
+                this.first = false;
                 List<Traverser.Admin<S>> startsList = IteratorUtils.toList(starts);
                 final List<Traversal.Admin<S, E>> branch = traversalOptions.values().iterator().next();
                 if (null != branch) {
