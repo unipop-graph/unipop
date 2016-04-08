@@ -12,9 +12,7 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.script.ScriptService;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.unipop.controller.EdgeController;
-import org.unipop.controller.Predicates;
-import org.unipop.controller.VertexController;
+import org.unipop.query.UniQuery;
 import org.unipop.elastic2.controller.aggregations.controller.edge.AggregationsEdge;
 import org.unipop.elastic2.controller.aggregations.helpers.AggregationsHelper;
 import org.unipop.elastic2.controller.aggregations.helpers.AggregationsQueryIterator;
@@ -29,7 +27,7 @@ import java.util.stream.StreamSupport;
 /**
  * Created by sbarzilay on 02/02/16.
  */
-public class AggregationsVertexController implements VertexController, EdgeController {
+public class AggregationsVertexController implements VertexQueryController, EdgeQueryController {
 
     protected UniGraph graph;
     protected Client client;
@@ -56,41 +54,41 @@ public class AggregationsVertexController implements VertexController, EdgeContr
     }
 
     @Override
-    public Iterator<BaseEdge> edges(Predicates predicates) {
+    public Iterator<UniEdge> edges(UniQuery uniQuery) {
         throw new NotImplementedException();
     }
 
     @Override
-    public Iterator<BaseEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
-        List<BaseEdge> edges = new ArrayList<>();
+    public Iterator<UniEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, UniQuery uniQuery) {
+        List<UniEdge> edges = new ArrayList<>();
         for (Vertex vertex : vertices) {
-            ((AggregationsVertex) vertex).getInnerEdges(direction, Arrays.asList(edgeLabels), predicates).forEach(edge -> edges.add(((AggregationsEdge) edge)));
+            ((AggregationsVertex) vertex).getInnerEdges(direction, Arrays.asList(edgeLabels), uniQuery).forEach(edge -> edges.add(((AggregationsEdge) edge)));
         }
         return edges.iterator();
     }
 
     @Override
-    public long edgeCount(Predicates predicates) {
+    public long edgeCount(UniQuery uniQuery) {
         return 0;
     }
 
     @Override
-    public long edgeCount(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
+    public long edgeCount(Vertex[] vertices, Direction direction, String[] edgeLabels, UniQuery uniQuery) {
         return 0;
     }
 
     @Override
-    public Map<String, Object> edgeGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
+    public Map<String, Object> edgeGroupBy(UniQuery uniQuery, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
         return null;
     }
 
     @Override
-    public Map<String, Object> edgeGroupBy(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
+    public Map<String, Object> edgeGroupBy(Vertex[] vertices, Direction direction, String[] edgeLabels, UniQuery uniQuery, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
         return null;
     }
 
     @Override
-    public BaseEdge addEdge(Object edgeId, String label, BaseVertex outV, BaseVertex inV, Map<String, Object> properties) {
+    public UniEdge addEdge(Object edgeId, String label, UniVertex outV, UniVertex inV, Map<String, Object> properties) {
         return null;
     }
 
@@ -115,22 +113,22 @@ public class AggregationsVertexController implements VertexController, EdgeContr
     }
 
     @Override
-    public void addPropertyToVertex(BaseVertex vertex, BaseVertexProperty vertexProperty) {
+    public void addPropertyToVertex(UniVertex vertex, UniVertexProperty vertexProperty) {
         throw new NotImplementedException();
     }
 
     @Override
-    public void removePropertyFromVertex(BaseVertex vertex, Property property) {
+    public void removePropertyFromVertex(UniVertex vertex, Property property) {
         throw new NotImplementedException();
     }
 
     @Override
-    public void removeVertex(BaseVertex vertex) {
+    public void removeVertex(UniVertex vertex) {
         throw new NotImplementedException();
     }
 
     @Override
-    public List<BaseElement> vertexProperties(Iterator<BaseVertex> vertices) {
+    public List<UniElement> vertexProperties(Iterator<UniVertex> vertices) {
         throw new NotImplementedException();
     }
 
@@ -172,8 +170,8 @@ public class AggregationsVertexController implements VertexController, EdgeContr
         return vertex;
     }
 
-    private Object getLabel(Predicates predicates) {
-        for (HasContainer hasContainer : predicates.hasContainers) {
+    private Object getLabel(UniQuery uniQuery) {
+        for (HasContainer hasContainer : uniQuery.hasContainers) {
             if (hasContainer.getKey().equals(T.label.getAccessor()))
                 return hasContainer.getValue();
         }
@@ -181,20 +179,20 @@ public class AggregationsVertexController implements VertexController, EdgeContr
     }
 
     @Override
-    public Iterator<BaseVertex> vertices(Predicates predicates) {
+    public Iterator<UniVertex> vertices(UniQuery uniQuery) {
         elasticMutations.refresh(defaultIndex);
-        Iterable<BaseVertex> vertices = () -> new AggregationsQueryIterator<>(
-                predicates.limitHigh,
+        Iterable<UniVertex> vertices = () -> new AggregationsQueryIterator<>(
+                uniQuery.limitHigh,
                 client,
                 this::createVertex,
                 timing,
                 templateName,
-                AggregationsHelper.createTemplateParams(predicates),
+                AggregationsHelper.createTemplateParams(uniQuery),
                 type,
                 vertexPath,
                 defaultIndex);
 
-        Object labels = getLabel(predicates);
+        Object labels = getLabel(uniQuery);
         Set<String> labelsSet = new HashSet<>();
         if (labels != null) {
             if (labels instanceof Iterable) {
@@ -207,8 +205,8 @@ public class AggregationsVertexController implements VertexController, EdgeContr
     }
 
     @Override
-    public BaseVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
-        Predicates p = new Predicates();
+    public UniVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
+        UniQuery p = new UniQuery();
         p.limitHigh = 1;
         p.hasContainers.add(new HasContainer(T.id.getAccessor(), P.eq(vertexId)));
         p.hasContainers.add(new HasContainer(T.label.getAccessor(), P.eq(vertexLabel)));
@@ -216,17 +214,17 @@ public class AggregationsVertexController implements VertexController, EdgeContr
     }
 
     @Override
-    public long vertexCount(Predicates predicates) {
+    public long vertexCount(UniQuery uniQuery) {
         throw new NotImplementedException();
     }
 
     @Override
-    public Map<String, Object> vertexGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
+    public Map<String, Object> vertexGroupBy(UniQuery uniQuery, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
         throw new NotImplementedException();
     }
 
     @Override
-    public BaseVertex addVertex(Object id, String label, Map<String, Object> properties) {
+    public UniVertex addVertex(Object id, String label, Map<String, Object> properties) {
         throw new NotImplementedException();
     }
 

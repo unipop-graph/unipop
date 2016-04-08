@@ -8,7 +8,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Before;
 import org.junit.Test;
 import org.unipop.common.test.UnipopGraphProvider;
-import org.unipop.elastic.controller.helpers.TimingAccessor;
+import org.unipop.elastic.helpers.TimingAccessor;
 
 import java.io.IOException;
 import java.util.Iterator;

@@ -4,16 +4,12 @@ import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.unipop.controller.Predicates;
 import org.unipop.process.start.UniGraphStartStepStrategy;
-import org.unipop.process.vertex.UniGraphVertexStep;
 import org.unipop.process.vertex.UniGraphVertexStepStrategy;
-import org.unipop.structure.UniGraph;
 
 import java.util.*;
 
@@ -37,7 +33,6 @@ public class UniGraphPredicatesStrategy extends AbstractTraversalStrategy<Traver
             return;
         }
 
-
         TraversalHelper.getStepsOfAssignableClassRecursively(ReceivesHasContainers.class, traversal).forEach(step -> {
             addPredicates(step, traversal);
         });
@@ -60,7 +55,7 @@ public class UniGraphPredicatesStrategy extends AbstractTraversalStrategy<Traver
 //                TraversalFilterStep traversalFilterStep = (TraversalFilterStep)step;
 //                for(Object localChild : traversalFilterStep.getLocalChildren()) {
 //                    Traversal.Admin filterTraversal = (Traversal.Admin)localChild;
-//                    Predicates childPredicates = addPredicates(filterTraversal.getStartStep(), filterTraversal);
+//                    UniQuery childPredicates = addPredicates(filterTraversal.getStartStep(), filterTraversal);
 //                    childPredicates.hasContainers.forEach(predicates.hasContainers::add);
 //                    childPredicates.labels.forEach(predicates.labels::add);
 //
@@ -85,14 +80,16 @@ public class UniGraphPredicatesStrategy extends AbstractTraversalStrategy<Traver
 //                    return predicates;
 //                }
 //            }
-//            else if(step instanceof RangeGlobalStep) {
-//                RangeGlobalStep rangeGlobalStep = (RangeGlobalStep) step;
-//                predicates.limitHigh = rangeGlobalStep.getHighRange();
-//                if(collectLabels(predicates, step)) return predicates;
-//            }
-//            else {
-//                return predicates;
-//            }
+            else if(step instanceof RangeGlobalStep) {
+                RangeGlobalStep rangeGlobalStep = (RangeGlobalStep) step;
+                int limit = rangeGlobalStep.getHighRange() > Integer.MAX_VALUE ? 0 : (int) rangeGlobalStep.getHighRange();
+                originalStep.setLimit(limit);
+                collectLabels(step, originalStep);
+                return;
+            }
+            else {
+                return;
+            }
 
             step = step.getNextStep();
         }

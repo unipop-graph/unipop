@@ -8,7 +8,7 @@ import org.jooq.Field;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 import org.unipop.controller.InnerEdgeController;
-import org.unipop.controller.Predicates;
+import org.unipop.query.UniQuery;
 import org.unipop.structure.*;
 
 import java.sql.Connection;
@@ -43,9 +43,9 @@ public class ColumnEdgeController implements InnerEdgeController {
     }
 
     @Override
-    public UniInnerEdge addEdge(Object edgeId, String label, BaseVertex outV, BaseVertex inV, Map<String, Object> properties) {
+    public UniInnerEdge addEdge(Object edgeId, String label, UniVertex outV, UniVertex inV, Map<String, Object> properties) {
         UniStarVertex starVertex = (UniStarVertex) (direction.equals(Direction.OUT) ? outV : inV);
-        BaseVertex externalVertex = direction.equals(Direction.OUT) ? inV : outV;
+        UniVertex externalVertex = direction.equals(Direction.OUT) ? inV : outV;
         UniInnerEdge columnEdge = new UniInnerEdge(starVertex, edgeId, edgeLabel, this, outV, inV);
         starVertex.addInnerEdge(columnEdge);
         String tableName = starVertex.label();
@@ -84,8 +84,8 @@ public class ColumnEdgeController implements InnerEdgeController {
     public UniInnerEdge parseEdge(UniStarVertex vertex, Map<String, Object> keyValues) {
         UniVertex externalVertex = (UniVertex) vertex.getGraph().getControllerProvider().vertex(direction.opposite(), keyValues.get(edgeLabel), externalVertexLabel);
         transientProperties.forEach((key,value) -> externalVertex.addTransientProperty(new TransientProperty(externalVertex, key, value)));
-        BaseVertex inV = direction.equals(Direction.IN) ? vertex : externalVertex;
-        BaseVertex outV = direction.equals(Direction.OUT) ? vertex : externalVertex;
+        UniVertex inV = direction.equals(Direction.IN) ? vertex : externalVertex;
+        UniVertex outV = direction.equals(Direction.OUT) ? vertex : externalVertex;
         UniInnerEdge columnEdge;
         if (!keyValues.containsKey("edgeid")) {
             columnEdge = new UniInnerEdge(vertex, vertex.id() + edgeLabel + externalVertex.id(), edgeLabel, this, outV, inV);
@@ -103,7 +103,7 @@ public class ColumnEdgeController implements InnerEdgeController {
     }
 
     @Override
-    public Object getFilter(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
+    public Object getFilter(Vertex[] vertices, Direction direction, String[] edgeLabels, UniQuery uniQuery) {
         return null;
     }
 

@@ -6,7 +6,7 @@ import org.elasticsearch.action.delete.DeleteRequestBuilder;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.Client;
-import org.unipop.structure.BaseElement;
+import org.unipop.structure.UniElement;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -37,7 +37,7 @@ public class ElasticMutations {
         indicesToRefresh.clear();
     }
 
-    public void addElement(BaseElement element, String index, String routing,  boolean create) {
+    public void addElement(UniElement element, String index, String routing, boolean create) {
         IndexRequestBuilder indexRequest = client.prepareIndex(index, element.label(), element.id().toString())
                 .setSource(element.allFields()).setRouting(routing).setCreate(create);
 
@@ -50,7 +50,7 @@ public class ElasticMutations {
     }
 
 
-    public void updateElement(BaseElement element, String index, String routing, boolean upsert) throws ExecutionException, InterruptedException {
+    public void updateElement(UniElement element, String index, String routing, boolean upsert) throws ExecutionException, InterruptedException {
         UpdateRequest updateRequest = new UpdateRequest(index, element.label(), element.id().toString())
                 .doc(element.allFields()).routing(routing);
 
@@ -65,7 +65,7 @@ public class ElasticMutations {
     }
 
 
-    public void deleteElement(BaseElement element, String index, String routing) {
+    public void deleteElement(UniElement element, String index, String routing) {
         DeleteRequestBuilder deleteRequestBuilder = client.prepareDelete(index, element.label(), element.id().toString()).setRouting(routing);
 
         isDirty = true;

@@ -1,6 +1,6 @@
 package org.unipop.manager;
 
-import org.unipop.controller.manager.ControllerProvider;
+import org.unipop.query.controller.ControllerProvider;
 
 /**
  * Created by sbarzilay on 2/12/16.

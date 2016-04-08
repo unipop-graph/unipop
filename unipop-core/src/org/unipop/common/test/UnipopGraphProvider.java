@@ -12,12 +12,12 @@ import java.util.*;
 public class UnipopGraphProvider extends AbstractGraphProvider {
 
     private static final Set<Class> IMPLEMENTATION = new HashSet<Class>() {{
-        add(BaseEdge.class);
-        add(BaseElement.class);
+        add(UniEdge.class);
+        add(UniElement.class);
         add(UniGraph.class);
-        add(BaseProperty.class);
-        add(BaseVertex.class);
-        add(BaseVertexProperty.class);
+        add(UniProperty.class);
+        add(UniVertex.class);
+        add(UniVertexProperty.class);
     }};
 
     private List<TestInitializer> initializers;

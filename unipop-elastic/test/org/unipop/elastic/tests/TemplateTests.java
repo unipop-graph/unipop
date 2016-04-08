@@ -4,7 +4,7 @@ import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.junit.Test;
 import org.unipop.elastic.controllerprovider.ImdbControllerProvider;
-import org.unipop.elastic.controller.helpers.ElasticClientFactory;
+import org.unipop.elastic.helpers.ElasticClientFactory;
 import org.unipop.structure.UniGraph;
 
 /**

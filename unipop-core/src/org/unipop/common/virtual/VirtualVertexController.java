@@ -3,14 +3,14 @@
 //import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 //import org.apache.tinkerpop.gremlin.structure.*;
 //import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
-//import org.unipop.controller.Predicates;
-//import org.unipop.controller.QueryController;
-//import org.unipop.controller.VertexController;
+//import org.unipop.controller.UniQuery;
+//import org.unipop.query.UniQueryController;
+//import org.unipop.controller.VertexQueryController;
 //import org.unipop.structure.*;
 //
 //import java.util.*;
 //
-//public class VirtualVertexController implements QueryController<Vertex>{
+//public class VirtualVertexController implements UniQueryController<Vertex>{
 //    private static final long VERTEX_BULK = 1000;
 //
 //    private UniGraph graph;
@@ -25,7 +25,7 @@
 //
 //
 //    @Override
-//    public Iterator<Vertex> query(Predicates predicates, Class<Vertex> returnType) {
+//    public Iterator<Vertex> query(UniQuery predicates, Class<Vertex> returnType) {
 //        Optional<HasContainer> optionalId = predicates.hasContainers.stream().filter(has -> has.getKey().equals(T.id.getAccessor())).findAny();
 //        if(!optionalId.isPresent()) return EmptyIterator.instance();
 //        Object idValue = optionalId.getValue().getValue();
@@ -36,7 +36,7 @@
 //
 //        Set<Vertex> vertices = new HashSet<>();
 //        ids.forEach(id-> {
-//            BaseVertex uniVertex = new BaseVertex(id, label, null, this, graph);
+//            UniVertex uniVertex = new UniVertex(id, label, null, this, graph);
 //            vertices.add(uniVertex);
 //        });
 //        return vertices.iterator();
@@ -58,13 +58,13 @@
 //    }
 //
 //    @Override
-//    public BaseVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
-//        BaseVertex uniVertex = new BaseVertex(vertexId, vertexLabel, null, this, graph);
+//    public UniVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
+//        UniVertex uniVertex = new UniVertex(vertexId, vertexLabel, null, this, graph);
 //        return uniVertex;
 //    }
 //
 //    @Override
-//    public BaseVertex addVertex(Object id, String label, Map<String, Object> properties) {
+//    public UniVertex addVertex(Object id, String label, Map<String, Object> properties) {
 //        throw new UnsupportedOperationException();
 //    }
 //

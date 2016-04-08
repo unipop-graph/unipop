@@ -9,36 +9,40 @@ import org.elasticsearch.index.query.FilterBuilders;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.unipop.common.schema.SchemaSet;
-import org.unipop.controller.*;
-import org.unipop.elastic.controller.helpers.ElasticMutations;
-import org.unipop.elastic.controller.helpers.QueryIterator;
+import org.unipop.elastic.helpers.ElasticMutations;
+import org.unipop.elastic.helpers.QueryIterator;
 import org.unipop.elastic.schema.*;
-import org.unipop.structure.BaseVertex;
+import org.unipop.query.controller.SimpleController;
+import org.unipop.query.mutation.AddEdgeQuery;
+import org.unipop.query.mutation.AddVertexQuery;
+import org.unipop.query.mutation.PropertyQuery;
+import org.unipop.query.mutation.RemoveQuery;
+import org.unipop.query.search.SearchQuery;
+import org.unipop.query.search.SearchVertexQuery;
 
 import java.util.*;
 
-public class DocumentController implements VertexController, EdgeController {
+public class DocumentController implements SimpleController {
 
     private final Client client;
     private final ElasticMutations elasticMutations;
     private final SchemaSet<ElasticVertexSchema> vertexSchemas;
     private final SchemaSet<ElasticEdgeSchema> edgeSchemas;
-    private final SchemaSet<ElasticElementSchema> schemaSet;
 
     public DocumentController(Client client, ElasticMutations elasticMutations, SchemaSet<ElasticElementSchema> schemaSet) {
         this.client = client;
         this.elasticMutations = elasticMutations;
-        this.schemaSet = schemaSet;
         this.vertexSchemas = schemaSet.getSchemas(ElasticVertexSchema.class);
         this.edgeSchemas = schemaSet.getSchemas(ElasticEdgeSchema.class);
     }
 
     @Override
-    public <E extends Element> Iterator<E> query(Predicates<E> predicates) {
+    public <E extends Element>  Iterator<E> query(SearchQuery<E> uniQuery) {
         Set<Filter> filters = new HashSet<>();
+        SchemaSet<ElasticElementSchema<E>> elasticElementSchemas = (SchemaSet<ElasticElementSchema<E>>)(uniQuery.getReturnType().isAssignableFrom(Vertex.class) ? vertexSchemas : edgeSchemas);
         Set<ElasticElementSchema<E>> relevantSchemas = new HashSet<>();
-        for(ElasticElementSchema schema : schemaSet) {
-            Filter newFilter = schema.getFilter(predicates);
+        for(ElasticElementSchema<E> schema : elasticElementSchemas) {
+            Filter newFilter = schema.getFilter(uniQuery);
             if(newFilter == null) continue;
             relevantSchemas.add(schema);
             boolean merged = false;
@@ -47,6 +51,23 @@ public class DocumentController implements VertexController, EdgeController {
         }
         if(filters.size() == 0) return EmptyIterator.instance();
         QueryIterator.Parser<E> parser = (hit) -> relevantSchemas.stream().map(schema -> schema.fromFields(hit)).findFirst().get();
+        return getQueryIterator(filters, parser, 0);
+    }
+
+    @Override
+    public Iterator<Edge> query(SearchVertexQuery uniQuery) {
+        Set<Filter> filters = new HashSet<>();
+        Set<ElasticEdgeSchema> relevantSchemas = new HashSet<>();
+        for(ElasticEdgeSchema schema : edgeSchemas) {
+            Filter newFilter = schema.getFilter(uniQuery);
+            if(newFilter == null) continue;
+            relevantSchemas.add(schema);
+            boolean merged = false;
+            for(Filter filter : filters) merged |= filter.merge(newFilter);
+            if(!merged) filters.add(newFilter);
+        }
+        if(filters.size() == 0) return EmptyIterator.instance();
+        QueryIterator.Parser<Edge> parser = (hit) -> relevantSchemas.stream().map(schema -> schema.fromFields(hit)).findFirst().get();
         return getQueryIterator(filters, parser, 0);
     }
 
@@ -60,41 +81,21 @@ public class DocumentController implements VertexController, EdgeController {
         return new QueryIterator<>(query, 0, limit, client, parser, null, indices);
     }
 
-    @Override
-    public void remove(Element element) {
-        elasticMutations.deleteElement(element);
-    }
 
     @Override
-    public void addProperty(Element element, Property property) {
-        elasticMutations.updateElement(element, false);
-    }
-
-    @Override
-    public void removeProperty(Element element, Property property) {
-        elasticMutations.updateElement(element, false);
-    }
-
-    @Override
-    public Iterator<Edge> edges(List<Vertex> vertices, Direction direction, Predicates<Edge> predicates) {
-        Set<Filter> filters = new HashSet<>();
-        Set<ElasticEdgeSchema> relevantSchemas = new HashSet<>();
-        for(ElasticEdgeSchema schema : edgeSchemas) {
-            Filter newFilter = schema.getFilter(vertices, predicates);
-            if(newFilter == null) continue;
-            relevantSchemas.add(schema);
-            boolean merged = false;
-            for(Filter filter : filters) merged |= filter.merge(newFilter);
-            if(!merged) filters.add(newFilter);
+    public Edge addEdge(AddEdgeQuery uniQuery) {
+        Edge edge = edgeSchemas.stream().map(schema -> schema.createEdge(uniQuery)).findFirst().get();
+        try {
+            elasticMutations.addElement(edge, true);
+        } catch (DocumentAlreadyExistsException ex) {
+            throw Graph.Exceptions.vertexWithIdAlreadyExists(edge.id());
         }
-        if(filters.size() == 0) return EmptyIterator.instance();
-        QueryIterator.Parser<Edge> parser = (hit) -> relevantSchemas.stream().map(schema -> schema.fromFields(hit)).findFirst().get();
-        return getQueryIterator(filters, parser, 0);
+        return edge;
     }
 
     @Override
-    public Vertex addVertex(Map<String, Object> properties) {
-        Vertex vertex = vertexSchemas.stream().map(schema -> schema.createVertex(properties)).findFirst().get();
+    public Vertex addVertex(AddVertexQuery uniQuery) {
+        Vertex vertex = vertexSchemas.stream().map(schema -> schema.createVertex(uniQuery)).findFirst().get();
         try {
             elasticMutations.addElement(vertex, true);
         } catch (DocumentAlreadyExistsException ex) {
@@ -104,13 +105,12 @@ public class DocumentController implements VertexController, EdgeController {
     }
 
     @Override
-    public Edge addEdge(Vertex outV, Vertex inV, Map<String, Object> properties) {
-        Edge edge = edgeSchemas.stream().map(schema -> schema.createEdge(properties, outV, inV)).findFirst().get();
-        try {
-            elasticMutations.addElement(edge, true);
-        } catch (DocumentAlreadyExistsException ex) {
-            throw Graph.Exceptions.vertexWithIdAlreadyExists(edge.id());
-        }
-        return edge;
+    public void property(PropertyQuery uniQuery) {
+        elasticMutations.updateElement(uniQuery.getElement(), false);
+    }
+
+    @Override
+    public void remove(RemoveQuery uniQuery) {
+        uniQuery.getElements().forEach(elasticMutations::deleteElement);
     }
 }

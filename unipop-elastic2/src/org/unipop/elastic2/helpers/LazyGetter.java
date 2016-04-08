@@ -3,7 +3,7 @@ package org.unipop.elastic2.helpers;
 import org.elasticsearch.action.get.MultiGetRequestBuilder;
 import org.elasticsearch.action.get.MultiGetResponse;
 import org.elasticsearch.client.Client;
-import org.unipop.structure.BaseVertex;
+import org.unipop.structure.UniVertex;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,7 +15,7 @@ public class LazyGetter {
     private Client client;
     private TimingAccessor timing;
     private boolean executed = false;
-    private HashMap<GetKey, List<BaseVertex>> keyToVertices = new HashMap();
+    private HashMap<GetKey, List<UniVertex>> keyToVertices = new HashMap();
 
     public LazyGetter(Client client, TimingAccessor timing) {
         this.client = client;
@@ -26,12 +26,12 @@ public class LazyGetter {
         return !executed && keyToVertices.keySet().size() < MAX_LAZY_GET;
     }
 
-    public void register(BaseVertex v, String label, String indexName) {
+    public void register(UniVertex v, String label, String indexName) {
         if(executed) System.out.println("This LazyGetter has already been executed.");
 
         GetKey key = new GetKey(v.id(), label, indexName);
 
-        List<BaseVertex> vertices = keyToVertices.get(key);
+        List<UniVertex> vertices = keyToVertices.get(key);
         if (vertices == null) {
             vertices = new ArrayList();
             keyToVertices.put(key, vertices);
@@ -57,7 +57,7 @@ public class LazyGetter {
             if (!response.getResponse().isExists()) {
                 return;
             }
-            List<BaseVertex> vertices = keyToVertices.get(new GetKey(response.getId(), response.getType(), response.getIndex()));
+            List<UniVertex> vertices = keyToVertices.get(new GetKey(response.getId(), response.getType(), response.getIndex()));
             if (vertices == null) return;
             vertices.forEach(vertex -> vertex.applyLazyFields(response.getType(), response.getResponse().getSource()));
         });

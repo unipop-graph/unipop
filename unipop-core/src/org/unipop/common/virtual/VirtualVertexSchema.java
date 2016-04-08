@@ -3,7 +3,7 @@ package org.unipop.common.virtual;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.unipop.common.schema.BasicSchema;
-import org.unipop.structure.BaseVertex;
+import org.unipop.structure.UniVertex;
 import org.unipop.structure.UniGraph;
 
 import java.util.Map;
@@ -17,6 +17,6 @@ public class VirtualVertexSchema extends BasicSchema<Vertex> {
 
     @Override
     public Vertex createElement(Map<String, Object> properties) {
-        return new BaseVertex(properties, graph);
+        return new UniVertex(properties, graph);
     }
 }

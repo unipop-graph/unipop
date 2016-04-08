@@ -7,7 +7,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.unipop.controller.Predicates;
+import org.unipop.query.UniQuery;
 import org.unipop.elastic2.helpers.ElasticHelper;
 import org.unipop.structure.*;
 
@@ -44,7 +44,7 @@ public class NestedEdgeController implements org.unipop.controller.InnerEdgeCont
     }
 
     @Override
-    public UniInnerEdge addEdge(Object edgeId, String label, BaseVertex outV, BaseVertex inV, Map<String, Object> properties) {
+    public UniInnerEdge addEdge(Object edgeId, String label, UniVertex outV, UniVertex inV, Map<String, Object> properties) {
         if (!label.equals(edgeLabel)) return null;
         UniStarVertex starVertex = (UniStarVertex) (direction.equals(Direction.IN) ? inV : outV);
         if (!starVertex.label().equals(vertexLabel)) return null;
@@ -75,8 +75,8 @@ public class NestedEdgeController implements org.unipop.controller.InnerEdgeCont
         Object edgeId = keyValues.get(edgeIdField);
         UniVertex externalVertex = (UniVertex) vertex.getGraph().getControllerProvider().vertex(direction.opposite(), externalVertexId, externalVertexLabel);
         transientProperties.forEach((key,value)-> externalVertex.addTransientProperty(new TransientProperty(externalVertex, key, value)));
-        BaseVertex outV = direction.equals(Direction.OUT) ? vertex : externalVertex;
-        BaseVertex inV = direction.equals(Direction.IN) ? vertex : externalVertex;
+        UniVertex outV = direction.equals(Direction.OUT) ? vertex : externalVertex;
+        UniVertex inV = direction.equals(Direction.IN) ? vertex : externalVertex;
         UniInnerEdge edge = new UniInnerEdge(vertex, edgeId, edgeLabel, this, outV, inV);
         keyValues.forEach((key, value) -> edge.addPropertyLocal(key, value));
         vertex.addInnerEdge(edge);
@@ -103,7 +103,7 @@ public class NestedEdgeController implements org.unipop.controller.InnerEdgeCont
     }
 
     @Override
-    public Object getFilter(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
+    public Object getFilter(Vertex[] vertices, Direction direction, String[] edgeLabels, UniQuery uniQuery) {
         if (!direction.opposite().equals(this.direction) && !direction.equals(Direction.BOTH)) return null;
         if (edgeLabels.length > 0 && !Arrays.asList(edgeLabels).contains(edgeLabel)) return null;
 
@@ -115,7 +115,7 @@ public class NestedEdgeController implements org.unipop.controller.InnerEdgeCont
 
         if (ids.size() == 0) return null;
 
-        ArrayList<HasContainer> hasContainers = (ArrayList<HasContainer>) predicates.hasContainers.clone();
+        ArrayList<HasContainer> hasContainers = (ArrayList<HasContainer>) uniQuery.hasContainers.clone();
         hasContainers.add(new HasContainer(externalVertexIdField, P.within(ids.toArray())));
         return getFilter(hasContainers);
     }

@@ -2,11 +2,10 @@ package org.unipop.elastic2.controller.schema;
 
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.unipop.controller.EdgeController;
 import org.unipop.elastic2.controller.schema.helpers.schemaProviders.GraphEdgeSchema;
 import org.unipop.elastic2.helpers.ElasticMutations;
-import org.unipop.structure.BaseEdge;
-import org.unipop.structure.BaseProperty;
+import org.unipop.structure.UniEdge;
+import org.unipop.structure.UniProperty;
 import org.unipop.structure.UniGraph;
 
 import java.util.Map;
@@ -17,7 +16,7 @@ import java.util.stream.StreamSupport;
 /**
  * Created by Roman on 9/21/2015.
  */
-public class SchemaEdge extends BaseEdge {
+public class SchemaEdge extends UniEdge {
     //region Constructor
     public SchemaEdge(
             Object id,
@@ -25,20 +24,20 @@ public class SchemaEdge extends BaseEdge {
             Map<String, Object> keyValues,
             Vertex outVertex,
             Vertex inVertex,
-            EdgeController edgeController,
+            EdgeQueryController edgeQueryController,
             UniGraph graph,
             Optional<GraphEdgeSchema> schema,
             ElasticMutations elasticMutations
     ) {
-        super(id, label, keyValues, outVertex, inVertex, edgeController, graph);
+        super(id, label, keyValues, outVertex, inVertex, edgeQueryController, graph);
         this.schema = schema;
         this.elasticMutations = elasticMutations;
     }
     //endregion
 
-    //region BaseEdge Implementation
+    //region UniEdge Implementation
     @Override
-    protected void innerAddProperty(BaseProperty vertexProperty) {
+    protected void innerAddProperty(UniProperty vertexProperty) {
         try {
             String writeIndex = StreamSupport.stream(schema.get().getIndices().spliterator(), false).findFirst().get();
             elasticMutations.updateElement(this, writeIndex, null, false);

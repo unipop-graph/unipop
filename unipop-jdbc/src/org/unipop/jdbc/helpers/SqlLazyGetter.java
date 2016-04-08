@@ -7,7 +7,7 @@ import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.jooq.SelectJoinStep;
 import org.unipop.jdbc.utils.JooqHelper;
-import org.unipop.structure.BaseVertex;
+import org.unipop.structure.UniVertex;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -20,7 +20,7 @@ public class SqlLazyGetter implements LazzyGetter {
     private static final int MAX_LAZY_GET = 50;
     private DSLContext context;
     private boolean executed = false;
-    private Map<GetKey, List<BaseVertex>> keyToVertices;
+    private Map<GetKey, List<UniVertex>> keyToVertices;
 
     public SqlLazyGetter(DSLContext context){
         this.context = context;
@@ -33,12 +33,12 @@ public class SqlLazyGetter implements LazzyGetter {
     }
 
     @Override
-    public void register(BaseVertex v, String label, String indexName) {
+    public void register(UniVertex v, String label, String indexName) {
         if(executed) System.out.println("This SqlLazyGetter has already been executed.");
 
         GetKey key = new GetKey(v.id(), label, indexName);
 
-        List<BaseVertex> vertices = keyToVertices.get(key);
+        List<UniVertex> vertices = keyToVertices.get(key);
 
         if (vertices == null) {
             vertices = new ArrayList();
@@ -69,7 +69,7 @@ public class SqlLazyGetter implements LazzyGetter {
                 Map<String, Object> stringObjectMap = new HashMap<>();
                 record.intoMap().forEach((key, value) -> stringObjectMap.put(key.toLowerCase(), value));
                 GetKey getKey = new GetKey(stringObjectMap.get("id"), table.toLowerCase(), table);
-                List<BaseVertex> baseVertices = keyToVertices.get(getKey);
+                List<UniVertex> baseVertices = keyToVertices.get(getKey);
                 keyToVertices.get(getKey).forEach(baseVertex -> baseVertex.applyLazyFields(table, stringObjectMap));
             });
         });

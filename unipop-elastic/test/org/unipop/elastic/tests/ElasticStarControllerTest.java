@@ -4,7 +4,7 @@ import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.unipop.elastic.controllerprovider.ElasticStarControllerProvider;
-import org.unipop.elastic.controller.helpers.ElasticClientFactory;
+import org.unipop.elastic.helpers.ElasticClientFactory;
 import org.unipop.structure.UniGraph;
 
 public class ElasticStarControllerTest {

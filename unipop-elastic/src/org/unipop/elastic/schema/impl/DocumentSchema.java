@@ -9,9 +9,10 @@ import org.elasticsearch.search.SearchHit;
 import org.javatuples.Pair;
 import org.unipop.common.schema.BasicSchema;
 import org.unipop.common.property.PropertySchema;
-import org.unipop.controller.Predicates;
+import org.unipop.query.UniQuery;
 import org.unipop.elastic.schema.ElasticElementSchema;
 import org.unipop.elastic.schema.Filter;
+import org.unipop.query.search.SearchQuery;
 import org.unipop.structure.UniGraph;
 
 import java.util.Iterator;
@@ -43,9 +44,9 @@ public abstract class DocumentSchema<E extends Element> extends BasicSchema<E>  
     }
 
     @Override
-    public Filter getFilter(Predicates<E> predicates) {
+    public <E extends Element>  Filter getFilter(SearchQuery<E> uniQuery) {
         DocumentFilter documentFilter = new DocumentFilter(this.index);
-        for(HasContainer hasContainer : predicates.getHasContainers()) {
+        for(HasContainer hasContainer : uniQuery.getPredicates()) {
             String key = hasContainer.getKey();
             Object value = hasContainer.getValue();
             P predicate = hasContainer.getPredicate();

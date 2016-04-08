@@ -7,8 +7,7 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.OrQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.unipop.controller.EdgeController;
-import org.unipop.controller.Predicates;
+import org.unipop.query.UniQuery;
 import org.unipop.elastic2.controller.vertex.ElasticVertexController;
 import org.unipop.elastic2.helpers.ElasticMutations;
 import org.unipop.elastic2.helpers.LazyGetter;
@@ -23,7 +22,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 
-public class ElasticStarController extends ElasticVertexController implements EdgeController {
+public class ElasticStarController extends ElasticVertexController implements EdgeQueryController {
 
     private Set<org.unipop.controller.InnerEdgeController> innerEdgeControllers = new HashSet<>();
 
@@ -64,7 +63,7 @@ public class ElasticStarController extends ElasticVertexController implements Ed
     }
 
     @Override
-    public BaseEdge addEdge(Object edgeId, String label, BaseVertex outV, BaseVertex inV, Map<String, Object> properties) {
+    public UniEdge addEdge(Object edgeId, String label, UniVertex outV, UniVertex inV, Map<String, Object> properties) {
         return innerEdgeControllers.stream()
                 .map(mapping -> mapping.addEdge(edgeId, label, outV, inV, properties))
                 .filter(i -> i != null)
@@ -72,25 +71,25 @@ public class ElasticStarController extends ElasticVertexController implements Ed
     }
 
     @Override
-    public Iterator<BaseEdge> edges(Predicates predicates) {
+    public Iterator<UniEdge> edges(UniQuery uniQuery) {
         elasticMutations.refresh();
 
         OrQueryBuilder orQuery = QueryBuilders.orQuery();
         innerEdgeControllers.forEach(controller -> {
-            QueryBuilder filter = (QueryBuilder) controller.getFilter(predicates.hasContainers);
+            QueryBuilder filter = (QueryBuilder) controller.getFilter(uniQuery.hasContainers);
             if (filter != null) orQuery.add(filter);
         });
 
-        QueryIterator<UniVertex> queryIterator = new QueryIterator<>(orQuery, scrollSize, predicates.limitHigh, client, this::createStarVertex, timing, getDefaultIndex());
+        QueryIterator<UniVertex> queryIterator = new QueryIterator<>(orQuery, scrollSize, uniQuery.limitHigh, client, this::createStarVertex, timing, getDefaultIndex());
 
         Iterable<UniVertex> iterable = () -> queryIterator;
         return StreamSupport.stream(iterable.spliterator(), false)
-                .map(vertex -> ((UniStarVertex) vertex).getInnerEdges(predicates))
+                .map(vertex -> ((UniStarVertex) vertex).getInnerEdges(uniQuery))
                 .flatMap(Collection::stream).iterator();
     }
 
     @Override
-    protected void addProperty(List<BaseVertex> vertices, String key, Object value) {
+    protected void addProperty(List<UniVertex> vertices, String key, Object value) {
         super.addProperty(vertices, key, value);
         if (value instanceof List) {
             org.unipop.controller.InnerEdgeController innerEdgeController1 = innerEdgeControllers.stream().filter(innerEdgeController -> innerEdgeController.getEdgeLabel().equals(key)).findFirst().get();
@@ -100,22 +99,22 @@ public class ElasticStarController extends ElasticVertexController implements Ed
     }
 
     @Override
-    public Iterator<BaseEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
-        Set<BaseEdge> results = new HashSet<>();
+    public Iterator<UniEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, UniQuery uniQuery) {
+        Set<UniEdge> results = new HashSet<>();
         List<String> labels = Arrays.asList(edgeLabels);
-        List<BaseVertex> delayedVertices = Stream.of(vertices)
+        List<UniVertex> delayedVertices = Stream.of(vertices)
                 .filter(vertex1 -> vertex1 instanceof UniDelayedStarVertex)
-                .map(vertex1 -> ((BaseVertex) vertex1)).collect(Collectors.toList());
+                .map(vertex1 -> ((UniVertex) vertex1)).collect(Collectors.toList());
         vertexProperties(delayedVertices);
 
         for (Vertex vertex : vertices) {
             if (vertex instanceof UniStarVertex)
-                results.addAll(((UniStarVertex) vertex).getInnerEdges(direction, labels, predicates));
+                results.addAll(((UniStarVertex) vertex).getInnerEdges(direction, labels, uniQuery));
         }
 
         OrQueryBuilder orQuery = null;
         for (org.unipop.controller.InnerEdgeController controller : innerEdgeControllers) {
-            QueryBuilder filter = (QueryBuilder) controller.getFilter(vertices, direction, edgeLabels, predicates);
+            QueryBuilder filter = (QueryBuilder) controller.getFilter(vertices, direction, edgeLabels, uniQuery);
             if (filter != null) {
                 if (orQuery == null) orQuery = QueryBuilders.orQuery();
                 orQuery.add(filter);
@@ -125,36 +124,36 @@ public class ElasticStarController extends ElasticVertexController implements Ed
         if (orQuery != null) {
             elasticMutations.refresh();
 
-            QueryIterator<UniVertex> queryIterator = new QueryIterator<>(orQuery, scrollSize, predicates.limitHigh, client, this::createStarVertex, timing, getDefaultIndex());
+            QueryIterator<UniVertex> queryIterator = new QueryIterator<>(orQuery, scrollSize, uniQuery.limitHigh, client, this::createStarVertex, timing, getDefaultIndex());
 //            QueryIterator<ElasticStarVertex> queryIterator = new QueryIterator<>(orQuery, scrollSize, 10000, client, this::createStarVertex, timing, getDefaultIndex());
-            queryIterator.forEachRemaining(vertex -> results.addAll(((UniStarVertex) vertex).getInnerEdges(direction.opposite(), labels, predicates)));
+            queryIterator.forEachRemaining(vertex -> results.addAll(((UniStarVertex) vertex).getInnerEdges(direction.opposite(), labels, uniQuery)));
         }
 
         return results.iterator();
     }
 
     @Override
-    public long edgeCount(Predicates predicates) {
+    public long edgeCount(UniQuery uniQuery) {
         return 0;
     }
 
     @Override
-    public long edgeCount(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
+    public long edgeCount(Vertex[] vertices, Direction direction, String[] edgeLabels, UniQuery uniQuery) {
         return 0;
     }
 
     @Override
-    public Map<String, Object> edgeGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
+    public Map<String, Object> edgeGroupBy(UniQuery uniQuery, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
         return null;
     }
 
     @Override
-    public Map<String, Object> edgeGroupBy(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
+    public Map<String, Object> edgeGroupBy(Vertex[] vertices, Direction direction, String[] edgeLabels, UniQuery uniQuery, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
         return null;
     }
 
     @Override
-    public void update(BaseVertex vertex, boolean force) {
+    public void update(UniVertex vertex, boolean force) {
         if (vertex.removed) return;
         try {
             if (force) {
@@ -171,12 +170,12 @@ public class ElasticStarController extends ElasticVertexController implements Ed
     }
 
     @Override
-    public long vertexCount(Predicates predicates) {
+    public long vertexCount(UniQuery uniQuery) {
         return 0;
     }
 
     @Override
-    public Map<String, Object> vertexGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
+    public Map<String, Object> vertexGroupBy(UniQuery uniQuery, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
         return null;
     }
 }

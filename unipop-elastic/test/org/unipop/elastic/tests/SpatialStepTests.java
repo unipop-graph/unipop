@@ -15,7 +15,7 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.junit.Before;
 import org.junit.Test;
 import org.unipop.common.test.UnipopGraphProvider;
-import org.unipop.elastic.controller.helpers.Geo;
+import org.unipop.elastic.helpers.Geo;
 
 import java.io.IOException;
 import java.util.ArrayList;

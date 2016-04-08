@@ -3,20 +3,20 @@ package org.unipop.structure;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.ArrayIterator;
-import org.unipop.controller.*;
-import org.unipop.controller.manager.ConfigurationControllerManager;
-import org.unipop.controller.manager.ControllerManager;
+import org.unipop.query.controller.ConfigurationControllerManager;
+import org.unipop.query.controller.ControllerManager;
 import org.unipop.process.strategyregistrar.StandardStrategyRegistrar;
 import org.unipop.process.strategyregistrar.StrategyRegistrar;
+import org.unipop.query.mutation.AddVertexQuery;
+import org.unipop.query.search.SearchQuery;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.unipop.common.util.StreamUtils.asStream;
 
@@ -71,11 +71,11 @@ public class UniGraph implements Graph {
         return new UniGraph(configuration);
     }
 
-    private UnipopFeatures features = new UnipopFeatures();
+    private UniFeatures features = new UniFeatures();
     private Configuration configuration;
     private ControllerManager controllerManager;
     private StrategyRegistrar strategyRegistrar;
-    private List<ElementController> queryControllers;
+    private List<SearchQuery.SearchController> queryControllers;
 
     public UniGraph(Configuration configuration) throws Exception {
         configuration.setProperty(Graph.GRAPH, UniGraph.class.getName());
@@ -86,7 +86,7 @@ public class UniGraph implements Graph {
 
         init(configurationControllerManager, strategyRegistrar);
 
-        this.queryControllers = controllerManager.getControllers(ElementController.class);
+        this.queryControllers = controllerManager.getControllers(SearchQuery.SearchController.class);
     }
 
     public UniGraph(ControllerManager controllerManager, StrategyRegistrar strategyRegistrar) throws Exception {
@@ -175,18 +175,18 @@ public class UniGraph implements Graph {
     private <E extends Element> Iterator<E> query(Class<E> returnType, Object[] ids) {
         if (ids.length > 1 && !ids[0].getClass().equals(ids[1].getClass())) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
         if (ids.length > 0 && Vertex.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator(ids);
+        HasContainer idPredicate = new HasContainer(T.id.getAccessor(), P.within(ids));
 
-        Predicates<E> predicates = new Predicates<>(returnType, new String[0], ids, null, 0);
-
-        return queryControllers.stream().<E>flatMap(controller -> asStream(controller.query(predicates))).iterator();
+        SearchQuery<E> uniQuery = new SearchQuery<>(returnType, Arrays.asList(idPredicate), 0, null);
+        return queryControllers.stream().<E>flatMap(controller -> asStream(controller.query(uniQuery))).iterator();
     }
 
     @Override
     public Vertex addVertex(final Object... keyValues) {
         Map<String, Object> stringObjectMap = asMap(keyValues);
 
-        return controllerManager.getControllers(VertexController.class).stream()
-                .map(controller -> controller.addVertex(stringObjectMap))
+        return controllerManager.getControllers(AddVertexQuery.AddVertexController.class).stream()
+                .map(controller -> controller.addVertex(new AddVertexQuery(stringObjectMap, null)))
                 .findFirst().get();
     }
 

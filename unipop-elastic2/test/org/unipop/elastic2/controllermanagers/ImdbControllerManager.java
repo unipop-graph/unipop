@@ -9,10 +9,8 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.script.ScriptService;
-import org.unipop.controller.manager.ControllerProvider;
-import org.unipop.controller.EdgeController;
-import org.unipop.controller.Predicates;
-import org.unipop.controller.VertexController;
+import org.unipop.query.UniQuery;
+import org.unipop.query.controller.ControllerProvider;
 import org.unipop.elastic2.controller.aggregations.controller.vertex.AggregationsVertexController;
 import org.unipop.elastic2.helpers.ElasticClientFactory;
 import org.unipop.elastic2.helpers.ElasticHelper;
@@ -27,8 +25,8 @@ import java.util.*;
  */
 public class ImdbControllerManager implements ControllerProvider {
 
-    Map<String, VertexController> vertexControllers;
-    EdgeController edgeController;
+    Map<String, VertexQueryController> vertexControllers;
+    EdgeQueryController edgeQueryController;
     private Client client;
     private TimingAccessor timing;
     private ElasticMutations elasticMutations;
@@ -46,16 +44,16 @@ public class ImdbControllerManager implements ControllerProvider {
         Map<String,String> paths = new HashMap<>();
         paths.put("hits.hits", "");
         paths.put("aggregations.ages.buckets", "ages");
-        VertexController movie = new AggregationsVertexController(graph, client, elasticMutations, 0, timing, indexName, "aggs_test", ScriptService.ScriptType.FILE, paths);
+        VertexQueryController movie = new AggregationsVertexController(graph, client, elasticMutations, 0, timing, indexName, "aggs_test", ScriptService.ScriptType.FILE, paths);
         vertexControllers.put("person", movie);
         vertexControllers.put("ages", movie);
 
-        edgeController = ((EdgeController) movie);
+        edgeQueryController = ((EdgeQueryController) movie);
 
     }
 
     @Override
-    public List<BaseElement> properties(List<BaseElement> elements) {
+    public List<UniElement> properties(List<UniElement> elements) {
         throw new NotImplementedException();
     }
 
@@ -65,37 +63,37 @@ public class ImdbControllerManager implements ControllerProvider {
     }
 
     @Override
-    public Iterator<BaseEdge> edges(Predicates predicates) {
-        return edgeController.edges(predicates);
+    public Iterator<UniEdge> edges(UniQuery uniQuery) {
+        return edgeQueryController.edges(uniQuery);
     }
 
     @Override
-    public Iterator<BaseEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
-        return edgeController.edges(vertices, direction, edgeLabels, predicates);
+    public Iterator<UniEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, UniQuery uniQuery) {
+        return edgeQueryController.edges(vertices, direction, edgeLabels, uniQuery);
     }
 
     @Override
-    public long edgeCount(Predicates predicates) {
+    public long edgeCount(UniQuery uniQuery) {
         return 0;
     }
 
     @Override
-    public long edgeCount(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
+    public long edgeCount(Vertex[] vertices, Direction direction, String[] edgeLabels, UniQuery uniQuery) {
         return 0;
     }
 
     @Override
-    public Map<String, Object> edgeGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
+    public Map<String, Object> edgeGroupBy(UniQuery uniQuery, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
         return null;
     }
 
     @Override
-    public Map<String, Object> edgeGroupBy(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
+    public Map<String, Object> edgeGroupBy(Vertex[] vertices, Direction direction, String[] edgeLabels, UniQuery uniQuery, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
         return null;
     }
 
     @Override
-    public BaseEdge addEdge(Object edgeId, String label, BaseVertex outV, BaseVertex inV, Map<String, Object> properties) {
+    public UniEdge addEdge(Object edgeId, String label, UniVertex outV, UniVertex inV, Map<String, Object> properties) {
         return null;
     }
 
@@ -108,30 +106,30 @@ public class ImdbControllerManager implements ControllerProvider {
     }
 
     @Override
-    public Iterator<BaseVertex> vertices(Predicates predicates) {
-        String label = getLabel(predicates.hasContainers);
+    public Iterator<UniVertex> vertices(UniQuery uniQuery) {
+        String label = getLabel(uniQuery.hasContainers);
         if (label == null)
-            return vertexControllers.get("person").vertices(predicates);
-        return vertexControllers.get(label).vertices(predicates);
+            return vertexControllers.get("person").vertices(uniQuery);
+        return vertexControllers.get(label).vertices(uniQuery);
     }
 
     @Override
-    public BaseVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
+    public UniVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
         return vertexControllers.get(vertexLabel).vertex(direction, vertexId, vertexLabel);
     }
 
     @Override
-    public long vertexCount(Predicates predicates) {
+    public long vertexCount(UniQuery uniQuery) {
         return 0;
     }
 
     @Override
-    public Map<String, Object> vertexGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
+    public Map<String, Object> vertexGroupBy(UniQuery uniQuery, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
         throw new NotImplementedException();
     }
 
     @Override
-    public BaseVertex addVertex(Object id, String label, Map<String, Object> properties) {
+    public UniVertex addVertex(Object id, String label, Map<String, Object> properties) {
         return null;
     }
 
@@ -141,27 +139,27 @@ public class ImdbControllerManager implements ControllerProvider {
     }
 
     @Override
-    public void addPropertyToVertex(BaseVertex vertex, BaseVertexProperty vertexProperty) {
+    public void addPropertyToVertex(UniVertex vertex, UniVertexProperty vertexProperty) {
         throw new NotImplementedException();
     }
 
     @Override
-    public void removePropertyFromVertex(BaseVertex vertex, Property property) {
+    public void removePropertyFromVertex(UniVertex vertex, Property property) {
         throw new NotImplementedException();
     }
 
     @Override
-    public void removeVertex(BaseVertex vertex) {
+    public void removeVertex(UniVertex vertex) {
         throw new NotImplementedException();
     }
 
     @Override
-    public List<BaseElement> vertexProperties(List<BaseVertex> vertices) {
+    public List<UniElement> vertexProperties(List<UniVertex> vertices) {
         throw new NotImplementedException();
     }
 
     @Override
-    public void update(BaseVertex vertex, boolean force) {
+    public void update(UniVertex vertex, boolean force) {
         throw new NotImplementedException();
     }
 

@@ -5,7 +5,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.T;
-import org.unipop.controller.Predicates;
+import org.unipop.query.UniQuery;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,15 +17,15 @@ import java.util.function.BiPredicate;
  * Created by sbarzilay on 02/02/16.
  */
 public class AggregationsHelper {
-    public static Map<String, Object> createTemplateParams(Predicates predicates) {
+    public static Map<String, Object> createTemplateParams(UniQuery uniQuery) {
         Map<String, Object> params = new HashMap<>();
 
         Map<String, Object> filters = new HashMap<>();
 
-        predicates.hasContainers.forEach(has -> addParam(filters, has));
+        uniQuery.hasContainers.forEach(has -> addParam(filters, has));
 
         params.put("filters", filters);
-        params.put("limit", Math.min(10000,predicates.limitHigh));
+        params.put("limit", Math.min(10000, uniQuery.limitHigh));
 
         return params;
     }

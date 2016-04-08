@@ -4,8 +4,6 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.elasticsearch.client.Client;
-import org.unipop.controller.EdgeController;
-import org.unipop.controller.VertexController;
 import org.unipop.controller.standard.BasicControllerManager;
 import org.unipop.elastic2.controller.edge.ElasticEdgeController;
 import org.unipop.elastic2.controller.vertex.ElasticVertexController;
@@ -20,8 +18,8 @@ import java.util.stream.Collectors;
 
 public class BasicElasticControllerManager extends BasicControllerManager {
 
-    private EdgeController edgeController;
-    private VertexController vertexController;
+    private EdgeQueryController edgeQueryController;
+    private VertexQueryController vertexQueryController;
     private Client client;
     private ElasticMutations elasticMutations;
     private TimingAccessor timing;
@@ -35,53 +33,53 @@ public class BasicElasticControllerManager extends BasicControllerManager {
 
         timing = new TimingAccessor();
         elasticMutations = new ElasticMutations(false, client, timing);
-        edgeController = new ElasticEdgeController(graph, client, elasticMutations, indexName, 0, timing);
-        vertexController = new ElasticVertexController(graph, client, elasticMutations, indexName, 0, timing);
+        edgeQueryController = new ElasticEdgeController(graph, client, elasticMutations, indexName, 0, timing);
+        vertexQueryController = new ElasticVertexController(graph, client, elasticMutations, indexName, 0, timing);
     }
 
     @Override
-    public List<BaseElement> properties(List<BaseElement> elements) {
-        List<BaseVertex> vertices = elements.stream().filter(element -> element instanceof UniDelayedVertex)
-                .map(element -> ((BaseVertex) element)).collect(Collectors.toList());
+    public List<UniElement> properties(List<UniElement> elements) {
+        List<UniVertex> vertices = elements.stream().filter(element -> element instanceof UniDelayedVertex)
+                .map(element -> ((UniVertex) element)).collect(Collectors.toList());
 
         return vertexProperties(vertices);
     }
 
     @Override
-    protected VertexController getDefaultVertexController() {
-        return vertexController;
+    protected VertexQueryController getDefaultVertexController() {
+        return vertexQueryController;
     }
 
     @Override
-    protected EdgeController getDefaultEdgeController() {
-        return edgeController;
+    protected EdgeQueryController getDefaultEdgeController() {
+        return edgeQueryController;
     }
 
     @Override
     public void commit() { elasticMutations.commit(); }
 
     @Override
-    public void addPropertyToVertex(BaseVertex vertex, BaseVertexProperty vertexProperty) {
+    public void addPropertyToVertex(UniVertex vertex, UniVertexProperty vertexProperty) {
         throw new NotImplementedException();
     }
 
     @Override
-    public void removePropertyFromVertex(BaseVertex vertex, Property property) {
+    public void removePropertyFromVertex(UniVertex vertex, Property property) {
         throw new NotImplementedException();
     }
 
     @Override
-    public void removeVertex(BaseVertex vertex) {
+    public void removeVertex(UniVertex vertex) {
         throw new NotImplementedException();
     }
 
     @Override
-    public List<BaseElement> vertexProperties(List<BaseVertex> vertices) {
-        return vertexController.vertexProperties(vertices);
+    public List<UniElement> vertexProperties(List<UniVertex> vertices) {
+        return vertexQueryController.vertexProperties(vertices);
     }
 
     @Override
-    public void update(BaseVertex vertex, boolean force) {
+    public void update(UniVertex vertex, boolean force) {
         throw new NotImplementedException();
     }
 

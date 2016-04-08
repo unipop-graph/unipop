@@ -7,7 +7,7 @@ import org.unipop.structure.*;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
-public class ElasticEdge extends BaseEdge {
+public class ElasticEdge extends UniEdge {
 
     public static String OutId = "outId";
     public static String OutLabel = "outLabel";
@@ -50,7 +50,7 @@ public class ElasticEdge extends BaseEdge {
     }
 
     @Override
-    protected void innerAddProperty(BaseProperty vertexProperty) {
+    protected void innerAddProperty(UniProperty vertexProperty) {
         try {
             elasticMutations.updateElement(this, indexName, null, false);
         } catch (ExecutionException | InterruptedException e) {

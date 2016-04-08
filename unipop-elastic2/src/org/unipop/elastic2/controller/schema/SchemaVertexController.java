@@ -9,8 +9,7 @@ import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.elasticsearch.search.SearchHit;
-import org.unipop.controller.Predicates;
-import org.unipop.controller.VertexController;
+import org.unipop.query.UniQuery;
 import org.unipop.elastic2.controller.schema.helpers.ElasticGraphConfiguration;
 import org.unipop.elastic2.controller.schema.helpers.LazyGetterFactory;
 import org.unipop.elastic2.controller.schema.helpers.SearchAggregationIterable;
@@ -21,9 +20,9 @@ import org.unipop.elastic2.controller.schema.helpers.schemaProviders.GraphElemen
 import org.unipop.elastic2.controller.schema.helpers.schemaProviders.GraphVertexSchema;
 import org.unipop.elastic2.helpers.AggregationHelper;
 import org.unipop.elastic2.helpers.ElasticMutations;
-import org.unipop.structure.BaseElement;
-import org.unipop.structure.BaseVertex;
-import org.unipop.structure.BaseVertexProperty;
+import org.unipop.structure.UniElement;
+import org.unipop.structure.UniVertex;
+import org.unipop.structure.UniVertexProperty;
 import org.unipop.structure.UniGraph;
 
 import java.util.Iterator;
@@ -31,7 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class SchemaVertexController extends SchemaElementController implements VertexController {
+public class SchemaVertexController extends SchemaElementController implements VertexQueryController {
     //region ctor
     public SchemaVertexController(UniGraph graph,
                                   GraphElementSchemaProvider schemaProvider,
@@ -48,18 +47,18 @@ public class SchemaVertexController extends SchemaElementController implements V
 
     //region VertexHandler Implementation
     @Override
-    public Iterator<BaseVertex> vertices(Predicates predicates) {
-        return (Iterator<BaseVertex>) elements(predicates, Vertex.class);
+    public Iterator<UniVertex> vertices(UniQuery uniQuery) {
+        return (Iterator<UniVertex>) elements(uniQuery, Vertex.class);
     }
 
     @Override
-    public BaseVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
+    public UniVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
         return new SchemaVertex(vertexId, vertexLabel, graph, null, graph.getControllerManager(), lazyGetterFactory.getLazyGetter(vertexLabel), schemaProvider, this.elasticMutations);
     }
 
     @Override
-    public long vertexCount(Predicates predicates) {
-        SearchBuilder searchBuilder = buildElementsQuery(predicates, Vertex.class);
+    public long vertexCount(UniQuery uniQuery) {
+        SearchBuilder searchBuilder = buildElementsQuery(uniQuery, Vertex.class);
 
         try {
             SearchResponse response = searchBuilder.getSearchRequest(client).setSearchType(SearchType.COUNT).execute().get();
@@ -71,8 +70,8 @@ public class SchemaVertexController extends SchemaElementController implements V
     }
 
     @Override
-    public Map<String, Object> vertexGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
-        SearchBuilder searchBuilder = buildElementsQuery(predicates, Vertex.class);
+    public Map<String, Object> vertexGroupBy(UniQuery uniQuery, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
+        SearchBuilder searchBuilder = buildElementsQuery(uniQuery, Vertex.class);
 
         this.applyAggregationBuilder(searchBuilder.getAggregationBuilder(), keyTraversal, reducerTraversal);
 
@@ -87,8 +86,8 @@ public class SchemaVertexController extends SchemaElementController implements V
     }
 
     @Override
-    public BaseVertex addVertex(Object id, String label, Map<String, Object> properties) {
-        BaseVertex v = new SchemaVertex(id, label, graph, properties, graph.getControllerManager(), lazyGetterFactory.getLazyGetter(label), this.schemaProvider, this.elasticMutations);
+    public UniVertex addVertex(Object id, String label, Map<String, Object> properties) {
+        UniVertex v = new SchemaVertex(id, label, graph, properties, graph.getControllerManager(), lazyGetterFactory.getLazyGetter(label), this.schemaProvider, this.elasticMutations);
 
         Optional<GraphVertexSchema> vertexSchema = this.schemaProvider.getVertexSchema(label);
         if (!vertexSchema.isPresent()) {
@@ -111,27 +110,27 @@ public class SchemaVertexController extends SchemaElementController implements V
     }
 
     @Override
-    public void addPropertyToVertex(BaseVertex vertex, BaseVertexProperty vertexProperty) {
+    public void addPropertyToVertex(UniVertex vertex, UniVertexProperty vertexProperty) {
         throw new NotImplementedException();
     }
 
     @Override
-    public void removePropertyFromVertex(BaseVertex vertex, Property property) {
+    public void removePropertyFromVertex(UniVertex vertex, Property property) {
         throw new NotImplementedException();
     }
 
     @Override
-    public void removeVertex(BaseVertex vertex) {
+    public void removeVertex(UniVertex vertex) {
         throw new NotImplementedException();
     }
 
     @Override
-    public List<BaseElement> vertexProperties(Iterator<BaseVertex> vertices) {
+    public List<UniElement> vertexProperties(Iterator<UniVertex> vertices) {
         throw new NotImplementedException();
     }
 
     @Override
-    public void update(BaseVertex vertex, boolean force) {
+    public void update(UniVertex vertex, boolean force) {
         throw new NotImplementedException();
     }
 

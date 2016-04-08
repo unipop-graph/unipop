@@ -2,8 +2,8 @@ package org.unipop.jdbc.controller.edge;
 
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.unipop.structure.BaseEdge;
-import org.unipop.structure.BaseProperty;
+import org.unipop.structure.UniEdge;
+import org.unipop.structure.UniProperty;
 import org.unipop.structure.UniGraph;
 
 import java.util.Map;
@@ -14,14 +14,14 @@ import static org.jooq.impl.DSL.table;
 /**
  * Created by sbarzilay on 28/01/16.
  */
-public class SqlEdge extends BaseEdge {
+public class SqlEdge extends UniEdge {
 
     public SqlEdge(Object id, String label, Map<String, Object> keyValues, Vertex outV, Vertex inV, SqlEdgeController controller, UniGraph graph) {
         super(id, label, keyValues, outV, inV, controller, graph);
     }
 
     @Override
-    protected void innerAddProperty(BaseProperty vertexProperty) {
+    protected void innerAddProperty(UniProperty vertexProperty) {
         ((SqlEdgeController) getController()).getContext().update(table(label))
                 .set(field(vertexProperty.key()), vertexProperty.value())
                 .where(field("ID").eq(this.id()))

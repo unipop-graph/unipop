@@ -2,13 +2,13 @@ package org.unipop.elastic2.controller.aggregations.controller.vertex;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Property;
-import org.unipop.controller.manager.ControllerProvider;
-import org.unipop.controller.Predicates;
+import org.unipop.query.controller.ControllerProvider;
+import org.unipop.query.UniQuery;
 import org.unipop.elastic2.controller.aggregations.controller.edge.AggregationsEdge;
 import org.unipop.elastic2.helpers.ElasticMutations;
-import org.unipop.structure.BaseEdge;
-import org.unipop.structure.BaseVertex;
-import org.unipop.structure.BaseVertexProperty;
+import org.unipop.structure.UniEdge;
+import org.unipop.structure.UniVertex;
+import org.unipop.structure.UniVertexProperty;
 import org.unipop.structure.UniGraph;
 
 import java.util.HashSet;
@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 /**
  * Created by sbarzilay on 02/02/16.
  */
-public class AggregationsVertex extends BaseVertex{
+public class AggregationsVertex extends UniVertex {
     private ElasticMutations elasticMutations;
     private String index;
     Set<AggregationsEdge> innerEdges;
@@ -36,20 +36,20 @@ public class AggregationsVertex extends BaseVertex{
         innerEdges.add(edge);
     }
 
-    public Set<BaseEdge> getInnerEdges(Predicates predicates) {
-        return innerEdges.stream().filter(edge -> filterPredicates(edge, predicates)).collect(Collectors.toSet());
+    public Set<UniEdge> getInnerEdges(UniQuery uniQuery) {
+        return innerEdges.stream().filter(edge -> filterPredicates(edge, uniQuery)).collect(Collectors.toSet());
     }
 
-    public Set<BaseEdge> getInnerEdges(Direction direction, List<String> edgeLabels, Predicates predicates) {
+    public Set<UniEdge> getInnerEdges(Direction direction, List<String> edgeLabels, UniQuery uniQuery) {
         return innerEdges.stream()
-                .filter(edge -> filterPredicates(edge, predicates) &&
+                .filter(edge -> filterPredicates(edge, uniQuery) &&
                         (edgeLabels.size() == 0 || edgeLabels.contains(edge.label())) &&
                         (direction.equals(Direction.BOTH) || direction.equals(this.equals(edge.outVertex())? Direction.OUT : Direction.IN)))
                 .collect(Collectors.toSet());
     }
 
-    private boolean filterPredicates(AggregationsEdge edge, Predicates predicates) {
-        return predicates.hasContainers.stream().allMatch(predicate -> predicate.test(edge));
+    private boolean filterPredicates(AggregationsEdge edge, UniQuery uniQuery) {
+        return uniQuery.hasContainers.stream().allMatch(predicate -> predicate.test(edge));
     }
 
     @Override
@@ -58,7 +58,7 @@ public class AggregationsVertex extends BaseVertex{
     }
 
     @Override
-    protected void innerAddProperty(BaseVertexProperty vertexProperty) {
+    protected void innerAddProperty(UniVertexProperty vertexProperty) {
 
     }
 

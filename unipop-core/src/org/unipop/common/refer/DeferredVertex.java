@@ -2,15 +2,14 @@ package org.unipop.common.refer;
 
 import com.google.common.collect.Iterators;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.unipop.process.properties.DeferredVertexController;
-import org.unipop.structure.BaseVertex;
+import org.unipop.structure.UniVertex;
 import org.unipop.structure.UniGraph;
 
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-public class DeferredVertex extends BaseVertex {
+public class DeferredVertex extends UniVertex {
     public DeferredVertex(Map<String, Object> properties, UniGraph graph) {
         super(properties, graph);
     }

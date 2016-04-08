@@ -10,8 +10,7 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.elasticsearch.search.SearchHit;
 import org.javatuples.Pair;
-import org.unipop.controller.EdgeController;
-import org.unipop.controller.Predicates;
+import org.unipop.query.UniQuery;
 import org.unipop.elastic2.controller.schema.helpers.ElasticGraphConfiguration;
 import org.unipop.elastic2.controller.schema.helpers.QueryBuilder;
 import org.unipop.elastic2.controller.schema.helpers.SearchAggregationIterable;
@@ -23,14 +22,14 @@ import org.unipop.elastic2.controller.schema.helpers.schemaProviders.GraphElemen
 import org.unipop.elastic2.helpers.AggregationHelper;
 import org.unipop.elastic2.helpers.ElasticMutations;
 import org.unipop.elastic2.controller.schema.helpers.queryAppenders.*;
-import org.unipop.structure.BaseEdge;
-import org.unipop.structure.BaseVertex;
+import org.unipop.structure.UniEdge;
+import org.unipop.structure.UniVertex;
 import org.unipop.structure.UniGraph;
 
 import java.util.*;
 import java.util.function.BiFunction;
 
-public class SchemaEdgeController extends SchemaElementController implements EdgeController {
+public class SchemaEdgeController extends SchemaElementController implements EdgeQueryController {
     //region ctor
     public SchemaEdgeController(UniGraph graph,
                                 GraphElementSchemaProvider schemaProvider,
@@ -45,16 +44,16 @@ public class SchemaEdgeController extends SchemaElementController implements Edg
 
     //region EdgeHandler Implementation
     @Override
-    public Iterator<BaseEdge> edges(Predicates predicates) {
-        return (Iterator<BaseEdge>) elements(predicates, Edge.class);
+    public Iterator<UniEdge> edges(UniQuery uniQuery) {
+        return (Iterator<UniEdge>) elements(uniQuery, Edge.class);
     }
 
     @Override
-    public Iterator<BaseEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
-        SearchBuilder searchBuilder = buildEdgesQuery(edgeLabels, predicates);
+    public Iterator<UniEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, UniQuery uniQuery) {
+        SearchBuilder searchBuilder = buildEdgesQuery(edgeLabels, uniQuery);
 
         if (!appendQuery(Arrays.asList(vertices), getQueryAppender(direction), searchBuilder)) {
-            return Collections.<BaseEdge>emptyList().iterator();
+            return Collections.<UniEdge>emptyList().iterator();
         }
 
         Iterable<SearchHit> scrollIterable = getSearchHits(searchBuilder);
@@ -62,8 +61,8 @@ public class SchemaEdgeController extends SchemaElementController implements Edg
     }
 
     @Override
-    public long edgeCount(Predicates predicates) {
-        SearchBuilder searchBuilder = buildElementsQuery(predicates, Edge.class);
+    public long edgeCount(UniQuery uniQuery) {
+        SearchBuilder searchBuilder = buildElementsQuery(uniQuery, Edge.class);
 
         long count = 0;
         try {
@@ -78,10 +77,10 @@ public class SchemaEdgeController extends SchemaElementController implements Edg
     }
 
     @Override
-    public long edgeCount(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
+    public long edgeCount(Vertex[] vertices, Direction direction, String[] edgeLabels, UniQuery uniQuery) {
         HashMap<String, Pair<Long, Vertex>> idsCount = AggregationHelper.getIdsCounts(Arrays.asList(vertices));
 
-        SearchBuilder searchBuilder = buildEdgesQuery(edgeLabels, predicates);
+        SearchBuilder searchBuilder = buildEdgesQuery(edgeLabels, uniQuery);
         if (!appendQuery(Arrays.asList(vertices), getQueryAppender(direction), searchBuilder)) {
             return 0L;
         }
@@ -99,8 +98,8 @@ public class SchemaEdgeController extends SchemaElementController implements Edg
     }
 
     @Override
-    public Map<String, Object> edgeGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
-        SearchBuilder searchBuilder = buildElementsQuery(predicates, Edge.class);
+    public Map<String, Object> edgeGroupBy(UniQuery uniQuery, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
+        SearchBuilder searchBuilder = buildElementsQuery(uniQuery, Edge.class);
 
         this.applyAggregationBuilder(searchBuilder.getAggregationBuilder(), keyTraversal, reducerTraversal);
 
@@ -115,8 +114,8 @@ public class SchemaEdgeController extends SchemaElementController implements Edg
     }
 
     @Override
-    public Map<String, Object> edgeGroupBy(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
-        SearchBuilder searchBuilder = buildEdgesQuery(edgeLabels, predicates);
+    public Map<String, Object> edgeGroupBy(Vertex[] vertices, Direction direction, String[] edgeLabels, UniQuery uniQuery, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
+        SearchBuilder searchBuilder = buildEdgesQuery(edgeLabels, uniQuery);
         if (!appendQuery(Arrays.asList(vertices), getQueryAppender(direction), searchBuilder)) {
             return new HashMap<>();
         }
@@ -134,7 +133,7 @@ public class SchemaEdgeController extends SchemaElementController implements Edg
     }
 
     @Override
-    public BaseEdge addEdge(Object edgeId, String label, BaseVertex outV, BaseVertex inV, Map<String, Object> properties) {
+    public UniEdge addEdge(Object edgeId, String label, UniVertex outV, UniVertex inV, Map<String, Object> properties) {
         Optional<GraphEdgeSchema> edgeSchema = this.schemaProvider.getEdgeSchema(label, Optional.of(outV.label()), Optional.of(inV.label()));
         SchemaEdge elasticEdge = new SchemaEdge(edgeId, label, properties, outV, inV, this, graph, edgeSchema, this.elasticMutations);
 
@@ -166,11 +165,11 @@ public class SchemaEdgeController extends SchemaElementController implements Edg
 
     //region help methods
     @Override
-    protected Iterator<BaseEdge> transformSearchHitsToElements(Iterable<SearchHit> scrollIterable) {
+    protected Iterator<UniEdge> transformSearchHitsToElements(Iterable<SearchHit> scrollIterable) {
         // SearchHit --> SearchHitElement --> Vertex
         return FluentIterable.from(scrollIterable).
                 transformAndConcat(searchHit -> getElementConverter().convert(this.getSearchHitElementFactory().getElement(searchHit))).
-                transform(element -> (BaseEdge) element).iterator();
+                transform(element -> (UniEdge) element).iterator();
     }
     //endregion
 
@@ -226,7 +225,7 @@ public class SchemaEdgeController extends SchemaElementController implements Edg
     }
 
 
-    private SearchBuilder buildEdgesQuery(String[] edgeLabels, Predicates predicates) {
+    private SearchBuilder buildEdgesQuery(String[] edgeLabels, UniQuery uniQuery) {
         this.elasticMutations.refreshIfDirty();
 
         SearchBuilder searchBuilder = new SearchBuilder();
@@ -234,8 +233,8 @@ public class SchemaEdgeController extends SchemaElementController implements Edg
         searchBuilder.setLimit(configuration.getElasticGraphDefaultSearchSize());
 
         translateLabelsPredicate(Arrays.asList(edgeLabels), searchBuilder, Edge.class);
-        translateHasContainers(searchBuilder, predicates.hasContainers);
-//        translateLimits(predicates.limitHigh, searchBuilder);
+        translateHasContainers(searchBuilder, uniQuery.hasContainers);
+//        translateLimits(uniQuery.limitHigh, searchBuilder);
         translateLimits(10000, searchBuilder);
         return searchBuilder;
     }

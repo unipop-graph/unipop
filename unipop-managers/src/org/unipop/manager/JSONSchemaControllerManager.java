@@ -5,8 +5,6 @@ import org.apache.commons.lang.NotImplementedException;
 import org.elasticsearch.client.Client;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
-import org.unipop.controller.EdgeController;
-import org.unipop.controller.VertexController;
 import org.unipop.elastic.helpers.ElasticClientFactory;
 import org.unipop.elastic.helpers.ElasticMutations;
 import org.unipop.elastic.helpers.TimingAccessor;
@@ -45,18 +43,18 @@ public class JSONSchemaControllerManager extends SchemaControllerManager {
                 controller.put("timing", timing);
             }
             if (controller.get("type").equals("vertex")) {
-                VertexController vertex = (VertexController) Class.forName(controller.get("class").toString()).newInstance();
+                VertexQueryController vertex = (VertexQueryController) Class.forName(controller.get("class").toString()).newInstance();
                 vertex.init(controller, graph);
                 for (String label : ((List<String>) controller.get("labels"))) {
                     addController(vertexControllers, vertex, label);
                 }
-                if (vertex instanceof EdgeController) {
+                if (vertex instanceof EdgeQueryController) {
                     for (String label : ((List<String>) controller.get("edgeLabels"))) {
-                        addController(edgeControllers, (EdgeController) vertex, label);
+                        addController(edgeControllers, (EdgeQueryController) vertex, label);
                     }
                 }
             } else {
-                EdgeController edge = (EdgeController) Class.forName(controller.get("class").toString()).newInstance();
+                EdgeQueryController edge = (EdgeQueryController) Class.forName(controller.get("class").toString()).newInstance();
                 edge.init(controller, graph);
                 for (String label : ((List<String>) controller.get("labels"))) {
                     addController(edgeControllers, edge, label);

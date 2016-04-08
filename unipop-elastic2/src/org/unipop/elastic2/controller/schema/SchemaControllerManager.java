@@ -5,8 +5,6 @@ import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.elasticsearch.client.Client;
-import org.unipop.controller.EdgeController;
-import org.unipop.controller.VertexController;
 import org.unipop.controller.standard.BasicControllerManager;
 import org.unipop.elastic2.controller.schema.helpers.ElasticGraphConfiguration;
 import org.unipop.elastic2.controller.schema.helpers.LazyGetterFactory;
@@ -23,9 +21,9 @@ import org.unipop.elastic2.helpers.ElasticClientFactory;
 import org.unipop.elastic2.helpers.ElasticHelper;
 import org.unipop.elastic2.helpers.ElasticMutations;
 import org.unipop.elastic2.helpers.TimingAccessor;
-import org.unipop.structure.BaseElement;
-import org.unipop.structure.BaseVertex;
-import org.unipop.structure.BaseVertexProperty;
+import org.unipop.structure.UniElement;
+import org.unipop.structure.UniVertex;
+import org.unipop.structure.UniVertexProperty;
 import org.unipop.structure.UniGraph;
 
 import java.io.IOException;
@@ -65,7 +63,7 @@ public class SchemaControllerManager extends BasicControllerManager {
         lazyGetterFactory = new LazyGetterFactory(client, schemaProvider);
         this.elasticMutations = new ElasticMutations(false, client, new TimingAccessor());
 
-        this.vertexController = new SchemaVertexController(
+        this.vertexQueryController = new SchemaVertexController(
                 graph,
                 this.schemaProvider,
                 client,
@@ -74,7 +72,7 @@ public class SchemaControllerManager extends BasicControllerManager {
                 new VertexConverter(graph, schemaProvider, elasticMutations, lazyGetterFactory)
                 );
 
-        this.edgeController = new SchemaEdgeController(
+        this.edgeQueryController = new SchemaEdgeController(
                 graph,
                 this.schemaProvider,
                 client,
@@ -88,7 +86,7 @@ public class SchemaControllerManager extends BasicControllerManager {
     }
 
     @Override
-    public List<BaseElement> properties(List<BaseElement> elements) {
+    public List<UniElement> properties(List<UniElement> elements) {
         throw new NotImplementedException();
     }
 
@@ -98,27 +96,27 @@ public class SchemaControllerManager extends BasicControllerManager {
     }
 
     @Override
-    public void addPropertyToVertex(BaseVertex vertex, BaseVertexProperty vertexProperty) {
+    public void addPropertyToVertex(UniVertex vertex, UniVertexProperty vertexProperty) {
         throw new NotImplementedException();
     }
 
     @Override
-    public void removePropertyFromVertex(BaseVertex vertex, Property property) {
+    public void removePropertyFromVertex(UniVertex vertex, Property property) {
         throw new NotImplementedException();
     }
 
     @Override
-    public void removeVertex(BaseVertex vertex) {
+    public void removeVertex(UniVertex vertex) {
         throw new NotImplementedException();
     }
 
     @Override
-    public List<BaseElement> vertexProperties(List<BaseVertex> vertices) {
+    public List<UniElement> vertexProperties(List<UniVertex> vertices) {
         throw new NotImplementedException();
     }
 
     @Override
-    public void update(BaseVertex vertex, boolean force) {
+    public void update(UniVertex vertex, boolean force) {
         throw new NotImplementedException();
     }
 
@@ -137,20 +135,20 @@ public class SchemaControllerManager extends BasicControllerManager {
     }
 
     @Override
-    protected VertexController getDefaultVertexController() {
-        return this.vertexController;
+    protected VertexQueryController getDefaultVertexController() {
+        return this.vertexQueryController;
     }
 
     @Override
-    protected EdgeController getDefaultEdgeController() {
-        return this.edgeController;
+    protected EdgeQueryController getDefaultEdgeController() {
+        return this.edgeQueryController;
     }
     //endregion
 
     //region Fields
     protected GraphElementSchemaProvider schemaProvider;
-    protected VertexController vertexController;
-    protected EdgeController edgeController;
+    protected VertexQueryController vertexQueryController;
+    protected EdgeQueryController edgeQueryController;
     protected ElasticMutations elasticMutations;
     protected LazyGetterFactory lazyGetterFactory;
     protected Client client;

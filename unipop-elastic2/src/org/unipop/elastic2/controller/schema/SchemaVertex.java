@@ -2,13 +2,13 @@ package org.unipop.elastic2.controller.schema;
 
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-import org.unipop.controller.manager.ControllerProvider;
+import org.unipop.query.controller.ControllerProvider;
 import org.unipop.elastic2.controller.schema.helpers.schemaProviders.GraphElementSchemaProvider;
 import org.unipop.elastic2.controller.schema.helpers.schemaProviders.GraphVertexSchema;
 import org.unipop.elastic2.helpers.ElasticMutations;
 import org.unipop.elastic2.helpers.LazyGetter;
-import org.unipop.structure.BaseVertex;
-import org.unipop.structure.BaseVertexProperty;
+import org.unipop.structure.UniVertex;
+import org.unipop.structure.UniVertexProperty;
 import org.unipop.structure.UniGraph;
 
 import java.util.ArrayList;
@@ -21,7 +21,7 @@ import java.util.stream.StreamSupport;
 /**
  * Created by Roman on 9/21/2015.
  */
-public class SchemaVertex extends BaseVertex{
+public class SchemaVertex extends UniVertex {
     //region Constructor
     public SchemaVertex(
             Object id,
@@ -43,9 +43,9 @@ public class SchemaVertex extends BaseVertex{
     }
     //endregion
 
-    //region BaseVertex Implementation
+    //region UniVertex Implementation
     @Override
-    protected void innerAddProperty(BaseVertexProperty vertexProperty) {
+    protected void innerAddProperty(UniVertexProperty vertexProperty) {
         try {
             String writeIndex = StreamSupport.stream(schema.get().getIndices().spliterator(), false).findFirst().get();
             elasticMutations.updateElement(this, writeIndex, null, false);

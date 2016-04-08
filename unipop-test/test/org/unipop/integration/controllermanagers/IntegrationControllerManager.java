@@ -5,10 +5,8 @@ import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.unipop.controller.manager.ControllerProvider;
-import org.unipop.controller.EdgeController;
-import org.unipop.controller.Predicates;
-import org.unipop.controller.VertexController;
+import org.unipop.query.UniQuery;
+import org.unipop.query.controller.ControllerProvider;
 import org.unipop.jdbc.controller.star.SqlStarController;
 import org.unipop.jdbc.controller.star.inneredge.columnedge.ColumnEdgeController;
 import org.unipop.jdbc.controller.vertex.SqlVertexController;
@@ -22,8 +20,8 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 public class IntegrationControllerManager implements ControllerProvider {
-    private Map<String, EdgeController> edgeController;
-    private Map<String, VertexController> vertexController;
+    private Map<String, EdgeQueryController> edgeController;
+    private Map<String, VertexQueryController> vertexController;
     private Connection jdbcConnection;
 
     @Override
@@ -70,9 +68,9 @@ public class IntegrationControllerManager implements ControllerProvider {
     }
 
     @Override
-    public List<BaseElement> properties(List<BaseElement> elements) {
-        List<BaseVertex> vertices = elements.stream().filter(element -> element instanceof UniDelayedStarVertex)
-                .map(element -> ((BaseVertex) element)).collect(Collectors.toList());
+    public List<UniElement> properties(List<UniElement> elements) {
+        List<UniVertex> vertices = elements.stream().filter(element -> element instanceof UniDelayedStarVertex)
+                .map(element -> ((UniVertex) element)).collect(Collectors.toList());
 
         return vertexProperties(vertices);
 
@@ -94,24 +92,24 @@ public class IntegrationControllerManager implements ControllerProvider {
     }
 
     @Override
-    public Iterator<BaseEdge> edges(Predicates predicates) {
-        String label = getLabel(predicates);
+    public Iterator<UniEdge> edges(UniQuery uniQuery) {
+        String label = getLabel(uniQuery);
         if (label == null) {
             return edgeController.entrySet()
                     .stream()
                     .map(Map.Entry::getValue)
                     .flatMap(edgeController1 ->
                             StreamSupport.stream(Spliterators.
-                                            spliteratorUnknownSize(edgeController1.edges(predicates),
+                                            spliteratorUnknownSize(edgeController1.edges(uniQuery),
                                                     Spliterator.ORDERED),
                                     false)).collect(Collectors.toSet()).iterator();
         } else {
-            return edgeController.get(label).edges(predicates);
+            return edgeController.get(label).edges(uniQuery);
         }
     }
 
     @Override
-    public Iterator<BaseEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
+    public Iterator<UniEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, UniQuery uniQuery) {
         if (edgeLabels.length == 0) {
             return edgeController.entrySet()
                     .stream()
@@ -119,7 +117,7 @@ public class IntegrationControllerManager implements ControllerProvider {
                     .flatMap(edgeController1 ->
                             StreamSupport.stream(Spliterators.
                                             spliteratorUnknownSize(edgeController1.
-                                                            edges(vertices, direction, edgeLabels, predicates),
+                                                            edges(vertices, direction, edgeLabels, uniQuery),
                                                     Spliterator.ORDERED),
                                     false)).collect(Collectors.toSet()).iterator();
         } else {
@@ -131,39 +129,39 @@ public class IntegrationControllerManager implements ControllerProvider {
                     .flatMap(edgeController1 ->
                             StreamSupport.stream(Spliterators.
                                             spliteratorUnknownSize(edgeController1.
-                                                            edges(vertices, direction, edgeLabels, predicates),
+                                                            edges(vertices, direction, edgeLabels, uniQuery),
                                                     Spliterator.ORDERED),
                                     false)).collect(Collectors.toSet()).iterator();
         }
     }
 
     @Override
-    public long edgeCount(Predicates predicates) {
+    public long edgeCount(UniQuery uniQuery) {
         return 0;
     }
 
     @Override
-    public long edgeCount(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
+    public long edgeCount(Vertex[] vertices, Direction direction, String[] edgeLabels, UniQuery uniQuery) {
         return 0;
     }
 
     @Override
-    public Map<String, Object> edgeGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
+    public Map<String, Object> edgeGroupBy(UniQuery uniQuery, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
         return null;
     }
 
     @Override
-    public Map<String, Object> edgeGroupBy(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
+    public Map<String, Object> edgeGroupBy(Vertex[] vertices, Direction direction, String[] edgeLabels, UniQuery uniQuery, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
         return null;
     }
 
     @Override
-    public BaseEdge addEdge(Object edgeId, String label, BaseVertex outV, BaseVertex inV, Map<String, Object> properties) {
+    public UniEdge addEdge(Object edgeId, String label, UniVertex outV, UniVertex inV, Map<String, Object> properties) {
         return edgeController.get(label).addEdge(edgeId, label, outV, inV, properties);
     }
 
-    private String getLabel(Predicates predicates) {
-        for (HasContainer hasContainer : predicates.hasContainers) {
+    private String getLabel(UniQuery uniQuery) {
+        for (HasContainer hasContainer : uniQuery.hasContainers) {
             if (hasContainer.getKey().equals(T.label.getAccessor()))
                 return hasContainer.getValue().toString();
         }
@@ -171,8 +169,8 @@ public class IntegrationControllerManager implements ControllerProvider {
     }
 
     @Override
-    public Iterator<BaseVertex> vertices(Predicates predicates) {
-        String label = getLabel(predicates);
+    public Iterator<UniVertex> vertices(UniQuery uniQuery) {
+        String label = getLabel(uniQuery);
 
         if (label == null) {
             return vertexController.entrySet()
@@ -180,31 +178,31 @@ public class IntegrationControllerManager implements ControllerProvider {
                     .map(Map.Entry::getValue)
                     .flatMap(vertexController1 ->
                             StreamSupport.stream(Spliterators.
-                                            spliteratorUnknownSize(vertexController1.vertices(predicates),
+                                            spliteratorUnknownSize(vertexController1.vertices(uniQuery),
                                                     Spliterator.ORDERED),
                                     false)).collect(Collectors.toList()).iterator();
         } else {
-            return vertexController.get(label).vertices(predicates);
+            return vertexController.get(label).vertices(uniQuery);
         }
     }
 
     @Override
-    public BaseVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
+    public UniVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
         return vertexController.get(vertexLabel).vertex(direction, vertexId, vertexLabel);
     }
 
     @Override
-    public long vertexCount(Predicates predicates) {
+    public long vertexCount(UniQuery uniQuery) {
         return 0;
     }
 
     @Override
-    public Map<String, Object> vertexGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
+    public Map<String, Object> vertexGroupBy(UniQuery uniQuery, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
         return null;
     }
 
     @Override
-    public BaseVertex addVertex(Object id, String label, Map<String, Object> properties) {
+    public UniVertex addVertex(Object id, String label, Map<String, Object> properties) {
         return vertexController.get(label).addVertex(id, label, properties);
     }
 
@@ -214,27 +212,27 @@ public class IntegrationControllerManager implements ControllerProvider {
     }
 
     @Override
-    public void addPropertyToVertex(BaseVertex vertex, BaseVertexProperty vertexProperty) {
+    public void addPropertyToVertex(UniVertex vertex, UniVertexProperty vertexProperty) {
         vertexController.get(vertex.label()).addPropertyToVertex(vertex, vertexProperty);
     }
 
     @Override
-    public void removePropertyFromVertex(BaseVertex vertex, Property property) {
+    public void removePropertyFromVertex(UniVertex vertex, Property property) {
         vertexController.get(vertex.label()).removePropertyFromVertex(vertex, property);
     }
 
     @Override
-    public void removeVertex(BaseVertex vertex) {
+    public void removeVertex(UniVertex vertex) {
         vertexController.get(vertex.label()).removeVertex(vertex);
     }
 
     @Override
-    public List<BaseElement> vertexProperties(List<BaseVertex> vertices) {
-        Map<String, List<BaseVertex>> groupedElements = vertices.stream().map(baseElement -> baseElement).collect(Collectors.groupingBy(Element::label));
-        List<BaseElement> finalElements = new ArrayList<>();
+    public List<UniElement> vertexProperties(List<UniVertex> vertices) {
+        Map<String, List<UniVertex>> groupedElements = vertices.stream().map(baseElement -> baseElement).collect(Collectors.groupingBy(Element::label));
+        List<UniElement> finalElements = new ArrayList<>();
         // key = label
         groupedElements.forEach((key, value) ->{
-            Map<Object, List<BaseVertex>> groupedByResorceVertices = value.stream().collect(Collectors.groupingBy(vertex -> ((UniVertex) vertex).getTransientProperties().get("resource").value()));
+            Map<Object, List<UniVertex>> groupedByResorceVertices = value.stream().collect(Collectors.groupingBy(vertex -> ((UniVertex) vertex).getTransientProperties().get("resource").value()));
             groupedByResorceVertices.forEach((resource, vertexList) ->{
                 if (vertexController.get(key).getResource().equals(resource))
                     vertexController.get(key).vertexProperties(value).forEach(finalElements::add);
@@ -244,7 +242,7 @@ public class IntegrationControllerManager implements ControllerProvider {
     }
 
     @Override
-    public void update(BaseVertex vertex, boolean force) {
+    public void update(UniVertex vertex, boolean force) {
 
     }
 

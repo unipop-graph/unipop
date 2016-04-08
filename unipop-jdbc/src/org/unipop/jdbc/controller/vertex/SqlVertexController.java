@@ -11,8 +11,7 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.jooq.*;
 import org.jooq.impl.DSL;
-import org.unipop.controller.Predicates;
-import org.unipop.controller.VertexController;
+import org.unipop.query.UniQuery;
 import org.unipop.jdbc.helpers.SqlLazyGetter;
 import org.unipop.jdbc.utils.JooqHelper;
 import org.unipop.structure.*;
@@ -25,12 +24,12 @@ import java.util.stream.Collectors;
 import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.table;
 
-public class SqlVertexController implements VertexController {
+public class SqlVertexController implements VertexQueryController {
 
     protected DSLContext dslContext;
     protected UniGraph graph;
     protected String tableName;
-    protected RecordMapper<Record, BaseVertex> vertexMapper;
+    protected RecordMapper<Record, UniVertex> vertexMapper;
     protected int idCount = 10000;
     protected Map<Direction, SqlLazyGetter> lazyGetters;
 
@@ -58,7 +57,7 @@ public class SqlVertexController implements VertexController {
     }
 
     @Override
-    public void addPropertyToVertex(BaseVertex vertex, BaseVertexProperty vertexProperty) {
+    public void addPropertyToVertex(UniVertex vertex, UniVertexProperty vertexProperty) {
         getContext().update(table(vertex.label()))
                 .set(field(vertexProperty.key()), vertexProperty.value())
                 .where(field("ID").eq(vertex.id()))
@@ -66,7 +65,7 @@ public class SqlVertexController implements VertexController {
     }
 
     @Override
-    public void removePropertyFromVertex(BaseVertex vertex, Property property) {
+    public void removePropertyFromVertex(UniVertex vertex, Property property) {
         Object n = null;
         getContext().update(table(vertex.label()))
                 .set(field(property.key()), n)
@@ -75,17 +74,17 @@ public class SqlVertexController implements VertexController {
     }
 
     @Override
-    public void removeVertex(BaseVertex vertex) {
+    public void removeVertex(UniVertex vertex) {
         getContext().delete(table(vertex.label()))
                 .where(field("ID").equal(vertex.id()))
                 .execute();
     }
 
     @Override
-    public List<BaseElement> vertexProperties(Iterator<BaseVertex> vertices) {
+    public List<UniElement> vertexProperties(Iterator<UniVertex> vertices) {
         if (vertices.isEmpty())
             return new ArrayList<>();
-        Map<String, List<BaseVertex>> verticesByIds = vertices.stream().filter(vertex1 -> vertex1.label().equals(tableName)).filter(vertex -> !vertex.properties().hasNext())
+        Map<String, List<UniVertex>> verticesByIds = vertices.stream().filter(vertex1 -> vertex1.label().equals(tableName)).filter(vertex -> !vertex.properties().hasNext())
                 .collect(Collectors.groupingBy(vertex -> vertex.id().toString()));
 
         if (!verticesByIds.isEmpty()) {
@@ -94,19 +93,19 @@ public class SqlVertexController implements VertexController {
             select.fetch().forEach(record -> {
                 Map<String, Object> stringObjectMap = new HashMap<>();
                 record.intoMap().forEach((key, value) -> stringObjectMap.put(key.toLowerCase(), value));
-                List<BaseVertex> vertexList = verticesByIds.get(stringObjectMap.get("id"));
+                List<UniVertex> vertexList = verticesByIds.get(stringObjectMap.get("id"));
                 stringObjectMap.forEach((key, value) -> addProperty(vertexList, key, value));
             });
         }
-        return vertices.stream().map(vertex -> ((BaseElement) vertex)).collect(Collectors.toList());
+        return vertices.stream().map(vertex -> ((UniElement) vertex)).collect(Collectors.toList());
     }
 
-    protected void addProperty(List<BaseVertex> vertices, String key, Object value) {
+    protected void addProperty(List<UniVertex> vertices, String key, Object value) {
         vertices.forEach(vertex -> vertex.addPropertyLocal(key, value));
     }
 
     @Override
-    public void update(BaseVertex vertex, boolean force) {
+    public void update(UniVertex vertex, boolean force) {
         throw new NotImplementedException();
     }
 
@@ -125,16 +124,16 @@ public class SqlVertexController implements VertexController {
         return dslContext;
     }
 
-    public SelectJoinStep<Record> createSelect(Predicates predicates) {
+    public SelectJoinStep<Record> createSelect(UniQuery uniQuery) {
         SelectJoinStep<Record> select = dslContext.select().from(tableName);
-        predicates.hasContainers.forEach(hasContainer -> select.where(JooqHelper.createCondition(hasContainer)));
-        select.limit(0, predicates.limitHigh < Long.MAX_VALUE ? (int) predicates.limitHigh : Integer.MAX_VALUE);
+        uniQuery.hasContainers.forEach(hasContainer -> select.where(JooqHelper.createCondition(hasContainer)));
+        select.limit(0, uniQuery.limitHigh < Long.MAX_VALUE ? (int) uniQuery.limitHigh : Integer.MAX_VALUE);
         return select;
     }
 
     @Override
-    public Iterator<BaseVertex> vertices(Predicates predicates) {
-        SelectJoinStep<Record> select = createSelect(predicates);
+    public Iterator<UniVertex> vertices(UniQuery uniQuery) {
+        SelectJoinStep<Record> select = createSelect(uniQuery);
         try {
             return select.fetch(vertexMapper).iterator();
         } catch (Exception e) {
@@ -153,7 +152,7 @@ public class SqlVertexController implements VertexController {
     }
 
     @Override
-    public BaseVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
+    public UniVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
         //return dslContext.select().from(tableName).where(field("id").eq(vertexId)).fetchOne(vertexMapper);
         UniDelayedVertex uniVertex = new UniDelayedVertex(vertexId, vertexLabel, graph.getControllerManager(), graph);
         uniVertex.addTransientProperty(new TransientProperty(uniVertex, "resource", getResource()));
@@ -161,17 +160,17 @@ public class SqlVertexController implements VertexController {
     }
 
     @Override
-    public long vertexCount(Predicates predicates) {
+    public long vertexCount(UniQuery uniQuery) {
         return 0;
     }
 
     @Override
-    public Map<String, Object> vertexGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
+    public Map<String, Object> vertexGroupBy(UniQuery uniQuery, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
         return null;
     }
 
     @Override
-    public BaseVertex addVertex(Object id, String label, Map<String, Object> properties) {
+    public UniVertex addVertex(Object id, String label, Map<String, Object> properties) {
         if (id == null) id = idCount++; //TODO: make this smarter...
         properties.putIfAbsent("id", id);
 
@@ -189,10 +188,10 @@ public class SqlVertexController implements VertexController {
 
     private SqlVertexController self = this;
 
-    private class VertexMapper implements RecordMapper<Record, BaseVertex> {
+    private class VertexMapper implements RecordMapper<Record, UniVertex> {
 
         @Override
-        public BaseVertex map(Record record) {
+        public UniVertex map(Record record) {
             //Change keys to lower-case. TODO: make configurable mapping
             Map<String, Object> stringObjectMap = new HashMap<>();
             record.intoMap().forEach((key, value) -> stringObjectMap.put(key.toLowerCase(), value));

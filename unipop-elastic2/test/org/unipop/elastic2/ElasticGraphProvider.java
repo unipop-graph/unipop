@@ -8,7 +8,6 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.node.Node;
-import org.unipop.elastic2.controllermanagers.ElasticStarControllerManager;
 import org.unipop.elastic2.helpers.ElasticClientFactory;
 import org.unipop.elastic2.helpers.ElasticHelper;
 import org.unipop.process.strategyregistrar.StandardStrategyRegistrar;
@@ -27,12 +26,12 @@ public class ElasticGraphProvider extends AbstractGraphProvider {
     private static String CLUSTER_NAME = "test";
 
     private static final Set<Class> IMPLEMENTATION = new HashSet<Class>() {{
-        add(BaseEdge.class);
-        add(BaseElement.class);
+        add(UniEdge.class);
+        add(UniElement.class);
         add(UniGraph.class);
-        add(BaseProperty.class);
-        add(BaseVertex.class);
-        add(BaseVertexProperty.class);
+        add(UniProperty.class);
+        add(UniVertex.class);
+        add(UniVertexProperty.class);
     }};
 
     private final Client client;

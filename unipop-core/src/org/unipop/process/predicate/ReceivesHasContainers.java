@@ -8,4 +8,5 @@ import java.util.List;
 public interface ReceivesHasContainers<S, E> extends Step<S, E> {
     void addHasContainer(HasContainer hasContainer);
     List<HasContainer> getHasContainers();
+    void setLimit(int limit);
 }

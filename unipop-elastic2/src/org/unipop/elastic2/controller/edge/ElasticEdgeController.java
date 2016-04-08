@@ -12,13 +12,13 @@ import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.javatuples.Pair;
-import org.unipop.controller.Predicates;
+import org.unipop.query.UniQuery;
 import org.unipop.elastic2.controller.schema.helpers.AggregationBuilder;
 import org.unipop.elastic2.controller.schema.helpers.SearchAggregationIterable;
 import org.unipop.elastic2.controller.schema.helpers.aggregationConverters.CompositeAggregation;
 import org.unipop.elastic2.helpers.*;
-import org.unipop.structure.BaseEdge;
-import org.unipop.structure.BaseVertex;
+import org.unipop.structure.UniEdge;
+import org.unipop.structure.UniVertex;
 import org.unipop.structure.UniGraph;
 
 import java.util.Arrays;
@@ -26,7 +26,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-public class ElasticEdgeController implements org.unipop.controller.EdgeController {
+public class ElasticEdgeController implements EdgeQueryController {
     private UniGraph graph;
     private Client client;
     private ElasticMutations elasticMutations;
@@ -60,36 +60,36 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
     }
 
     @Override
-    public Iterator<BaseEdge> edges(Predicates predicates) {
+    public Iterator<UniEdge> edges(UniQuery uniQuery) {
         elasticMutations.refresh(indexName);
-        BoolQueryBuilder boolQuery = ElasticHelper.createQueryBuilder(predicates.hasContainers);
+        BoolQueryBuilder boolQuery = ElasticHelper.createQueryBuilder(uniQuery.hasContainers);
         boolQuery.must(QueryBuilders.existsQuery(ElasticEdge.InId));
 
-        return new QueryIterator<>(boolQuery, scrollSize, predicates.limitHigh, client, this::createEdge, timing, indexName);
+        return new QueryIterator<>(boolQuery, scrollSize, uniQuery.limitHigh, client, this::createEdge, timing, indexName);
 //        return new QueryIterator<>(boolQuery, scrollSize, 10000, client, this::createEdge, timing, indexName);
     }
 
     @Override
-    public Iterator<BaseEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
+    public Iterator<UniEdge> edges(Vertex[] vertices, Direction direction, String[] edgeLabels, UniQuery uniQuery) {
         elasticMutations.refresh(indexName);
 
         Object[] vertexIds = new Object[vertices.length];
         for(int i = 0; i < vertices.length; i++) vertexIds[i] = vertices[i].id();
 
         if (edgeLabels != null && edgeLabels.length > 0)
-            predicates.hasContainers.add(new HasContainer(T.label.getAccessor(), P.within(edgeLabels)));
+            uniQuery.hasContainers.add(new HasContainer(T.label.getAccessor(), P.within(edgeLabels)));
 
-        BoolQueryBuilder boolQuery = ElasticHelper.createQueryBuilder(predicates.hasContainers);
+        BoolQueryBuilder boolQuery = ElasticHelper.createQueryBuilder(uniQuery.hasContainers);
         addQuerysByDirection(direction, vertexIds, boolQuery);
 
-        return new QueryIterator<>(boolQuery, scrollSize, predicates.limitHigh, client, this::createEdge, timing, indexName);
+        return new QueryIterator<>(boolQuery, scrollSize, uniQuery.limitHigh, client, this::createEdge, timing, indexName);
 //        return new QueryIterator<>(boolQuery, scrollSize, 10000, client, this::createEdge, timing, indexName);
     }
 
     @Override
-    public long edgeCount(Predicates predicates) {
+    public long edgeCount(UniQuery uniQuery) {
         elasticMutations.refresh(indexName);
-        BoolQueryBuilder boolQuery = ElasticHelper.createQueryBuilder(predicates.hasContainers);
+        BoolQueryBuilder boolQuery = ElasticHelper.createQueryBuilder(uniQuery.hasContainers);
         boolQuery.must(QueryBuilders.existsQuery(ElasticEdge.InId));
 
         long count = 0;
@@ -107,17 +107,17 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
     }
 
     @Override
-    public long edgeCount(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates) {
+    public long edgeCount(Vertex[] vertices, Direction direction, String[] edgeLabels, UniQuery uniQuery) {
         elasticMutations.refresh(indexName);
 
         Object[] vertexIds = new Object[vertices.length];
         for(int i = 0; i < vertices.length; i++) vertexIds[i] = vertices[i].id();
 
         if (edgeLabels != null && edgeLabels.length > 0)
-            predicates.hasContainers.add(new HasContainer(T.label.getAccessor(), P.within(edgeLabels)));
+            uniQuery.hasContainers.add(new HasContainer(T.label.getAccessor(), P.within(edgeLabels)));
 
 
-        BoolQueryBuilder boolQuery = ElasticHelper.createQueryBuilder(predicates.hasContainers);
+        BoolQueryBuilder boolQuery = ElasticHelper.createQueryBuilder(uniQuery.hasContainers);
         AggregationBuilder aggregationBuilder = new AggregationBuilder();
 
         if (direction == Direction.IN) {
@@ -154,9 +154,9 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
     }
 
     @Override
-    public Map<String, Object> edgeGroupBy(Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
+    public Map<String, Object> edgeGroupBy(UniQuery uniQuery, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
         elasticMutations.refresh(indexName);
-        BoolQueryBuilder boolQuery = ElasticHelper.createQueryBuilder(predicates.hasContainers);
+        BoolQueryBuilder boolQuery = ElasticHelper.createQueryBuilder(uniQuery.hasContainers);
         boolQuery.must(QueryBuilders.existsQuery(ElasticEdge.InId));
 
         AggregationBuilder aggregationBuilder = new AggregationBuilder();
@@ -188,16 +188,16 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
     }
 
     @Override
-    public Map<String, Object> edgeGroupBy(Vertex[] vertices, Direction direction, String[] edgeLabels, Predicates predicates, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
+    public Map<String, Object> edgeGroupBy(Vertex[] vertices, Direction direction, String[] edgeLabels, UniQuery uniQuery, Traversal keyTraversal, Traversal valuesTraversal, Traversal reducerTraversal) {
         elasticMutations.refresh(indexName);
 
         Object[] vertexIds = new Object[vertices.length];
         for(int i = 0; i < vertices.length; i++) vertexIds[i] = vertices[i].id();
 
         if (edgeLabels != null && edgeLabels.length > 0)
-            predicates.hasContainers.add(new HasContainer(T.label.getAccessor(), P.within(edgeLabels)));
+            uniQuery.hasContainers.add(new HasContainer(T.label.getAccessor(), P.within(edgeLabels)));
 
-        BoolQueryBuilder boolQuery = ElasticHelper.createQueryBuilder(predicates.hasContainers);
+        BoolQueryBuilder boolQuery = ElasticHelper.createQueryBuilder(uniQuery.hasContainers);
         addQuerysByDirection(direction, vertexIds, boolQuery);
 
         AggregationBuilder aggregationBuilder = new AggregationBuilder();
@@ -229,7 +229,7 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
     }
 
     @Override
-    public BaseEdge addEdge(Object edgeId, String label, BaseVertex outV, BaseVertex inV, Map<String, Object> properties) {
+    public UniEdge addEdge(Object edgeId, String label, UniVertex outV, UniVertex inV, Map<String, Object> properties) {
         ElasticEdge elasticEdge = new ElasticEdge(edgeId, label, properties, outV, inV,this, graph, elasticMutations, indexName);
         try {
             elasticMutations.addElement(elasticEdge, indexName, null, true);
@@ -240,10 +240,10 @@ public class ElasticEdgeController implements org.unipop.controller.EdgeControll
         return elasticEdge;
     }
 
-    private BaseEdge createEdge(Object id, String label, Map<String, Object> fields) {
-        BaseVertex outV = this.graph.getControllerManager().vertex(Direction.OUT, fields.get(ElasticEdge.OutId), fields.get(ElasticEdge.OutLabel).toString());
-        BaseVertex inV = this.graph.getControllerManager().vertex(Direction.IN, fields.get(ElasticEdge.InId), fields.get(ElasticEdge.InLabel).toString());
-        BaseEdge edge = new ElasticEdge(id, label, fields, outV, inV, this,  graph, elasticMutations, indexName);
+    private UniEdge createEdge(Object id, String label, Map<String, Object> fields) {
+        UniVertex outV = this.graph.getControllerManager().vertex(Direction.OUT, fields.get(ElasticEdge.OutId), fields.get(ElasticEdge.OutLabel).toString());
+        UniVertex inV = this.graph.getControllerManager().vertex(Direction.IN, fields.get(ElasticEdge.InId), fields.get(ElasticEdge.InLabel).toString());
+        UniEdge edge = new ElasticEdge(id, label, fields, outV, inV, this,  graph, elasticMutations, indexName);
         return edge;
     }
 }

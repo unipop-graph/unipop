@@ -6,7 +6,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.search.SearchHit;
-import org.unipop.controller.Predicates;
+import org.unipop.query.UniQuery;
 import org.unipop.elastic2.controller.schema.helpers.*;
 import org.unipop.elastic2.controller.schema.helpers.elementConverters.ElementConverter;
 import org.unipop.elastic2.controller.schema.helpers.elementConverters.utils.ElementFactory;
@@ -54,8 +54,8 @@ public abstract class SchemaElementController {
 
     protected abstract Iterator<? extends Element> transformSearchHitsToElements(Iterable<SearchHit> scrollIterable);
 
-    protected Iterator<? extends Element> elements(Predicates predicates, Class elementType) {
-        SearchBuilder searchBuilder = buildElementsQuery(predicates, elementType);
+    protected Iterator<? extends Element> elements(UniQuery uniQuery, Class elementType) {
+        SearchBuilder searchBuilder = buildElementsQuery(uniQuery, elementType);
         Iterable<SearchHit> scrollIterable = getSearchHits(searchBuilder);
         return transformSearchHitsToElements(scrollIterable);
     }
@@ -71,11 +71,11 @@ public abstract class SchemaElementController {
         return searchBuilder;
     }
 
-    protected SearchBuilder buildElementsQuery(Predicates predicates, Class elementType) {
+    protected SearchBuilder buildElementsQuery(UniQuery uniQuery, Class elementType) {
         SearchBuilder searchBuilder = buildElementsQuery(elementType);
 
-        translateHasContainers(searchBuilder, predicates.hasContainers);
-//        translateLimits(predicates.limitHigh, searchBuilder);
+        translateHasContainers(searchBuilder, uniQuery.hasContainers);
+//        translateLimits(uniQuery.limitHigh, searchBuilder);
         translateLimits(10000, searchBuilder);
         return searchBuilder;
     }
