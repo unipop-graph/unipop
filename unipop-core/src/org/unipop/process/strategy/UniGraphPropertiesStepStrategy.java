@@ -15,6 +15,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.unipop.process.UniGraphCountStep;
 import org.unipop.process.UniGraphPropertiesSideEffectStep;
+import org.unipop.process.UniGraphVertexStepWithProperties;
 import org.unipop.structure.UniGraph;
 
 import java.util.HashSet;
@@ -52,18 +53,24 @@ public class UniGraphPropertiesStepStrategy extends AbstractTraversalStrategy<Tr
 
 
         TraversalHelper.getStepsOfClass(PropertiesStep.class, traversal).forEach(propertiesStep -> {
-            UniGraphPropertiesSideEffectStep uniGraphPropertiesSideEffectStep = new UniGraphPropertiesSideEffectStep(traversal, uniGraph.getControllerManager());
-            TraversalHelper.insertBeforeStep(uniGraphPropertiesSideEffectStep, propertiesStep, traversal);
+            if (!(propertiesStep.getPreviousStep() instanceof UniGraphVertexStepWithProperties)) {
+                UniGraphPropertiesSideEffectStep uniGraphPropertiesSideEffectStep = new UniGraphPropertiesSideEffectStep(traversal, uniGraph.getControllerManager());
+                TraversalHelper.insertBeforeStep(uniGraphPropertiesSideEffectStep, propertiesStep, traversal);
+            }
         });
 
         TraversalHelper.getStepsOfClass(HasStep.class, traversal).forEach(hasStep -> {
-            UniGraphPropertiesSideEffectStep uniGraphPropertiesSideEffectStep = new UniGraphPropertiesSideEffectStep(traversal, uniGraph.getControllerManager());
-            TraversalHelper.insertBeforeStep(uniGraphPropertiesSideEffectStep, hasStep, traversal);
+            if (!(hasStep.getPreviousStep() instanceof UniGraphVertexStepWithProperties)) {
+                UniGraphPropertiesSideEffectStep uniGraphPropertiesSideEffectStep = new UniGraphPropertiesSideEffectStep(traversal, uniGraph.getControllerManager());
+                TraversalHelper.insertBeforeStep(uniGraphPropertiesSideEffectStep, hasStep, traversal);
+            }
         });
 
         TraversalHelper.getStepsOfAssignableClass(FilterStep.class, traversal).forEach(filterStep -> {
-            UniGraphPropertiesSideEffectStep uniGraphPropertiesSideEffectStep = new UniGraphPropertiesSideEffectStep(traversal, uniGraph.getControllerManager());
-            TraversalHelper.insertBeforeStep(uniGraphPropertiesSideEffectStep, filterStep, traversal);
+            if (!(filterStep.getPreviousStep() instanceof UniGraphVertexStepWithProperties)) {
+                UniGraphPropertiesSideEffectStep uniGraphPropertiesSideEffectStep = new UniGraphPropertiesSideEffectStep(traversal, uniGraph.getControllerManager());
+                TraversalHelper.insertBeforeStep(uniGraphPropertiesSideEffectStep, filterStep, traversal);
+            }
         });
 
 //        TraversalHelper.getStepsOfClass(PropertyMapStep.class, traversal).forEach(propertyMapStep -> {
@@ -72,25 +79,33 @@ public class UniGraphPropertiesStepStrategy extends AbstractTraversalStrategy<Tr
 //        });
 
         TraversalHelper.getStepsOfClass(PropertyValueStep.class, traversal).forEach(propertyValueStep -> {
-            UniGraphPropertiesSideEffectStep uniGraphPropertiesSideEffectStep = new UniGraphPropertiesSideEffectStep(traversal, uniGraph.getControllerManager());
-            TraversalHelper.insertBeforeStep(uniGraphPropertiesSideEffectStep, propertyValueStep, traversal);
+            if (!(propertyValueStep.getPreviousStep() instanceof UniGraphVertexStepWithProperties)) {
+                UniGraphPropertiesSideEffectStep uniGraphPropertiesSideEffectStep = new UniGraphPropertiesSideEffectStep(traversal, uniGraph.getControllerManager());
+                TraversalHelper.insertBeforeStep(uniGraphPropertiesSideEffectStep, propertyValueStep, traversal);
+            }
         });
 
         TraversalHelper.getStepsOfAssignableClass(MapStep.class, traversal).forEach(mapStep -> {
-            UniGraphPropertiesSideEffectStep uniGraphPropertiesSideEffectStep = new UniGraphPropertiesSideEffectStep(traversal, uniGraph.getControllerManager());
-            TraversalHelper.insertBeforeStep(uniGraphPropertiesSideEffectStep, mapStep, traversal);
+            if (!(mapStep.getPreviousStep() instanceof UniGraphVertexStepWithProperties)) {
+                UniGraphPropertiesSideEffectStep uniGraphPropertiesSideEffectStep = new UniGraphPropertiesSideEffectStep(traversal, uniGraph.getControllerManager());
+                TraversalHelper.insertBeforeStep(uniGraphPropertiesSideEffectStep, mapStep, traversal);
+            }
         });
 
         TraversalHelper.getStepsOfAssignableClass(ReducingBarrierStep.class, traversal).forEach(reducingBarrierStep -> {
-            if (!(reducingBarrierStep instanceof UniGraphCountStep)) {
-                UniGraphPropertiesSideEffectStep uniGraphPropertiesSideEffectStep = new UniGraphPropertiesSideEffectStep(traversal, uniGraph.getControllerManager());
-                TraversalHelper.insertBeforeStep(uniGraphPropertiesSideEffectStep, reducingBarrierStep, traversal);
+            if (!(reducingBarrierStep.getPreviousStep() instanceof UniGraphVertexStepWithProperties)) {
+                if (!(reducingBarrierStep instanceof UniGraphCountStep)) {
+                    UniGraphPropertiesSideEffectStep uniGraphPropertiesSideEffectStep = new UniGraphPropertiesSideEffectStep(traversal, uniGraph.getControllerManager());
+                    TraversalHelper.insertBeforeStep(uniGraphPropertiesSideEffectStep, reducingBarrierStep, traversal);
+                }
             }
         });
 
         TraversalHelper.getStepsOfAssignableClass(SideEffectStep.class, traversal).forEach(sideEffectStep -> {
-            UniGraphPropertiesSideEffectStep uniGraphPropertiesSideEffectStep = new UniGraphPropertiesSideEffectStep(traversal, uniGraph.getControllerManager());
-            TraversalHelper.insertBeforeStep(uniGraphPropertiesSideEffectStep, sideEffectStep, traversal);
+            if (!(sideEffectStep.getPreviousStep() instanceof UniGraphVertexStepWithProperties)) {
+                UniGraphPropertiesSideEffectStep uniGraphPropertiesSideEffectStep = new UniGraphPropertiesSideEffectStep(traversal, uniGraph.getControllerManager());
+                TraversalHelper.insertBeforeStep(uniGraphPropertiesSideEffectStep, sideEffectStep, traversal);
+            }
         });
 
         Optional<Step> step = TraversalHelper.getLastStepOfAssignableClass(Step.class, traversal);
@@ -102,6 +117,7 @@ public class UniGraphPropertiesStepStrategy extends AbstractTraversalStrategy<Tr
                     !(step.get() instanceof PropertyMapStep) &&
                     !(step.get() instanceof PropertyValueStep) &&
                     !(step.get() instanceof RepeatStep.RepeatEndStep) &&
+                    !(step.get() instanceof UniGraphVertexStepWithProperties) &&
                     !(step.get() instanceof UniGraphCountStep))
                 TraversalHelper.insertAfterStep(uniGraphPropertiesSideEffectStep, step.get(), traversal);
         }

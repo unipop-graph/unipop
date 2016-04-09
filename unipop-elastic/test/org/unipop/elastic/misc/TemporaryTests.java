@@ -37,7 +37,8 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void test() {
-        Traversal traversal = g.V().repeat(groupCount("m").by("name").out()).times(2).cap("m");
+        Traversal traversal = g.V().repeat(out()).times(2);//.tail(7);
+//        Traversal traversal = g.V().both().both().both();
         check(traversal);
     }
 

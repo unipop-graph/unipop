@@ -1,5 +1,6 @@
 package org.unipop.process;
 
+import org.apache.log4j.lf5.util.StreamUtils;
 import org.unipop.controller.Predicates;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
@@ -11,10 +12,13 @@ import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.unipop.controllerprovider.ControllerManager;
 import org.unipop.structure.BaseEdge;
+import org.unipop.structure.BaseElement;
 import org.unipop.structure.BaseVertex;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, E> {
     private final Predicates predicates;
@@ -44,6 +48,24 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
         this.bulk = getTraversal().getGraph().get().configuration().getInt("bulk", 100);
     }
 
+    public UniGraphVertexStep(Direction direction, Class returnClass, Predicates predicates, Set<String> labels, String[] edgeLabels, ControllerManager controllerManager, Traversal.Admin traversal){
+        super(traversal);
+        this.direction = direction;
+        this.returnClass = returnClass;
+        this.predicates = predicates;
+        this.controllerManager = controllerManager;
+        labels.forEach(label -> this.addLabel(label.toString()));
+        predicates.labels.forEach(this::addLabel);
+        this.edgeLabels = edgeLabels;
+        if (getEdgeLabels().length > 0)
+            this.getPredicates().hasContainers.add(new HasContainer("~label", P.within(getEdgeLabels())));
+
+        Optional<StandardTraversalMetrics> metrics = this.getTraversal().asAdmin().getSideEffects().<StandardTraversalMetrics>get(TraversalMetrics.METRICS_KEY);
+        if (metrics.isPresent()) this.metrics = (MutableMetrics) metrics.get().getMetrics(this.getId());
+
+        this.bulk = getTraversal().getGraph().get().configuration().getInt("bulk", 100);
+    }
+
     @Override
     protected Traverser<E> processNextStart() {
         while (!results.hasNext() && starts.hasNext())
@@ -55,38 +77,31 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
         throw FastNoSuchElementException.instance();
     }
 
+    protected Iterator<BaseEdge> getEdges(List<BaseVertex> vertices){
+        return controllerManager.edges(vertices.toArray(new BaseVertex[0]), getDirection(), getEdgeLabels(), getPredicates());
+    }
+
     private Iterator<Traverser<E>> query(Iterator<Traverser.Admin<Vertex>> traversers) {
+        ResultsContainer results = new ResultsContainer();
         List<Traverser.Admin<Vertex>> copyTraversers = new ArrayList<>();
         List<BaseVertex> vertices = new ArrayList<>();
 
-        List<List<BaseVertex>> bulks = new ArrayList<>();
-
-        while (traversers.hasNext()) {
-            while (traversers.hasNext() && vertices.size() <= bulk) {
-                Traverser.Admin<Vertex> traverser = traversers.next();
-                vertices.add((BaseVertex) traverser.get());
-                copyTraversers.add(traverser);
-            }
-            bulks.add(vertices);
-            vertices = new ArrayList<>();
+        while(traversers.hasNext() && vertices.size() <= bulk)
+        {
+            Traverser.Admin<Vertex> traverser = traversers.next();
+            vertices.add((BaseVertex) traverser.get());
+            copyTraversers.add(traverser);
         }
-        Stream<ResultsContainer> resultsContainerStream = bulks.parallelStream().map(vertexBulk -> {
-            ResultsContainer bulkResults = new ResultsContainer();
-            bulkResults.addResults(controllerManager.edges(vertexBulk.toArray(new BaseVertex[0]), getDirection(), getEdgeLabels(), getPredicates()));
-            return bulkResults;
-        });
 
-        Stream<Traverser<E>> traverserStream = resultsContainerStream.flatMap(resultsContainer -> {
-            List<Traverser<E>> returnTraversers = new ArrayList<>();
-            copyTraversers.forEach(traverser -> {
-                ArrayList<E> list = resultsContainer.get(traverser.get().id().toString());
-                if (list != null) for (E element : list)
-                    returnTraversers.add(traverser.split(element, this));
-            });
-            return returnTraversers.stream();
-        });
+        results.addResults(getEdges(vertices));
 
-        return traverserStream.iterator();
+        List<Traverser<E>> returnTraversers = new ArrayList<>();
+        copyTraversers.forEach(traverser -> {
+            ArrayList<E> list = results.get(traverser.get().id().toString());
+            if (list != null) for (E element : list)
+                returnTraversers.add(traverser.split(element, this));
+        });
+        return returnTraversers.iterator();
     }
 
     private class ResultsContainer {
