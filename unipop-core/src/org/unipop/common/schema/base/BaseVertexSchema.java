@@ -23,7 +23,7 @@ public class BaseVertexSchema extends BaseElementSchema<Vertex> implements Verte
     }
 
     @Override
-    public PredicatesHolder toVertexPredicates(List<Vertex> vertices) {
-        return null;
+    public PredicatesHolder toPredicates(List<Vertex> vertices) {
+
     }
 }

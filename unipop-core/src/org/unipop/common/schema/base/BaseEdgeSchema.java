@@ -10,7 +10,6 @@ import org.unipop.common.schema.property.PropertySchema;
 import org.unipop.structure.UniEdge;
 import org.unipop.structure.UniGraph;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -36,27 +35,24 @@ public class BaseEdgeSchema extends BaseElementSchema<Edge> implements EdgeSchem
     public Map<String, Object> toFields(Edge edge) {
         Map<String, Object> edgeFields = super.toFields(edge);
         Map<String, Object> inFields = inVertexSchema.toFields(edge.outVertex());
+        edgeFields.putAll(inFields);
         Map<String, Object> outFields = outVertexSchema.toFields(edge.inVertex());
-        Map<String, Object> fields = mergeFields(edgeFields, inFields, outFields);
-        return fields;
+        edgeFields.putAll(outFields);
+        return edgeFields;
     }
 
     @Override
     public PredicatesHolder toPredicates(PredicatesHolder predicates, List<Vertex> vertices, Direction direction) {
         PredicatesHolder edgePredicates = this.toPredicates(predicates);
-        if(direction.equals(Direction.OUT)) edgePredicates.add(this.outVertexSchema.toVertexPredicates(vertices));
-        else if(direction.equals(Direction.IN)) edgePredicates.add(this.inVertexSchema.toVertexPredicates(vertices));
+        if(direction.equals(Direction.OUT)) edgePredicates.add(this.outVertexSchema.toPredicates(vertices));
+        else if(direction.equals(Direction.IN)) edgePredicates.add(this.inVertexSchema.toPredicates(vertices));
         else {
             PredicatesHolder vertexPredicates = new PredicatesHolder(PredicatesHolder.Clause.Or);
-            vertexPredicates.add(this.outVertexSchema.toVertexPredicates(vertices));
-            vertexPredicates.add(this.inVertexSchema.toVertexPredicates(vertices));
+            vertexPredicates.add(this.outVertexSchema.toPredicates(vertices));
+            vertexPredicates.add(this.inVertexSchema.toPredicates(vertices));
             edgePredicates.add(vertexPredicates);
         }
         return edgePredicates;
-    }
-
-
-    private Map<String, Object> mergeFields(Map<String, Object>... fieldsArray) {
     }
 
     @Override

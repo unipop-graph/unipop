@@ -1,4 +1,4 @@
-package org.unipop.elastic.helpers;
+package org.unipop.elastic.common;
 
 import com.spatial4j.core.shape.*;
 import org.apache.tinkerpop.gremlin.process.traversal.P;

@@ -7,5 +7,5 @@ import org.unipop.query.predicates.PredicatesHolder;
 import java.util.List;
 
 public interface VertexSchema extends ElementSchema<Vertex> {
-    PredicatesHolder toVertexPredicates(List<Vertex> vertices);
+    PredicatesHolder toPredicates(List<Vertex> vertices);
 }
