@@ -2,7 +2,6 @@ package org.unipop.common.schema.base;
 
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.unipop.query.predicates.PredicatesHolder;
-import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.common.schema.VertexSchema;
 import org.unipop.common.schema.property.PropertySchema;
 import org.unipop.structure.UniGraph;
@@ -17,13 +16,13 @@ public class BaseVertexSchema extends BaseElementSchema<Vertex> implements Verte
     }
 
     @Override
-    public Vertex fromFields(Map fields) {
-        Map properties = getProperties(fields);
+    public Vertex fromFields(Map<String, Object> fields) {
+        Map<String, Object> properties = getProperties(fields);
         return new UniVertex(properties, graph);
     }
 
     @Override
-    public PredicatesHolder toPredicates(List<Vertex> vertices) {
+    public PredicatesHolder toPredicates(List<? extends Vertex> vertices) {
 
     }
 }

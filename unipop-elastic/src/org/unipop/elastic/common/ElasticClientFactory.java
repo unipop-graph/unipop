@@ -1,6 +1,5 @@
 package org.unipop.elastic.common;
 
-import org.apache.commons.configuration.Configuration;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
@@ -8,6 +7,7 @@ import org.elasticsearch.common.settings.*;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.node.*;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -16,17 +16,17 @@ import java.util.concurrent.ExecutionException;
 public class ElasticClientFactory {
 
     public static class ClientType {
-        public static String TRANSPORT_CLIENT = "TRANSPORT_CLIENT";
+        public static String TRANSPORT = "TRANSPORT";
         public static String NODE_CLIENT = "NODE_CLIENT";
         public static String NODE = "NODE";
     }
 
-    public static Client create(Configuration configuration) throws ExecutionException, InterruptedException {
-        String clientType = configuration.getString("elasticsearch.client", ClientType.NODE);
-        String clusterName = configuration.getString("elasticsearch.cluster.name", "elasticsearch");
+    public static Client create(JSONObject configuration) throws ExecutionException, InterruptedException {
+        String clientType = configuration.optString("client", ClientType.NODE);
+        String clusterName = configuration.optString("clusterName", "elasticsearch");
 
-        if (clientType.equals(ClientType.TRANSPORT_CLIENT)) {
-            String concatenatedAddresses = configuration.getString("elasticsearch.cluster.address", "127.0.0.1:9300");
+        if (clientType.equals(ClientType.TRANSPORT)) {
+            String concatenatedAddresses = configuration.optString("address", "127.0.0.1:9300");
             String[] addresses = concatenatedAddresses.split(",");
             InetSocketTransportAddress[] inetSocketTransportAddresses = new InetSocketTransportAddress[addresses.length];
             for(int i = 0; i < addresses.length; i++) {
@@ -38,7 +38,7 @@ public class ElasticClientFactory {
             return createTransportClient(clusterName, inetSocketTransportAddresses);
         }
         else{
-            String port = configuration.getString("elasticsearch.cluster.port", "9300");
+            String port = configuration.optString("elasticsearch.cluster.port", "9300");
             return createNode(clusterName, clientType.equals(ClientType.NODE_CLIENT), Integer.parseInt(port)).client();
         }
     }

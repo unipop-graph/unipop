@@ -8,6 +8,7 @@ import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.unipop.common.util.StreamUtils;
 import org.unipop.query.mutation.AddEdgeQuery;
 import org.unipop.query.mutation.PropertyQuery;
+import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.search.SearchVertexQuery;
 
 import java.util.Arrays;
@@ -36,7 +37,9 @@ public class UniVertex extends UniElement implements Vertex {
     @Override
     public Iterator<Edge> edges(Direction direction, String... edgeLabels) {
         HasContainer labelPredicate = new HasContainer(T.label.getAccessor(), P.within(edgeLabels));
-        SearchVertexQuery searchVertexQuery = new SearchVertexQuery(Edge.class, Arrays.asList(this), direction, Arrays.asList(labelPredicate), 0, null);
+        PredicatesHolder predicatesHolder = new PredicatesHolder(PredicatesHolder.Clause.And);
+        predicatesHolder.add(labelPredicate);
+        SearchVertexQuery searchVertexQuery = new SearchVertexQuery(Edge.class, Arrays.asList(this), direction, predicatesHolder, 0, null);
         return graph.getControllerManager().getControllers(SearchVertexQuery.SearchVertexController.class).stream()
                 .<Iterator<Edge>>map(controller -> controller.search(searchVertexQuery))
                 .flatMap(StreamUtils::asStream)

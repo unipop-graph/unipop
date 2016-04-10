@@ -14,6 +14,7 @@ import org.unipop.query.controller.ControllerManager;
 import org.unipop.process.strategyregistrar.StandardStrategyRegistrar;
 import org.unipop.process.strategyregistrar.StrategyRegistrar;
 import org.unipop.query.mutation.AddVertexQuery;
+import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.search.SearchQuery;
 
 import java.util.*;
@@ -176,8 +177,9 @@ public class UniGraph implements Graph {
         if (ids.length > 1 && !ids[0].getClass().equals(ids[1].getClass())) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
         if (ids.length > 0 && Vertex.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator(ids);
         HasContainer idPredicate = new HasContainer(T.id.getAccessor(), P.within(ids));
-
-        SearchQuery<E> uniQuery = new SearchQuery<>(returnType, Arrays.asList(idPredicate), 0, null);
+        PredicatesHolder predicatesHolder = new PredicatesHolder(PredicatesHolder.Clause.And);
+        predicatesHolder.add(idPredicate);
+        SearchQuery<E> uniQuery = new SearchQuery<>(returnType, predicatesHolder, 0, null);
         return queryControllers.stream().<E>flatMap(controller -> asStream(controller.search(uniQuery))).iterator();
     }
 

@@ -105,4 +105,7 @@ public abstract class UniElement implements Element{
     public UniGraph getGraph() {
         return graph;
     }
+
+    public static <E extends Element> Map<String, Object> fullProperties(E element) {
+    }
 }

@@ -5,6 +5,7 @@ import org.unipop.common.schema.ElementSchema;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.common.schema.property.PropertySchema;
+import org.unipop.structure.UniElement;
 import org.unipop.structure.UniGraph;
 
 import java.util.HashMap;
@@ -44,7 +45,8 @@ public abstract class BaseElementSchema<E extends Element> implements ElementSch
 
     @Override
     public Map<String, Object> toFields(E element) {
-        Map<String, Object> properties = fullProperties(element);
+        Map<String, Object> properties = UniElement.fullProperties(element);
+        assert properties != null;
 
         Map<String, Object> fields = new HashMap<>();
         properties.forEach((key, value) -> {
@@ -56,10 +58,6 @@ public abstract class BaseElementSchema<E extends Element> implements ElementSch
         });
 
         return fields;
-    }
-
-    protected Map<String, Object> fullProperties(E element) {
-
     }
 
     protected Object mergeFields(Object obj1, Object obj2) {

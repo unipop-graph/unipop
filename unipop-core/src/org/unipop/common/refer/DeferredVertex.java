@@ -2,12 +2,11 @@ package org.unipop.common.refer;
 
 import com.google.common.collect.Iterators;
 import org.apache.tinkerpop.gremlin.structure.*;
+import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.structure.UniVertex;
 import org.unipop.structure.UniGraph;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class DeferredVertex extends UniVertex {
     public DeferredVertex(Map<String, Object> properties, UniGraph graph) {
@@ -18,8 +17,9 @@ public class DeferredVertex extends UniVertex {
 
     private void checkDeferred() {
         if (deferred) {
-            this.graph.getControllerManager().getControllers(DeferredVertexController.class).forEach(deferredController ->
-                    deferredController.loadProperties(Iterators.singletonIterator(this)));
+            DeferredVertexQuery query = new DeferredVertexQuery(Collections.singletonList(this), null);
+            this.graph.getControllerManager().getControllers(DeferredVertexQuery.DefferedVertexController.class).forEach(deferredController ->
+                    deferredController.fetchProperties(query));
         }
     }
 
@@ -30,7 +30,7 @@ public class DeferredVertex extends UniVertex {
     }
 
     @Override
-    public VertexProperty property(VertexProperty.Cardinality cardinality, String key, Object value, Object... keyValues) {
+    public <V> VertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value, Object... keyValues) {
         checkDeferred();
         return super.property(cardinality, key, value, keyValues);
     }
@@ -49,13 +49,13 @@ public class DeferredVertex extends UniVertex {
     }
 
     @Override
-    public VertexProperty property(String key, Object value) {
+    public  <V> VertexProperty<V> property(String key, V value) {
         checkDeferred();
         return super.property(key, value);
     }
 
     @Override
-    public VertexProperty property(String key) {
+    public  <V> VertexProperty<V> property(String key) {
         checkDeferred();
         return super.property(key);
     }
@@ -73,7 +73,7 @@ public class DeferredVertex extends UniVertex {
     }
 
     @Override
-    public Iterator<VertexProperty> properties(String... propertyKeys) {
+    public  <V> Iterator<VertexProperty<V>> properties(String... propertyKeys) {
         checkDeferred();
         return super.properties(propertyKeys);
     }

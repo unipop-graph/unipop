@@ -10,20 +10,23 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.unipop.common.schema.SchemaSet;
+import org.unipop.common.refer.DeferredVertex;
 import org.unipop.elastic.common.FilterHelper;
 import org.unipop.elastic.common.QueryIterator;
 import org.unipop.elastic.document.schema.DocEdgeSchema;
 import org.unipop.elastic.document.schema.DocSchema;
+import org.unipop.elastic.document.schema.DocVertexSchema;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.controller.SimpleController;
 import org.unipop.query.mutation.AddEdgeQuery;
 import org.unipop.query.mutation.AddVertexQuery;
 import org.unipop.query.mutation.PropertyQuery;
 import org.unipop.query.mutation.RemoveQuery;
+import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.query.search.SearchQuery;
 import org.unipop.query.search.SearchVertexQuery;
 import org.unipop.structure.UniEdge;
+import org.unipop.structure.UniElement;
 import org.unipop.structure.UniGraph;
 import org.unipop.structure.UniVertex;
 
@@ -32,12 +35,12 @@ import java.util.*;
 public class DocumentController implements SimpleController {
 
     private final Client client;
-    private final SchemaSet<DocSchema<Vertex>> vertexSchemas;
-    private final SchemaSet<DocEdgeSchema> edgeSchemas;
+    private final Set<DocVertexSchema> vertexSchemas;
+    private final Set<DocEdgeSchema> edgeSchemas;
     private UniGraph graph;
     private boolean dirty;
 
-    public DocumentController(Client client, SchemaSet<DocSchema<Vertex>> vertexSchemas, SchemaSet<DocEdgeSchema> edgeSchemas, UniGraph graph) {
+    public DocumentController(Client client, Set<DocVertexSchema> vertexSchemas, Set<DocEdgeSchema> edgeSchemas, UniGraph graph) {
         this.client = client;
         this.vertexSchemas = vertexSchemas;
         this.edgeSchemas = edgeSchemas;
@@ -48,7 +51,7 @@ public class DocumentController implements SimpleController {
     @Override
 
     public <E extends Element>  Iterator<E> search(SearchQuery<E> uniQuery) {
-        SchemaSet<? extends DocSchema<E>> schemas = getSchemas(uniQuery.getReturnType());
+        Set<? extends DocSchema<E>> schemas = getSchemas(uniQuery.getReturnType());
 
         PredicatesHolder allPredicates = new PredicatesHolder(PredicatesHolder.Clause.Or);
         Set<DocSchema<E>> relaventSchemas = new HashSet<>();
@@ -76,6 +79,29 @@ public class DocumentController implements SimpleController {
         }
         if(relaventSchemas.size() == 0) return Iterators.emptyIterator();
         return search(allPredicates, relaventSchemas, uniQuery.getLimit());
+    }
+
+    @Override
+    public void fetchProperties(DeferredVertexQuery query) {
+        PredicatesHolder allPredicates = new PredicatesHolder(PredicatesHolder.Clause.Or);
+        Set<DocVertexSchema> relaventSchemas = new HashSet<>();
+        for(DocVertexSchema schema : vertexSchemas) {
+            PredicatesHolder vertexPredicates = schema.toPredicates(query.gertVertices());
+            if(vertexPredicates != null) {
+                allPredicates.add(vertexPredicates);
+                relaventSchemas.add(schema);
+            }
+        }
+        if(relaventSchemas.size() == 0) return;
+        Iterator<Vertex> search = search(allPredicates, relaventSchemas, 0);
+
+        Map<Object, DeferredVertex> vertexMap = new HashMap<>(query.gertVertices().size());
+        query.gertVertices().forEach(vertex -> vertexMap.put(vertex.id(), vertex));
+        search.forEachRemaining(newVertex -> {
+            DeferredVertex deferredVertex = vertexMap.get(newVertex.id());
+            if(deferredVertex != null) deferredVertex.loadProperties(UniElement.fullProperties(newVertex));
+        });
+
     }
 
     @Override
@@ -108,10 +134,10 @@ public class DocumentController implements SimpleController {
     //endregion
 
     //region Helpers
-    private <E extends Element> SchemaSet<? extends DocSchema<E>> getSchemas(Class elementClass) {
+    private <E extends Element> Set<? extends DocSchema<E>> getSchemas(Class elementClass) {
         if(Vertex.class.isAssignableFrom(elementClass))
-            return (SchemaSet<? extends DocSchema<E>>) vertexSchemas;
-        else return (SchemaSet<? extends DocSchema<E>>) edgeSchemas;
+            return (Set<? extends DocSchema<E>>) vertexSchemas;
+        else return (Set<? extends DocSchema<E>>) edgeSchemas;
     }
     //endregion
 

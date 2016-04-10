@@ -1,6 +1,6 @@
 {
   "class": "ElasticSourceProvider",
-  "clientType": "TRANSPORT",
+  "client": "TRANSPORT",
   "clusterName": "unipop",
   "address": "127.0.0.1:9300",
   "vertices": [
