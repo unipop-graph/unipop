@@ -1,11 +1,11 @@
 package org.unipop.query.aggregation;
 
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.unipop.process.group.traversal.SemanticKeyTraversal;
 import org.unipop.process.group.traversal.SemanticReducerTraversal;
 import org.unipop.process.group.traversal.SemanticValuesTraversal;
+import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.StepDescriptor;
 import org.unipop.query.controller.UniQueryController;
 import org.unipop.query.VertexQuery;
@@ -19,7 +19,7 @@ public class AggregateVertexQuery extends AggregateQuery implements VertexQuery 
 
     public AggregateVertexQuery(List<Vertex> vertices,
                                 Direction direction,
-                                List<HasContainer> predicates,
+                                PredicatesHolder predicates,
                                 SemanticKeyTraversal key,
                                 SemanticValuesTraversal values,
                                 SemanticReducerTraversal reduce,

@@ -1,14 +1,13 @@
 package org.unipop.query.aggregation;
 
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.unipop.process.group.traversal.SemanticKeyTraversal;
 import org.unipop.process.group.traversal.SemanticReducerTraversal;
 import org.unipop.process.group.traversal.SemanticValuesTraversal;
+import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.StepDescriptor;
 import org.unipop.query.controller.UniQueryController;
-import org.unipop.query.PredicateQuery;
+import org.unipop.query.predicates.PredicateQuery;
 
-import java.util.List;
 import java.util.Map;
 
 public class AggregateQuery extends PredicateQuery {
@@ -16,7 +15,7 @@ public class AggregateQuery extends PredicateQuery {
     private final SemanticValuesTraversal values;
     private final SemanticReducerTraversal reduce;
 
-    public AggregateQuery(List<HasContainer> predicates,
+    public AggregateQuery(PredicatesHolder predicates,
                           SemanticKeyTraversal key,
                           SemanticValuesTraversal values,
                           SemanticReducerTraversal reduce,

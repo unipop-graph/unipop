@@ -2,7 +2,7 @@ package org.unipop.common.virtual;
 
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.unipop.common.schema.BaseElementSchema;
+import org.unipop.common.schema.base.BaseElementSchema;
 import org.unipop.structure.UniVertex;
 import org.unipop.structure.UniGraph;
 

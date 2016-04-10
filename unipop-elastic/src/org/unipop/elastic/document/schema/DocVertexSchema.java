@@ -1,7 +1,7 @@
 package org.unipop.elastic.document.schema;
 
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.unipop.common.schema.BaseVertexSchema;
+import org.unipop.common.schema.base.BaseVertexSchema;
 import org.unipop.common.schema.property.PropertySchema;
 import org.unipop.structure.UniGraph;
 

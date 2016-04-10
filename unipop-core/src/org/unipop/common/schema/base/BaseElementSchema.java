@@ -1,12 +1,13 @@
-package org.unipop.common.schema;
+package org.unipop.common.schema.base;
 
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.unipop.common.schema.ElementSchema;
+import org.unipop.query.predicates.PredicatesHolder;
+import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.common.schema.property.PropertySchema;
 import org.unipop.structure.UniGraph;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public abstract class BaseElementSchema<E extends Element> implements ElementSchema<E> {
@@ -31,13 +32,13 @@ public abstract class BaseElementSchema<E extends Element> implements ElementSch
         });
 
         if(this.dynamicProperties) {
-            sourceClone.forEach((key, value) -> properties.merge(key, value, this::mergeFromFields));
+            sourceClone.forEach((key, value) -> properties.merge(key, value, this::mergeProperties));
             properties.putAll(sourceClone);
         }
         return properties;
     }
 
-    protected Object mergeFromFields(Object prop1, Object prop2) {
+    protected Object mergeProperties(Object prop1, Object prop2) {
         return prop1;
     }
 
@@ -50,7 +51,7 @@ public abstract class BaseElementSchema<E extends Element> implements ElementSch
             PropertySchema propertySchema = this.properties.get(key);
             if(propertySchema != null) {
                 propertySchema.toFields(value).forEachRemaining(pair ->
-                        fields.merge(pair.getValue0(), pair.getValue1(), this::mergeToFields));
+                        fields.merge(pair.getValue0(), pair.getValue1(), this::mergeFields));
             }
         });
 
@@ -61,12 +62,12 @@ public abstract class BaseElementSchema<E extends Element> implements ElementSch
 
     }
 
-    protected Object mergeToFields(Object obj1, Object obj2) {
+    protected Object mergeFields(Object obj1, Object obj2) {
         return obj1;
     }
 
     @Override
-    public List<HasContainer> toPredicates(List<HasContainer> predicates) {
+    public PredicatesHolder toPredicates(PredicatesHolder predicates) {
 
     }
 }

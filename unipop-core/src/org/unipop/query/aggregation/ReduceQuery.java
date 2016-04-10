@@ -1,16 +1,14 @@
 package org.unipop.query.aggregation;
 
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.StepDescriptor;
 import org.unipop.query.controller.UniQueryController;
-import org.unipop.query.PredicateQuery;
-
-import java.util.List;
+import org.unipop.query.predicates.PredicateQuery;
 
 public class ReduceQuery extends PredicateQuery {
 
-    public ReduceQuery(List<HasContainer> predicates, StepDescriptor stepDescriptor) {
+    public ReduceQuery(PredicatesHolder predicates, StepDescriptor stepDescriptor) {
         super(predicates, stepDescriptor);
     }
 

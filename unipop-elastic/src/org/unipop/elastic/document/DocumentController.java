@@ -1,18 +1,21 @@
 package org.unipop.elastic.document;
 
 import com.google.common.collect.Iterators;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.elasticsearch.action.delete.DeleteRequestBuilder;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.unipop.common.schema.SchemaSet;
+import org.unipop.elastic.common.FilterHelper;
 import org.unipop.elastic.common.QueryIterator;
+import org.unipop.elastic.document.schema.DocEdgeSchema;
 import org.unipop.elastic.document.schema.DocSchema;
+import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.controller.SimpleController;
 import org.unipop.query.mutation.AddEdgeQuery;
 import org.unipop.query.mutation.AddVertexQuery;
@@ -30,11 +33,11 @@ public class DocumentController implements SimpleController {
 
     private final Client client;
     private final SchemaSet<DocSchema<Vertex>> vertexSchemas;
-    private final SchemaSet<DocSchema<Edge>> edgeSchemas;
+    private final SchemaSet<DocEdgeSchema> edgeSchemas;
     private UniGraph graph;
     private boolean dirty;
 
-    public DocumentController(Client client, SchemaSet<DocSchema<Vertex>> vertexSchemas, SchemaSet<DocSchema<Edge>> edgeSchemas, UniGraph graph) {
+    public DocumentController(Client client, SchemaSet<DocSchema<Vertex>> vertexSchemas, SchemaSet<DocEdgeSchema> edgeSchemas, UniGraph graph) {
         this.client = client;
         this.vertexSchemas = vertexSchemas;
         this.edgeSchemas = edgeSchemas;
@@ -43,20 +46,36 @@ public class DocumentController implements SimpleController {
 
     //region QueryController
     @Override
+
     public <E extends Element>  Iterator<E> search(SearchQuery<E> uniQuery) {
         SchemaSet<? extends DocSchema<E>> schemas = getSchemas(uniQuery.getReturnType());
-        Map<DocSchema<E>, List<HasContainer>> predicatesMap = getPredicates(uniQuery.getPredicates(), schemas);
-        if(predicatesMap.size() == 0) return Iterators.emptyIterator();
-        return search(predicatesMap.values(), predicatesMap.keySet(), uniQuery.getLimit());
+
+        PredicatesHolder allPredicates = new PredicatesHolder(PredicatesHolder.Clause.Or);
+        Set<DocSchema<E>> relaventSchemas = new HashSet<>();
+        for(DocSchema<E> schema : schemas) {
+            PredicatesHolder vertexPredicates = schema.toPredicates(uniQuery.getPredicates());
+            if(vertexPredicates != null) {
+                allPredicates.add(vertexPredicates);
+                relaventSchemas.add(schema);
+            }
+        }
+        if(relaventSchemas.size() == 0) return Iterators.emptyIterator();
+        return search(allPredicates, relaventSchemas, uniQuery.getLimit());
     }
 
     @Override
     public Iterator<Edge> search(SearchVertexQuery uniQuery) {
-        Map<DocSchema<Edge>, List<HasContainer>> predicatesMap = getPredicates(uniQuery.getPredicates(), edgeSchemas);
-        if(predicatesMap.size() == 0) return Iterators.emptyIterator();
-        Collection<List<HasContainer>> predicates = predicatesMap.values();
-        //TODO: add vertices to predicates
-        return search(predicates, predicatesMap.keySet(), uniQuery.getLimit());
+        PredicatesHolder allPredicates = new PredicatesHolder(PredicatesHolder.Clause.Or);
+        Set<DocEdgeSchema> relaventSchemas = new HashSet<>();
+        for(DocEdgeSchema schema : edgeSchemas) {
+            PredicatesHolder vertexPredicates = schema.toPredicates(uniQuery.getPredicates(), uniQuery.gertVertices(), uniQuery.getDirection());
+            if(vertexPredicates != null) {
+                allPredicates.add(vertexPredicates);
+                relaventSchemas.add(schema);
+            }
+        }
+        if(relaventSchemas.size() == 0) return Iterators.emptyIterator();
+        return search(allPredicates, relaventSchemas, uniQuery.getLimit());
     }
 
     @Override
@@ -94,20 +113,12 @@ public class DocumentController implements SimpleController {
             return (SchemaSet<? extends DocSchema<E>>) vertexSchemas;
         else return (SchemaSet<? extends DocSchema<E>>) edgeSchemas;
     }
-
-    private <E extends Element> Map<DocSchema<E>, List<HasContainer>> getPredicates(List<HasContainer> predicates, SchemaSet<? extends  DocSchema<E>> schemas) {
-        Map<DocSchema<E>, List<HasContainer>> results = new HashMap<>();
-        for(DocSchema<E> schema : schemas) {
-            List<HasContainer> schemaPredicates = schema.toPredicates(predicates);
-            if(schemaPredicates != null) results.put(schema, schemaPredicates);
-        }
-        return results;
-    }
     //endregion
 
     //region Elastic Queries
-    private <E extends Element> Iterator<E> search(Collection<List<HasContainer>> predicatesList, Set<DocSchema<E>> relevantSchemas, int limit) {
-        QueryBuilder query = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), filter);
+    private <E extends Element, S extends DocSchema<E>> Iterator<E> search(PredicatesHolder allPredicates, Set<S> relevantSchemas, int limit) {
+        FilterBuilder filterBuilder = FilterHelper.createFilterBuilder(allPredicates);
+        QueryBuilder query = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), filterBuilder);
         String[] indices = relevantSchemas.stream().map(DocSchema::getIndex).toArray(String[]::new);
         refresh(indices);
         QueryIterator.Parser<E> parser = (searchHit) -> relevantSchemas.stream().map(schema -> schema.fromFields(searchHit.getSource())).findFirst().get();

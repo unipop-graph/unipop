@@ -2,7 +2,7 @@ package org.unipop.elastic.nested.schema;
 
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.unipop.common.schema.BaseEdgeSchema;
+import org.unipop.common.schema.base.BaseEdgeSchema;
 import org.unipop.common.schema.ElementSchema;
 import org.unipop.common.schema.property.PropertySchema;
 import org.unipop.structure.UniGraph;
