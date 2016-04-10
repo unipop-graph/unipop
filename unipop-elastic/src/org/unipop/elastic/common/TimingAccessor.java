@@ -1,4 +1,4 @@
-package org.unipop.elastic.helpers;
+package org.unipop.elastic.common;
 
 import org.apache.commons.lang3.time.StopWatch;
 

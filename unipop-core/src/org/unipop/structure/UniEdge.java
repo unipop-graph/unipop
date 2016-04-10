@@ -4,6 +4,7 @@ import org.apache.commons.collections4.IteratorUtils;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
+import org.unipop.query.mutation.PropertyQuery;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -30,6 +31,9 @@ public class UniEdge extends UniElement implements Edge {
     public <V> Property<V> property(String key, V value) {
         ElementHelper.validateProperty(key, value);
         UniProperty<V> vertexProperty = (UniProperty<V>) addPropertyLocal(key, value);
+        PropertyQuery<UniElement> propertyQuery = new PropertyQuery<>(this, vertexProperty, PropertyQuery.Action.Add, null);
+        this.graph.getControllerManager().getControllers(PropertyQuery.PropertyController.class).forEach(controller ->
+                controller.property(propertyQuery));
         return vertexProperty;
     }
 

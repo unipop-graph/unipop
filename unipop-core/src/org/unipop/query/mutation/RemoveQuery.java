@@ -7,19 +7,19 @@ import org.unipop.query.controller.UniQueryController;
 
 import java.util.List;
 
-public class RemoveQuery extends UniQuery {
-    private final List<Element> elements;
+public class RemoveQuery<E extends Element> extends UniQuery {
+    private final List<E> elements;
 
-    public RemoveQuery(List<Element> elements, StepDescriptor stepDescriptor) {
+    public RemoveQuery(List<E> elements, StepDescriptor stepDescriptor) {
         super(stepDescriptor);
         this.elements = elements;
     }
 
-    public List<Element> getElements(){
+    public List<E> getElements(){
         return elements;
     }
 
     public interface RemoveController extends UniQueryController {
-        void remove(RemoveQuery uniQuery);
+        <E extends Element>void remove(RemoveQuery<E> uniQuery);
     }
 }

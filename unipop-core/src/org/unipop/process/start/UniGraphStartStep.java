@@ -28,7 +28,7 @@ public class UniGraphStartStep<S,E extends Element> extends GraphStep<S,E> imple
 
     private Iterator<E> query() {
         SearchQuery<E> searchQuery = new SearchQuery<E>(returnClass, hasContainers, limit, stepDescriptor);
-        return controllers.stream().<Iterator<E>>map(controller -> controller.query(searchQuery)).flatMap(StreamUtils::asStream).iterator();
+        return controllers.stream().<Iterator<E>>map(controller -> controller.search(searchQuery)).flatMap(StreamUtils::asStream).iterator();
     }
 
     @Override

@@ -1,6 +1,5 @@
-package org.unipop.common.property;
+package org.unipop.common.schema.property;
 
-import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.javatuples.Pair;
 
 import java.util.*;

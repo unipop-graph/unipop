@@ -178,7 +178,7 @@ public class UniGraph implements Graph {
         HasContainer idPredicate = new HasContainer(T.id.getAccessor(), P.within(ids));
 
         SearchQuery<E> uniQuery = new SearchQuery<>(returnType, Arrays.asList(idPredicate), 0, null);
-        return queryControllers.stream().<E>flatMap(controller -> asStream(controller.query(uniQuery))).iterator();
+        return queryControllers.stream().<E>flatMap(controller -> asStream(controller.search(uniQuery))).iterator();
     }
 
     @Override

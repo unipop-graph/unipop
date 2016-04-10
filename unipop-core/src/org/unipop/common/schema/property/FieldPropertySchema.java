@@ -1,4 +1,4 @@
-package org.unipop.common.property;
+package org.unipop.common.schema.property;
 
 import com.google.common.collect.Iterators;
 import org.apache.tinkerpop.gremlin.process.traversal.P;

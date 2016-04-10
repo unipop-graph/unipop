@@ -7,7 +7,6 @@ import org.elasticsearch.action.delete.DeleteRequestBuilder;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.Client;
-import org.unipop.elastic.schema.ElasticElementSchema;
 
 import java.util.HashSet;
 import java.util.Map;

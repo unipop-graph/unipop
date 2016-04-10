@@ -63,7 +63,7 @@ public class UniGraphVertexStep extends AbstractStep<Vertex, Edge> implements Re
                 vertices.add(traverser.get());
             });
             SearchVertexQuery vertexQuery = new SearchVertexQuery(Edge.class, vertices, direction, hasContainers, limit, stepDescriptor);
-            return controllers.stream().<Iterator<Edge>>map(controller -> controller.query(vertexQuery))
+            return controllers.stream().<Iterator<Edge>>map(controller -> controller.search(vertexQuery))
                     .<Edge>flatMap(StreamUtils::asStream)
                     .<Iterator<Traverser<Edge>>>map(edge -> {
                         Traverser<Vertex> outVertexTraverser = traversers.get(edge.outVertex().id());

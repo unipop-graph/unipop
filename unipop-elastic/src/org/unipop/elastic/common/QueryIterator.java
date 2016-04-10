@@ -1,4 +1,4 @@
-package org.unipop.elastic.helpers;
+package org.unipop.elastic.common;
 
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.elasticsearch.action.search.SearchRequestBuilder;

@@ -33,6 +33,6 @@ public class SearchVertexQuery extends SearchQuery<Edge> implements VertexQuery 
     }
 
     public interface SearchVertexController extends UniQueryController {
-        Iterator<Edge> query(SearchVertexQuery uniQuery);
+        Iterator<Edge> search(SearchVertexQuery uniQuery);
     }
 }

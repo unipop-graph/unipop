@@ -28,6 +28,6 @@ public class SearchQuery<E extends Element> extends PredicateQuery {
     }
 
     public interface SearchController extends UniQueryController {
-        <E extends Element> Iterator<E> query(SearchQuery<E> uniQuery);
+        <E extends Element> Iterator<E> search(SearchQuery<E> uniQuery);
     }
 }

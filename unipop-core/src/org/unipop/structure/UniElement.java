@@ -6,18 +6,16 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.unipop.query.controller.UniQueryController;
+import org.unipop.query.mutation.PropertyQuery;
+import org.unipop.query.mutation.RemoveQuery;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public abstract class UniElement implements Element{
     protected HashMap<String, Property> properties = new HashMap<>();
-    protected final Object id;
+    protected final String id;
     protected String label;
     protected final UniGraph graph;
-    public boolean removed = false;
 
     public UniElement(Map<String, Object> keyValues, UniGraph graph) {
         this.graph = graph;
@@ -86,14 +84,18 @@ public abstract class UniElement implements Element{
 
     public void removeProperty(Property property) {
         properties.remove(property.key());
-        this.graph.getControllerManager().getControllers(UniQueryController.class).forEach(controller -> controller.removeProperty(this, property));
+        PropertyQuery<UniElement> propertyQuery = new PropertyQuery<>(this, property, PropertyQuery.Action.Remove, null);
+        this.graph.getControllerManager().getControllers(PropertyQuery.PropertyController.class).forEach(controller ->
+                controller.property(propertyQuery));
     }
 
     protected abstract Property createProperty(String key, Object value);
 
     @Override
     public void remove() {
-        this.graph.getControllerManager().getControllers(UniQueryController.class).forEach(controller -> controller.remove(this));
+        RemoveQuery<UniElement> removeQuery = new RemoveQuery<>(Arrays.asList(this), null);
+        this.graph.getControllerManager().getControllers(RemoveQuery.RemoveController.class).forEach(controller ->
+                controller.remove(removeQuery));
     }
 
     public void setLabel(String label) {

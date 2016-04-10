@@ -22,7 +22,7 @@ public class UniVertex extends UniElement implements Vertex {
 
     @Override
     public Property createProperty(String key, Object value) {
-        return new UniVertexProperty(this, key, value);
+        return new UniVertexProperty<Object>(this, key, value);
     }
 
     @Override
@@ -38,7 +38,7 @@ public class UniVertex extends UniElement implements Vertex {
         HasContainer labelPredicate = new HasContainer(T.label.getAccessor(), P.within(edgeLabels));
         SearchVertexQuery searchVertexQuery = new SearchVertexQuery(Edge.class, Arrays.asList(this), direction, Arrays.asList(labelPredicate), 0, null);
         return graph.getControllerManager().getControllers(SearchVertexQuery.SearchVertexController.class).stream()
-                .<Iterator<Edge>>map(controller -> controller.query(searchVertexQuery))
+                .<Iterator<Edge>>map(controller -> controller.search(searchVertexQuery))
                 .flatMap(StreamUtils::asStream)
                 .iterator();
     }
@@ -52,7 +52,7 @@ public class UniVertex extends UniElement implements Vertex {
     public <V> VertexProperty<V> property(String key, V value) {
         ElementHelper.validateProperty(key, value);
         UniVertexProperty vertexProperty = (UniVertexProperty) addPropertyLocal(key, value);
-        PropertyQuery propertyQuery = new PropertyQuery(this, vertexProperty, PropertyQuery.Action.Add, null);
+        PropertyQuery<UniVertex> propertyQuery = new PropertyQuery<UniVertex>(this, vertexProperty, PropertyQuery.Action.Add, null);
         graph.getControllerManager().getControllers(PropertyQuery.PropertyController.class).forEach(controller ->
                 controller.property(propertyQuery));
         return vertexProperty;

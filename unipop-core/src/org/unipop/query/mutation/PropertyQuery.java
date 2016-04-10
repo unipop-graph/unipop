@@ -2,16 +2,17 @@ package org.unipop.query.mutation;
 
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.unipop.query.StepDescriptor;
 import org.unipop.query.UniQuery;
 import org.unipop.query.controller.UniQueryController;
 
-public class PropertyQuery extends UniQuery {
-    private final Element element;
+public class PropertyQuery<E extends Element>  extends UniQuery {
+    private final E element;
     private final Property property;
     private final Action action;
 
-    public PropertyQuery(Element element, Property property, Action action, StepDescriptor stepDescriptor) {
+    public PropertyQuery(E element, Property property, Action action, StepDescriptor stepDescriptor) {
         super(stepDescriptor);
         this.element = element;
         this.property = property;
@@ -27,7 +28,7 @@ public class PropertyQuery extends UniQuery {
         return action;
     }
 
-    public Element getElement() {
+    public E getElement() {
         return element;
     }
 
@@ -36,6 +37,6 @@ public class PropertyQuery extends UniQuery {
     }
 
     public interface PropertyController extends UniQueryController {
-        void property(PropertyQuery uniQuery);
+        <E extends Element> void property(PropertyQuery<E> uniQuery);
     }
 }
