@@ -2,9 +2,11 @@ package org.unipop.elastic.nested.schema;
 
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.unipop.common.schema.VertexSchema;
 import org.unipop.common.schema.base.BaseEdgeSchema;
 import org.unipop.common.schema.ElementSchema;
-import org.unipop.common.schema.property.PropertySchema;
+import org.unipop.common.property.PropertySchema;
+import org.unipop.elastic.document.schema.DocSchema;
 import org.unipop.structure.UniGraph;
 
 import java.util.Map;
@@ -14,7 +16,7 @@ public class NestedEdgeSchema extends BaseEdgeSchema implements NestedSchema<Edg
     private String index;
     private String type;
 
-    public NestedEdgeSchema(UniGraph graph, String path, String index, String type, ElementSchema<Vertex> outVertexSchema, ElementSchema<Vertex> inVertexSchema, Map<String, PropertySchema> properties, boolean dynamicProperties) {
+    public NestedEdgeSchema(UniGraph graph, String path, String index, String type, VertexSchema outVertexSchema, VertexSchema inVertexSchema, Map<String, PropertySchema> properties, boolean dynamicProperties) {
         super(outVertexSchema, inVertexSchema, properties, dynamicProperties, graph);
         this.path = path;
         this.index = index;

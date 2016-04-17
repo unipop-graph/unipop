@@ -1,11 +1,7 @@
 package org.unipop.structure;
 
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.Property;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
-import org.unipop.query.controller.UniQueryController;
 import org.unipop.query.mutation.PropertyQuery;
 import org.unipop.query.mutation.RemoveQuery;
 
@@ -107,5 +103,10 @@ public abstract class UniElement implements Element{
     }
 
     public static <E extends Element> Map<String, Object> fullProperties(E element) {
+        Map<String, Object> properties = new HashMap<>();
+        properties.put(T.id.getAccessor(), element.id());
+        properties.put(T.label.getAccessor(), element.label());
+        element.properties().forEachRemaining(property -> properties.put(property.key(), property.value()));
+        return properties;
     }
 }

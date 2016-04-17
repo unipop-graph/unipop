@@ -1,7 +1,7 @@
 package org.unipop.common.virtual;
 
 import org.unipop.common.schema.base.BaseVertexSchema;
-import org.unipop.common.schema.property.PropertySchema;
+import org.unipop.common.property.PropertySchema;
 import org.unipop.structure.UniGraph;
 
 import java.util.Map;

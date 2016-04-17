@@ -32,10 +32,29 @@ public class PredicatesHolder {
     }
 
     public void add(HasContainer hasContainer) {
-        predicates.add(hasContainer);
+        if(hasContainer != null)
+            predicates.add(hasContainer);
     }
 
     public void add(PredicatesHolder predicatesHolder) {
-        children.add(predicatesHolder);
+        if(predicatesHolder == null) return;
+        if(predicatesHolder.isEmpty()) return;
+        if(predicatesHolder.getClause().equals(this.getClause())) {
+            predicatesHolder.getPredicates().forEach(this::add);
+            predicatesHolder.getChildren().forEach(this::add);
+        }
+        else children.add(predicatesHolder);
+    }
+
+    public boolean hasPredicates() {
+        return getPredicates().size() > 0;
+    }
+
+    public boolean hasChildren() {
+        return getChildren().size() > 0;
+    }
+
+    public boolean isEmpty() {
+        return getPredicates().size() == 0 && getChildren().size() == 0;
     }
 }

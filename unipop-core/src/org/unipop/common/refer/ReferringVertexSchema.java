@@ -2,15 +2,15 @@ package org.unipop.common.refer;
 
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.unipop.common.schema.base.BaseVertexSchema;
-import org.unipop.common.schema.property.PropertySchema;
+import org.unipop.common.property.PropertySchema;
 import org.unipop.structure.UniGraph;
 
 import java.util.Map;
 
-public class RefferingVertexSchema extends BaseVertexSchema {
+public class ReferringVertexSchema extends BaseVertexSchema {
 
 
-    public RefferingVertexSchema(Map<String, PropertySchema> properties, UniGraph graph) {
+    public ReferringVertexSchema(Map<String, PropertySchema> properties, UniGraph graph) {
         super(properties, false, graph);
     }
 

@@ -1,13 +1,14 @@
 package org.unipop.elastic;
 
 import com.google.common.collect.Sets;
-import org.apache.commons.configuration.ConfigurationMap;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.elasticsearch.client.Client;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.unipop.common.schema.property.PropertySchema;
+import org.unipop.common.refer.ReferringVertexSchema;
+import org.unipop.common.property.PropertyBuilder;
+import org.unipop.common.property.PropertySchema;
 import org.unipop.elastic.common.ElasticClientFactory;
 import org.unipop.elastic.document.DocumentController;
 import org.unipop.elastic.document.schema.DocEdgeSchema;
@@ -33,19 +34,26 @@ public class ElasticSourceProvider implements SourceProvider {
             String type = vertex.optString("_type");
             Map<String, PropertySchema> properties = getProperties(vertex);
             boolean dynamicProperties = vertex.optBoolean("dynamicProperties", false);
-            DocVertexSchema docVertexSchema = new DocVertexSchema(index, type, properties, dynamicProperties, graph);
-            docVertexSchemas.add(docVertexSchema);
+            DocVertexSchema vertexSchema = new DocVertexSchema(index, type, properties, dynamicProperties, graph);
+            docVertexSchemas.add(vertexSchema);
         }
 
         Set<DocEdgeSchema> docEdgeSchemas = new HashSet<>();
-        List<JSONObject> edges = getConfigs(configuration, "vertices");
-        for(JSONObject edge : vertices) {
-            create
+        List<JSONObject> edges = getConfigs(configuration, "edges");
+        for(JSONObject edge : edges) {
+            JSONObject outVertex = edge.getJSONObject("outVertex");
+            Map<String, PropertySchema> outVertexProperties = getProperties(outVertex);
+            ReferringVertexSchema outVertexSchema = new ReferringVertexSchema(outVertexProperties, graph);
+
+            JSONObject inVertex = edge.getJSONObject("inVertex");
+            Map<String, PropertySchema> inVertexProperties = getProperties(inVertex);
+            ReferringVertexSchema inVertexSchema = new ReferringVertexSchema(inVertexProperties, graph);
+
             String index = edge.getString("index");
             String type = edge.optString("_type");
             Map<String, PropertySchema> properties = getProperties(edge);
             boolean dynamicProperties = edge.optBoolean("dynamicProperties", false);
-            DocEdgeSchema docEdgeSchema = new DocEdgeSchema(index, type, properties, dynamicProperties, graph);
+            DocEdgeSchema docEdgeSchema = new DocEdgeSchema(index, type, outVertexSchema, inVertexSchema, properties, dynamicProperties, graph);
             docEdgeSchemas.add(docEdgeSchema);
         }
 
@@ -63,14 +71,26 @@ public class ElasticSourceProvider implements SourceProvider {
         return configs;
     }
 
-    private Map<String, PropertySchema> getProperties(JSONObject elementConfig) {
-        addPropertySchema(T.id.getAccessor(), configuration.getProperty(T.id.getAccessor()));
-        addPropertySchema(T.label.getAccessor(), configuration.getProperty(T.label.getAccessor()));
-        ConfigurationMap properties = new ConfigurationMap(configuration.subset("properties"));
-        for(Map.Entry<Object, Object> property : properties.entrySet()) {
-            addPropertySchema(property.getKey().toString(), property.getValue());
-        }
-        return null;
+    private Map<String, PropertySchema> getProperties(JSONObject elementConfig) throws JSONException {
+        Map<String, JSONObject> propertiesConfig = new HashMap<>();
+        propertiesConfig.put(T.id.getAccessor(), elementConfig.getJSONObject(T.id.getAccessor()));
+        propertiesConfig.put(T.label.getAccessor(), elementConfig.getJSONObject(T.label.getAccessor()));
+
+        JSONObject properties = elementConfig.getJSONObject("properties");
+        properties.keys().forEachRemaining(key -> {
+            try {
+                propertiesConfig.put(key.toString(), properties.getJSONObject(key.toString()));
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        });
+
+        Map<String, PropertySchema> result = new HashMap<>();
+        propertiesConfig.forEach((key, value) -> {
+            PropertySchema propertySchema = PropertyBuilder.createPropertySchema(key, value);
+            result.put(key, propertySchema);
+        });
+        return result;
     }
 
     @Override

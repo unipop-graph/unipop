@@ -3,7 +3,7 @@ package org.unipop.process.vertex;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.UnmodifiableIterator;
 import org.unipop.query.StepDescriptor;
-import org.unipop.process.predicate.ReceivesHasContainers;
+import org.unipop.process.predicate.ReceivesPredicatesHolder;
 import org.unipop.query.controller.ControllerManager;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
@@ -14,14 +14,15 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.unipop.common.util.StreamUtils;
+import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.search.SearchVertexQuery;
 
 import java.util.*;
 
-public class UniGraphVertexStep extends AbstractStep<Vertex, Edge> implements ReceivesHasContainers<Vertex, Edge> {
+public class UniGraphVertexStep extends AbstractStep<Vertex, Edge> implements ReceivesPredicatesHolder<Vertex, Edge> {
     private int limit;
     private final Direction direction;
-    private ArrayList<HasContainer> hasContainers = new ArrayList<>();
+    private PredicatesHolder predicates = new PredicatesHolder(PredicatesHolder.Clause.And);
 
     private final StepDescriptor stepDescriptor;
     protected final ControllerManager controllerManager;
@@ -34,7 +35,7 @@ public class UniGraphVertexStep extends AbstractStep<Vertex, Edge> implements Re
         vertexStep.getLabels().forEach(label->this.addLabel(label.toString()));
         this.direction = vertexStep.getDirection();
         HasContainer labelsPredicate = new HasContainer(T.label.getAccessor(), P.within(vertexStep, vertexStep.getEdgeLabels()));
-        this.hasContainers.add(labelsPredicate);
+        this.predicates.add(labelsPredicate);
 
         this.stepDescriptor = new StepDescriptor(this);
         this.controllerManager = controllerManager;
@@ -62,7 +63,7 @@ public class UniGraphVertexStep extends AbstractStep<Vertex, Edge> implements Re
                 traversers.put(traverser.get().id(), traverser);
                 vertices.add(traverser.get());
             });
-            SearchVertexQuery vertexQuery = new SearchVertexQuery(Edge.class, vertices, direction, hasContainers, limit, stepDescriptor);
+            SearchVertexQuery vertexQuery = new SearchVertexQuery(Edge.class, vertices, direction, predicates, limit, stepDescriptor);
             return controllers.stream().<Iterator<Edge>>map(controller -> controller.search(vertexQuery))
                     .<Edge>flatMap(StreamUtils::asStream)
                     .<Iterator<Traverser<Edge>>>map(edge -> {
@@ -118,7 +119,7 @@ public class UniGraphVertexStep extends AbstractStep<Vertex, Edge> implements Re
 
     @Override
     public String toString() {
-        return StringFactory.stepString(this, this.getDirection(), this.hasContainers);
+        return StringFactory.stepString(this, this.getDirection(), this.predicates);
     }
 
     @Override
@@ -132,13 +133,13 @@ public class UniGraphVertexStep extends AbstractStep<Vertex, Edge> implements Re
     }
 
     @Override
-    public void addHasContainer(HasContainer hasContainer) {
-        this.hasContainers.add(hasContainer);
+    public void addPredicate(HasContainer predicatesHolder) {
+        this.predicates.add(predicatesHolder);
     }
 
     @Override
-    public List<HasContainer> getHasContainers() {
-        return hasContainers;
+    public PredicatesHolder getPredicates() {
+        return predicates;
     }
 
     @Override

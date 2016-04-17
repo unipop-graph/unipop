@@ -17,9 +17,9 @@ import java.util.function.BiPredicate;
 
 public class FilterHelper {
     public static FilterBuilder createFilterBuilder(PredicatesHolder predicatesHolder) {
-        if(predicatesHolder.getChildren().size() == 0 && predicatesHolder.getPredicates().size() == 1)
+        if(!predicatesHolder.hasChildren() && predicatesHolder.getPredicates().size() == 1)
             return createFilter(predicatesHolder.getPredicates().stream().findFirst().get());
-        if(predicatesHolder.getChildren().size() == 1 && predicatesHolder.getPredicates().size() == 0)
+        if(!predicatesHolder.hasPredicates() && predicatesHolder.getChildren().size() == 1)
             return createFilterBuilder(predicatesHolder.getChildren().stream().findFirst().get());
 
         BoolFilterBuilder boolFilter = FilterBuilders.boolFilter();

@@ -44,7 +44,7 @@
 //                elasticCountStep = new UniGraphCountStep(
 //                        traversal,
 //                        elasticVertexStep.getReturnClass(),
-//                        elasticVertexStep.getHasContainers(),
+//                        elasticVertexStep.getPredicates(),
 //                        new Object[0],
 //                        elasticVertexStep.getEdgeLabels(),
 //                        Optional.of(elasticVertexStep.getDirection()), elasticGraph.getControllerManager());
@@ -54,7 +54,7 @@
 //                elasticCountStep = new UniGraphCountStep(
 //                        traversal,
 //                        elasticGraphStep.getReturnClass(),
-//                        elasticGraphStep.getHasContainers(),
+//                        elasticGraphStep.getPredicates(),
 //                        elasticGraphStep.getIds(),
 //                        new String[0],
 //                        Optional.empty(), elasticGraph.getControllerManager());

@@ -1,21 +1,22 @@
 package org.unipop.process.start;
 
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
-import org.unipop.process.predicate.ReceivesHasContainers;
+import org.unipop.process.predicate.ReceivesPredicatesHolder;
 import org.unipop.query.StepDescriptor;
 import org.unipop.query.controller.ControllerManager;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.unipop.common.util.StreamUtils;
+import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.search.SearchQuery;
 
 import java.util.*;
 
-public class UniGraphStartStep<S,E extends Element> extends GraphStep<S,E> implements ReceivesHasContainers<S, E>{
+public class UniGraphStartStep<S,E extends Element> extends GraphStep<S,E> implements ReceivesPredicatesHolder<S, E> {
 
     private final StepDescriptor stepDescriptor;
     List<SearchQuery.SearchController>  controllers;
-    private ArrayList<HasContainer> hasContainers = new ArrayList<>();
+    private PredicatesHolder predicates = new PredicatesHolder(PredicatesHolder.Clause.And);
     private int limit;
 
     public UniGraphStartStep(GraphStep<S, E> originalStep, ControllerManager controllerManager) {
@@ -27,18 +28,18 @@ public class UniGraphStartStep<S,E extends Element> extends GraphStep<S,E> imple
     }
 
     private Iterator<E> query() {
-        SearchQuery<E> searchQuery = new SearchQuery<E>(returnClass, hasContainers, limit, stepDescriptor);
+        SearchQuery<E> searchQuery = new SearchQuery<E>(returnClass, predicates, limit, stepDescriptor);
         return controllers.stream().<Iterator<E>>map(controller -> controller.search(searchQuery)).flatMap(StreamUtils::asStream).iterator();
     }
 
     @Override
-    public void addHasContainer(HasContainer hasContainer) {
-        this.hasContainers.add(hasContainer);
+    public void addPredicate(HasContainer predicatesHolder) {
+        this.predicates.add(predicatesHolder);
     }
 
     @Override
-    public List<HasContainer> getHasContainers() {
-        return hasContainers;
+    public PredicatesHolder getPredicates() {
+        return predicates;
     }
 
     @Override

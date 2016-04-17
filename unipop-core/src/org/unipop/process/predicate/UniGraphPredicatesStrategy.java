@@ -13,11 +13,7 @@ import org.unipop.process.vertex.UniGraphVertexStepStrategy;
 
 import java.util.*;
 
-/**
- * Created by Roman on 11/8/2015.
- */
 public class UniGraphPredicatesStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy {
-    //region AbstractTraversalStrategy Implementation
     @Override
     public Set<Class<? extends ProviderOptimizationStrategy>> applyPrior() {
         Set<Class<? extends TraversalStrategy.ProviderOptimizationStrategy>> priorStrategies = new HashSet<>();
@@ -26,28 +22,24 @@ public class UniGraphPredicatesStrategy extends AbstractTraversalStrategy<Traver
         return priorStrategies;
     }
 
-
     @Override
     public void apply(Traversal.Admin<?, ?> traversal) {
         if(traversal.getEngine().isComputer()) {
             return;
         }
 
-        TraversalHelper.getStepsOfAssignableClassRecursively(ReceivesHasContainers.class, traversal).forEach(step -> {
-            addPredicates(step, traversal);
-        });
+        TraversalHelper.getStepsOfAssignableClassRecursively(ReceivesPredicatesHolder.class, traversal).forEach(step ->
+                addPredicates(step, traversal));
     }
-    //endregion
 
-    //region Private Methods
-    private void addPredicates(ReceivesHasContainers originalStep, Traversal.Admin traversal){
+    private void addPredicates(ReceivesPredicatesHolder originalStep, Traversal.Admin traversal){
         Step step = originalStep;
         List<HasContainer> hasContainers = new ArrayList<>();
 
         while(true) {
             if(step instanceof HasContainerHolder) {
                 HasContainerHolder hasContainerHolder = (HasContainerHolder) step;
-                hasContainerHolder.getHasContainers().forEach(originalStep::addHasContainer);
+                hasContainerHolder.getHasContainers().forEach(originalStep::addPredicate);
                 traversal.removeStep(step);
                 if(collectLabels(step, originalStep)) return;
             }
@@ -55,7 +47,7 @@ public class UniGraphPredicatesStrategy extends AbstractTraversalStrategy<Traver
 //                TraversalFilterStep traversalFilterStep = (TraversalFilterStep)step;
 //                for(Object localChild : traversalFilterStep.getLocalChildren()) {
 //                    Traversal.Admin filterTraversal = (Traversal.Admin)localChild;
-//                    UniQuery childPredicates = addPredicates(filterTraversal.getStartStep(), filterTraversal);
+//                    UniQuery childPredicates = addPredicate(filterTraversal.getStartStep(), filterTraversal);
 //                    childPredicates.hasContainers.forEach(predicates.hasContainers::add);
 //                    childPredicates.labels.forEach(predicates.labels::add);
 //
@@ -99,5 +91,4 @@ public class UniGraphPredicatesStrategy extends AbstractTraversalStrategy<Traver
         step.getLabels().forEach(originalStep::addLabel);
         return step.getLabels().size() > 0;
     }
-    //endregion
 }

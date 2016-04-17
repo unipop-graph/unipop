@@ -1,8 +1,10 @@
-package org.unipop.common.schema.property;
+package org.unipop.common.property;
 
 import com.google.common.collect.Iterators;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.javatuples.Pair;
+import org.json.JSONObject;
+
 import java.util.Iterator;
 import java.util.Map;
 
@@ -19,10 +21,10 @@ public class FieldPropertySchema implements PropertySchema {
     
     public FieldPropertySchema(String key, Object config) {
         this.key = key;
-        
-        if(config instanceof Map){
-            Map<String, Object> configurationMap = (Map<String, Object>) config;
-            configurationMap.forEach((configKey, configValue) -> {
+        if(config instanceof JSONObject){
+            JSONObject configurationMap = (JSONObject) config;
+            configurationMap.keys().forEachRemaining(configKey -> {
+                Object configValue = configurationMap.get(configKey);
                 if(configKey.equals("include")) this.include = getArray(configValue);
                 else if(configKey.equals("exclude")) this.exclude = getArray(configValue);
                 else if(configKey.equals("field")) this.field = configValue.toString();

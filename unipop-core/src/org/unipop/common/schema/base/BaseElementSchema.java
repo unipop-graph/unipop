@@ -1,10 +1,12 @@
 package org.unipop.common.schema.base;
 
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.javatuples.Pair;
 import org.unipop.common.schema.ElementSchema;
 import org.unipop.query.predicates.PredicatesHolder;
-import org.unipop.query.predicates.PredicatesHolder;
-import org.unipop.common.schema.property.PropertySchema;
+import org.unipop.common.property.PropertySchema;
 import org.unipop.structure.UniElement;
 import org.unipop.structure.UniGraph;
 
@@ -28,7 +30,7 @@ public abstract class BaseElementSchema<E extends Element> implements ElementSch
 
         Map<String, Object> properties = new HashMap<>();
         this.properties.forEach((key, property) -> {
-            Object value = property.toProperty(sourceClone);
+            Pair<String, Object> value = property.toProperty(sourceClone);
             if(value != null) properties.put(key, value);
         });
 
@@ -65,7 +67,24 @@ public abstract class BaseElementSchema<E extends Element> implements ElementSch
     }
 
     @Override
-    public PredicatesHolder toPredicates(PredicatesHolder predicates) {
+    public PredicatesHolder toPredicates(PredicatesHolder predicatesHolder) {
+        if(predicatesHolder.isEmpty()) return predicatesHolder;
+        PredicatesHolder newPredicates = new PredicatesHolder(predicatesHolder.getClause());
 
+        for(HasContainer has : predicatesHolder.getPredicates()) {
+            PropertySchema propertySchema = properties.get(has.getKey());
+            if(propertySchema == null) continue;
+            if(!propertySchema.test(has.getPredicate())) {
+                if(predicatesHolder.getClause().equals(PredicatesHolder.Clause.And)) return null;
+            }
+            else propertySchema.toFields(has.getValue()).forEachRemaining(field -> {
+                HasContainer newHas= new HasContainer(field.getValue0(), new P(has.getBiPredicate(), field.getValue1()));
+                newPredicates.add(newHas);
+            });
+        }
+
+        predicatesHolder.getChildren().forEach(child -> newPredicates.add(this.toPredicates(child)));
+        if(newPredicates.isEmpty()) return null;
+        return newPredicates;
     }
 }

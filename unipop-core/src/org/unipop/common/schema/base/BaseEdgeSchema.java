@@ -6,7 +6,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.unipop.common.schema.EdgeSchema;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.common.schema.VertexSchema;
-import org.unipop.common.schema.property.PropertySchema;
+import org.unipop.common.property.PropertySchema;
 import org.unipop.structure.UniEdge;
 import org.unipop.structure.UniGraph;
 
@@ -44,15 +44,26 @@ public class BaseEdgeSchema extends BaseElementSchema<Edge> implements EdgeSchem
     @Override
     public PredicatesHolder toPredicates(PredicatesHolder predicates, List<Vertex> vertices, Direction direction) {
         PredicatesHolder edgePredicates = this.toPredicates(predicates);
-        if(direction.equals(Direction.OUT)) edgePredicates.add(this.outVertexSchema.toPredicates(vertices));
-        else if(direction.equals(Direction.IN)) edgePredicates.add(this.inVertexSchema.toPredicates(vertices));
-        else {
-            PredicatesHolder vertexPredicates = new PredicatesHolder(PredicatesHolder.Clause.Or);
-            vertexPredicates.add(this.outVertexSchema.toPredicates(vertices));
-            vertexPredicates.add(this.inVertexSchema.toPredicates(vertices));
-            edgePredicates.add(vertexPredicates);
-        }
+        if(edgePredicates == null) return null;
+        PredicatesHolder vertexPredicates = this.getVertexPredicates(vertices, direction);
+        if(vertexPredicates == null) return null;
+        edgePredicates.add(vertexPredicates);
         return edgePredicates;
+    }
+
+    private PredicatesHolder getVertexPredicates(List<Vertex> vertices, Direction direction) {
+        PredicatesHolder outPredicates = this.outVertexSchema.toPredicates(vertices);
+        PredicatesHolder inPredicates = this.inVertexSchema.toPredicates(vertices);
+        if(inPredicates == null && outPredicates == null) return null;
+        if(direction.equals(Direction.OUT)) return outPredicates;
+        if(direction.equals(Direction.IN)) return inPredicates;
+        if(outPredicates == null || outPredicates.isEmpty()) return inPredicates;
+        if(inPredicates == null || inPredicates.isEmpty()) return outPredicates;
+
+        PredicatesHolder orPredicate = new PredicatesHolder(PredicatesHolder.Clause.Or);
+        orPredicate.add(inPredicates);
+        orPredicate.add(outPredicates);
+        return orPredicate;
     }
 
     @Override
