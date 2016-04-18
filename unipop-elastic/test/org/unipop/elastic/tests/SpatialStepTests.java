@@ -14,15 +14,14 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.junit.Before;
 import org.junit.Test;
-import org.unipop.common.test.UnipopGraphProvider;
-import org.unipop.elastic.helpers.Geo;
+import org.unipop.elastic.ElasticGraphProvider;
+import org.unipop.elastic.common.Geo;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import static org.junit.Assert.assertEquals;
@@ -35,8 +34,8 @@ public class SpatialStepTests {
     Graph graph;
 
     @Before
-    public void startUp() throws InstantiationException, IOException, ExecutionException, InterruptedException {
-        UnipopGraphProvider unipopGraphProvider = new UnipopGraphProvider();
+    public void startUp() throws Exception {
+        ElasticGraphProvider unipopGraphProvider = new ElasticGraphProvider();
         final Configuration configuration = unipopGraphProvider.newGraphConfiguration("testGraph", this.getClass(), "spatialTests", LoadGraphWith.GraphData.MODERN);
         this.graph = unipopGraphProvider.openTestGraph(configuration);
 

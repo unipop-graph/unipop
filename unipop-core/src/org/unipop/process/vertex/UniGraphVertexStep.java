@@ -34,7 +34,7 @@ public class UniGraphVertexStep extends AbstractStep<Vertex, Edge> implements Re
         super(vertexStep.getTraversal());
         vertexStep.getLabels().forEach(label->this.addLabel(label.toString()));
         this.direction = vertexStep.getDirection();
-        HasContainer labelsPredicate = new HasContainer(T.label.getAccessor(), P.within(vertexStep, vertexStep.getEdgeLabels()));
+        HasContainer labelsPredicate = new HasContainer(T.label.toString(), P.within(vertexStep, vertexStep.getEdgeLabels()));
         this.predicates.add(labelsPredicate);
 
         this.stepDescriptor = new StepDescriptor(this);

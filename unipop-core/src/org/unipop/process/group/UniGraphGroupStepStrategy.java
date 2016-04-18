@@ -117,7 +117,7 @@
 //                    return null;
 //
 //                case label:
-//                    return new SemanticKeyTraversal(SemanticKeyTraversal.Type.property, T.label.getAccessor());
+//                    return new SemanticKeyTraversal(SemanticKeyTraversal.Type.property, T.label.toString());
 //            }
 //        }
 //
@@ -157,7 +157,7 @@
 //                    return null;
 //
 //                case label:
-//                    return new SemanticValuesTraversal(SemanticValuesTraversal.Type.property, T.label.getAccessor());
+//                    return new SemanticValuesTraversal(SemanticValuesTraversal.Type.property, T.label.toString());
 //            }
 //        }
 //

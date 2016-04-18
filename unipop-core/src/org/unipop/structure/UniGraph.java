@@ -176,7 +176,7 @@ public class UniGraph implements Graph {
     private <E extends Element> Iterator<E> query(Class<E> returnType, Object[] ids) {
         if (ids.length > 1 && !ids[0].getClass().equals(ids[1].getClass())) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
         if (ids.length > 0 && Vertex.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator(ids);
-        HasContainer idPredicate = new HasContainer(T.id.getAccessor(), P.within(ids));
+        HasContainer idPredicate = new HasContainer(T.id.toString(), P.within(ids));
         PredicatesHolder predicatesHolder = new PredicatesHolder(PredicatesHolder.Clause.And);
         predicatesHolder.add(idPredicate);
         SearchQuery<E> uniQuery = new SearchQuery<>(returnType, predicatesHolder, 0, null);

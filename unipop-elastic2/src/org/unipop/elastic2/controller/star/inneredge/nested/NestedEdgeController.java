@@ -88,11 +88,11 @@ public class NestedEdgeController implements org.unipop.controller.InnerEdgeCont
         ArrayList<HasContainer> transformed = new ArrayList<>();
 
         for (HasContainer has : hasContainers) {
-            if (has.getKey().equals(T.label.getAccessor())) {
+            if (has.getKey().equals(T.label.toString())) {
                 Object value = has.getValue();
                 if (!value.equals(edgeLabel) && (value instanceof List && !((List<String>) value).contains(edgeLabel)))
                     return null;
-            } else if (has.getKey().equals(T.id.getAccessor()))
+            } else if (has.getKey().equals(T.id.toString()))
                 transformed.add(new HasContainer(edgeLabel + "." + edgeIdField, has.getPredicate()));
             else transformed.add(new HasContainer(edgeLabel + "." + has.getKey(), has.getPredicate()));
         }

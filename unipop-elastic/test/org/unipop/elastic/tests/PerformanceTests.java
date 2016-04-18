@@ -7,7 +7,8 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Before;
 import org.junit.Test;
-import org.unipop.common.test.UnipopGraphProvider;
+import org.unipop.elastic.ElasticGraphProvider;
+import org.unipop.test.UnipopGraphProvider;
 import org.unipop.elastic.common.TimingAccessor;
 
 import java.util.Iterator;
@@ -19,7 +20,7 @@ public class PerformanceTests {
 
     @Before
     public void startUp() throws Exception {
-        UnipopGraphProvider unipopGraphProvider = new UnipopGraphProvider();
+        UnipopGraphProvider unipopGraphProvider = new ElasticGraphProvider();
         final Configuration configuration = unipopGraphProvider.newGraphConfiguration("testGraph", this.getClass(), "performanceTests", LoadGraphWith.GraphData.MODERN);
         this.graph = unipopGraphProvider.openTestGraph(configuration);
     }

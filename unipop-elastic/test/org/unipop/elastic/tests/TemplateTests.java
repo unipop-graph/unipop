@@ -3,8 +3,7 @@ package org.unipop.elastic.tests;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.junit.Test;
-import org.unipop.elastic.controllerprovider.ImdbControllerProvider;
-import org.unipop.elastic.helpers.ElasticClientFactory;
+import org.unipop.elastic.common.ElasticClientFactory;
 import org.unipop.structure.UniGraph;
 
 /**
@@ -16,10 +15,10 @@ public class TemplateTests {
 
     public TemplateTests() throws Exception {
         BaseConfiguration conf = new BaseConfiguration();
-        conf.addProperty("elasticsearch.client", ElasticClientFactory.ClientType.TRANSPORT_CLIENT);
+        conf.addProperty("elasticsearch.client", ElasticClientFactory.ClientType.TRANSPORT);
         conf.addProperty("elasticsearch.cluster.name", "elasticsearch");
         conf.addProperty("elasticsearch.cluster.address", "127.0.0.1:9300");
-        conf.addProperty("controllerManager", new ImdbControllerProvider());
+        //conf.addProperty("controllerManager", new ImdbControllerProvider());
         UniGraph graph = new UniGraph(conf);
         g = graph.traversal();
     }

@@ -89,7 +89,7 @@ public class SqlVertexController implements VertexQueryController {
 
         if (!verticesByIds.isEmpty()) {
             SelectJoinStep<Record> select = dslContext.select().from(tableName);
-            select.where(JooqHelper.createCondition(new HasContainer(T.id.getAccessor(), P.within(verticesByIds.keySet()))));
+            select.where(JooqHelper.createCondition(new HasContainer(T.id.toString(), P.within(verticesByIds.keySet()))));
             select.fetch().forEach(record -> {
                 Map<String, Object> stringObjectMap = new HashMap<>();
                 record.intoMap().forEach((key, value) -> stringObjectMap.put(key.toLowerCase(), value));

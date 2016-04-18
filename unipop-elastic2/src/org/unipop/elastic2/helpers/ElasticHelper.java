@@ -108,14 +108,14 @@ public class ElasticHelper {
         Object value = has.getValue();
         BiPredicate<?, ?> biPredicate = has.getBiPredicate();
 
-        if (key.equals(T.id.getAccessor())) {
+        if (key.equals(T.id.toString())) {
             IdsQueryBuilder idsQueryBuilder = QueryBuilders.idsQuery();
             if (value instanceof Iterable) {
                 for (Object id : (Iterable) value)
                     idsQueryBuilder.addIds(id.toString());
             } else idsQueryBuilder.addIds(value.toString());
             boolQueryBuilder.filter(idsQueryBuilder); 
-        } else if (key.equals(T.label.getAccessor())) {
+        } else if (key.equals(T.label.toString())) {
             if (value instanceof List) {
                 List labels = (List) value;
                 if (labels.size() == 1)

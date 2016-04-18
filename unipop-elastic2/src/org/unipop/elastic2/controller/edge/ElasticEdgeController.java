@@ -77,7 +77,7 @@ public class ElasticEdgeController implements EdgeQueryController {
         for(int i = 0; i < vertices.length; i++) vertexIds[i] = vertices[i].id();
 
         if (edgeLabels != null && edgeLabels.length > 0)
-            uniQuery.hasContainers.add(new HasContainer(T.label.getAccessor(), P.within(edgeLabels)));
+            uniQuery.hasContainers.add(new HasContainer(T.label.toString(), P.within(edgeLabels)));
 
         BoolQueryBuilder boolQuery = ElasticHelper.createQueryBuilder(uniQuery.hasContainers);
         addQuerysByDirection(direction, vertexIds, boolQuery);
@@ -114,7 +114,7 @@ public class ElasticEdgeController implements EdgeQueryController {
         for(int i = 0; i < vertices.length; i++) vertexIds[i] = vertices[i].id();
 
         if (edgeLabels != null && edgeLabels.length > 0)
-            uniQuery.hasContainers.add(new HasContainer(T.label.getAccessor(), P.within(edgeLabels)));
+            uniQuery.hasContainers.add(new HasContainer(T.label.toString(), P.within(edgeLabels)));
 
 
         BoolQueryBuilder boolQuery = ElasticHelper.createQueryBuilder(uniQuery.hasContainers);
@@ -195,7 +195,7 @@ public class ElasticEdgeController implements EdgeQueryController {
         for(int i = 0; i < vertices.length; i++) vertexIds[i] = vertices[i].id();
 
         if (edgeLabels != null && edgeLabels.length > 0)
-            uniQuery.hasContainers.add(new HasContainer(T.label.getAccessor(), P.within(edgeLabels)));
+            uniQuery.hasContainers.add(new HasContainer(T.label.toString(), P.within(edgeLabels)));
 
         BoolQueryBuilder boolQuery = ElasticHelper.createQueryBuilder(uniQuery.hasContainers);
         addQuerysByDirection(direction, vertexIds, boolQuery);

@@ -23,7 +23,7 @@ public class JooqHelper {
         Object value = hasContainer.getValue();
         BiPredicate<?, ?> predicate = hasContainer.getBiPredicate();
 
-        if(key.equals(T.label.getAccessor())) return DSL.trueCondition();
+        if(key.equals(T.label.toString())) return DSL.trueCondition();
 
         if(key.equals("~id"))
             return field(T.id.toString()).in(value.getClass().isArray() ? (Object[])value : new Object[]{value});

@@ -26,12 +26,12 @@
 //
 //    @Override
 //    public Iterator<Vertex> query(UniQuery predicates, Class<Vertex> returnType) {
-//        Optional<HasContainer> optionalId = predicates.hasContainers.stream().filter(has -> has.getKey().equals(T.id.getAccessor())).findAny();
+//        Optional<HasContainer> optionalId = predicates.hasContainers.stream().filter(has -> has.getKey().equals(T.id.toString())).findAny();
 //        if(!optionalId.isPresent()) return EmptyIterator.instance();
 //        Object idValue = optionalId.getValue().getValue();
 //        Iterable ids = idValue instanceof Iterable ? (Iterable) idValue : Collections.singleton(idValue);
 //
-//        Optional<HasContainer> optionalLabel = predicates.hasContainers.stream().filter(has -> has.getKey().equals(T.label.getAccessor())).findAny();
+//        Optional<HasContainer> optionalLabel = predicates.hasContainers.stream().filter(has -> has.getKey().equals(T.label.toString())).findAny();
 //        String label = optionalLabel.isPresent() ? optionalLabel.getValue().getValue().toString() : Vertex.DEFAULT_LABEL;
 //
 //        Set<Vertex> vertices = new HashSet<>();

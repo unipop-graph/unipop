@@ -66,12 +66,12 @@ public class AggregationsHelper {
         String key = has.getKey();
         Object value = has.getValue();
         BiPredicate<?, ?> biPredicate = has.getBiPredicate();
-        if (key.equals(T.id.getAccessor())) {
+        if (key.equals(T.id.toString())) {
             if (value instanceof Iterable)
                 params.put("ids", Iterables.toArray(((Iterable) value), Object.class));
             else
                 params.put("ids", value);
-        } else if (key.equals(T.label.getAccessor())) {
+        } else if (key.equals(T.label.toString())) {
             if (value instanceof Iterable) {
                 Iterable<Object> types = ((Iterable) value);
                 ArrayList<Map<String, Object>> typesList = new ArrayList<>();

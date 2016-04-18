@@ -72,14 +72,14 @@ public class ElasticSourceProvider implements SourceProvider {
     }
 
     private Map<String, PropertySchema> getProperties(JSONObject elementConfig) throws JSONException {
-        Map<String, JSONObject> propertiesConfig = new HashMap<>();
-        propertiesConfig.put(T.id.getAccessor(), elementConfig.getJSONObject(T.id.getAccessor()));
-        propertiesConfig.put(T.label.getAccessor(), elementConfig.getJSONObject(T.label.getAccessor()));
+        Map<String, Object> propertiesConfig = new HashMap<>();
+        propertiesConfig.put(T.id.toString(), elementConfig.get(T.id.toString()));
+        propertiesConfig.put(T.label.toString(), elementConfig.get(T.label.toString()));
 
         JSONObject properties = elementConfig.getJSONObject("properties");
         properties.keys().forEachRemaining(key -> {
             try {
-                propertiesConfig.put(key.toString(), properties.getJSONObject(key.toString()));
+                propertiesConfig.put(key.toString(), properties.get(key.toString()));
             } catch (JSONException e) {
                 e.printStackTrace();
             }

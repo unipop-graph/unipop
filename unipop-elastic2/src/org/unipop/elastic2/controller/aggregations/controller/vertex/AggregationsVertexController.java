@@ -172,7 +172,7 @@ public class AggregationsVertexController implements VertexQueryController, Edge
 
     private Object getLabel(UniQuery uniQuery) {
         for (HasContainer hasContainer : uniQuery.hasContainers) {
-            if (hasContainer.getKey().equals(T.label.getAccessor()))
+            if (hasContainer.getKey().equals(T.label.toString()))
                 return hasContainer.getValue();
         }
         return null;
@@ -208,8 +208,8 @@ public class AggregationsVertexController implements VertexQueryController, Edge
     public UniVertex vertex(Direction direction, Object vertexId, String vertexLabel) {
         UniQuery p = new UniQuery();
         p.limitHigh = 1;
-        p.hasContainers.add(new HasContainer(T.id.getAccessor(), P.eq(vertexId)));
-        p.hasContainers.add(new HasContainer(T.label.getAccessor(), P.eq(vertexLabel)));
+        p.hasContainers.add(new HasContainer(T.id.toString(), P.eq(vertexId)));
+        p.hasContainers.add(new HasContainer(T.label.toString(), P.eq(vertexLabel)));
         return vertices(p).next();
     }
 

@@ -6,7 +6,8 @@ import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
 import org.junit.Test;
-import org.unipop.common.test.UnipopGraphProvider;
+import org.unipop.elastic.ElasticGraphProvider;
+import org.unipop.test.UnipopGraphProvider;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -21,8 +22,8 @@ import static org.junit.Assert.*;
 
 public class TemporaryTests extends AbstractGremlinTest {
 
-    public TemporaryTests() throws InterruptedException, ExecutionException, IOException {
-        GraphManager.setGraphProvider(new UnipopGraphProvider());
+    public TemporaryTests() throws Exception {
+        GraphManager.setGraphProvider(new ElasticGraphProvider());
     }
 
     @Test

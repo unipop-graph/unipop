@@ -1,5 +1,5 @@
 {
-  "class": "ElasticSourceProvider",
+  "class": "org.unipop.elastic.ElasticSourceProvider",
   "client": "TRANSPORT",
   "clusterName": "unipop",
   "address": "127.0.0.1:9300",

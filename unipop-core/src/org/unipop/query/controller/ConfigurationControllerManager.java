@@ -16,7 +16,7 @@ public class ConfigurationControllerManager implements ControllerManager {
 
     public ConfigurationControllerManager(UniGraph graph, Configuration configuration) throws Exception {
         String[] providers = configuration.getStringArray("providers");
-        if(providers.length == 0) throw new InstantiationException("No 'mappings' configured for ConfigurationControllerManager");
+        if(providers.length == 0) throw new InstantiationException("No 'providers' configured for ConfigurationControllerManager");
         for(String provider : providers){
             String providerJson = readFile(provider);
             JSONObject providerConfig = new JSONObject(providerJson);

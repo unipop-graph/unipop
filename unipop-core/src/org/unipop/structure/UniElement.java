@@ -104,8 +104,8 @@ public abstract class UniElement implements Element{
 
     public static <E extends Element> Map<String, Object> fullProperties(E element) {
         Map<String, Object> properties = new HashMap<>();
-        properties.put(T.id.getAccessor(), element.id());
-        properties.put(T.label.getAccessor(), element.label());
+        properties.put(T.id.toString(), element.id());
+        properties.put(T.label.toString(), element.label());
         element.properties().forEachRemaining(property -> properties.put(property.key(), property.value()));
         return properties;
     }

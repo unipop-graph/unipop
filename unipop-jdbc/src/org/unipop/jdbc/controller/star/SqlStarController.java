@@ -95,7 +95,7 @@ public class SqlStarController extends SqlVertexController implements EdgeQueryC
 
     private HasContainer getHasId(UniQuery uniQuery){
         for (HasContainer hasContainer : uniQuery.hasContainers) {
-            if (hasContainer.getKey().equals(T.id.getAccessor()))
+            if (hasContainer.getKey().equals(T.id.toString()))
                 return hasContainer;
         }
         return null;
@@ -227,7 +227,7 @@ public class SqlStarController extends SqlVertexController implements EdgeQueryC
                         innerEdgeController.parseEdge(star, stringObjectMap);
                 });
 //            SelectJoinStep<Record> select = dslContext.select().from(tableName);
-//            select.where(JooqHelper.createCondition(new HasContainer(T.id.getAccessor(), P.eq(stringObjectMap.getValue("id")))));
+//            select.where(JooqHelper.createCondition(new HasContainer(T.id.toString(), P.eq(stringObjectMap.getValue("id")))));
 //            select.fetch().forEach(vertex -> {
 //                Map<String, Object> vertexStringObjectMap = new HashMap<>();
 //                record.intoMap().forEach((key, value) -> vertexStringObjectMap.put(key.toLowerCase(), value));

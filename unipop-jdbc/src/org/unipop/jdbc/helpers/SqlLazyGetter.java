@@ -62,8 +62,8 @@ public class SqlLazyGetter implements LazzyGetter {
             });
             SelectJoinStep<Record> select = context.select().from(table);
             List<HasContainer> hasContainers = new ArrayList<>();
-            hasContainers.add(new HasContainer(T.id.getAccessor(), P.within(ids)));
-//            hasContainers.add(new HasContainer(T.label.getAccessor(), P.within(labels)));
+            hasContainers.add(new HasContainer(T.id.toString(), P.within(ids)));
+//            hasContainers.add(new HasContainer(T.label.toString(), P.within(labels)));
             hasContainers.forEach(has-> select.where(JooqHelper.createCondition(has)));
             select.fetch().forEach(record -> {
                 Map<String, Object> stringObjectMap = new HashMap<>();

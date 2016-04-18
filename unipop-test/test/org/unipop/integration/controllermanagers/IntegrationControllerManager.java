@@ -162,7 +162,7 @@ public class IntegrationControllerManager implements ControllerProvider {
 
     private String getLabel(UniQuery uniQuery) {
         for (HasContainer hasContainer : uniQuery.hasContainers) {
-            if (hasContainer.getKey().equals(T.label.getAccessor()))
+            if (hasContainer.getKey().equals(T.label.toString()))
                 return hasContainer.getValue().toString();
         }
         return null;

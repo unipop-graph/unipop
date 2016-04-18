@@ -46,8 +46,8 @@ public class FilterHelper {
         P predicate = container.getPredicate();
         Object value = predicate.getValue();
         BiPredicate<?, ?> biPredicate = predicate.getBiPredicate();
-        if (key.equals(T.id.getAccessor())) return getIdsFilter(value);
-        else if (key.equals(T.label.getAccessor())) return getTypeFilter(value);
+        if (key.equals(T.id.toString())) return getIdsFilter(value);
+        else if (key.equals(T.label.toString())) return getTypeFilter(value);
         else if (biPredicate != null) {
             if (biPredicate instanceof Compare) return getCompareFilter(key, value, biPredicate.toString());
             else if (biPredicate instanceof Contains) return getContainsFilter(key, value, biPredicate);

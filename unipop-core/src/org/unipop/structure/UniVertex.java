@@ -36,7 +36,7 @@ public class UniVertex extends UniElement implements Vertex {
 
     @Override
     public Iterator<Edge> edges(Direction direction, String... edgeLabels) {
-        HasContainer labelPredicate = new HasContainer(T.label.getAccessor(), P.within(edgeLabels));
+        HasContainer labelPredicate = new HasContainer(T.label.toString(), P.within(edgeLabels));
         PredicatesHolder predicatesHolder = new PredicatesHolder(PredicatesHolder.Clause.And);
         predicatesHolder.add(labelPredicate);
         SearchVertexQuery searchVertexQuery = new SearchVertexQuery(Edge.class, Arrays.asList(this), direction, predicatesHolder, 0, null);
@@ -73,7 +73,7 @@ public class UniVertex extends UniElement implements Vertex {
     public Edge addEdge(final String label, final Vertex vertex, final Object... keyValues) {
         if (null == vertex) throw Graph.Exceptions.argumentCanNotBeNull("vertex");
         Map<String, Object> stringObjectMap = UniGraph.asMap(keyValues);
-        stringObjectMap.put(T.label.getAccessor(), label);
+        stringObjectMap.put(T.label.toString(), label);
         AddEdgeQuery addEdgeQuery = new AddEdgeQuery(this, vertex, stringObjectMap, null);
         return graph.getControllerManager().getControllers(AddEdgeQuery.AddEdgeController.class).stream()
                 .map(controller -> controller.addEdge(addEdgeQuery))

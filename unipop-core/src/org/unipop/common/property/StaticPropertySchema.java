@@ -1,5 +1,6 @@
 package org.unipop.common.property;
 
+import com.google.common.collect.Iterators;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.javatuples.Pair;
 
@@ -22,7 +23,7 @@ public class StaticPropertySchema implements PropertySchema {
 
     @Override
     public Iterator<Pair<String, Object>> toFields(Object prop) {
-        return null;
+        return Iterators.singletonIterator(Pair.with(this.key, this.value));
     }
 
     @Override

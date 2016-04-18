@@ -8,7 +8,8 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Before;
 import org.junit.Test;
-import org.unipop.common.test.UnipopGraphProvider;
+import org.unipop.elastic.ElasticGraphProvider;
+import org.unipop.test.UnipopGraphProvider;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -22,8 +23,8 @@ public class ConfigurationTests {
     private Graph graph;
 
     @Before
-    public void startUp() throws InstantiationException, IOException, ExecutionException, InterruptedException {
-        UnipopGraphProvider unipopGraphProvider = new UnipopGraphProvider();
+    public void startUp() throws Exception {
+        UnipopGraphProvider unipopGraphProvider = new ElasticGraphProvider();
         HashMap<String, Object> config = new HashMap<>();
         config.put("elasticsearch.upsert", true);
         final Configuration configuration = unipopGraphProvider.newGraphConfiguration("testGraph", this.getClass(), "spatialTests",
