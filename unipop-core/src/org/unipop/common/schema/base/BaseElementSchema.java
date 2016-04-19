@@ -31,7 +31,7 @@ public abstract class BaseElementSchema<E extends Element> implements ElementSch
         Map<String, Object> properties = new HashMap<>();
         this.properties.forEach((key, property) -> {
             Pair<String, Object> value = property.toProperty(sourceClone);
-            if(value != null) properties.put(key, value);
+            if(value != null) properties.put(value.getValue0(), value.getValue1());
         });
 
         if(this.dynamicProperties) {

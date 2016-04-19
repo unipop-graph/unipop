@@ -5,7 +5,7 @@ import org.json.JSONObject;
 public class PropertyBuilder {
     public static PropertySchema createPropertySchema(String key, Object value) {
         if(value instanceof String) {
-            if (key.startsWith("@"))
+            if (value.toString().startsWith("@"))
                 return new FieldPropertySchema(key, value.toString().substring(1));
             else return new StaticPropertySchema(key, value.toString());
         }

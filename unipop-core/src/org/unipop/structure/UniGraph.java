@@ -16,6 +16,8 @@ import org.unipop.process.strategyregistrar.StrategyRegistrar;
 import org.unipop.query.mutation.AddVertexQuery;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.search.SearchQuery;
+import org.unipop.test.UnipopGraphProvider;
+import org.unipop.test.UnipopStructureSuite;
 
 import java.util.*;
 
@@ -61,9 +63,10 @@ import static org.unipop.common.util.StreamUtils.asStream;
         reason = "Takes too long.")
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest", method = "g_V_repeatXoutX_timesX5X_asXaX_outXwrittenByX_asXbX_selectXa_bX_count",
         reason = "Takes too long.")
+@Graph.OptIn(UnipopGraphProvider.OptIn.UnipopStructureSuite)
+@Graph.OptIn(UnipopGraphProvider.OptIn.UnipopProcessSuite)
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_STANDARD)
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
-@Graph.OptIn("org.unipop.elastic.schema.tests.CustomTestSuite")
 public class UniGraph implements Graph {
 
 
@@ -174,17 +177,20 @@ public class UniGraph implements Graph {
     }
 
     private <E extends Element> Iterator<E> query(Class<E> returnType, Object[] ids) {
-        if (ids.length > 1 && !ids[0].getClass().equals(ids[1].getClass())) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
+        ElementHelper.validateMixedElementIds(returnType, ids);
         if (ids.length > 0 && Vertex.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator(ids);
-        HasContainer idPredicate = new HasContainer(T.id.toString(), P.within(ids));
         PredicatesHolder predicatesHolder = new PredicatesHolder(PredicatesHolder.Clause.And);
-        predicatesHolder.add(idPredicate);
-        SearchQuery<E> uniQuery = new SearchQuery<>(returnType, predicatesHolder, 0, null);
+        if(ids.length > 0) {
+            HasContainer idPredicate = new HasContainer(T.id.toString(), P.within(ids));
+            predicatesHolder.add(idPredicate);
+        }
+        SearchQuery<E> uniQuery = new SearchQuery<>(returnType, predicatesHolder, -1, null);
         return queryControllers.stream().<E>flatMap(controller -> asStream(controller.search(uniQuery))).iterator();
     }
 
     @Override
     public Vertex addVertex(final Object... keyValues) {
+
         Map<String, Object> stringObjectMap = asMap(keyValues);
 
         return controllerManager.getControllers(AddVertexQuery.AddVertexController.class).stream()

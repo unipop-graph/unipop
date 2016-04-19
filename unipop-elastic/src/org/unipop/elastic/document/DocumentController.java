@@ -7,6 +7,7 @@ import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -104,14 +105,24 @@ public class DocumentController implements SimpleController {
     @Override
     public Edge addEdge(AddEdgeQuery uniQuery) {
         UniEdge edge = new UniEdge(uniQuery.getProperties(), uniQuery.getOutVertex(), uniQuery.getInVertex(), graph);
-        index(this.edgeSchemas, edge, true);
+        try {
+            index(this.edgeSchemas, edge, true);
+        }
+        catch(DocumentAlreadyExistsException ex) {
+            throw Graph.Exceptions.edgeWithIdAlreadyExists(edge.id());
+        }
         return edge;
     }
 
     @Override
     public Vertex addVertex(AddVertexQuery uniQuery) {
         UniVertex vertex = new UniVertex(uniQuery.getProperties(), graph);
-        index(this.vertexSchemas, vertex, true);
+        try {
+            index(this.vertexSchemas, vertex, true);
+        }
+        catch(DocumentAlreadyExistsException ex){
+            throw Graph.Exceptions.vertexWithIdAlreadyExists(vertex.id());
+        }
         return vertex;
     }
 
@@ -146,18 +157,20 @@ public class DocumentController implements SimpleController {
         String[] indices = schemas.stream().map(DocSchema::getIndex).toArray(String[]::new);
         refresh(indices);
         QueryIterator.Parser<E> parser = (searchHit) -> schemas.stream().map(schema -> schema.fromFields(searchHit.getSource())).findFirst().get();
-        return new QueryIterator<>(query, 0, limit, client, parser, null, indices);
+        return new QueryIterator<>(query, 0, limit, client, parser, indices);
     }
 
     private <E extends Element> IndexResponse index(Set<? extends DocSchema<E>> schemas, E element, boolean create) {
         for(DocSchema<E> schema : schemas) {
             Map<String, Object> fields = schema.toFields(element);
             if (fields != null) {
-                Object id = fields.get("_id");
-                IndexRequestBuilder indexRequest = client.prepareIndex(schema.getIndex(), schema.getType(), id.toString())
+                String id = fields.get("id").toString();
+                String type = fields.get("type").toString();
+                IndexRequestBuilder indexRequest = client.prepareIndex(schema.getIndex(), type, id)
                         .setSource(fields).setCreate(create);
                 dirty = true;
-                return indexRequest.execute().actionGet();
+                IndexResponse indexResponse = indexRequest.execute().actionGet();
+                return indexResponse;
             }
         }
         return null;
@@ -167,7 +180,7 @@ public class DocumentController implements SimpleController {
         for(DocSchema<E> schema : schemas) {
             Map<String, Object> fields = schema.toFields(element);
             if (fields != null) {
-                Object id = fields.get("_id");
+                Object id = fields.get("id");
                 DeleteRequestBuilder deleteRequestBuilder = client.prepareDelete(schema.getIndex(), schema.getType(), id.toString());
                 dirty = true;
                 return deleteRequestBuilder.execute().actionGet();

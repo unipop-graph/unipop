@@ -39,7 +39,7 @@ public class UniVertex extends UniElement implements Vertex {
         HasContainer labelPredicate = new HasContainer(T.label.toString(), P.within(edgeLabels));
         PredicatesHolder predicatesHolder = new PredicatesHolder(PredicatesHolder.Clause.And);
         predicatesHolder.add(labelPredicate);
-        SearchVertexQuery searchVertexQuery = new SearchVertexQuery(Edge.class, Arrays.asList(this), direction, predicatesHolder, 0, null);
+        SearchVertexQuery searchVertexQuery = new SearchVertexQuery(Edge.class, Arrays.asList(this), direction, predicatesHolder, -1, null);
         return graph.getControllerManager().getControllers(SearchVertexQuery.SearchVertexController.class).stream()
                 .<Iterator<Edge>>map(controller -> controller.search(searchVertexQuery))
                 .flatMap(StreamUtils::asStream)

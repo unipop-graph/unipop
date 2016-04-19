@@ -47,7 +47,7 @@ public class FieldPropertySchema implements PropertySchema {
 
     @Override
     public Iterator<Pair<String, Object>> toFields(Object prop) {
-        return Iterators.singletonIterator(Pair.with(this.key, prop));
+        return Iterators.singletonIterator(Pair.with(this.field, prop));
     }
 
     @Override

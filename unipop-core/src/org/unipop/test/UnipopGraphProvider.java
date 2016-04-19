@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.unipop.structure.*;
 
+import java.lang.annotation.*;
 import java.util.*;
 
 public abstract class UnipopGraphProvider extends AbstractGraphProvider {
@@ -38,4 +39,22 @@ public abstract class UnipopGraphProvider extends AbstractGraphProvider {
         return IMPLEMENTATION;
     }
 
+
+    /**
+     * Defines the test suite that the implementer has decided to support and represents publicly as "passing".
+     * Marking the {@link Graph} instance with this class allows that particular test suite to run.
+     */
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.TYPE)
+    @Inherited
+    public @interface OptIn {
+
+        public static String UnipopStructureSuite = "org.unipop.test.UnipopStructureSuite";
+        public static String UnipopProcessSuite = "org.unipop.test.UnipopProcessSuite";
+
+        /**
+         * The test suite class to opt in to.
+         */
+        public String value();
+    }
 }

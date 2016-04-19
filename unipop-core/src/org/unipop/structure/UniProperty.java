@@ -11,6 +11,7 @@ public class UniProperty<V> implements Property<V> {
     protected final UniGraph graph;
 
     public UniProperty(UniElement element, String key, V value) {
+        ElementHelper.validateProperty(key, value);
         this.element = element;
         this.key = key;
         this.value = value;

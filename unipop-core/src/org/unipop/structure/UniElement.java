@@ -15,12 +15,13 @@ public abstract class UniElement implements Element{
 
     public UniElement(Map<String, Object> keyValues, UniGraph graph) {
         this.graph = graph;
-        Object id = ElementHelper.getIdValue(keyValues).orElse(null);
-        final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
+        Object id = keyValues.get(T.id.toString());
+        Object label = keyValues.get(T.label.toString());
         keyValues.remove("id");
         keyValues.remove("label");
         this.id = id != null ? id.toString() : new com.eaio.uuid.UUID().toString();
-        this.label = label;
+        this.label = label != null ? label.toString() : Vertex.DEFAULT_LABEL;
+        ElementHelper.validateLabel(this.label);
         keyValues.forEach(this::addPropertyLocal);
     }
 

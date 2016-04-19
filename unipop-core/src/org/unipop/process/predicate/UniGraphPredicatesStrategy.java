@@ -74,7 +74,7 @@ public class UniGraphPredicatesStrategy extends AbstractTraversalStrategy<Traver
 //            }
             else if(step instanceof RangeGlobalStep) {
                 RangeGlobalStep rangeGlobalStep = (RangeGlobalStep) step;
-                int limit = rangeGlobalStep.getHighRange() > Integer.MAX_VALUE ? 0 : (int) rangeGlobalStep.getHighRange();
+                int limit = rangeGlobalStep.getHighRange() > Integer.MAX_VALUE ? -1 : (int) rangeGlobalStep.getHighRange();
                 originalStep.setLimit(limit);
                 collectLabels(step, originalStep);
                 return;

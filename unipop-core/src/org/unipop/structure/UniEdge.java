@@ -17,7 +17,7 @@ public class UniEdge extends UniElement implements Edge {
 
     public UniEdge(Map<String, Object> keyValues, Vertex outV, Vertex inV, final UniGraph graph) {
         super(keyValues, graph);
-        ElementHelper.validateLabel(label);
+
         this.outVertex = outV;
         this.inVertex = inV;
     }

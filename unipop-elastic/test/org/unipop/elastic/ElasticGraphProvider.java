@@ -28,7 +28,7 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
         File file = new File(path);
         FileUtils.deleteQuietly(file);
 
-        Node node = ElasticClientFactory.createNode(CLUSTER_NAME, false, 0);
+        Node node = ElasticClientFactory.createNode(CLUSTER_NAME, false, 9300);
         client = node.client();
     }
 
@@ -43,7 +43,7 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
     @Override
     public void clear(Graph g, Configuration configuration) throws Exception {
         String indexName = configuration.getString("graphName");
-        if(g != null && indexName != null) ElasticHelper.clearIndex(client, indexName);
+        if(g != null && indexName != null) ElasticHelper.deleteIndices(client);
         super.clear(g, configuration);
     }
 
