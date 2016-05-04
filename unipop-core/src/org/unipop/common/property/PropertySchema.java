@@ -7,11 +7,8 @@ import java.util.Iterator;
 import java.util.Map;
 
 public interface PropertySchema {
-
-    Pair<String, Object> toProperty(Map<String, Object> source) ;
-
-    Iterator<Pair<String, Object>> toFields(Object prop);
-
+    Map<String, Object> toProperties(Map<String, Object> source) ;
+    Map<String, Object> toFields(Map<String, Object> properties);
     default boolean test(P predicate){
         return true;
     }

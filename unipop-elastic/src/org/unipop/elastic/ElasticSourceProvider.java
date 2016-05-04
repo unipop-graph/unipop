@@ -6,10 +6,12 @@ import org.elasticsearch.client.Client;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.unipop.common.property.DynamicPropertiesSchema;
 import org.unipop.common.refer.ReferringVertexSchema;
 import org.unipop.common.property.PropertyBuilder;
 import org.unipop.common.property.PropertySchema;
 import org.unipop.elastic.common.ElasticClientFactory;
+import org.unipop.elastic.common.ElasticHelper;
 import org.unipop.elastic.document.DocumentController;
 import org.unipop.elastic.document.schema.DocEdgeSchema;
 import org.unipop.elastic.document.schema.DocVertexSchema;
@@ -33,9 +35,10 @@ public class ElasticSourceProvider implements SourceProvider {
             String index = vertex.getString("index");
             String type = vertex.optString("_type");
             Map<String, PropertySchema> properties = getProperties(vertex);
-            boolean dynamicProperties = vertex.optBoolean("dynamicProperties", false);
+            PropertySchema dynamicProperties = getDynamicProperties(vertex);
             DocVertexSchema vertexSchema = new DocVertexSchema(index, type, properties, dynamicProperties, graph);
             docVertexSchemas.add(vertexSchema);
+            ElasticHelper.createIndex(index, client);
         }
 
         Set<DocEdgeSchema> docEdgeSchemas = new HashSet<>();
@@ -52,13 +55,23 @@ public class ElasticSourceProvider implements SourceProvider {
             String index = edge.getString("index");
             String type = edge.optString("_type");
             Map<String, PropertySchema> properties = getProperties(edge);
-            boolean dynamicProperties = edge.optBoolean("dynamicProperties", false);
+            PropertySchema dynamicProperties = getDynamicProperties(edge);
             DocEdgeSchema docEdgeSchema = new DocEdgeSchema(index, type, outVertexSchema, inVertexSchema, properties, dynamicProperties, graph);
             docEdgeSchemas.add(docEdgeSchema);
+            ElasticHelper.createIndex(index, client);
         }
 
         DocumentController documentController = new DocumentController(this.client, docVertexSchemas, docEdgeSchemas, graph);
         return Sets.newHashSet(documentController);
+    }
+
+    private PropertySchema getDynamicProperties(JSONObject elementConfig) {
+        Object dynamicPropertiesConfig = elementConfig.opt("dynamicProperties");
+        if(dynamicPropertiesConfig instanceof Boolean && (boolean)dynamicPropertiesConfig)
+            return new DynamicPropertiesSchema();
+        else if(dynamicPropertiesConfig instanceof JSONObject)
+            return new DynamicPropertiesSchema((JSONObject) dynamicPropertiesConfig);
+        return null;
     }
 
     private List<JSONObject> getConfigs(JSONObject configuration, String key) throws JSONException {
@@ -76,14 +89,16 @@ public class ElasticSourceProvider implements SourceProvider {
         propertiesConfig.put(T.id.toString(), elementConfig.get(T.id.toString()));
         propertiesConfig.put(T.label.toString(), elementConfig.get(T.label.toString()));
 
-        JSONObject properties = elementConfig.getJSONObject("properties");
-        properties.keys().forEachRemaining(key -> {
-            try {
-                propertiesConfig.put(key.toString(), properties.get(key.toString()));
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-        });
+        JSONObject properties = elementConfig.optJSONObject("properties");
+        if(properties != null) {
+            properties.keys().forEachRemaining(key -> {
+                try {
+                    propertiesConfig.put(key.toString(), properties.get(key.toString()));
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            });
+        }
 
         Map<String, PropertySchema> result = new HashMap<>();
         propertiesConfig.forEach((key, value) -> {

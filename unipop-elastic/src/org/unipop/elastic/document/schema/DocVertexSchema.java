@@ -11,7 +11,7 @@ public class DocVertexSchema extends BaseVertexSchema implements DocSchema<Verte
     private String index;
     private String type;
 
-    public DocVertexSchema(String index, String type, Map<String, PropertySchema> properties, boolean dynamicProperties, UniGraph graph) {
+    public DocVertexSchema(String index, String type, Map<String, PropertySchema> properties, PropertySchema dynamicProperties, UniGraph graph) {
         super(properties, dynamicProperties, graph);
         this.index = index;
         this.type = type;

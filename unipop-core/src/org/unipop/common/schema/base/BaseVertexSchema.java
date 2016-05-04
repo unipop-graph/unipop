@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class BaseVertexSchema extends BaseElementSchema<Vertex> implements VertexSchema {
-    public BaseVertexSchema(Map<String, PropertySchema> properties, boolean dynamicProperties, UniGraph graph) {
+    public BaseVertexSchema(Map<String, PropertySchema> properties, PropertySchema dynamicProperties, UniGraph graph) {
         super(properties, dynamicProperties, graph);
     }
 

@@ -12,7 +12,7 @@ public class DocEdgeSchema extends BaseEdgeSchema implements DocSchema<Edge> {
     private String index;
     private String type;
 
-    public DocEdgeSchema(String index, String type, VertexSchema outVertexSchema, VertexSchema inVertexSchema, Map<String, PropertySchema> properties, boolean dynamicProperties, UniGraph graph) {
+    public DocEdgeSchema(String index, String type, VertexSchema outVertexSchema, VertexSchema inVertexSchema, Map<String, PropertySchema> properties, PropertySchema dynamicProperties, UniGraph graph) {
         super(outVertexSchema, inVertexSchema, properties, dynamicProperties, graph);
         this.index = index;
         this.type = type;

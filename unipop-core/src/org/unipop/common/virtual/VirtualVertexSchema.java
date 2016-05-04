@@ -10,6 +10,6 @@ public class VirtualVertexSchema extends BaseVertexSchema {
 
 
     public VirtualVertexSchema(Map<String, PropertySchema> properties, UniGraph graph) {
-        super(properties, false, graph);
+        super(properties, null, graph);
     }
 }

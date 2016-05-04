@@ -25,11 +25,13 @@ public class QueryIterator<E extends Element> implements Iterator<E> {
         this.parser = parser;
 
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch(indices).setQuery(query);
+        if(maxSize == -1) maxSize = Integer.MAX_VALUE;
 
-        if (scrollSize > 0)
+        if (scrollSize > 0) {
             searchRequestBuilder.setScroll(new TimeValue(60000))
-                    .setSize(maxSize < scrollSize ?  maxSize : scrollSize);
-        else searchRequestBuilder.setSize(maxSize < 100000 ?  maxSize : 100000);
+                    .setSize(maxSize < scrollSize ? maxSize : scrollSize);
+        }
+        else searchRequestBuilder.setSize(maxSize);
 
         this.scrollResponse = searchRequestBuilder.execute().actionGet();
 

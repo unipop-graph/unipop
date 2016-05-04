@@ -18,21 +18,22 @@ public class MultiFieldPropertySchema implements PropertySchema {
     }
 
     @Override
-    public Pair<String, Object> toProperty(Map<String, Object> source) {
+    public Map<String, Object> toProperties(Map<String, Object> source) {
         String value = fields.stream().map(field -> source.get(field).toString()).collect(Collectors.joining(delimiter));
         if (value != null && value.length() > 0)
-            return Pair.with(key, value);
+            return Collections.singletonMap(key, value);
         else return null;
     }
 
     @Override
-    public Iterator<Pair<String, Object>> toFields(Object prop) {
-        List<Pair<String, Object>> result = new ArrayList<>(fields.size());
+    public Map<String, Object> toFields(Map<String, Object> properties) {
+        Object prop = properties.get(this.key);
+        Map<String, Object> result = new HashMap<>(fields.size());
         String[] values = prop.toString().split(delimiter);
         //TODO: what if values.length != fields.length ??? o_O
         for(int i = 0; i < fields.size(); i++) {
-            result.add(Pair.with(fields.get(i), values[i]));
+            result.put(fields.get(i), values[i]);
         }
-        return result.iterator();
+        return result;
     }
 }

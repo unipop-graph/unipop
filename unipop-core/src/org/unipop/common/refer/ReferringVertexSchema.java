@@ -11,7 +11,7 @@ public class ReferringVertexSchema extends BaseVertexSchema {
 
 
     public ReferringVertexSchema(Map<String, PropertySchema> properties, UniGraph graph) {
-        super(properties, false, graph);
+        super(properties, null, graph);
     }
 
     @Override

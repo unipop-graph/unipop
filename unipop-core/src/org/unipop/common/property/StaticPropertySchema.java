@@ -1,10 +1,8 @@
 package org.unipop.common.property;
 
-import com.google.common.collect.Iterators;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.javatuples.Pair;
 
-import java.util.Iterator;
+import java.util.Collections;
 import java.util.Map;
 
 public class StaticPropertySchema implements PropertySchema {
@@ -17,13 +15,13 @@ public class StaticPropertySchema implements PropertySchema {
     }
 
     @Override
-    public Pair<String, Object> toProperty(Map<String, Object> source) {
-        return new Pair<>(key, value);
+    public Map<String, Object> toProperties(Map<String, Object> source) {
+        return Collections.singletonMap(key, value);
     }
 
     @Override
-    public Iterator<Pair<String, Object>> toFields(Object prop) {
-        return Iterators.singletonIterator(Pair.with(this.key, this.value));
+    public Map<String, Object> toFields(Map<String, Object> prop) {
+        return Collections.singletonMap(this.key, this.value);
     }
 
     @Override

@@ -18,6 +18,7 @@ import java.util.Map;
 public class ElasticGraphProvider extends UnipopGraphProvider {
 
     private static String CLUSTER_NAME = "unipop";
+    private static String CONFIGURATION = "basic.json";
     private Client client;
 
     public ElasticGraphProvider() throws Exception{
@@ -35,7 +36,7 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
     @Override
     public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName, LoadGraphWith.GraphData loadGraphWith) {
         Map<String, Object> baseConfiguration = super.getBaseConfiguration(graphName, test, testMethodName, loadGraphWith);
-        URL url = this.getClass().getResource("/configuration/basic.json");
+        URL url = this.getClass().getResource("/configuration/" + CONFIGURATION);
         baseConfiguration.put("providers", new String[]{url.getFile()});
         return baseConfiguration;
     }

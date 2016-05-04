@@ -23,7 +23,7 @@ public class UniVertex extends UniElement implements Vertex {
 
     @Override
     public Property createProperty(String key, Object value) {
-        return new UniVertexProperty<Object>(this, key, value);
+        return new UniVertexProperty<>(this, key, value);
     }
 
     @Override

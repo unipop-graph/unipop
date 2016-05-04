@@ -17,7 +17,7 @@ public class BaseEdgeSchema extends BaseElementSchema<Edge> implements EdgeSchem
     private final VertexSchema outVertexSchema;
     private final VertexSchema inVertexSchema;
 
-    public BaseEdgeSchema(VertexSchema outVertexSchema, VertexSchema inVertexSchema, Map<String, PropertySchema> properties, boolean dynamicProperties, UniGraph graph) {
+    public BaseEdgeSchema(VertexSchema outVertexSchema, VertexSchema inVertexSchema, Map<String, PropertySchema> properties, PropertySchema dynamicProperties, UniGraph graph) {
         super(properties, dynamicProperties, graph);
         this.outVertexSchema = outVertexSchema;
         this.inVertexSchema = inVertexSchema;

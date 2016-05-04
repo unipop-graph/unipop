@@ -40,7 +40,7 @@
               "id": "@edges.vertexId",
               "label": {
                 "value": "@edges.vertexLabel",
-                "excluded": ["foo"]
+                "exclude": ["foo"]
               },
               "properties": {}
             }
