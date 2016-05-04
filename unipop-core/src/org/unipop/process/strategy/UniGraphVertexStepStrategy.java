@@ -53,18 +53,18 @@ public class UniGraphVertexStepStrategy extends AbstractTraversalStrategy<Traver
         TraversalHelper.getStepsOfClass(VertexStep.class, traversal).forEach(vertexStep -> {
             UniGraphVertexStep uniGraphVertexStep;
             if (instanceOfAny(vertexStep.getNextStep(), PropertiesStep.class, HasStep.class, FilterStep.class,
-                    PropertyValueStep.class, MapStep.class, ReducingBarrierStep.class, SideEffectStep.class)) {
+                    PropertyValueStep.class, MapStep.class, ReducingBarrierStep.class, SideEffectStep.class) && false) {
                 uniGraphVertexStep = new UniGraphVertexStepWithProperties(vertexStep, new Predicates(), uniGraph.getControllerManager());
             } else
                 uniGraphVertexStep = new UniGraphVertexStep(vertexStep, new Predicates(), uniGraph.getControllerManager());
             TraversalHelper.replaceStep(vertexStep, uniGraphVertexStep, traversal);
         });
 
-        Optional<UniGraphVertexStep> lastUniGraphVertexStep = TraversalHelper.getLastStepOfAssignableClass(UniGraphVertexStep.class, traversal);
-        if (lastUniGraphVertexStep.isPresent() && !(lastUniGraphVertexStep.get() instanceof UniGraphVertexStepWithProperties)) {
-            UniGraphVertexStep uniGraphVertexStep = lastUniGraphVertexStep.get();
-            TraversalHelper.replaceStep(uniGraphVertexStep, new UniGraphVertexStepWithProperties(uniGraphVertexStep), traversal);
-        }
+//        Optional<UniGraphVertexStep> lastUniGraphVertexStep = TraversalHelper.getLastStepOfAssignableClass(UniGraphVertexStep.class, traversal);
+//        if (lastUniGraphVertexStep.isPresent() && !(lastUniGraphVertexStep.get() instanceof UniGraphVertexStepWithProperties)) {
+//            UniGraphVertexStep uniGraphVertexStep = lastUniGraphVertexStep.get();
+//            TraversalHelper.replaceStep(uniGraphVertexStep, new UniGraphVertexStepWithProperties(uniGraphVertexStep), traversal);
+//        }
 
     }
 }

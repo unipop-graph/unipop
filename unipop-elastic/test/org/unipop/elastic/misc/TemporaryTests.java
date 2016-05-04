@@ -24,6 +24,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
+import static org.apache.tinkerpop.gremlin.process.traversal.P.eq;
+import static org.apache.tinkerpop.gremlin.process.traversal.P.not;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource.computer;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
 import static org.junit.Assert.*;
@@ -37,7 +39,13 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void test() {
-        Traversal traversal = g.V().repeat(out()).times(2);//.tail(7);
+        Traversal traversal = g.V().union(
+                repeat(union(
+                        out("created"),
+                        in("created"))).times(2),
+                repeat(union(
+                        in("created"),
+                        out("created"))).times(2)).label().groupCount();
 //        Traversal traversal = g.V().both().both().both();
         check(traversal);
     }
