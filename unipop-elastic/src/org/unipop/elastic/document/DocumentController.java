@@ -191,7 +191,7 @@ public class DocumentController implements SimpleController {
                 if (element instanceof Vertex){
                     for(DocEdgeSchema edgeDocSchema : edgeSchemas){
                         PredicatesHolder p = new PredicatesHolder(PredicatesHolder.Clause.Or);
-                        List<Vertex> es = Arrays.asList((Vertex)element);
+                        List<Vertex> es = Collections.singletonList((Vertex) element);
                         p.add(edgeDocSchema.getOutVertexSchema().toPredicates(es));
                         p.add(edgeDocSchema.getInVertexSchema().toPredicates(es));
                         Iterator<Edge> edges = search(p, Collections.singleton(edgeDocSchema), -1);

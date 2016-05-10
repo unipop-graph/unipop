@@ -20,6 +20,8 @@ import org.unipop.test.UnipopGraphProvider;
 import org.unipop.test.UnipopStructureSuite;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.unipop.common.util.StreamUtils.asStream;
 
@@ -181,7 +183,12 @@ public class UniGraph implements Graph {
         if (ids.length > 0 && Vertex.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator(ids);
         PredicatesHolder predicatesHolder = new PredicatesHolder(PredicatesHolder.Clause.And);
         if(ids.length > 0) {
-            HasContainer idPredicate = new HasContainer(T.id.toString(), P.within(ids));
+            List<Object> idsList = Stream.of(ids).map(id -> {
+                if (id instanceof Edge)
+                    return ((Edge) id).id();
+                return id;
+            }).collect(Collectors.toList());
+            HasContainer idPredicate = new HasContainer(T.id.toString(), P.within(idsList));
             predicatesHolder.add(idPredicate);
         }
         SearchQuery<E> uniQuery = new SearchQuery<>(returnType, predicatesHolder, -1, null);

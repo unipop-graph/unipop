@@ -8,6 +8,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 import org.unipop.elastic.ElasticGraphProvider;
@@ -38,36 +39,18 @@ public class TemporaryTests extends AbstractGremlinTest {
     }
 
     @Test
-    @FeatureRequirement(featureClass = Graph.Features.EdgeFeatures.class, feature = Graph.Features.EdgeFeatures.FEATURE_ADD_EDGES)
     @FeatureRequirement(featureClass = Graph.Features.VertexFeatures.class, feature = Graph.Features.VertexFeatures.FEATURE_ADD_VERTICES)
-    @FeatureRequirement(featureClass = Graph.Features.VertexFeatures.class, feature = Graph.Features.VertexFeatures.FEATURE_REMOVE_VERTICES)
-    public void shouldRemoveVertices() {
-        final int vertexCount = 500;
-        final List<Vertex> vertices = new ArrayList<>();
-        final List<Edge> edges = new ArrayList<>();
-
-        IntStream.range(0, vertexCount).forEach(i -> vertices.add(graph.addVertex()));
-        tryCommit(graph, assertVertexEdgeCounts(vertexCount, 0));
-
-        for (int i = 0; i < vertexCount; i = i + 2) {
-            final Vertex a = vertices.get(i);
-            final Vertex b = vertices.get(i + 1);
-            edges.add(a.addEdge(graphProvider.convertLabel("a" + UUID.randomUUID()), b));
-        }
-
-        tryCommit(graph, assertVertexEdgeCounts(vertexCount, vertexCount / 2));
-
-        int counter = 0;
-        for (Vertex v : vertices) {
-            counter = counter + 1;
-            v.remove();
-
-            if ((counter + 1) % 2 == 0) {
-                final int currentCounter = counter;
-                tryCommit(graph, assertVertexEdgeCounts(
-                        vertexCount - currentCounter, edges.size() - ((currentCounter + 1) / 2)));
-            }
-        }
+    @FeatureRequirement(featureClass = Graph.Features.EdgeFeatures.class, feature = Graph.Features.EdgeFeatures.FEATURE_ADD_EDGES)
+    @FeatureRequirement(featureClass = Graph.Features.EdgeFeatures.class, feature = Graph.Features.EdgeFeatures.FEATURE_STRING_IDS)
+    public void shouldIterateEdgesWithStringIdSupportUsingEdge() {
+        // if the graph supports id assigned, it should allow it.  if the graph does not, it will generate one
+        final Vertex v = graph.addVertex();
+        final Edge e1 = graph.features().edge().supportsUserSuppliedIds() ? v.addEdge("self", v, T.id, "1") : v.addEdge("self", v);
+        v.addEdge("self", v);
+        tryCommit(graph, graph -> {
+            final Edge e = graph.edges(e1).next();
+            assertEquals(e1.id(), e.id());
+        });
     }
 
     public static <T> void checkResults(final List<T> expectedResults, final Traversal<?, T> traversal) {
