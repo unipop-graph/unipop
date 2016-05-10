@@ -189,15 +189,7 @@ public class DocumentController implements SimpleController {
                     type = fields.get("type").toString();
                 }
                 if (element instanceof Vertex){
-                    for(DocEdgeSchema edgeDocSchema : edgeSchemas){
-                        PredicatesHolder p = new PredicatesHolder(PredicatesHolder.Clause.Or);
-                        List<Vertex> es = Collections.singletonList((Vertex) element);
-                        p.add(edgeDocSchema.getOutVertexSchema().toPredicates(es));
-                        p.add(edgeDocSchema.getInVertexSchema().toPredicates(es));
-                        Iterator<Edge> edges = search(p, Collections.singleton(edgeDocSchema), -1);
-                        edges.forEachRemaining(Element::remove);
-                    }
-
+                    ((Vertex) element).edges(Direction.BOTH).forEachRemaining(Element::remove);
                 }
                 DeleteRequestBuilder deleteRequestBuilder = client.prepareDelete(schema.getIndex(), type, id.toString());
                 dirty = true;

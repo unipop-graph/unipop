@@ -18,7 +18,7 @@ import java.util.Map;
 public class UniVertex extends UniElement implements Vertex {
 
     public UniVertex(Map<String, Object> keyValues, UniGraph graph) {
-        super(keyValues,graph);
+        super(keyValues, graph);
     }
 
     @Override
@@ -30,15 +30,17 @@ public class UniVertex extends UniElement implements Vertex {
     public <V> VertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value, final Object... keyValues) {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         ElementHelper.validateProperty(key, value);
-        if(keyValues != null && keyValues.length > 0) throw VertexProperty.Exceptions.metaPropertiesNotSupported();
+        if (keyValues != null && keyValues.length > 0) throw VertexProperty.Exceptions.metaPropertiesNotSupported();
         return this.property(key, value);
     }
 
     @Override
     public Iterator<Edge> edges(Direction direction, String... edgeLabels) {
-        HasContainer labelPredicate = new HasContainer(T.label.toString(), P.within(edgeLabels));
+        HasContainer labelPredicate = null;
+        if (edgeLabels.length > 0)
+            labelPredicate = new HasContainer(T.label.toString(), P.within(edgeLabels));
         PredicatesHolder predicatesHolder = new PredicatesHolder(PredicatesHolder.Clause.And);
-        predicatesHolder.add(labelPredicate);
+        if (labelPredicate != null) predicatesHolder.add(labelPredicate);
         SearchVertexQuery searchVertexQuery = new SearchVertexQuery(Edge.class, Arrays.asList(this), direction, predicatesHolder, -1, null);
         return graph.getControllerManager().getControllers(SearchVertexQuery.SearchVertexController.class).stream()
                 .<Iterator<Edge>>map(controller -> controller.search(searchVertexQuery))
@@ -65,8 +67,7 @@ public class UniVertex extends UniElement implements Vertex {
     public <V> VertexProperty<V> property(final String key) {
         if (this.properties.containsKey(key)) {
             return (VertexProperty<V>) this.properties.get(key);
-        }
-        else return VertexProperty.<V>empty();
+        } else return VertexProperty.<V>empty();
     }
 
     @Override
@@ -83,7 +84,7 @@ public class UniVertex extends UniElement implements Vertex {
     @Override
     public void remove() {
         Iterator<Edge> edges = edges(Direction.BOTH);
-        edges.forEachRemaining(edge-> {
+        edges.forEachRemaining(edge -> {
             edge.remove();
         });
         super.remove();

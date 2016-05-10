@@ -6,10 +6,8 @@ import org.apache.tinkerpop.gremlin.GraphManager;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.T;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.Test;
 import org.unipop.elastic.ElasticGraphProvider;
 import org.unipop.test.UnipopGraphProvider;
@@ -40,17 +38,28 @@ public class TemporaryTests extends AbstractGremlinTest {
 
     @Test
     @FeatureRequirement(featureClass = Graph.Features.VertexFeatures.class, feature = Graph.Features.VertexFeatures.FEATURE_ADD_VERTICES)
+    @FeatureRequirement(featureClass = Graph.Features.VertexFeatures.class, feature = Graph.Features.VertexFeatures.FEATURE_REMOVE_VERTICES)
     @FeatureRequirement(featureClass = Graph.Features.EdgeFeatures.class, feature = Graph.Features.EdgeFeatures.FEATURE_ADD_EDGES)
-    @FeatureRequirement(featureClass = Graph.Features.EdgeFeatures.class, feature = Graph.Features.EdgeFeatures.FEATURE_STRING_IDS)
-    public void shouldIterateEdgesWithStringIdSupportUsingEdge() {
-        // if the graph supports id assigned, it should allow it.  if the graph does not, it will generate one
-        final Vertex v = graph.addVertex();
-        final Edge e1 = graph.features().edge().supportsUserSuppliedIds() ? v.addEdge("self", v, T.id, "1") : v.addEdge("self", v);
-        v.addEdge("self", v);
-        tryCommit(graph, graph -> {
-            final Edge e = graph.edges(e1).next();
-            assertEquals(e1.id(), e.id());
+    @FeatureRequirement(featureClass = Graph.Features.EdgeFeatures.class, feature = Graph.Features.EdgeFeatures.FEATURE_REMOVE_EDGES)
+    public void shouldNotHaveAConcurrentModificationExceptionWhenIteratingAndRemovingAddingEdges() {
+        final Vertex v1 = graph.addVertex("name", "marko");
+        final Vertex v2 = graph.addVertex("name", "puppy");
+        v1.addEdge("knows", v2, "since", 2010);
+        v1.addEdge("pets", v2);
+        v1.addEdge("walks", v2, "location", "arroyo");
+        v2.addEdge("knows", v1, "since", 2010);
+        assertEquals(4l, IteratorUtils.count(v1.edges(Direction.BOTH)));
+        assertEquals(4l, IteratorUtils.count(v2.edges(Direction.BOTH)));
+        v1.edges(Direction.BOTH).forEachRemaining(edge -> {
+            v1.addEdge("livesWith", v2);
+            v1.addEdge("walks", v2, "location", "river");
+            edge.remove();
         });
+        //assertEquals(8, v1.outE().count().next().intValue());  TODO: Neo4j is not happy
+        //assertEquals(8, v2.outE().count().next().intValue());
+        v1.edges(Direction.BOTH).forEachRemaining(Edge::remove);
+        assertEquals(0, IteratorUtils.count(v1.edges(Direction.BOTH)));
+        assertEquals(0, IteratorUtils.count(v2.edges(Direction.BOTH)));
     }
 
     public static <T> void checkResults(final List<T> expectedResults, final Traversal<?, T> traversal) {
