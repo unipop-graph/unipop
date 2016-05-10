@@ -1,6 +1,7 @@
 package org.unipop.query.mutation;
 
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.unipop.query.StepDescriptor;
 import org.unipop.query.UniQuery;
@@ -18,6 +19,9 @@ public class AddEdgeQuery extends UniQuery{
         this.outVertex = outVertex;
         this.inVertex = inVertex;
         this.properties = properties;
+        if (properties.get("label") == null){
+            throw Element.Exceptions.labelCanNotBeNull();
+        }
     }
 
     public Vertex getInVertex() {
