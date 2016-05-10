@@ -91,7 +91,7 @@ public class DocumentController implements SimpleController {
             }
         }
         if(relevantSchemas.size() == 0) return;
-        Iterator<Vertex> search = search(allPredicates, relevantSchemas, 0);
+        Iterator<Vertex> search = search(allPredicates, relevantSchemas, -1);
 
         Map<Object, DeferredVertex> vertexMap = new HashMap<>(query.gertVertices().size());
         query.gertVertices().forEach(vertex -> vertexMap.put(vertex.id(), vertex));

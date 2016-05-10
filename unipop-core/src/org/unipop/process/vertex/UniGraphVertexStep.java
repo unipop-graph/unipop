@@ -34,13 +34,14 @@ public class UniGraphVertexStep extends AbstractStep<Vertex, Edge> implements Re
         super(vertexStep.getTraversal());
         vertexStep.getLabels().forEach(label->this.addLabel(label.toString()));
         this.direction = vertexStep.getDirection();
-        HasContainer labelsPredicate = new HasContainer(T.label.toString(), P.within(vertexStep, vertexStep.getEdgeLabels()));
+        HasContainer labelsPredicate = new HasContainer(T.label.toString(), P.within(vertexStep.getEdgeLabels()));
         this.predicates.add(labelsPredicate);
 
         this.stepDescriptor = new StepDescriptor(this);
         this.controllerManager = controllerManager;
         this.controllers = this.controllerManager.getControllers(SearchVertexQuery.SearchVertexController.class);
         this.bulk = getTraversal().getGraph().get().configuration().getInt("bulk", 100);
+        limit = -1;
     }
 
     @Override

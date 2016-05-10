@@ -7,6 +7,9 @@ import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
 import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.util.Attachable;
+import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedEdge;
+import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedFactory;
 import org.apache.tinkerpop.gremlin.structure.util.star.StarGraph;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.Test;
@@ -21,6 +24,9 @@ import java.util.stream.IntStream;
 
 import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource.computer;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.out;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.valueMap;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.values;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -35,99 +41,21 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void test() {
-        Traversal t = g.V().out().out().valueMap();
+        Traversal t = graph.traversal().V().has("name", "josh").outE("created").as("e").inV().has("name", "lop");
 
         check(t);
     }
 
     @Test
-    @FeatureRequirement(featureClass = Graph.Features.EdgeFeatures.class, feature = Graph.Features.EdgeFeatures.FEATURE_ADD_EDGES)
-    @FeatureRequirement(featureClass = Graph.Features.VertexFeatures.class, feature = Graph.Features.VertexFeatures.FEATURE_ADD_VERTICES)
-    public void shouldEvaluateConnectivityPatterns() {
-        final Vertex a;
-        final Vertex b;
-        final Vertex c;
-        final Vertex d;
-        if (graph.features().vertex().supportsUserSuppliedIds()) {
-            a = graph.addVertex(T.id, graphProvider.convertId("1", Vertex.class));
-            b = graph.addVertex(T.id, graphProvider.convertId("2", Vertex.class));
-            c = graph.addVertex(T.id, graphProvider.convertId("3", Vertex.class));
-            d = graph.addVertex(T.id, graphProvider.convertId("4", Vertex.class));
-        } else {
-            a = graph.addVertex();
-            b = graph.addVertex();
-            c = graph.addVertex();
-            d = graph.addVertex();
-        }
+    @LoadGraphWith(LoadGraphWith.GraphData.MODERN)
+    public void shouldAttachToVertex() {
+        final Edge toDetach = g.E(convertToEdgeId("josh", "created", "lop")).next();
+        final Vertex outV = toDetach.vertices(Direction.OUT).next();
+        final DetachedEdge detachedEdge = DetachedFactory.detach(toDetach, true);
+        final Edge attached = detachedEdge.attach(Attachable.Method.get(outV));
 
-        tryCommit(graph, assertVertexEdgeCounts(4, 0));
-
-        final Edge e = a.addEdge(graphProvider.convertLabel("knows"), b);
-        final Edge f = b.addEdge(graphProvider.convertLabel("knows"), c);
-        final Edge g = c.addEdge(graphProvider.convertLabel("knows"), d);
-        final Edge h = d.addEdge(graphProvider.convertLabel("knows"), a);
-
-        tryCommit(graph, assertVertexEdgeCounts(4, 4));
-
-        graph.vertices().forEachRemaining(v -> {
-            assertEquals(1l, IteratorUtils.count(v.edges(Direction.OUT)));
-            assertEquals(1l, IteratorUtils.count(v.edges(Direction.IN)));
-        });
-
-        graph.edges().forEachRemaining(x -> {
-            assertEquals(graphProvider.convertLabel("knows"), x.label());
-        });
-
-        if (graph.features().vertex().supportsUserSuppliedIds()) {
-            final Vertex va = graph.vertices(graphProvider.convertId("1", Vertex.class)).next();
-            final Vertex vb = graph.vertices(graphProvider.convertId("2", Vertex.class)).next();
-            final Vertex vc = graph.vertices(graphProvider.convertId("3", Vertex.class)).next();
-            final Vertex vd = graph.vertices(graphProvider.convertId("4", Vertex.class)).next();
-
-            assertEquals(a, va);
-            assertEquals(b, vb);
-            assertEquals(c, vc);
-            assertEquals(d, vd);
-
-            assertEquals(1l, IteratorUtils.count(va.edges(Direction.IN)));
-            assertEquals(1l, IteratorUtils.count(va.edges(Direction.OUT)));
-            assertEquals(1l, IteratorUtils.count(vb.edges(Direction.IN)));
-            assertEquals(1l, IteratorUtils.count(vb.edges(Direction.OUT)));
-            assertEquals(1l, IteratorUtils.count(vc.edges(Direction.IN)));
-            assertEquals(1l, IteratorUtils.count(vc.edges(Direction.OUT)));
-            assertEquals(1l, IteratorUtils.count(vd.edges(Direction.IN)));
-            assertEquals(1l, IteratorUtils.count(vd.edges(Direction.OUT)));
-
-            final Edge i = a.addEdge(graphProvider.convertLabel("hates"), b);
-
-            assertEquals(1l, IteratorUtils.count(va.edges(Direction.IN)));
-            assertEquals(2l, IteratorUtils.count(va.edges(Direction.OUT)));
-            assertEquals(2l, IteratorUtils.count(vb.edges(Direction.IN)));
-            assertEquals(1l, IteratorUtils.count(vb.edges(Direction.OUT)));
-            assertEquals(1l, IteratorUtils.count(vc.edges(Direction.IN)));
-            assertEquals(1l, IteratorUtils.count(vc.edges(Direction.OUT)));
-            assertEquals(1l, IteratorUtils.count(vd.edges(Direction.IN)));
-            assertEquals(1l, IteratorUtils.count(vd.edges(Direction.OUT)));
-
-            for (Edge x : IteratorUtils.list(a.edges(Direction.OUT))) {
-                assertTrue(x.label().equals(graphProvider.convertLabel("knows")) || x.label().equals(graphProvider.convertLabel("hates")));
-            }
-
-            assertEquals(graphProvider.convertLabel("hates"), i.label());
-            assertEquals(graphProvider.convertId("2", Vertex.class).toString(), i.inVertex().id().toString());
-            assertEquals(graphProvider.convertId("1", Vertex.class).toString(), i.outVertex().id().toString());
-        }
-
-        final Set<Object> vertexIds = new HashSet<>();
-        vertexIds.add(a.id());
-        vertexIds.add(a.id());
-        vertexIds.add(b.id());
-        vertexIds.add(b.id());
-        vertexIds.add(c.id());
-        vertexIds.add(d.id());
-        vertexIds.add(d.id());
-        vertexIds.add(d.id());
-        assertEquals(4, vertexIds.size());
+        assertEquals(toDetach, attached);
+        assertFalse(attached instanceof DetachedEdge);
     }
 
     public static <T> void checkResults(final List<T> expectedResults, final Traversal<?, T> traversal) {
