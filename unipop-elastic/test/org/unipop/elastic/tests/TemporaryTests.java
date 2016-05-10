@@ -37,29 +37,23 @@ public class TemporaryTests extends AbstractGremlinTest {
     }
 
     @Test
-    @FeatureRequirement(featureClass = Graph.Features.VertexFeatures.class, feature = Graph.Features.VertexFeatures.FEATURE_ADD_VERTICES)
-    @FeatureRequirement(featureClass = Graph.Features.VertexFeatures.class, feature = Graph.Features.VertexFeatures.FEATURE_REMOVE_VERTICES)
     @FeatureRequirement(featureClass = Graph.Features.EdgeFeatures.class, feature = Graph.Features.EdgeFeatures.FEATURE_ADD_EDGES)
     @FeatureRequirement(featureClass = Graph.Features.EdgeFeatures.class, feature = Graph.Features.EdgeFeatures.FEATURE_REMOVE_EDGES)
-    public void shouldNotHaveAConcurrentModificationExceptionWhenIteratingAndRemovingAddingEdges() {
-        final Vertex v1 = graph.addVertex("name", "marko");
-        final Vertex v2 = graph.addVertex("name", "puppy");
-        v1.addEdge("knows", v2, "since", 2010);
-        v1.addEdge("pets", v2);
-        v1.addEdge("walks", v2, "location", "arroyo");
-        v2.addEdge("knows", v1, "since", 2010);
-        assertEquals(4l, IteratorUtils.count(v1.edges(Direction.BOTH)));
-        assertEquals(4l, IteratorUtils.count(v2.edges(Direction.BOTH)));
-        v1.edges(Direction.BOTH).forEachRemaining(edge -> {
-            v1.addEdge("livesWith", v2);
-            v1.addEdge("walks", v2, "location", "river");
-            edge.remove();
-        });
-        //assertEquals(8, v1.outE().count().next().intValue());  TODO: Neo4j is not happy
-        //assertEquals(8, v2.outE().count().next().intValue());
-        v1.edges(Direction.BOTH).forEachRemaining(Edge::remove);
-        assertEquals(0, IteratorUtils.count(v1.edges(Direction.BOTH)));
-        assertEquals(0, IteratorUtils.count(v2.edges(Direction.BOTH)));
+    @FeatureRequirement(featureClass = Graph.Features.VertexFeatures.class, feature = Graph.Features.VertexFeatures.FEATURE_ADD_VERTICES)
+    public void shouldNotGetConcurrentModificationException() {
+        for (int i = 0; i < 25; i++) {
+            final Vertex v = graph.addVertex();
+            v.addEdge("friend", v);
+        }
+
+        tryCommit(graph, assertVertexEdgeCounts(25, 25));
+
+        for (Edge e : g.E().toList()) {
+            e.remove();
+            tryCommit(graph);
+        }
+
+        tryCommit(graph, assertVertexEdgeCounts(25, 0));
     }
 
     public static <T> void checkResults(final List<T> expectedResults, final Traversal<?, T> traversal) {

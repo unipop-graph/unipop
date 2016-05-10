@@ -25,6 +25,7 @@ public class UniGraphStartStep<S,E extends Element> extends GraphStep<S,E> imple
         this.stepDescriptor = new StepDescriptor(this);
         this.controllers = controllerManager.getControllers(SearchQuery.SearchController.class);
         this.setIteratorSupplier(this::query);
+        limit = -1;
     }
 
     private Iterator<E> query() {
