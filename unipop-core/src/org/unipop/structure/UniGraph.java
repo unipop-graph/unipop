@@ -180,15 +180,15 @@ public class UniGraph implements Graph {
 
     private <E extends Element> Iterator<E> query(Class<E> returnType, Object[] ids) {
         ElementHelper.validateMixedElementIds(returnType, ids);
-        if (ids.length > 0 && Vertex.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator(ids);
+//        if (ids.length > 0 && Vertex.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator(ids);
         PredicatesHolder predicatesHolder = new PredicatesHolder(PredicatesHolder.Clause.And);
         if(ids.length > 0) {
-            List<Object> idsList = Stream.of(ids).map(id -> {
-                if (id instanceof Edge)
-                    return ((Edge) id).id();
+            List<Object> collect = Stream.of(ids).map(id -> {
+                if (id instanceof Element)
+                    return ((Element) id).id();
                 return id;
             }).collect(Collectors.toList());
-            HasContainer idPredicate = new HasContainer(T.id.toString(), P.within(idsList));
+            HasContainer idPredicate = new HasContainer(T.id.toString(), P.within(collect));
             predicatesHolder.add(idPredicate);
         }
         SearchQuery<E> uniQuery = new SearchQuery<>(returnType, predicatesHolder, -1, null);

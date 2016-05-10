@@ -14,7 +14,7 @@ public class AddEdgeQuery extends UniQuery{
     private final Vertex inVertex;
     private final Map<String, Object> properties;
 
-    public AddEdgeQuery(Vertex outVertex, Vertex inVertex, Map<String, Object> properties, StepDescriptor stepDescriptor) {
+    public AddEdgeQuery(Vertex inVertex, Vertex outVertex, Map<String, Object> properties, StepDescriptor stepDescriptor) {
         super(stepDescriptor);
         this.outVertex = outVertex;
         this.inVertex = inVertex;
