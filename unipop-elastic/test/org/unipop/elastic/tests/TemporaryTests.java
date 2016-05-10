@@ -1,20 +1,23 @@
 package org.unipop.elastic.tests;
 
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
+import org.apache.tinkerpop.gremlin.FeatureRequirement;
 import org.apache.tinkerpop.gremlin.GraphManager;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 import org.unipop.elastic.ElasticGraphProvider;
 import org.unipop.test.UnipopGraphProvider;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource.computer;
@@ -32,6 +35,39 @@ public class TemporaryTests extends AbstractGremlinTest {
         Traversal t = g.V().out().out().valueMap();
 
         check(t);
+    }
+
+    @Test
+    @FeatureRequirement(featureClass = Graph.Features.EdgeFeatures.class, feature = Graph.Features.EdgeFeatures.FEATURE_ADD_EDGES)
+    @FeatureRequirement(featureClass = Graph.Features.VertexFeatures.class, feature = Graph.Features.VertexFeatures.FEATURE_ADD_VERTICES)
+    @FeatureRequirement(featureClass = Graph.Features.VertexFeatures.class, feature = Graph.Features.VertexFeatures.FEATURE_REMOVE_VERTICES)
+    public void shouldRemoveVertices() {
+        final int vertexCount = 500;
+        final List<Vertex> vertices = new ArrayList<>();
+        final List<Edge> edges = new ArrayList<>();
+
+        IntStream.range(0, vertexCount).forEach(i -> vertices.add(graph.addVertex()));
+        tryCommit(graph, assertVertexEdgeCounts(vertexCount, 0));
+
+        for (int i = 0; i < vertexCount; i = i + 2) {
+            final Vertex a = vertices.get(i);
+            final Vertex b = vertices.get(i + 1);
+            edges.add(a.addEdge(graphProvider.convertLabel("a" + UUID.randomUUID()), b));
+        }
+
+        tryCommit(graph, assertVertexEdgeCounts(vertexCount, vertexCount / 2));
+
+        int counter = 0;
+        for (Vertex v : vertices) {
+            counter = counter + 1;
+            v.remove();
+
+            if ((counter + 1) % 2 == 0) {
+                final int currentCounter = counter;
+                tryCommit(graph, assertVertexEdgeCounts(
+                        vertexCount - currentCounter, edges.size() - ((currentCounter + 1) / 2)));
+            }
+        }
     }
 
     public static <T> void checkResults(final List<T> expectedResults, final Traversal<?, T> traversal) {

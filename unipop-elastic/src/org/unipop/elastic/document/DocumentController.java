@@ -184,7 +184,22 @@ public class DocumentController implements SimpleController {
             Map<String, Object> fields = schema.toFields(element);
             if (fields != null) {
                 Object id = fields.get("id");
-                DeleteRequestBuilder deleteRequestBuilder = client.prepareDelete(schema.getIndex(), schema.getType(), id.toString());
+                String type = schema.getType();
+                if (type.equals("")){
+                    type = fields.get("type").toString();
+                }
+                if (element instanceof Vertex){
+                    for(DocEdgeSchema edgeDocSchema : edgeSchemas){
+                        PredicatesHolder p = new PredicatesHolder(PredicatesHolder.Clause.Or);
+                        List<Vertex> es = Arrays.asList((Vertex)element);
+                        p.add(edgeDocSchema.getOutVertexSchema().toPredicates(es));
+                        p.add(edgeDocSchema.getInVertexSchema().toPredicates(es));
+                        Iterator<Edge> edges = search(p, Collections.singleton(edgeDocSchema), -1);
+                        edges.forEachRemaining(Element::remove);
+                    }
+
+                }
+                DeleteRequestBuilder deleteRequestBuilder = client.prepareDelete(schema.getIndex(), type, id.toString());
                 dirty = true;
                 return deleteRequestBuilder.execute().actionGet();
             }
