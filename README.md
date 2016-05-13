@@ -12,7 +12,7 @@ Most organisations have their data spread out in multiple data stores
 - etc
 
 There are different reasons for this:
-- Multiple projects
+- Different projects
 - NoSql "Hybrid" Architectures
 - Multiple application versions
 - Legacy Databases
