@@ -2,9 +2,9 @@ _**`This project is in active development. A stable version will be released soo
 
 # <img src="https://raw.githubusercontent.com/rmagen/unipop/master/docs/images/unipop-logo.png" width=70 style="vertical-align:middle;"> <span style="vertical-align:middle;">Unipop</span>
 
-Unipop is a tool meant to simplify and boost Data Analytics and Business Intelligence by providing a streamlined way to query your data.
+Unipop aims to simplify and improve Data Analytics and Business Intelligence
 - **Data Federation** - Analyze different sources of data together. No data migration is needed.
-- **Data Virtualization** - Map data in different formats to a unified graph schema. No data restructuring needed.
+- **Data Virtualization** - Map data in different formats to a unified graph schema. No data restructuring is needed.
 - **Graph Data Model** -  Unleash the power of Graphs using the
 [Gremlin](http://tinkerpop.apache.org/gremlin.html) query language.
 ([SQL](https://github.com/twilmes/sql-gremlin) and
@@ -25,20 +25,20 @@ to properly analyze your data and get any meaningful and useful information out 
 Unipop aims to mitigate these difficulties.
 
 ### Why Gremlin?
-**SQL**, the industry standard, is a fine tool for many use-cases. However, it does have its down-sides:
+**SQL**, the industry standard, is a fine tool for many use cases. However it does have its down sides:
 - Structured Schema - Tables and their fields need to be explicitly defined.
 - Relationships - The Relational Data Model can quickly become a [JOIN nightmare](http://sql2gremlin.com/#_recommendation).
 - Declarative - The exclusively declarative nature of SQL confines it to very specific query structures.
 - Usability - Queries are loosely-typed "free text", often requiring complicated ORMs.
 
 **Gremlin** can better handle varied, multi-connected, and frequently changing data:
-- Unstructured Schema - It's not necessary to pre-define types. Elements are either a Vertex or Edge.
+- Unstructured Schema - It's not necessary to pre-define types or their properties. Elements are either a Vertex or Edge.
 - Connections - Connections (i.e. Edges) are an integral part of a Graph Data Model and the Gremlin query language.
 - Imperative _and_ Declarative - Gremlin queries are written in a functional, pipeline-styled structure,
 providing considerable flexibility in queries.
 - Usability - Host Language embedding. Easier to read, write, find errors, and reuse query code.
 
-**Apache Tinkerpop**, the Gremlin framework, also provides other features:
+**Apache Tinkerpop**, the Gremlin framework, also provides other useful features:
 - Query optimization
 - Additional Query Languages
 - Language Drivers
