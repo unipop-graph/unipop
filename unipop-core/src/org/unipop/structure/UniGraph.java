@@ -197,25 +197,10 @@ public class UniGraph implements Graph {
     @Override
     public Vertex addVertex(final Object... keyValues) {
 
-        Map<String, Object> stringObjectMap = asMap(keyValues);
+        Map<String, Object> stringObjectMap = ElementHelper.asMap(keyValues);
 
         return controllerManager.getControllers(AddVertexQuery.AddVertexController.class).stream()
                 .map(controller -> controller.addVertex(new AddVertexQuery(stringObjectMap, null)))
                 .findFirst().get();
-    }
-
-    public static Map<String, Object> asMap(Object[] keyValues){
-        ElementHelper.legalPropertyKeyValueArray(keyValues);
-        Map<String, Object> map = new HashMap<>();
-        if (keyValues != null) {
-            //if(keyValues.length % 2 == 1) throw Element.Exceptions.providedKeyValuesMustBeAMultipleOfTwo();
-            for (int i = 0; i < keyValues.length; i = i + 2) {
-                String key = keyValues[i].toString();
-                Object value = keyValues[i + 1];
-                ElementHelper.validateProperty(key,value);
-                map.put(key, value);
-            }
-        }
-        return map;
     }
 }

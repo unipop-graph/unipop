@@ -72,7 +72,7 @@ public class UniVertex extends UniElement implements Vertex {
     @Override
     public Edge addEdge(final String label, final Vertex vertex, final Object... keyValues) {
         if (null == vertex) throw Graph.Exceptions.argumentCanNotBeNull("vertex");
-        Map<String, Object> stringObjectMap = UniGraph.asMap(keyValues);
+        Map<String, Object> stringObjectMap = ElementHelper.asMap(keyValues);
         stringObjectMap.put(T.label.toString(), label);
         AddEdgeQuery addEdgeQuery = new AddEdgeQuery(this, vertex, stringObjectMap, null);
         return graph.getControllerManager().getControllers(AddEdgeQuery.AddEdgeController.class).stream()
