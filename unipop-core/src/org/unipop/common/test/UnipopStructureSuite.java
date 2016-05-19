@@ -1,4 +1,4 @@
-package org.unipop.test;
+package org.unipop.common.test;
 
 import org.apache.tinkerpop.gremlin.AbstractGremlinSuite;
 import org.apache.tinkerpop.gremlin.algorithm.generator.CommunityGeneratorTest;
@@ -7,10 +7,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.TraversalEngine;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.io.*;
 import org.apache.tinkerpop.gremlin.structure.util.detached.*;
-import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceEdgeTest;
-import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceGraphTest;
-import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceVertexPropertyTest;
-import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceVertexTest;
+import org.apache.tinkerpop.gremlin.structure.util.reference.*;
 import org.apache.tinkerpop.gremlin.structure.util.star.StarGraphTest;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.RunnerBuilder;
@@ -29,7 +26,7 @@ public class UnipopStructureSuite extends AbstractGremlinSuite {
             PropertyTest.class,
             GraphTest.class,
             FeatureSupportTest.class,
-//
+
             DetachedGraphTest.class,
             DetachedEdgeTest.class,
             DetachedVertexPropertyTest.class,

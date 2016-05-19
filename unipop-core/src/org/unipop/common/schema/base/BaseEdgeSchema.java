@@ -4,9 +4,10 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.unipop.common.schema.EdgeSchema;
-import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.common.schema.VertexSchema;
+import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.common.property.PropertySchema;
+import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.structure.UniEdge;
 import org.unipop.structure.UniGraph;
 
@@ -17,8 +18,8 @@ public class BaseEdgeSchema extends BaseElementSchema<Edge> implements EdgeSchem
     private final VertexSchema outVertexSchema;
     private final VertexSchema inVertexSchema;
 
-    public BaseEdgeSchema(VertexSchema outVertexSchema, VertexSchema inVertexSchema, Map<String, PropertySchema> properties, PropertySchema dynamicProperties, UniGraph graph) {
-        super(properties, dynamicProperties, graph);
+    public BaseEdgeSchema(VertexSchema outVertexSchema, VertexSchema inVertexSchema, List<PropertySchema> properties, UniGraph graph) {
+        super(properties, graph);
         this.outVertexSchema = outVertexSchema;
         this.inVertexSchema = inVertexSchema;
     }
@@ -44,26 +45,16 @@ public class BaseEdgeSchema extends BaseElementSchema<Edge> implements EdgeSchem
     @Override
     public PredicatesHolder toPredicates(PredicatesHolder predicates, List<Vertex> vertices, Direction direction) {
         PredicatesHolder edgePredicates = this.toPredicates(predicates);
-        if(edgePredicates == null) return null;
         PredicatesHolder vertexPredicates = this.getVertexPredicates(vertices, direction);
-        if(vertexPredicates == null) return null;
-        edgePredicates.add(vertexPredicates);
-        return edgePredicates;
+        return PredicatesHolderFactory.and(edgePredicates, vertexPredicates);
     }
 
     private PredicatesHolder getVertexPredicates(List<Vertex> vertices, Direction direction) {
         PredicatesHolder outPredicates = this.outVertexSchema.toPredicates(vertices);
         PredicatesHolder inPredicates = this.inVertexSchema.toPredicates(vertices);
-        if(inPredicates == null && outPredicates == null) return null;
         if(direction.equals(Direction.OUT)) return outPredicates;
         if(direction.equals(Direction.IN)) return inPredicates;
-        if(outPredicates == null || outPredicates.isEmpty()) return inPredicates;
-        if(inPredicates == null || inPredicates.isEmpty()) return outPredicates;
-
-        PredicatesHolder orPredicate = new PredicatesHolder(PredicatesHolder.Clause.Or);
-        orPredicate.add(inPredicates);
-        orPredicate.add(outPredicates);
-        return orPredicate;
+        return PredicatesHolderFactory.or(inPredicates, outPredicates);
     }
 
     @Override

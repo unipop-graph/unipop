@@ -13,32 +13,29 @@ import org.unipop.process.predicate.ExistsP;
 import org.unipop.query.predicates.PredicatesHolder;
 
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
 
 public class FilterHelper {
     public static FilterBuilder createFilterBuilder(PredicatesHolder predicatesHolder) {
-        if(!predicatesHolder.hasChildren() && predicatesHolder.getPredicates().size() == 1)
-            return createFilter(predicatesHolder.getPredicates().stream().findFirst().get());
-        if(!predicatesHolder.hasPredicates() && predicatesHolder.getChildren().size() == 1)
-            return createFilterBuilder(predicatesHolder.getChildren().stream().findFirst().get());
+        Set<FilterBuilder> predicateFilters = predicatesHolder.getPredicates().stream()
+                .map(FilterHelper::createFilter).collect(Collectors.toSet());
+        Set<FilterBuilder> childFilters = predicatesHolder.getChildren().stream()
+                .map(FilterHelper::createFilterBuilder).collect(Collectors.toSet());
+        predicateFilters.addAll(childFilters);
+        FilterBuilder[] filterBuilders = predicateFilters.toArray(new FilterBuilder[predicateFilters.size()]);
 
-        BoolFilterBuilder boolFilter = FilterBuilders.boolFilter();
+        if(predicateFilters.size() == 0) return FilterBuilders.matchAllFilter();
+        if(predicateFilters.size() == 1) return predicateFilters.iterator().next();
 
-        predicatesHolder.getPredicates().forEach(has -> {
-            FilterBuilder filter = createFilter(has);
-            addFilter(boolFilter, filter, predicatesHolder.getClause());
-        });
-        predicatesHolder.getChildren().forEach(childPredicates -> {
-            FilterBuilder filter = createFilterBuilder(childPredicates);
-            addFilter(boolFilter, filter, predicatesHolder.getClause());
-        });
-
-        return boolFilter;
-    }
-
-    private static void addFilter(BoolFilterBuilder boolFilter, FilterBuilder filter, PredicatesHolder.Clause clause) {
-        if(clause.equals(PredicatesHolder.Clause.And)) boolFilter.must(filter);
-        else boolFilter.should(filter);
+        if(predicatesHolder.getClause().equals(PredicatesHolder.Clause.And)){
+            return FilterBuilders.andFilter(filterBuilders);
+        }
+        else if(predicatesHolder.getClause().equals(PredicatesHolder.Clause.Or)){
+            return  FilterBuilders.orFilter(filterBuilders);
+        }
+        else throw new IllegalArgumentException("Unexpected clause in predicatesHolder: " + predicatesHolder);
     }
 
     public static FilterBuilder createFilter(HasContainer container) {
@@ -111,6 +108,8 @@ public class FilterHelper {
             if (value == null) return FilterBuilders.existsFilter(key);
             else if (value instanceof Iterable)
                 return FilterBuilders.termsFilter(key, (Iterable) value);
+            else if (value.getClass().isArray())
+                return FilterBuilders.termsFilter(key, (Object[]) value);
             else return FilterBuilders.termsFilter(key, value);
         }
         else throw new IllegalArgumentException("predicate not supported by unipop: " + biPredicate.toString());

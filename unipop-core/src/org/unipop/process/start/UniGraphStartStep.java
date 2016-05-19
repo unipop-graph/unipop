@@ -1,13 +1,13 @@
 package org.unipop.process.start;
 
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.unipop.process.predicate.ReceivesPredicatesHolder;
 import org.unipop.query.StepDescriptor;
 import org.unipop.query.controller.ControllerManager;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.unipop.common.util.StreamUtils;
+import org.unipop.common.util.ConversionUtils;
 import org.unipop.query.predicates.PredicatesHolder;
+import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.SearchQuery;
 
 import java.util.*;
@@ -16,7 +16,7 @@ public class UniGraphStartStep<S,E extends Element> extends GraphStep<S,E> imple
 
     private final StepDescriptor stepDescriptor;
     List<SearchQuery.SearchController>  controllers;
-    private PredicatesHolder predicates = new PredicatesHolder(PredicatesHolder.Clause.And);
+    private PredicatesHolder predicates = PredicatesHolderFactory.empty();
     private int limit;
 
     public UniGraphStartStep(GraphStep<S, E> originalStep, ControllerManager controllerManager) {
@@ -29,13 +29,13 @@ public class UniGraphStartStep<S,E extends Element> extends GraphStep<S,E> imple
     }
 
     private Iterator<E> query() {
-        SearchQuery<E> searchQuery = new SearchQuery<E>(returnClass, predicates, limit, stepDescriptor);
-        return controllers.stream().<Iterator<E>>map(controller -> controller.search(searchQuery)).flatMap(StreamUtils::asStream).iterator();
+        SearchQuery<E> searchQuery = new SearchQuery<>(returnClass, predicates, limit, stepDescriptor);
+        return controllers.stream().<Iterator<E>>map(controller -> controller.search(searchQuery)).flatMap(ConversionUtils::asStream).iterator();
     }
 
     @Override
-    public void addPredicate(HasContainer predicatesHolder) {
-        this.predicates.add(predicatesHolder);
+    public void addPredicate(PredicatesHolder predicatesHolder) {
+        this.predicates = predicatesHolder;
     }
 
     @Override

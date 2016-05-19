@@ -6,15 +6,15 @@ import org.unipop.common.schema.base.BaseEdgeSchema;
 import org.unipop.common.property.PropertySchema;
 import org.unipop.structure.UniGraph;
 
-import java.util.Map;
+import java.util.List;
 
 public class NestedEdgeSchema extends BaseEdgeSchema implements NestedSchema<Edge> {
     private String path;
     private String index;
     private String type;
 
-    public NestedEdgeSchema(UniGraph graph, String path, String index, String type, VertexSchema outVertexSchema, VertexSchema inVertexSchema, Map<String, PropertySchema> properties, PropertySchema dynamicProperties) {
-        super(outVertexSchema, inVertexSchema, properties, dynamicProperties, graph);
+    public NestedEdgeSchema(UniGraph graph, String path, String index, String type, VertexSchema outVertexSchema, VertexSchema inVertexSchema, List<PropertySchema> properties) {
+        super(outVertexSchema, inVertexSchema, properties, graph);
         this.path = path;
         this.index = index;
         this.type = type;
@@ -31,7 +31,7 @@ public class NestedEdgeSchema extends BaseEdgeSchema implements NestedSchema<Edg
     }
 
     @Override
-    public String getType() {
+    public String getType(Edge fields) {
         return this.type;
     }
 }

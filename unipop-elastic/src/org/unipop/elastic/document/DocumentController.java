@@ -11,7 +11,7 @@ import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.unipop.common.refer.DeferredVertex;
+import org.unipop.common.schema.referred.DeferredVertex;
 import org.unipop.elastic.common.FilterHelper;
 import org.unipop.elastic.common.QueryIterator;
 import org.unipop.elastic.document.schema.DocEdgeSchema;
@@ -23,6 +23,7 @@ import org.unipop.query.mutation.AddEdgeQuery;
 import org.unipop.query.mutation.AddVertexQuery;
 import org.unipop.query.mutation.PropertyQuery;
 import org.unipop.query.mutation.RemoveQuery;
+import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.query.search.SearchQuery;
 import org.unipop.query.search.SearchVertexQuery;
@@ -32,6 +33,8 @@ import org.unipop.structure.UniGraph;
 import org.unipop.structure.UniVertex;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class DocumentController implements SimpleController {
 
@@ -52,52 +55,33 @@ public class DocumentController implements SimpleController {
     @Override
     public <E extends Element>  Iterator<E> search(SearchQuery<E> uniQuery) {
         Set<? extends DocSchema<E>> schemas = getSchemas(uniQuery.getReturnType());
-
-        PredicatesHolder allPredicates = new PredicatesHolder(PredicatesHolder.Clause.Or);
-        Set<DocSchema<E>> relevantSchemas = new HashSet<>();
-        for(DocSchema<E> schema : schemas) {
-            PredicatesHolder vertexPredicates = schema.toPredicates(uniQuery.getPredicates());
-            if(vertexPredicates != null) {
-                allPredicates.add(vertexPredicates);
-                relevantSchemas.add(schema);
-            }
-        }
-        return search(allPredicates, relevantSchemas, uniQuery.getLimit());
+        Set<PredicatesHolder> schemasPredicates = schemas.stream().map(schema ->
+                schema.toPredicates(uniQuery.getPredicates())).collect(Collectors.toSet());
+        PredicatesHolder schemaPredicateHolders = PredicatesHolderFactory.or(schemasPredicates);
+        return search(schemaPredicateHolders, schemas, uniQuery.getLimit());
     }
 
     @Override
     public Iterator<Edge> search(SearchVertexQuery uniQuery) {
-        PredicatesHolder allPredicates = new PredicatesHolder(PredicatesHolder.Clause.Or);
-        Set<DocEdgeSchema> relevantSchemas = new HashSet<>();
-        for(DocEdgeSchema schema : edgeSchemas) {
-            PredicatesHolder vertexPredicates = schema.toPredicates(uniQuery.getPredicates(), uniQuery.gertVertices(), uniQuery.getDirection());
-            if(vertexPredicates != null) {
-                allPredicates.add(vertexPredicates);
-                relevantSchemas.add(schema);
-            }
-        }
-        return search(allPredicates, relevantSchemas, uniQuery.getLimit());
+        Set<PredicatesHolder> schemasPredicates = edgeSchemas.stream().map(schema ->
+                schema.toPredicates(uniQuery.getPredicates(), uniQuery.gertVertices(), uniQuery.getDirection())).collect(Collectors.toSet());
+        PredicatesHolder schemaPredicateHolders = PredicatesHolderFactory.or(schemasPredicates);
+        return search(schemaPredicateHolders, edgeSchemas, uniQuery.getLimit());
     }
 
     @Override
-    public void fetchProperties(DeferredVertexQuery query) {
-        PredicatesHolder allPredicates = new PredicatesHolder(PredicatesHolder.Clause.Or);
-        Set<DocVertexSchema> relevantSchemas = new HashSet<>();
-        for(DocVertexSchema schema : vertexSchemas) {
-            PredicatesHolder vertexPredicates = schema.toPredicates(query.gertVertices());
-            if(vertexPredicates != null) {
-                allPredicates.add(vertexPredicates);
-                relevantSchemas.add(schema);
-            }
-        }
-        if(relevantSchemas.size() == 0) return;
-        Iterator<Vertex> search = search(allPredicates, relevantSchemas, -1);
+    public void fetchProperties(DeferredVertexQuery uniQuery) {
+        Set<PredicatesHolder> schemasPredicates = vertexSchemas.stream().map(schema ->
+                schema.toPredicates(uniQuery.getVertices())).collect(Collectors.toSet());
+        PredicatesHolder schemaPredicateHolders = PredicatesHolderFactory.or(schemasPredicates);
 
-        Map<Object, DeferredVertex> vertexMap = new HashMap<>(query.gertVertices().size());
-        query.gertVertices().forEach(vertex -> vertexMap.put(vertex.id(), vertex));
+        if(schemaPredicateHolders.isEmpty()) return;
+        Iterator<Vertex> search = search(schemaPredicateHolders, vertexSchemas, -1);
+
+        Map<Object, DeferredVertex> vertexMap = uniQuery.getVertices().stream().collect(Collectors.toMap(UniElement::id, Function.identity()));
         search.forEachRemaining(newVertex -> {
             DeferredVertex deferredVertex = vertexMap.get(newVertex.id());
-            if(deferredVertex != null) deferredVertex.loadProperties(UniElement.fullProperties(newVertex));
+            if(deferredVertex != null) deferredVertex.loadProperties(newVertex);
         });
 
     }
@@ -165,15 +149,12 @@ public class DocumentController implements SimpleController {
 
     private <E extends Element> IndexResponse index(Set<? extends DocSchema<E>> schemas, E element, boolean create) {
         for(DocSchema<E> schema : schemas) {
-            Map<String, Object> fields = schema.toFields(element);
-            if (fields != null) {
-                String id = fields.get("id").toString();
-                String type = fields.get("type").toString();
-                IndexRequestBuilder indexRequest = client.prepareIndex(schema.getIndex(), type, id)
-                        .setSource(fields).setCreate(create);
+            DocSchema.Document document = schema.toDocument(element);
+            if (document!= null) {
+                IndexRequestBuilder indexRequest = client.prepareIndex(document.getIndex(), document.getType(), document.getId())
+                        .setSource(document.getFields()).setCreate(create);
                 dirty = true;
-                IndexResponse indexResponse = indexRequest.execute().actionGet();
-                return indexResponse;
+                return indexRequest.execute().actionGet();
             }
         }
         return null;
@@ -181,17 +162,9 @@ public class DocumentController implements SimpleController {
 
     private <E extends Element> DeleteResponse delete(Set<? extends DocSchema<E>> schemas, E element) {
         for(DocSchema<E> schema : schemas) {
-            Map<String, Object> fields = schema.toFields(element);
-            if (fields != null) {
-                Object id = fields.get("id");
-                String type = schema.getType();
-                if (type.equals("")){
-                    type = fields.get("type").toString();
-                }
-                if (element instanceof Vertex){
-                    ((Vertex) element).edges(Direction.BOTH).forEachRemaining(Element::remove);
-                }
-                DeleteRequestBuilder deleteRequestBuilder = client.prepareDelete(schema.getIndex(), type, id.toString());
+            DocSchema.Document document = schema.toDocument(element);
+            if (document != null) {
+                DeleteRequestBuilder deleteRequestBuilder = client.prepareDelete(document.getIndex(), document.getType(), document.getId());
                 dirty = true;
                 return deleteRequestBuilder.execute().actionGet();
             }

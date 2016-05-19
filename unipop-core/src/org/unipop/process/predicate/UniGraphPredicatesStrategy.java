@@ -10,6 +10,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversal
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.unipop.process.start.UniGraphStartStepStrategy;
 import org.unipop.process.vertex.UniGraphVertexStepStrategy;
+import org.unipop.query.predicates.PredicatesHolder;
+import org.unipop.query.predicates.PredicatesHolderFactory;
 
 import java.util.*;
 
@@ -34,14 +36,16 @@ public class UniGraphPredicatesStrategy extends AbstractTraversalStrategy<Traver
 
     private void addPredicates(ReceivesPredicatesHolder originalStep, Traversal.Admin traversal){
         Step step = originalStep;
-        List<HasContainer> hasContainers = new ArrayList<>();
+        Set<PredicatesHolder> predicates = new HashSet<>();
+
 
         while(true) {
             if(step instanceof HasContainerHolder) {
                 HasContainerHolder hasContainerHolder = (HasContainerHolder) step;
-                hasContainerHolder.getHasContainers().forEach(originalStep::addPredicate);
+                hasContainerHolder.getHasContainers().stream().map(PredicatesHolderFactory::predicate)
+                        .forEach(predicates::add);
                 traversal.removeStep(step);
-                if(collectLabels(step, originalStep)) return;
+                if(collectLabels(step, originalStep)) break;
             }
 //            else if (TraversalFilterStep.class.isAssignableFrom(step.getClass())) {
 //                TraversalFilterStep traversalFilterStep = (TraversalFilterStep)step;
@@ -77,14 +81,18 @@ public class UniGraphPredicatesStrategy extends AbstractTraversalStrategy<Traver
                 int limit = rangeGlobalStep.getHighRange() > Integer.MAX_VALUE ? -1 : (int) rangeGlobalStep.getHighRange();
                 originalStep.setLimit(limit);
                 collectLabels(step, originalStep);
-                return;
+                break;
             }
             else {
-                return;
+
+                break;
             }
 
             step = step.getNextStep();
         }
+
+        PredicatesHolder predicate = PredicatesHolderFactory.and(predicates);
+        originalStep.addPredicate(predicate);
     }
 
     private boolean collectLabels(Step<?, ?> step, Step<?, ?> originalStep) {

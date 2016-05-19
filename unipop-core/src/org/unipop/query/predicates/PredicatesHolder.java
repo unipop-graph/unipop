@@ -2,59 +2,48 @@ package org.unipop.query.predicates;
 
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Collections;
+import java.util.Set;
 
 public class PredicatesHolder {
-    public enum Clause{
+
+    public enum Clause {
         And,
-        Or
+        Or,
+        Abort
     }
 
-    private Collection<HasContainer> predicates = new ArrayList<>();
     private Clause clause;
-    private Collection<PredicatesHolder> children = new ArrayList<>();
+    private Set<HasContainer> predicates;
+    private Set<PredicatesHolder> children;
 
-    public PredicatesHolder(Clause clause) {
+    public PredicatesHolder(Clause clause, Set<HasContainer> predicates, Set<PredicatesHolder> children) {
         this.clause = clause;
+        this.predicates = predicates != null ? predicates : Collections.emptySet();
+        this.children = children != null ? children : Collections.emptySet();
     }
 
-    public Collection<HasContainer> getPredicates() {
+    public PredicatesHolder.Clause getClause() {
+        return this.clause;
+    }
+    public Set<HasContainer> getPredicates() {
         return predicates;
     }
-
-    public Clause getClause() {
-        return clause;
-    }
-
-    public Collection<PredicatesHolder> getChildren() {
+    public Set<PredicatesHolder> getChildren() {
         return children;
     }
 
-    public void add(HasContainer hasContainer) {
-        if(hasContainer != null)
-            predicates.add(hasContainer);
+    public boolean aborted() {
+        return this.clause.equals(Clause.Abort);
     }
 
-    public void add(PredicatesHolder predicatesHolder) {
-        if(predicatesHolder == null) return;
-        if(predicatesHolder.isEmpty()) return;
-        if(predicatesHolder.getClause().equals(this.getClause())) {
-            predicatesHolder.getPredicates().forEach(this::add);
-            predicatesHolder.getChildren().forEach(this::add);
-        }
-        else children.add(predicatesHolder);
+    public boolean notAborted() {
+        return !aborted();
     }
 
-    public boolean hasPredicates() {
-        return getPredicates().size() > 0;
-    }
-
-    public boolean hasChildren() {
-        return getChildren().size() > 0;
-    }
-
+    public boolean hasPredicates() { return getPredicates().size() > 0; }
+    public boolean hasChildren() { return getChildren().size() > 0; }
     public boolean isEmpty() {
-        return getPredicates().size() == 0 && getChildren().size() == 0;
+        return !hasPredicates() && !hasChildren();
     }
 }

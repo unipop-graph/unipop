@@ -8,7 +8,7 @@
       "type": "document",
       "index": "vertex",
       "id": "@id",
-      "label": "@type",
+      "label": "@_type",
       "properties": {},
       "dynamicProperties": true
     }
@@ -18,7 +18,7 @@
       "type": "document",
       "index": "edge",
       "id": "@id",
-      "label": "@type",
+      "label": "@_type",
       "properties": {},
       "dynamicProperties": {
         "exclude": ["outId", "inId", "ourLabel", "inLabel"]

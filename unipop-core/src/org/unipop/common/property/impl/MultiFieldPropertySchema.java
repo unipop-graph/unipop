@@ -1,6 +1,7 @@
-package org.unipop.common.property;
+package org.unipop.common.property.impl;
 
-import org.javatuples.Pair;
+import org.unipop.common.property.PropertySchema;
+import org.unipop.query.predicates.PredicatesHolder;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -27,7 +28,7 @@ public class MultiFieldPropertySchema implements PropertySchema {
 
     @Override
     public Map<String, Object> toFields(Map<String, Object> properties) {
-        Object prop = properties.get(this.key);
+        Object prop = properties.remove(this.key);
         Map<String, Object> result = new HashMap<>(fields.size());
         String[] values = prop.toString().split(delimiter);
         //TODO: what if values.length != fields.length ??? o_O
@@ -35,5 +36,10 @@ public class MultiFieldPropertySchema implements PropertySchema {
             result.put(fields.get(i), values[i]);
         }
         return result;
+    }
+
+    @Override
+    public PredicatesHolder toPredicates(PredicatesHolder predicatesHolder) {
+        return null;
     }
 }

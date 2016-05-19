@@ -1,13 +1,16 @@
-package org.unipop.common.property;
+package org.unipop.common.property.impl;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.unipop.common.property.PropertySchema;
+import org.unipop.common.util.ConversionUtils;
+import org.unipop.query.predicates.PredicatesHolder;
+import org.unipop.query.predicates.PredicatesHolderFactory;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class FieldPropertySchema implements PropertySchema {
     private String key;
@@ -24,16 +27,9 @@ public class FieldPropertySchema implements PropertySchema {
         this.key = key;
         this.field = config.getString("field");
         JSONArray include = config.optJSONArray("include");
-        if(include != null) this.include = toSet(include);
+        if(include != null) this.include = ConversionUtils.toSet(include);
         JSONArray exclude = config.optJSONArray("exclude");
-        if(exclude != null) this.exclude = toSet(exclude);
-    }
-
-    private Set toSet(JSONArray jsonArray) {
-        HashSet hashSet = new HashSet(jsonArray.length());
-        for(int i = 0; i < jsonArray.length(); i++)
-            hashSet.add(jsonArray.get(i));
-        return hashSet;
+        if(exclude != null) this.exclude = ConversionUtils.toSet(exclude);
     }
 
     @Override
@@ -49,13 +45,27 @@ public class FieldPropertySchema implements PropertySchema {
 
     @Override
     public Map<String, Object> toFields(Map<String, Object> properties) {
-        Object prop = properties.get(this.key);
+        Object prop = properties.remove(this.key);
         if(prop == null || !test(P.eq(prop))) return null;
         return Collections.singletonMap(this.field, prop);
     }
 
     @Override
-    public boolean test(P predicate) {
+    public PredicatesHolder toPredicates(PredicatesHolder predicatesHolder) {
+        PredicatesHolder fieldPredicate = predicatesHolder.getPredicates().stream().filter(has -> !has.getKey().equals(this.key)).map(has -> {
+            if (test(has.getPredicate())) {
+                HasContainer hasContainer = new HasContainer(this.field, has.getPredicate());
+                return PredicatesHolderFactory.predicate(hasContainer);
+            } else return PredicatesHolderFactory.abort();
+        }).findFirst().orElse(PredicatesHolderFactory.empty());
+
+        Set<PredicatesHolder> children = predicatesHolder.getChildren().stream().map(this::toPredicates).collect(Collectors.toSet());
+
+        children.add(fieldPredicate);
+        return PredicatesHolderFactory.and(children);
+    }
+
+    private boolean test(P predicate) {
         if(this.include != null){
             for(Object include : this.include) {
                 if(predicate.test(include)) return true;

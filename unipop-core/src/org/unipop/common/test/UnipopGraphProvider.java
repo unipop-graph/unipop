@@ -1,4 +1,4 @@
-package org.unipop.test;
+package org.unipop.common.test;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.AbstractGraphProvider;
@@ -44,8 +44,8 @@ public abstract class UnipopGraphProvider extends AbstractGraphProvider {
     @Inherited
     public @interface OptIn {
 
-        String UnipopStructureSuite = "org.unipop.test.UnipopStructureSuite";
-        String UnipopProcessSuite = "org.unipop.test.UnipopProcessSuite";
+        String UnipopStructureSuite = "org.unipop.common.test.UnipopStructureSuite";
+        String UnipopProcessSuite = "org.unipop.common.test.UnipopProcessSuite";
 
         String value();
     }

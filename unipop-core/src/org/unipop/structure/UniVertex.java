@@ -5,10 +5,11 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
-import org.unipop.common.util.StreamUtils;
+import org.unipop.common.util.ConversionUtils;
 import org.unipop.query.mutation.AddEdgeQuery;
 import org.unipop.query.mutation.PropertyQuery;
 import org.unipop.query.predicates.PredicatesHolder;
+import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.SearchVertexQuery;
 
 import java.util.Arrays;
@@ -36,15 +37,13 @@ public class UniVertex extends UniElement implements Vertex {
 
     @Override
     public Iterator<Edge> edges(Direction direction, String... edgeLabels) {
-        HasContainer labelPredicate = null;
-        if (edgeLabels.length > 0)
-            labelPredicate = new HasContainer(T.label.toString(), P.within(edgeLabels));
-        PredicatesHolder predicatesHolder = new PredicatesHolder(PredicatesHolder.Clause.And);
-        if (labelPredicate != null) predicatesHolder.add(labelPredicate);
+        PredicatesHolder predicatesHolder = (edgeLabels.length == 0) ? PredicatesHolderFactory.empty() :
+                PredicatesHolderFactory.predicate(new HasContainer(T.label.toString(), P.within(edgeLabels)));
+
         SearchVertexQuery searchVertexQuery = new SearchVertexQuery(Edge.class, Arrays.asList(this), direction, predicatesHolder, -1, null);
         return graph.getControllerManager().getControllers(SearchVertexQuery.SearchVertexController.class).stream()
                 .<Iterator<Edge>>map(controller -> controller.search(searchVertexQuery))
-                .flatMap(StreamUtils::asStream)
+                .flatMap(ConversionUtils::asStream)
                 .iterator();
     }
 
@@ -83,10 +82,7 @@ public class UniVertex extends UniElement implements Vertex {
 
     @Override
     public void remove() {
-        Iterator<Edge> edges = edges(Direction.BOTH);
-        edges.forEachRemaining(edge -> {
-            edge.remove();
-        });
+        edges(Direction.BOTH).forEachRemaining(Element::remove);
         super.remove();
     }
 

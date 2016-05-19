@@ -9,11 +9,9 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Before;
 import org.junit.Test;
 import org.unipop.elastic.ElasticGraphProvider;
-import org.unipop.test.UnipopGraphProvider;
+import org.unipop.common.test.UnipopGraphProvider;
 
-import java.io.IOException;
 import java.util.HashMap;
-import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

@@ -1,6 +1,8 @@
-package org.unipop.common.property;
+package org.unipop.common.property.impl;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.unipop.common.property.PropertySchema;
+import org.unipop.query.predicates.PredicatesHolder;
 
 import java.util.Collections;
 import java.util.Map;
@@ -25,6 +27,10 @@ public class StaticPropertySchema implements PropertySchema {
     }
 
     @Override
+    public PredicatesHolder toPredicates(PredicatesHolder predicatesHolder) {
+        return null;
+    }
+
     public boolean test(P predicate) {
         return predicate.test(this.value);
     }

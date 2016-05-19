@@ -8,22 +8,21 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
-import org.apache.tinkerpop.gremlin.util.iterator.ArrayIterator;
 import org.unipop.query.controller.ConfigurationControllerManager;
 import org.unipop.query.controller.ControllerManager;
 import org.unipop.process.strategyregistrar.StandardStrategyRegistrar;
 import org.unipop.process.strategyregistrar.StrategyRegistrar;
 import org.unipop.query.mutation.AddVertexQuery;
 import org.unipop.query.predicates.PredicatesHolder;
+import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.SearchQuery;
-import org.unipop.test.UnipopGraphProvider;
-import org.unipop.test.UnipopStructureSuite;
+import org.unipop.common.test.UnipopGraphProvider;
 
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.unipop.common.util.StreamUtils.asStream;
+import static org.unipop.common.util.ConversionUtils.asStream;
 
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.io.IoTest$GraphSONTest", method = "shouldReadLegacyGraphSON",
         reason = "https://github.com/rmagen/elastic-gremlin/issues/52")
@@ -181,7 +180,7 @@ public class UniGraph implements Graph {
     private <E extends Element> Iterator<E> query(Class<E> returnType, Object[] ids) {
         ElementHelper.validateMixedElementIds(returnType, ids);
 //        if (ids.length > 0 && Vertex.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator(ids);
-        PredicatesHolder predicatesHolder = new PredicatesHolder(PredicatesHolder.Clause.And);
+        PredicatesHolder predicatesHolder = PredicatesHolderFactory.empty();
         if(ids.length > 0) {
             List<Object> collect = Stream.of(ids).map(id -> {
                 if (id instanceof Element)
@@ -189,7 +188,7 @@ public class UniGraph implements Graph {
                 return id;
             }).collect(Collectors.toList());
             HasContainer idPredicate = new HasContainer(T.id.toString(), P.within(collect));
-            predicatesHolder.add(idPredicate);
+            predicatesHolder = PredicatesHolderFactory.predicate(idPredicate);
         }
         SearchQuery<E> uniQuery = new SearchQuery<>(returnType, predicatesHolder, -1, null);
         return queryControllers.stream().<E>flatMap(controller -> asStream(controller.search(uniQuery))).iterator();

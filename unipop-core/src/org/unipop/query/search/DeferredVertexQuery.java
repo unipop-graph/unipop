@@ -1,7 +1,6 @@
 package org.unipop.query.search;
 
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.unipop.common.refer.DeferredVertex;
+import org.unipop.common.schema.referred.DeferredVertex;
 import org.unipop.query.StepDescriptor;
 import org.unipop.query.UniQuery;
 import org.unipop.query.controller.UniQueryController;
@@ -16,7 +15,7 @@ public class DeferredVertexQuery extends UniQuery {
         this.vertices = vertices;
     }
 
-    public List<DeferredVertex> gertVertices() {
+    public List<DeferredVertex> getVertices() {
         return this.vertices;
     }
 

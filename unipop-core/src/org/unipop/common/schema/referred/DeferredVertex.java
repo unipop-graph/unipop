@@ -1,6 +1,5 @@
-package org.unipop.common.refer;
+package org.unipop.common.schema.referred;
 
-import com.google.common.collect.Iterators;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.structure.UniVertex;
@@ -23,10 +22,9 @@ public class DeferredVertex extends UniVertex {
         }
     }
 
-    public void loadProperties(Map<String, Object> properties) {
+    public void loadProperties(Vertex vertex) {
         deferred = false;
-        if(properties != null)
-            properties.forEach(this::addPropertyLocal);
+        vertex.properties().forEachRemaining(prop -> addPropertyLocal(prop.key(), prop.value()));
     }
 
     @Override
@@ -34,7 +32,6 @@ public class DeferredVertex extends UniVertex {
         checkDeferred();
         return super.property(cardinality, key, value, keyValues);
     }
-
 
     @Override
     public Iterator<Edge> edges(Direction direction, String... edgeLabels) {

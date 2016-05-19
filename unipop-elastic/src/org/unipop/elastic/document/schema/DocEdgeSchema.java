@@ -6,14 +6,14 @@ import org.unipop.common.schema.VertexSchema;
 import org.unipop.common.property.PropertySchema;
 import org.unipop.structure.UniGraph;
 
-import java.util.Map;
+import java.util.List;
 
 public class DocEdgeSchema extends BaseEdgeSchema implements DocSchema<Edge> {
     private String index;
     private String type;
 
-    public DocEdgeSchema(String index, String type, VertexSchema outVertexSchema, VertexSchema inVertexSchema, Map<String, PropertySchema> properties, PropertySchema dynamicProperties, UniGraph graph) {
-        super(outVertexSchema, inVertexSchema, properties, dynamicProperties, graph);
+    public DocEdgeSchema(String index, String type, VertexSchema outVertexSchema, VertexSchema inVertexSchema, List<PropertySchema> properties, UniGraph graph) {
+        super(outVertexSchema, inVertexSchema, properties, graph);
         this.index = index;
         this.type = type;
     }
@@ -24,9 +24,8 @@ public class DocEdgeSchema extends BaseEdgeSchema implements DocSchema<Edge> {
     }
 
     @Override
-    public String getType() {
-        return this.type;
+    public String getType(Edge edge) {
+        if(this.type != null) return this.type;
+        return edge.label();
     }
-
-
 }

@@ -9,7 +9,7 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.node.Node;
 import org.unipop.elastic.common.ElasticClientFactory;
 import org.unipop.elastic.common.ElasticHelper;
-import org.unipop.test.UnipopGraphProvider;
+import org.unipop.common.test.UnipopGraphProvider;
 
 import java.io.File;
 import java.net.URL;
