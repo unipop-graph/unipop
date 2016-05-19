@@ -35,9 +35,9 @@ public class BaseEdgeSchema extends BaseElementSchema<Edge> implements EdgeSchem
     @Override
     public Map<String, Object> toFields(Edge edge) {
         Map<String, Object> edgeFields = super.toFields(edge);
-        Map<String, Object> inFields = inVertexSchema.toFields(edge.outVertex());
+        Map<String, Object> inFields = inVertexSchema.toFields(edge.inVertex());
         edgeFields.putAll(inFields);
-        Map<String, Object> outFields = outVertexSchema.toFields(edge.inVertex());
+        Map<String, Object> outFields = outVertexSchema.toFields(edge.outVertex());
         edgeFields.putAll(outFields);
         return edgeFields;
     }

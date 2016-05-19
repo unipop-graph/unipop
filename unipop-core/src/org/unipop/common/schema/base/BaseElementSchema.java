@@ -45,8 +45,9 @@ public abstract class BaseElementSchema<E extends Element> implements ElementSch
         Map<String, Object> fields = new HashMap<>();
         for(PropertySchema schema : this.propertySchemas) {
             Map<String, Object> schemaFields = schema.toFields(properties);
-            if(schemaFields == null) return null;
-            schemaFields.forEach((fieldKey, fieldValue) -> fields.merge(fieldKey, fieldValue, this::mergeFields));
+            if(schemaFields != null) {
+                schemaFields.forEach((fieldKey, fieldValue) -> fields.merge(fieldKey, fieldValue, this::mergeFields));
+            }
         }
 
         return fields;

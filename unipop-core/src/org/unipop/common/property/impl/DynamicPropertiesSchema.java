@@ -30,24 +30,24 @@ public class DynamicPropertiesSchema implements PropertySchema {
 
     @Override
     public Map<String, Object> toProperties(Map<String, Object> source) {
-        return source.entrySet().stream().filter(prop -> include(prop.getKey()))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getKey));
+        return source.entrySet().stream().filter(prop -> included(prop.getKey()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     @Override
     public Map<String, Object> toFields(Map<String, Object> properties) {
-        return properties.entrySet().stream().filter(entry -> include(entry.getKey()))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getKey));
+        return properties.entrySet().stream().filter(entry -> included(entry.getKey()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     @Override
     public PredicatesHolder toPredicates(HasContainer has) {
-        if(!include(has.getKey())) return PredicatesHolderFactory.predicate(has);
+        if(included(has.getKey())) return PredicatesHolderFactory.predicate(has);
         return null;
     }
 
-    private boolean include(String key) {
+    private boolean included(String key) {
         return (include == null || include.size() == 0 || include.contains(key)) &&
-                (exclude == null || exclude.size() == 0 && !exclude.contains(key));
+                (exclude == null || exclude.size() == 0 || !exclude.contains(key));
     }
 }

@@ -5,7 +5,6 @@ import org.unipop.common.property.PropertySchema;
 import org.unipop.query.predicates.PredicatesHolder;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 
 public class MultiFieldPropertySchema implements PropertySchema {
@@ -21,17 +20,21 @@ public class MultiFieldPropertySchema implements PropertySchema {
 
     @Override
     public Map<String, Object> toProperties(Map<String, Object> source) {
-        String value = fields.stream().map(field -> source.get(field).toString()).collect(Collectors.joining(delimiter));
-        if (value != null && value.length() > 0)
-            return Collections.singletonMap(key, value);
-        else return null;
+        String finalValue = null;
+        for(String field : fields){
+            Object value = source.get(field);
+            if(value == null) return null;
+            finalValue = finalValue == null ? value.toString() : finalValue + delimiter + value.toString();
+        }
+        return Collections.singletonMap(key, finalValue);
     }
 
     @Override
     public Map<String, Object> toFields(Map<String, Object> properties) {
-        Object prop = properties.remove(this.key);
+        Object value = properties.get(this.key);
+        if(value == null) return null;
         Map<String, Object> result = new HashMap<>(fields.size());
-        String[] values = prop.toString().split(delimiter);
+        String[] values = value.toString().split(delimiter);
         //TODO: what if values.length != fields.length ??? o_O
         for(int i = 0; i < fields.size(); i++) {
             result.put(fields.get(i), values[i]);

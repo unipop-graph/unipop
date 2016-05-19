@@ -35,19 +35,15 @@ public class FieldPropertySchema implements PropertySchema {
     @Override
     public Map<String, Object> toProperties(Map<String, Object> source) {
         Object value = source.get(this.field);
-        if(value != null &&
-            (include == null || include.contains(value)) &&
-            (exclude == null || !exclude.contains(value))) {
-            return Collections.singletonMap(this.key, value);
-        }
-        return null;
+        if(value == null || !test(P.eq(value))) return null;
+        return Collections.singletonMap(this.key, value);
     }
 
     @Override
     public Map<String, Object> toFields(Map<String, Object> properties) {
-        Object prop = properties.remove(this.key);
-        if(prop == null || !test(P.eq(prop))) return null;
-        return Collections.singletonMap(this.field, prop);
+        Object value = properties.get(this.key);
+        if(value == null || !test(P.eq(value))) return null;
+        return Collections.singletonMap(this.field, value);
     }
 
     @Override
