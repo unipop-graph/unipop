@@ -51,18 +51,16 @@ public class FieldPropertySchema implements PropertySchema {
     }
 
     @Override
-    public PredicatesHolder toPredicates(PredicatesHolder predicatesHolder) {
-        PredicatesHolder fieldPredicate = predicatesHolder.getPredicates().stream().filter(has -> !has.getKey().equals(this.key)).map(has -> {
+    public PredicatesHolder toPredicates(HasContainer has) {
+        if(has.getKey().equals(this.key)) {
             if (test(has.getPredicate())) {
                 HasContainer hasContainer = new HasContainer(this.field, has.getPredicate());
                 return PredicatesHolderFactory.predicate(hasContainer);
-            } else return PredicatesHolderFactory.abort();
-        }).findFirst().orElse(PredicatesHolderFactory.empty());
+            }
+            else return PredicatesHolderFactory.abort();
+        }
 
-        Set<PredicatesHolder> children = predicatesHolder.getChildren().stream().map(this::toPredicates).collect(Collectors.toSet());
-
-        children.add(fieldPredicate);
-        return PredicatesHolderFactory.and(children);
+        return null;
     }
 
     private boolean test(P predicate) {

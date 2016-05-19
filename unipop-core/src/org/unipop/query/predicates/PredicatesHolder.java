@@ -33,17 +33,12 @@ public class PredicatesHolder {
         return children;
     }
 
-    public boolean aborted() {
-        return this.clause.equals(Clause.Abort);
-    }
 
-    public boolean notAborted() {
-        return !aborted();
-    }
 
     public boolean hasPredicates() { return getPredicates().size() > 0; }
     public boolean hasChildren() { return getChildren().size() > 0; }
-    public boolean isEmpty() {
-        return !hasPredicates() && !hasChildren();
-    }
+    public boolean isEmpty() { return !hasPredicates() && !hasChildren(); }
+    public boolean notEmpty() { return !isEmpty(); }
+    public boolean isAborted() { return this.clause.equals(Clause.Abort); }
+    public boolean notAborted() { return !isAborted(); }
 }

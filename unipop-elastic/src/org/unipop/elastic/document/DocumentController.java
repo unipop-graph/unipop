@@ -135,12 +135,11 @@ public class DocumentController implements SimpleController {
 
     //region Elastic Queries
     private <E extends Element, S extends DocSchema<E>> Iterator<E> search(PredicatesHolder allPredicates, Set<S> schemas, int limit) {
-        if(schemas.size() == 0) return Iterators.emptyIterator();
-        QueryBuilder query;
-        if(!allPredicates.isEmpty()) {
-            FilterBuilder filterBuilder = FilterHelper.createFilterBuilder(allPredicates);
-            query = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), filterBuilder);
-        } else query = QueryBuilders.matchAllQuery();
+        if(schemas.size() == 0 || allPredicates.isAborted()) return Iterators.emptyIterator();
+
+        FilterBuilder filterBuilder = FilterHelper.createFilterBuilder(allPredicates);
+        QueryBuilder query = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), filterBuilder);
+
         String[] indices = schemas.stream().map(DocSchema::getIndex).toArray(String[]::new);
         refresh(indices);
         QueryIterator.Parser<E> parser = (searchHit) -> schemas.stream().map(schema -> schema.fromFields(searchHit.getSource())).findFirst().get();

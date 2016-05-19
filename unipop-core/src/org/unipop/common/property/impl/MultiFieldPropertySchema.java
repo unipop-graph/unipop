@@ -1,5 +1,6 @@
 package org.unipop.common.property.impl;
 
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.unipop.common.property.PropertySchema;
 import org.unipop.query.predicates.PredicatesHolder;
 
@@ -39,7 +40,7 @@ public class MultiFieldPropertySchema implements PropertySchema {
     }
 
     @Override
-    public PredicatesHolder toPredicates(PredicatesHolder predicatesHolder) {
+    public PredicatesHolder toPredicates(HasContainer has) {
         return null;
     }
 }

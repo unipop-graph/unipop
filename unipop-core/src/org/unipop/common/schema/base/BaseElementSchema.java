@@ -1,5 +1,6 @@
 package org.unipop.common.schema.base;
 
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.unipop.common.schema.ElementSchema;
 import org.unipop.common.property.*;
@@ -57,9 +58,21 @@ public abstract class BaseElementSchema<E extends Element> implements ElementSch
 
     @Override
     public PredicatesHolder toPredicates(PredicatesHolder predicatesHolder) {
-        Set<PredicatesHolder> predicatesHolders = propertySchemas.stream()
-                .map(schema -> schema.toPredicates(predicatesHolder)).collect(Collectors.toSet());
+        Set<PredicatesHolder> predicates = predicatesHolder.getPredicates().stream()
+                .map(this::convertPredicate).collect(Collectors.toSet());
 
-        return PredicatesHolderFactory.and(predicatesHolders);
+        Set<PredicatesHolder> children = predicatesHolder.getChildren().stream()
+                .map(this::toPredicates).collect(Collectors.toSet());
+
+        predicates.addAll(children);
+
+        return PredicatesHolderFactory.create(predicatesHolder.getClause(), predicates);
+    }
+
+    private PredicatesHolder convertPredicate(HasContainer hasContainer) {
+        return propertySchemas.stream()
+                .map(schema -> schema.toPredicates(hasContainer))
+                .filter(predicatesHolder -> predicatesHolder != null)
+                .findFirst().orElse(PredicatesHolderFactory.abort());
     }
 }

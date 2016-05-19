@@ -32,12 +32,12 @@ public class PredicatesHolderFactory {
     }
 
     public static PredicatesHolder and(Set<PredicatesHolder> predicatesHolders) {
-        Set<PredicatesHolder> filteredPredicateHolders = predicatesHolders.stream()
-                .filter(PredicatesHolder::isEmpty).collect(Collectors.toSet());
+        if(predicatesHolders.stream().filter(PredicatesHolder::isAborted).count() > 0) return abort();
 
+        Set<PredicatesHolder> filteredPredicateHolders = predicatesHolders.stream()
+                .filter(PredicatesHolder::notEmpty).collect(Collectors.toSet());
         if(filteredPredicateHolders.size() == 0) return empty();
         if(filteredPredicateHolders.size() == 1) return filteredPredicateHolders.iterator().next();
-        if(predicatesHolders.stream().filter(PredicatesHolder::notAborted).count() > 0) return abort();
 
         Set<HasContainer> predicates = new HashSet<>();
         Set<PredicatesHolder> children = new HashSet<>();
@@ -56,11 +56,19 @@ public class PredicatesHolderFactory {
         return or(Sets.newHashSet(predicatesHolders));
     }
     public static PredicatesHolder or(Set<PredicatesHolder> predicatesHolders) {
-        Set<PredicatesHolder> filteredPredicateHolders = predicatesHolders.stream()
-                .filter(PredicatesHolder::aborted).collect(Collectors.toSet());
         if(predicatesHolders.size() == 0) return empty();
+
+        Set<PredicatesHolder> filteredPredicateHolders = predicatesHolders.stream()
+                .filter(PredicatesHolder::notAborted).collect(Collectors.toSet());
         if(filteredPredicateHolders.size() == 0) return abort();
         if(filteredPredicateHolders.size() == 1) return predicatesHolders.iterator().next();
+
         return new PredicatesHolder(PredicatesHolder.Clause.Or, Collections.EMPTY_SET, filteredPredicateHolders);
+    }
+
+    public static PredicatesHolder create(PredicatesHolder.Clause clause, Set<PredicatesHolder> predicatesHolders) {
+        if(clause.equals(PredicatesHolder.Clause.And)) return and(predicatesHolders);
+        if(clause.equals(PredicatesHolder.Clause.Or)) return or(predicatesHolders);
+        return abort();
     }
 }
