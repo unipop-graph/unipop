@@ -17,14 +17,6 @@ import java.util.*;
 
 public class UniGraphPredicatesStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy {
     @Override
-    public Set<Class<? extends ProviderOptimizationStrategy>> applyPrior() {
-        Set<Class<? extends TraversalStrategy.ProviderOptimizationStrategy>> priorStrategies = new HashSet<>();
-        priorStrategies.add(UniGraphStartStepStrategy.class);
-        priorStrategies.add(UniGraphVertexStepStrategy.class);
-        return priorStrategies;
-    }
-
-    @Override
     public void apply(Traversal.Admin<?, ?> traversal) {
         if(traversal.getEngine().isComputer()) {
             return;
@@ -35,7 +27,7 @@ public class UniGraphPredicatesStrategy extends AbstractTraversalStrategy<Traver
     }
 
     private void addPredicates(ReceivesPredicatesHolder originalStep, Traversal.Admin traversal){
-        Step step = originalStep;
+        Step step = originalStep.getNextStep();
         Set<PredicatesHolder> predicates = new HashSet<>();
 
 

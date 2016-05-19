@@ -1,19 +1,24 @@
 package org.unipop.process.vertex;
 
+import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
-import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.unipop.process.predicate.UniGraphPredicatesStrategy;
+import org.unipop.process.properties.UniGraphPropertiesStepStrategy;
 import org.unipop.structure.UniGraph;
 
-/**
- * Created by Roman on 11/12/2015.
- */
+import java.util.Set;
+
 public class UniGraphVertexStepStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy {
+    @Override
+    public Set<Class<? extends ProviderOptimizationStrategy>> applyPost() {
+        return Sets.newHashSet(UniGraphPredicatesStrategy.class, UniGraphPropertiesStepStrategy.class);
+    }
+
     @Override
     public void apply(Traversal.Admin<?, ?> traversal) {
         if(traversal.getEngine().isComputer()) {

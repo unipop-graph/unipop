@@ -20,18 +20,14 @@ import org.unipop.process.start.UniGraphStartStepStrategy;
 import org.unipop.process.vertex.UniGraphVertexStepStrategy;
 import org.unipop.structure.UniGraph;
 
+import java.util.Collections;
 import java.util.Set;
 
 
 public class UniGraphPropertiesStepStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy {
     @Override
     public Set<Class<? extends ProviderOptimizationStrategy>> applyPrior() {
-        return Sets.newHashSet(UniGraphStartStepStrategy.class,
-                UniGraphVertexStepStrategy.class,
-                UniGraphPredicatesStrategy.class);
-//                UniGraphGroupStepStrategy.class,
-//                UniGraphGroupCountStepStrategy.class,
-//                UniGraphCountStepStrategy.class);
+        return Collections.singleton(UniGraphPredicatesStrategy.class);
     }
 
     @Override
@@ -100,13 +96,13 @@ public class UniGraphPropertiesStepStrategy extends AbstractTraversalStrategy<Tr
             TraversalHelper.insertBeforeStep(uniGraphVertexPropertiesSideEffectStep, sideEffectStep, traversal);
         });
 
-        Step step = TraversalHelper.getLastStepOfAssignableClass(Step.class, traversal).get();
-        UniGraphVertexPropertiesSideEffectStep uniGraphVertexPropertiesSideEffectStep = new UniGraphVertexPropertiesSideEffectStep(traversal, uniGraph.getControllerManager());
-        if (!(step instanceof ComputerAwareStep.EndStep) &&
-                !(step instanceof PropertiesStep) &&
-                !(step instanceof HasNextStep) &&
-                !(step instanceof PropertyMapStep) &&
-                !(step instanceof PropertyValueStep))
-            TraversalHelper.insertAfterStep(uniGraphVertexPropertiesSideEffectStep, step, traversal);
+//        Step step = TraversalHelper.getLastStepOfAssignableClass(Step.class, traversal).get();
+//        UniGraphVertexPropertiesSideEffectStep uniGraphVertexPropertiesSideEffectStep = new UniGraphVertexPropertiesSideEffectStep(traversal, uniGraph.getControllerManager());
+//        if (!(step instanceof ComputerAwareStep.EndStep) &&
+//                !(step instanceof PropertiesStep) &&
+//                !(step instanceof HasNextStep) &&
+//                !(step instanceof PropertyMapStep) &&
+//                !(step instanceof PropertyValueStep))
+//            TraversalHelper.insertAfterStep(uniGraphVertexPropertiesSideEffectStep, step, traversal);
     }
 }
