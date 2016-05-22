@@ -78,7 +78,7 @@ public class DocumentController implements SimpleController {
         if(schemaPredicateHolders.isEmpty()) return;
         Iterator<Vertex> search = search(schemaPredicateHolders, vertexSchemas, -1);
 
-        Map<Object, DeferredVertex> vertexMap = uniQuery.getVertices().stream().collect(Collectors.toMap(UniElement::id, Function.identity()));
+        Map<Object, DeferredVertex> vertexMap = uniQuery.getVertices().stream().collect(Collectors.toMap(UniElement::id, Function.identity(), (a, b) -> a));
         search.forEachRemaining(newVertex -> {
             DeferredVertex deferredVertex = vertexMap.get(newVertex.id());
             if(deferredVertex != null) deferredVertex.loadProperties(newVertex);

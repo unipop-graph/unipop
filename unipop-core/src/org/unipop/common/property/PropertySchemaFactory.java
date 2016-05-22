@@ -17,16 +17,18 @@ public class PropertySchemaFactory {
     public static ArrayList<PropertySchema> createPropertySchemas(JSONObject elementConfig) throws JSONException {
         ArrayList<PropertySchema> schemaProperties = new ArrayList<>();
         Set<String> excludeDynamic = new HashSet<>();
+        excludeDynamic.add(T.id.getAccessor());
         excludeDynamic.add(T.id.toString());
+        excludeDynamic.add(T.label.getAccessor());
         excludeDynamic.add(T.label.toString());
 
-        schemaProperties.add(createPropertySchema(T.id.toString(), elementConfig));
-        schemaProperties.add(createPropertySchema(T.label.toString(), elementConfig));
+        schemaProperties.add(createPropertySchema(T.id.getAccessor(), elementConfig.get(T.id.toString())));
+        schemaProperties.add(createPropertySchema(T.label.getAccessor(), elementConfig.get(T.label.toString())));
 
         JSONObject properties = elementConfig.optJSONObject("properties");
         if(properties != null) {
             properties.keys().forEachRemaining(key -> {
-                PropertySchema propertySchema = createPropertySchema(key, properties);
+                PropertySchema propertySchema = createPropertySchema(key, properties.get(key));
                 schemaProperties.add(propertySchema);
                 excludeDynamic.add(key);
 
@@ -42,8 +44,7 @@ public class PropertySchemaFactory {
         return schemaProperties;
     }
 
-    public static PropertySchema createPropertySchema(String key, JSONObject elementConfig) {
-        Object value = elementConfig.get(key);
+    public static PropertySchema createPropertySchema(String key, Object value) {
         if(value instanceof String) {
             if (value.toString().startsWith("@"))
                 return new FieldPropertySchema(key, value.toString().substring(1));

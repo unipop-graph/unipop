@@ -23,6 +23,11 @@ public class UniVertex extends UniElement implements Vertex {
     }
 
     @Override
+    protected String getDefaultLabel() {
+        return Vertex.DEFAULT_LABEL;
+    }
+
+    @Override
     public Property createProperty(String key, Object value) {
         return new UniVertexProperty<>(this, key, value);
     }
@@ -30,7 +35,6 @@ public class UniVertex extends UniElement implements Vertex {
     @Override
     public <V> VertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value, final Object... keyValues) {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
-        ElementHelper.validateProperty(key, value);
         if (keyValues != null && keyValues.length > 0) throw VertexProperty.Exceptions.metaPropertiesNotSupported();
         return this.property(key, value);
     }
@@ -38,7 +42,7 @@ public class UniVertex extends UniElement implements Vertex {
     @Override
     public Iterator<Edge> edges(Direction direction, String... edgeLabels) {
         PredicatesHolder predicatesHolder = (edgeLabels.length == 0) ? PredicatesHolderFactory.empty() :
-                PredicatesHolderFactory.predicate(new HasContainer(T.label.toString(), P.within(edgeLabels)));
+                PredicatesHolderFactory.predicate(new HasContainer(T.label.getAccessor(), P.within(edgeLabels)));
 
         SearchVertexQuery searchVertexQuery = new SearchVertexQuery(Edge.class, Arrays.asList(this), direction, predicatesHolder, -1, null);
         return graph.getControllerManager().getControllers(SearchVertexQuery.SearchVertexController.class).stream()
@@ -54,7 +58,7 @@ public class UniVertex extends UniElement implements Vertex {
 
     @Override
     public <V> VertexProperty<V> property(String key, V value) {
-        ElementHelper.validateProperty(key, value);
+
         UniVertexProperty vertexProperty = (UniVertexProperty) addPropertyLocal(key, value);
         PropertyQuery<UniVertex> propertyQuery = new PropertyQuery<UniVertex>(this, vertexProperty, PropertyQuery.Action.Add, null);
         graph.getControllerManager().getControllers(PropertyQuery.PropertyController.class).forEach(controller ->
@@ -72,6 +76,8 @@ public class UniVertex extends UniElement implements Vertex {
     @Override
     public Edge addEdge(final String label, final Vertex vertex, final Object... keyValues) {
         if (null == vertex) throw Graph.Exceptions.argumentCanNotBeNull("vertex");
+        ElementHelper.legalPropertyKeyValueArray(keyValues);
+        ElementHelper.validateLabel(label);
         Map<String, Object> stringObjectMap = ElementHelper.asMap(keyValues);
         stringObjectMap.put(T.label.toString(), label);
         AddEdgeQuery addEdgeQuery = new AddEdgeQuery(this, vertex, stringObjectMap, null);

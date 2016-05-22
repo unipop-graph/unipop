@@ -19,8 +19,10 @@ import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.SearchVertexQuery;
 
 import java.util.*;
+import java.util.stream.Stream;
 
-public class UniGraphVertexStep extends AbstractStep<Vertex, Edge> implements ReceivesPredicatesHolder<Vertex, Edge> {
+public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, E> implements ReceivesPredicatesHolder<Vertex, E> {
+    private final boolean returnsVertex;
     private int limit;
     private final Direction direction;
     private PredicatesHolder predicates = PredicatesHolderFactory.empty();
@@ -29,18 +31,18 @@ public class UniGraphVertexStep extends AbstractStep<Vertex, Edge> implements Re
     protected final ControllerManager controllerManager;
     private final List<SearchVertexQuery.SearchVertexController> controllers;
     private final int bulk;
-    private Iterator<Traverser<Edge>> results;
+    private Iterator<Traverser<E>> results;
 
-    public UniGraphVertexStep(VertexStep vertexStep, ControllerManager controllerManager) {
+    public UniGraphVertexStep(VertexStep<E> vertexStep, ControllerManager controllerManager) {
         super(vertexStep.getTraversal());
-        vertexStep.getLabels().forEach(label->this.addLabel(label.toString()));
+        vertexStep.getLabels().forEach(this::addLabel);
         this.direction = vertexStep.getDirection();
         if(vertexStep.getEdgeLabels().length > 0) {
-            HasContainer labelsPredicate = new HasContainer(T.label.toString(), P.within(vertexStep.getEdgeLabels()));
+            HasContainer labelsPredicate = new HasContainer(T.label.getAccessor(), P.within(vertexStep.getEdgeLabels()));
             this.predicates = PredicatesHolderFactory.predicate(labelsPredicate);
         }
         else this.predicates = PredicatesHolderFactory.empty();
-
+        this.returnsVertex = vertexStep.returnsVertex();
         this.stepDescriptor = new StepDescriptor(this);
         this.controllerManager = controllerManager;
         this.controllers = this.controllerManager.getControllers(SearchVertexQuery.SearchVertexController.class);
@@ -49,7 +51,7 @@ public class UniGraphVertexStep extends AbstractStep<Vertex, Edge> implements Re
     }
 
     @Override
-    protected Traverser<Edge> processNextStart() {
+    protected Traverser<E> processNextStart() {
         if(results == null)
             results = query();
 
@@ -59,44 +61,42 @@ public class UniGraphVertexStep extends AbstractStep<Vertex, Edge> implements Re
         throw FastNoSuchElementException.instance();
     }
 
-    private Iterator<Traverser<Edge>> query() {
+    private Iterator<Traverser<E>> query() {
         UnmodifiableIterator<List<Traverser.Admin<Vertex>>> partitionedTraversers = Iterators.partition(starts, bulk);
-        return ConversionUtils.asStream(partitionedTraversers).<Iterator<Traverser<Edge>>>map(traverserPartition -> {
-            Map<Object, Traverser<Vertex>> traversers = new HashMap<>(bulk);
-            List<Vertex> vertices = new ArrayList<>(bulk);
-            traverserPartition.forEach(traverser -> {
-                traversers.put(traverser.get().id(), traverser);
-                vertices.add(traverser.get());
-            });
-            SearchVertexQuery vertexQuery = new SearchVertexQuery(Edge.class, vertices, direction, predicates, limit, stepDescriptor);
-            return controllers.stream().<Iterator<Edge>>map(controller -> controller.search(vertexQuery))
-                    .<Edge>flatMap(ConversionUtils::asStream)
-                    .<Iterator<Traverser<Edge>>>map(edge -> {
-                        Traverser<Vertex> outVertexTraverser = traversers.get(edge.outVertex().id());
-                        Traverser<Vertex> inVertexTraverser = traversers.get(edge.inVertex().id());
-                        Traverser<Edge> firstEdge = null;
-                        Traverser<Edge> secondEdge = null;
-                        if (!direction.equals(Direction.IN) && outVertexTraverser != null) {
-                            firstEdge = outVertexTraverser.asAdmin().split(edge, this);
-                        }
-                        if (!direction.equals(Direction.OUT) && inVertexTraverser != null) {
-                            secondEdge = inVertexTraverser.asAdmin().split(edge, this);
-                        }
-
-                        if (firstEdge != null && secondEdge != null) {
-                            if (outVertexTraverser.get().id().equals(inVertexTraverser.get().id()))
-                                return Iterators.singletonIterator(firstEdge);
-                            else return Iterators.forArray(firstEdge, secondEdge);
-                        } else if (firstEdge != null) return Iterators.singletonIterator(firstEdge);
-                        else if (secondEdge != null) return Iterators.singletonIterator(secondEdge);
-                        else return null;
-                    })
-                    .<Traverser<Edge>>flatMap(ConversionUtils::asStream).iterator();
-        }).<Traverser<Edge>>flatMap(ConversionUtils::asStream).iterator();
-
+        return ConversionUtils.asStream(partitionedTraversers)
+                .<Iterator<Traverser<E>>>map(this::queryBulk)
+                .<Traverser<E>>flatMap(ConversionUtils::asStream).iterator();
     }
 
-    public static Vertex vertexToVertex(Vertex originalVertex, Edge edge, Direction direction) {
+    private Iterator<Traverser<E>> queryBulk(List<Traverser.Admin<Vertex>> traverserPartition) {
+        Map<Object, Traverser<Vertex>> traversers = new HashMap<>(bulk);
+        List<Vertex> vertices = new ArrayList<>(bulk);
+        traverserPartition.forEach(traverser -> {
+            traversers.put(traverser.get().id(), traverser);
+            vertices.add(traverser.get());
+        });
+        SearchVertexQuery vertexQuery = new SearchVertexQuery(Edge.class, vertices, direction, predicates, limit, stepDescriptor);
+        return controllers.stream().<Iterator<Edge>>map(controller -> controller.search(vertexQuery))
+                .<Edge>flatMap(ConversionUtils::asStream)
+                .<Traverser<E>>flatMap(edge -> toTraversers(edge, traversers)).iterator();
+    }
+
+    private Stream<Traverser.Admin<E>> toTraversers(Edge edge, Map<Object, Traverser<Vertex>> traversers) {
+        return ConversionUtils.asStream(edge.vertices(direction))
+            .<Traverser.Admin<E>>map(originalVertex -> {
+                Traverser<Vertex> vertexTraverser = traversers.get(originalVertex.id());
+                if(vertexTraverser == null) return null;
+                E result = getReturnElement(edge, originalVertex);
+                return vertexTraverser.asAdmin().split(result, this);
+            }).filter(result -> result != null);
+    }
+
+    private E getReturnElement(Edge edge, Vertex originalVertex) {
+        if(!this.returnsVertex) return (E) edge;
+        return (E) vertexToVertex(originalVertex, edge, this.direction);
+    }
+
+    private Vertex vertexToVertex(Vertex originalVertex, Edge edge, Direction direction) {
         switch (direction) {
             case OUT:
                 return edge.inVertex();
@@ -106,7 +106,7 @@ public class UniGraphVertexStep extends AbstractStep<Vertex, Edge> implements Re
                 Vertex outV = edge.outVertex();
                 Vertex inV = edge.inVertex();
                 if(outV.id().equals(inV.id()))
-                    return originalVertex; //points to self
+                    return outV; //points to self
                 if(originalVertex.id().equals(inV.id()))
                     return outV;
                 if(originalVertex.id().equals(outV.id()))

@@ -3,7 +3,6 @@ package org.unipop.process.strategyregistrar;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.process.traversal.util.DefaultTraversalStrategies;
 import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.unipop.process.predicate.UniGraphPredicatesStrategy;
 import org.unipop.process.properties.UniGraphPropertiesStepStrategy;
 import org.unipop.process.start.UniGraphStartStepStrategy;
 import org.unipop.process.vertex.UniGraphVertexStepStrategy;
@@ -18,7 +17,6 @@ public class StandardStrategyRegistrar implements StrategyRegistrar {
                     //add strategies here
                     new UniGraphStartStepStrategy(),
                     new UniGraphVertexStepStrategy(),
-                    new UniGraphPredicatesStrategy(),
                     new UniGraphPropertiesStepStrategy()
             );
 

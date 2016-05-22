@@ -23,13 +23,17 @@ public class UniEdge extends UniElement implements Edge {
     }
 
     @Override
+    protected String getDefaultLabel() {
+        return Edge.DEFAULT_LABEL;
+    }
+
+    @Override
     public  Property createProperty(String key, Object value) {
         return new UniProperty<>(this, key, value);
     }
 
     @Override
     public <V> Property<V> property(String key, V value) {
-        ElementHelper.validateProperty(key, value);
         UniProperty<V> vertexProperty = (UniProperty<V>) addPropertyLocal(key, value);
         PropertyQuery<UniElement> propertyQuery = new PropertyQuery<>(this, vertexProperty, PropertyQuery.Action.Add, null);
         this.graph.getControllerManager().getControllers(PropertyQuery.PropertyController.class).forEach(controller ->

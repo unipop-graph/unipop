@@ -187,7 +187,7 @@ public class UniGraph implements Graph {
                     return ((Element) id).id();
                 return id;
             }).collect(Collectors.toList());
-            HasContainer idPredicate = new HasContainer(T.id.toString(), P.within(collect));
+            HasContainer idPredicate = new HasContainer(T.id.getAccessor(), P.within(collect));
             predicatesHolder = PredicatesHolderFactory.predicate(idPredicate);
         }
         SearchQuery<E> uniQuery = new SearchQuery<>(returnType, predicatesHolder, -1, null);
@@ -196,9 +196,10 @@ public class UniGraph implements Graph {
 
     @Override
     public Vertex addVertex(final Object... keyValues) {
-
+        ElementHelper.legalPropertyKeyValueArray(keyValues);
+        Optional<String> labelValue = ElementHelper.getLabelValue(keyValues);
+        if(labelValue.isPresent()) ElementHelper.validateLabel(labelValue.get());
         Map<String, Object> stringObjectMap = ElementHelper.asMap(keyValues);
-
         return controllerManager.getControllers(AddVertexQuery.AddVertexController.class).stream()
                 .map(controller -> controller.addVertex(new AddVertexQuery(stringObjectMap, null)))
                 .findFirst().get();

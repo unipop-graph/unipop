@@ -37,8 +37,8 @@ public class BaseVertexSchema extends BaseElementSchema<Vertex> implements Verte
     }
 
     private PredicatesHolder toPredicates(String label, List<? extends Vertex> labelVertices) {
-        HasContainer labelPredicate = new HasContainer(T.label.toString(), P.eq(label));
-        HasContainer ids = new HasContainer(T.id.toString(), P.within(labelVertices.stream().map(Vertex::id).collect(Collectors.toList())));
+        HasContainer labelPredicate = new HasContainer(T.label.getAccessor(), P.eq(label));
+        HasContainer ids = new HasContainer(T.id.getAccessor(), P.within(labelVertices.stream().map(Vertex::id).collect(Collectors.toList())));
 
         PredicatesHolder labelPredicates = PredicatesHolderFactory.and(ids, labelPredicate);
         return this.toPredicates(labelPredicates);

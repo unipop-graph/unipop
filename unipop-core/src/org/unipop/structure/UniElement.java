@@ -9,23 +9,27 @@ import java.util.*;
 
 public abstract class UniElement implements Element{
     protected HashMap<String, Property> properties = new HashMap<>();
-    protected final String id;
+    protected String id;
     protected String label;
-    protected final UniGraph graph;
+    protected UniGraph graph;
 
-    public UniElement(Map<String, Object> keyValues, UniGraph graph) {
+    public UniElement(Map<String, Object> properties, UniGraph graph) {
         this.graph = graph;
-        Object id = keyValues.remove(T.id.toString());
-        Object label = keyValues.remove(T.label.toString());
+
+        Object id = properties.remove(T.id.getAccessor());
+        if(id == null) id = properties.remove(T.id.toString());
         this.id = id != null ? id.toString() : new com.eaio.uuid.UUID().toString();
-        this.label = label != null ? label.toString() : Vertex.DEFAULT_LABEL;
-        ElementHelper.validateLabel(this.label);
-        keyValues.forEach(this::addPropertyLocal);
+
+        Object label = properties.remove(T.label.getAccessor());
+        if(label == null) label = properties.remove(T.label.toString());
+        this.label = label != null ? label.toString() : getDefaultLabel();
+
+        properties.forEach(this::addPropertyLocal);
     }
 
-    public Property addPropertyLocal(String key, Object value) {
-        if(key == null) return null;
+    protected abstract String getDefaultLabel();
 
+    public Property addPropertyLocal(String key, Object value) {
         ElementHelper.validateProperty(key, value);
         Property property = createProperty(key, value);
         properties.put(key, property);
@@ -103,8 +107,8 @@ public abstract class UniElement implements Element{
 
     public static <E extends Element> Map<String, Object> fullProperties(E element) {
         Map<String, Object> properties = new HashMap<>();
-        properties.put(T.id.toString(), element.id());
-        properties.put(T.label.toString(), element.label());
+        properties.put(T.id.getAccessor(), element.id());
+        properties.put(T.label.getAccessor(), element.label());
         element.properties().forEachRemaining(property -> properties.put(property.key(), property.value()));
         return properties;
     }

@@ -4,6 +4,7 @@ import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.GraphManager;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.Attachable;
@@ -31,67 +32,15 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void test() {
-        Traversal t = graph.traversal().V().has("name", "josh").outE("created").as("e").inV().has("name", "lop");
+        GraphTraversalSource g = graph.traversal();
+        Traversal t = g.V("1").out().hasId("2");
 
         check(t);
     }
 
     @Test
-    @LoadGraphWith(LoadGraphWith.GraphData.MODERN)
-    public void shouldAttachToVertex() {
-        final Edge toDetach = g.E(convertToEdgeId("josh", "created", "lop")).next();
-        final Vertex outV = toDetach.vertices(Direction.OUT).next();
-        final DetachedEdge detachedEdge = DetachedFactory.detach(toDetach, true);
-        final Edge attached = detachedEdge.attach(Attachable.Method.get(outV));
-
-        assertEquals(toDetach, attached);
-        assertFalse(attached instanceof DetachedEdge);
-    }
-
-    public static <T> void checkResults(final List<T> expectedResults, final Traversal<?, T> traversal) {
-        final List<T> results = traversal.toList();
-        assertFalse(traversal.hasNext());
-        if(expectedResults.size() != results.size()) {
-            System.out.println("Expected results: " + expectedResults);
-            System.out.println("Actual results:   " + results);
-            assertEquals("Checking result size", expectedResults.size(), results.size());
-        }
-
-        for (T t : results) {
-            if (t instanceof Map) {
-                assertTrue("Checking map result existence: " + t, expectedResults.stream().filter(e -> e instanceof Map).filter(e -> internalCheckMap((Map) e, (Map) t)).findAny().isPresent());
-            } else {
-                assertTrue("Checking result existence: " + t, expectedResults.contains(t));
-            }
-        }
-        final Map<T, Long> expectedResultsCount = new HashMap<>();
-        final Map<T, Long> resultsCount = new HashMap<>();
-        assertEquals("Checking indexing is equivalent", expectedResultsCount.size(), resultsCount.size());
-        expectedResults.forEach(t -> MapHelper.incr(expectedResultsCount, t, 1l));
-        results.forEach(t -> MapHelper.incr(resultsCount, t, 1l));
-        expectedResultsCount.forEach((k, v) -> assertEquals("Checking result group counts", v, resultsCount.get(k)));
-        assertFalse(traversal.hasNext());
-    }
-
-    private static <A, B> boolean internalCheckMap(final Map<A, B> expectedMap, final Map<A, B> actualMap) {
-        final List<Map.Entry<A, B>> actualList = actualMap.entrySet().stream().sorted((a, b) -> a.getKey().toString().compareTo(b.getKey().toString())).collect(Collectors.toList());
-        final List<Map.Entry<A, B>> expectedList = expectedMap.entrySet().stream().sorted((a, b) -> a.getKey().toString().compareTo(b.getKey().toString())).collect(Collectors.toList());
-
-        if (expectedList.size() > actualList.size()) {
-            return false;
-        } else if (actualList.size() > expectedList.size()) {
-            return false;
-        }
-
-        for (int i = 0; i < actualList.size(); i++) {
-            if (!actualList.get(i).getKey().equals(expectedList.get(i).getKey())) {
-                return false;
-            }
-            if (!actualList.get(i).getValue().equals(expectedList.get(i).getValue())) {
-                return false;
-            }
-        }
-        return true;
+    public void nullProperty() {
+        graph.addVertex("abc", null);
     }
 
     private void check(Traversal traversal) {

@@ -9,7 +9,7 @@
 //import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 //import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 //import org.apache.tinkerpop.gremlin.structure.Graph;
-//import org.unipop.process.predicate.UniGraphPredicatesStrategy;
+//import org.unipop.process.predicate.PredicatesUtil;
 //import org.unipop.process.start.UniGraphStartStep;
 //import org.unipop.process.vertex.UniGraphVertexStep;
 //import org.unipop.structure.UniGraph;
@@ -24,7 +24,7 @@
 //    @Override
 //    public Set<Class<? extends TraversalStrategy.ProviderOptimizationStrategy>> applyPrior() {
 //        Set<Class<? extends TraversalStrategy.ProviderOptimizationStrategy>> priorStrategies = new HashSet<>();
-//        priorStrategies.add(UniGraphPredicatesStrategy.class);
+//        priorStrategies.add(PredicatesUtil.class);
 //        return priorStrategies;
 //    }
 //

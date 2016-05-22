@@ -3,7 +3,7 @@
 //import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 //import org.apache.tinkerpop.gremlin.process.traversal.util.DefaultTraversalStrategies;
 //import org.apache.tinkerpop.gremlin.structure.Graph;
-//import org.unipop.process.predicate.UniGraphPredicatesStrategy;
+//import org.unipop.process.predicate.PredicatesUtil;
 //import org.unipop.process.start.UniGraphStartStepStrategy;
 //import org.unipop.process.reduce.UniGraphCountStepStrategy;
 //import org.unipop.process.group.UniGraphGroupCountStepStrategy;
@@ -24,7 +24,7 @@
 //                    //add strategies here
 //                    new UniGraphStartStepStrategy(),
 //                    new UniGraphVertexStepStrategy(),
-//                    new UniGraphPredicatesStrategy(),
+//                    new PredicatesUtil(),
 //                    new UniGraphGroupCountStepStrategy(),
 //                    new UniGraphCountStepStrategy(),
 //                    new UniGraphGroupStepStrategy()
