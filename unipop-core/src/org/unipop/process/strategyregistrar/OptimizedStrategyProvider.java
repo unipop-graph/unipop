@@ -14,10 +14,10 @@
 ///**
 // * Created by Gilad on 01/11/2015.
 // */
-//public class OptimizedStrategyRegistrar implements StrategyRegistrar {
-//    //region org.unipop.process.strategyregistrar.StrategyRegistrar Implementation
+//public class OptimizedStrategyRegistrar implements StrategyProvider {
+//    //region org.unipop.process.strategyregistrar.StrategyProvider Implementation
 //    @Override
-//    public void register() {
+//    public void get() {
 //        try {
 //            DefaultTraversalStrategies strategies = new DefaultTraversalStrategies();
 //            strategies.addStrategies(

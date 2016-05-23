@@ -1,26 +1,30 @@
 package org.unipop.structure;
 
+import org.apache.commons.collections4.iterators.ArrayIterator;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
+import org.unipop.common.test.UnipopGraphProvider;
+import org.unipop.process.strategyregistrar.StandardStrategyProvider;
+import org.unipop.process.strategyregistrar.StrategyProvider;
 import org.unipop.query.controller.ConfigurationControllerManager;
 import org.unipop.query.controller.ControllerManager;
-import org.unipop.process.strategyregistrar.StandardStrategyRegistrar;
-import org.unipop.process.strategyregistrar.StrategyRegistrar;
 import org.unipop.query.mutation.AddVertexQuery;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.SearchQuery;
-import org.unipop.common.test.UnipopGraphProvider;
 
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static org.unipop.common.util.ConversionUtils.asStream;
 
@@ -30,7 +34,6 @@ import static org.unipop.common.util.ConversionUtils.asStream;
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
 public class UniGraph implements Graph {
 
-
     //for testSuite
     public static UniGraph open(final Configuration configuration) throws Exception {
         return new UniGraph(configuration);
@@ -38,8 +41,8 @@ public class UniGraph implements Graph {
 
     private UniFeatures features = new UniFeatures();
     private Configuration configuration;
+    private TraversalStrategies strategies;
     private ControllerManager controllerManager;
-    private StrategyRegistrar strategyRegistrar;
     private List<SearchQuery.SearchController> queryControllers;
 
     public UniGraph(Configuration configuration) throws Exception {
@@ -47,43 +50,46 @@ public class UniGraph implements Graph {
         this.configuration = configuration;
 
         ConfigurationControllerManager configurationControllerManager = new ConfigurationControllerManager(this, configuration);
-        StrategyRegistrar strategyRegistrar = determineStartegyRegistrar(configuration);
+        StrategyProvider strategyProvider = determineStrategyProvider(configuration);
 
-        init(configurationControllerManager, strategyRegistrar);
+        init(configurationControllerManager, strategyProvider);
+    }
 
+    public UniGraph(ControllerManager controllerManager, StrategyProvider strategyProvider) throws Exception {
+        init(controllerManager, strategyProvider);
+    }
+
+    private void init(ControllerManager controllerManager, StrategyProvider strategyProvider) {
+        this.strategies = strategyProvider.get();
+        //TraversalStrategies.GlobalCache.registerStrategies(UniGraph.class, strategies);
+
+        this.controllerManager = controllerManager;
         this.queryControllers = controllerManager.getControllers(SearchQuery.SearchController.class);
     }
 
-    public UniGraph(ControllerManager controllerManager, StrategyRegistrar strategyRegistrar) throws Exception {
-        init(controllerManager, strategyRegistrar);
-
-    }
-
-    private void init(ControllerManager controllerManager, StrategyRegistrar strategyRegistrar) {
-        this.strategyRegistrar = strategyRegistrar;
-        this.strategyRegistrar.register();
-
-        this.controllerManager = controllerManager;
-    }
-
-    private StrategyRegistrar determineStartegyRegistrar(Configuration configuration) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
-        StrategyRegistrar strategyRegistrar = (StrategyRegistrar)configuration.getProperty("strategyRegistrar");
-        if (strategyRegistrar == null) {
+    private StrategyProvider determineStrategyProvider(Configuration configuration) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
+        StrategyProvider strategyProvider = (StrategyProvider)configuration.getProperty("strategyProvider");
+        if (strategyProvider == null) {
             String strategyRegistrarClass = configuration.getString("strategyRegistrarClass");
             if (StringUtils.isNotBlank(strategyRegistrarClass)) {
-                strategyRegistrar = (StrategyRegistrar) Class.forName(strategyRegistrarClass).newInstance();
+                strategyProvider = (StrategyProvider) Class.forName(strategyRegistrarClass).newInstance();
             }
         }
 
-        if (strategyRegistrar == null) {
-            strategyRegistrar = new StandardStrategyRegistrar();
+        if (strategyProvider == null) {
+            strategyProvider = new StandardStrategyProvider();
         }
 
-        return strategyRegistrar;
+        return strategyProvider;
     }
 
     public ControllerManager getControllerManager() {
         return controllerManager;
+    }
+
+    @Override
+    public GraphTraversalSource traversal() {
+        return new GraphTraversalSource(this, strategies);
     }
 
     @Override
@@ -139,15 +145,16 @@ public class UniGraph implements Graph {
 
     private <E extends Element> Iterator<E> query(Class<E> returnType, Object[] ids) {
         ElementHelper.validateMixedElementIds(returnType, ids);
-//        if (ids.length > 0 && Vertex.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator(ids);
+        if (ids.length > 0 && Vertex.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator<>(ids);
         PredicatesHolder predicatesHolder = PredicatesHolderFactory.empty();
         if(ids.length > 0) {
-            List<Object> collect = Stream.of(ids).map(id -> {
-                if (id instanceof Element)
-                    return ((Element) id).id();
-                return id;
-            }).collect(Collectors.toList());
-            HasContainer idPredicate = new HasContainer(T.id.getAccessor(), P.within(collect));
+//            List<Object> collect = Stream.of(ids).map(id -> {
+//                if (id instanceof Element)
+//                    return ((Element) id).id();
+//                return id;
+//            }).collect(Collectors.toList());
+
+            HasContainer idPredicate = new HasContainer(T.id.getAccessor(), P.within(ids));
             predicatesHolder = PredicatesHolderFactory.predicate(idPredicate);
         }
         SearchQuery<E> uniQuery = new SearchQuery<>(returnType, predicatesHolder, -1, null);
