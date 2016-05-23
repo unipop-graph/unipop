@@ -28,7 +28,7 @@ public class UniEdge extends UniElement implements Edge {
     }
 
     @Override
-    public  Property createProperty(String key, Object value) {
+    protected  Property createProperty(String key, Object value) {
         return new UniProperty<>(this, key, value);
     }
 
