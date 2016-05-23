@@ -68,26 +68,34 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
                 .<Traverser<E>>flatMap(ConversionUtils::asStream).iterator();
     }
 
-    private Iterator<Traverser<E>> queryBulk(List<Traverser.Admin<Vertex>> traverserPartition) {
-        Map<Object, Traverser<Vertex>> traversers = new HashMap<>(bulk);
+    private Iterator<Traverser<E>> queryBulk(List<Traverser.Admin<Vertex>> traversers) {
+        Map<Object, List<Traverser<Vertex>>> idToTraverser = new HashMap<>(bulk);
         List<Vertex> vertices = new ArrayList<>(bulk);
-        traverserPartition.forEach(traverser -> {
-            traversers.put(traverser.get().id(), traverser);
-            vertices.add(traverser.get());
+        traversers.forEach(traverser -> {
+            Vertex vertex = traverser.get();
+            List<Traverser<Vertex>> traverserList = idToTraverser.get(vertex.id());
+            if(traverserList == null) {
+                traverserList = new ArrayList<>(1);
+                idToTraverser.put(vertex.id(), traverserList);
+            }
+            traverserList.add(traverser);
+            vertices.add(vertex);
         });
         SearchVertexQuery vertexQuery = new SearchVertexQuery(Edge.class, vertices, direction, predicates, limit, stepDescriptor);
         return controllers.stream().<Iterator<Edge>>map(controller -> controller.search(vertexQuery))
                 .<Edge>flatMap(ConversionUtils::asStream)
-                .<Traverser<E>>flatMap(edge -> toTraversers(edge, traversers)).iterator();
+                .<Traverser<E>>flatMap(edge -> toTraversers(edge, idToTraverser)).iterator();
     }
 
-    private Stream<Traverser.Admin<E>> toTraversers(Edge edge, Map<Object, Traverser<Vertex>> traversers) {
+    private Stream<Traverser.Admin<E>> toTraversers(Edge edge, Map<Object, List<Traverser<Vertex>>> traversers) {
         return ConversionUtils.asStream(edge.vertices(direction))
-            .<Traverser.Admin<E>>map(originalVertex -> {
-                Traverser<Vertex> vertexTraverser = traversers.get(originalVertex.id());
-                if(vertexTraverser == null) return null;
-                E result = getReturnElement(edge, originalVertex);
-                return vertexTraverser.asAdmin().split(result, this);
+            .<Traverser.Admin<E>>flatMap(originalVertex -> {
+                List<Traverser<Vertex>> vertexTraversers = traversers.get(originalVertex.id());
+                if(vertexTraversers == null) return null;
+                return vertexTraversers.stream().map(vertexTraverser -> {
+                    E result = getReturnElement(edge, originalVertex);
+                    return vertexTraverser.asAdmin().split(result, this);
+                });
             }).filter(result -> result != null);
     }
 
