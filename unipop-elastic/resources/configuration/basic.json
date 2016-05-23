@@ -21,7 +21,7 @@
       "label": "@_type",
       "properties": {},
       "dynamicProperties": {
-        "exclude": ["outId", "inId", "ourLabel", "inLabel"]
+        "excludeFields": ["outId", "inId", "outLabel", "inLabel"]
       },
       "outVertex": {
         "type": "ref",

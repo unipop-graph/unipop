@@ -59,6 +59,16 @@ public class FieldPropertySchema implements PropertySchema {
         return null;
     }
 
+    @Override
+    public Set<String> getFields() {
+        return Collections.singleton(this.field);
+    }
+
+    @Override
+    public Set<String> getProperties() {
+        return Collections.singleton(this.key);
+    }
+
     private boolean test(P predicate) {
         if(this.include != null){
             for(Object include : this.include) {

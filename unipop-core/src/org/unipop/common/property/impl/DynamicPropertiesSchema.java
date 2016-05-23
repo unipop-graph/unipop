@@ -13,41 +13,39 @@ import java.util.stream.Collectors;
 
 public class DynamicPropertiesSchema implements PropertySchema {
 
-    private Set<String> include;
-    private Set<String> exclude;
+    private final Set<String> excludeFields;
+    private final Set<String> excludeProperties;
 
-    public DynamicPropertiesSchema(Set<String> excludeKeys) {
-        this.exclude = excludeKeys;
+    public DynamicPropertiesSchema(ArrayList<PropertySchema> otherSchemas) {
+        this.excludeFields = otherSchemas.stream().flatMap(schema -> schema.getFields().stream()).collect(Collectors.toSet());
+        this.excludeProperties = otherSchemas.stream().flatMap(schema -> schema.getProperties().stream()).collect(Collectors.toSet());
     }
 
-    public DynamicPropertiesSchema(Set<String> excludeKeys, JSONObject config) {
-        this.exclude = excludeKeys;
-        JSONArray include = config.optJSONArray("include");
-        if(include != null) this.include = ConversionUtils.toSet(include);
-        JSONArray exclude = config.optJSONArray("exclude");
-        if(exclude != null) this.exclude.addAll(ConversionUtils.toSet(exclude));
+    public DynamicPropertiesSchema(ArrayList<PropertySchema> otherSchemas, JSONObject config) {
+        this(otherSchemas);
+
+        JSONArray excludeFieldsJson = config.optJSONArray("excludeFields");
+        if(excludeFieldsJson != null) this.excludeFields.addAll(ConversionUtils.toSet(excludeFieldsJson));
+
+        JSONArray excludePropertiesJson = config.optJSONArray("excludeProperties");
+        if(excludePropertiesJson != null) this.excludeProperties.addAll(ConversionUtils.toSet(excludePropertiesJson));
     }
 
     @Override
     public Map<String, Object> toProperties(Map<String, Object> source) {
-        return source.entrySet().stream().filter(prop -> included(prop.getKey()))
+        return source.entrySet().stream().filter(prop -> !excludeFields.contains(prop.getKey()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     @Override
     public Map<String, Object> toFields(Map<String, Object> properties) {
-        return properties.entrySet().stream().filter(entry -> included(entry.getKey()))
+        return properties.entrySet().stream().filter(entry -> !excludeProperties.contains(entry.getKey()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     @Override
     public PredicatesHolder toPredicates(HasContainer has) {
-        if(included(has.getKey())) return PredicatesHolderFactory.predicate(has);
+        if(!excludeProperties.contains(has.getKey())) return PredicatesHolderFactory.predicate(has);
         return null;
-    }
-
-    private boolean included(String key) {
-        return (include == null || include.size() == 0 || include.contains(key)) &&
-                (exclude == null || exclude.size() == 0 || !exclude.contains(key));
     }
 }

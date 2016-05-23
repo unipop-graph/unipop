@@ -16,11 +16,6 @@ public class PropertySchemaFactory {
 
     public static ArrayList<PropertySchema> createPropertySchemas(JSONObject elementConfig) throws JSONException {
         ArrayList<PropertySchema> schemaProperties = new ArrayList<>();
-        Set<String> excludeDynamic = new HashSet<>();
-        excludeDynamic.add(T.id.getAccessor());
-        excludeDynamic.add(T.id.toString());
-        excludeDynamic.add(T.label.getAccessor());
-        excludeDynamic.add(T.label.toString());
 
         schemaProperties.add(createPropertySchema(T.id.getAccessor(), elementConfig.get(T.id.toString())));
         schemaProperties.add(createPropertySchema(T.label.getAccessor(), elementConfig.get(T.label.toString())));
@@ -30,16 +25,14 @@ public class PropertySchemaFactory {
             properties.keys().forEachRemaining(key -> {
                 PropertySchema propertySchema = createPropertySchema(key, properties.get(key));
                 schemaProperties.add(propertySchema);
-                excludeDynamic.add(key);
-
             });
         }
 
         Object dynamicPropertiesConfig = elementConfig.opt("dynamicProperties");
         if(dynamicPropertiesConfig instanceof Boolean && (boolean)dynamicPropertiesConfig)
-            schemaProperties.add(new DynamicPropertiesSchema(excludeDynamic));
+            schemaProperties.add(new DynamicPropertiesSchema(schemaProperties));
         else if(dynamicPropertiesConfig instanceof JSONObject)
-            schemaProperties.add(new DynamicPropertiesSchema(excludeDynamic, (JSONObject) dynamicPropertiesConfig));
+            schemaProperties.add(new DynamicPropertiesSchema(schemaProperties, (JSONObject) dynamicPropertiesConfig));
 
         return schemaProperties;
     }

@@ -30,6 +30,16 @@ public class MultiFieldPropertySchema implements PropertySchema {
     }
 
     @Override
+    public Set<String> getFields() {
+        return new HashSet<>(this.fields);
+    }
+
+    @Override
+    public Set<String> getProperties() {
+        return Collections.singleton(this.key);
+    }
+
+    @Override
     public Map<String, Object> toFields(Map<String, Object> properties) {
         Object value = properties.get(this.key);
         if(value == null) return null;
