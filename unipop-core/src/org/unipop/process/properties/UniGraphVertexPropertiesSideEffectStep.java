@@ -44,6 +44,7 @@ public class UniGraphVertexPropertiesSideEffectStep extends AbstractStep<Vertex,
         List<DeferredVertex> deferredVertices = copyTraversers.stream()
                 .filter(traverser -> traverser.get() instanceof DeferredVertex)
                 .<DeferredVertex>map(traverser -> (DeferredVertex)traverser.get())
+                .filter(DeferredVertex::isDeferred)
                 .collect(Collectors.toList());
 
         if (deferredVertices.size() > 0) {
