@@ -26,9 +26,7 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
     private int limit;
     private final Direction direction;
     private PredicatesHolder predicates = PredicatesHolderFactory.empty();
-
     private final StepDescriptor stepDescriptor;
-    protected final ControllerManager controllerManager;
     private final List<SearchVertexQuery.SearchVertexController> controllers;
     private final int bulk;
     private Iterator<Traverser<E>> results;
@@ -44,8 +42,7 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
         else this.predicates = PredicatesHolderFactory.empty();
         this.returnsVertex = vertexStep.returnsVertex();
         this.stepDescriptor = new StepDescriptor(this);
-        this.controllerManager = controllerManager;
-        this.controllers = this.controllerManager.getControllers(SearchVertexQuery.SearchVertexController.class);
+        this.controllers = controllerManager.getControllers(SearchVertexQuery.SearchVertexController.class);
         this.bulk = getTraversal().getGraph().get().configuration().getInt("bulk", 100);
         limit = -1;
     }
@@ -127,7 +124,7 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
     @Override
     public void reset() {
         super.reset();
-        this.results = EmptyIterator.instance();
+        this.results = null;
     }
 
     @Override
