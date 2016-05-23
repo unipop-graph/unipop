@@ -18,7 +18,7 @@ public class UniGraphVertexPropertiesSideEffectStep extends AbstractStep<Vertex,
 
     private final int bulk;
     private ControllerManager controllerManager;
-    private Iterator<Traverser<Vertex>> results = EmptyIterator.instance();
+    private Iterator<Traverser.Admin<Vertex>> results = EmptyIterator.instance();
 
     public UniGraphVertexPropertiesSideEffectStep(Traversal.Admin traversal, ControllerManager controllerManager) {
         super(traversal);
@@ -27,7 +27,7 @@ public class UniGraphVertexPropertiesSideEffectStep extends AbstractStep<Vertex,
     }
 
     @Override
-    protected Traverser<Vertex> processNextStart() throws NoSuchElementException {
+    protected Traverser.Admin<Vertex> processNextStart() throws NoSuchElementException {
         while (!results.hasNext() && starts.hasNext())
             results = query(starts);
         if(results.hasNext())
@@ -36,8 +36,8 @@ public class UniGraphVertexPropertiesSideEffectStep extends AbstractStep<Vertex,
         throw FastNoSuchElementException.instance();
     }
 
-    private Iterator<Traverser<Vertex>> query(ExpandableStepIterator<Vertex> traversers) {
-        List<Traverser<Vertex>> copyTraversers = new ArrayList<>();
+    private Iterator<Traverser.Admin<Vertex>> query(ExpandableStepIterator<Vertex> traversers) {
+        List<Traverser.Admin<Vertex>> copyTraversers = new ArrayList<>();
         while (traversers.hasNext() && copyTraversers.size() <= bulk)
             copyTraversers.add(traversers.next());
 

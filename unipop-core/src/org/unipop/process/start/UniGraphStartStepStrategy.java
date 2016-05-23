@@ -14,9 +14,7 @@ public class UniGraphStartStepStrategy extends AbstractTraversalStrategy<Travers
 
     @Override
     public void apply(Traversal.Admin<?, ?> traversal) {
-        if(traversal.getEngine().isComputer()) {
-            return;
-        }
+        if(TraversalHelper.onGraphComputer(traversal)) return;
 
         Graph graph = traversal.getGraph().get();
         if(!(graph instanceof UniGraph)) {

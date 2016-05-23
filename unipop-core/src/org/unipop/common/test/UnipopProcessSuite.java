@@ -2,7 +2,6 @@ package org.unipop.common.test;
 
 import org.apache.tinkerpop.gremlin.process.ProcessStandardSuite;
 import org.apache.tinkerpop.gremlin.process.traversal.CoreTraversalTest;
-import org.apache.tinkerpop.gremlin.process.traversal.TraversalSideEffectsTest;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.*;
@@ -11,7 +10,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.Elemen
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategyProcessTest;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.PartitionStrategyProcessTest;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.SubgraphStrategyProcessTest;
-import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ComputerVerificationStrategyProcessTest;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategyProcessTest;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.RunnerBuilder;
@@ -22,15 +20,10 @@ public class UnipopProcessSuite extends ProcessStandardSuite {
     }
 
     private static final Class<?>[] allTests = new Class<?>[]{
-            HasTest.Traversals.class,
-            VertexTest.Traversals.class,
-            PropertiesTest.Traversals.class,
-            PathTest.Traversals.class,
-            SelectTest.Traversals.class,
-
             // branch
             BranchTest.Traversals.class,
             ChooseTest.Traversals.class,
+            OptionalTest.Traversals.class,
             LocalTest.Traversals.class,
             RepeatTest.Traversals.class,
             UnionTest.Traversals.class,
@@ -42,6 +35,7 @@ public class UnipopProcessSuite extends ProcessStandardSuite {
             DedupTest.Traversals.class,
             DropTest.Traversals.class,
             FilterTest.Traversals.class,
+            HasTest.Traversals.class,
             IsTest.Traversals.class,
             OrTest.Traversals.class,
             RangeTest.Traversals.class,
@@ -70,6 +64,12 @@ public class UnipopProcessSuite extends ProcessStandardSuite {
             MinTest.Traversals.class,
             SumTest.Traversals.class,
             OrderTest.Traversals.class,
+            PathTest.Traversals.class,
+            ProfileTest.Traversals.class,
+            ProjectTest.Traversals.class,
+            PropertiesTest.Traversals.class,
+            SelectTest.Traversals.class,
+            VertexTest.Traversals.class,
             UnfoldTest.Traversals.class,
             ValueMapTest.Traversals.class,
 
@@ -80,7 +80,6 @@ public class UnipopProcessSuite extends ProcessStandardSuite {
             GroupTestV3d0.Traversals.class,
             GroupCountTest.Traversals.class,
             InjectTest.Traversals.class,
-            ProfileTest.Traversals.class,
             SackTest.Traversals.class,
             SideEffectCapTest.Traversals.class,
             SideEffectTest.Traversals.class,
@@ -88,17 +87,8 @@ public class UnipopProcessSuite extends ProcessStandardSuite {
             SubgraphTest.Traversals.class,
             TreeTest.Traversals.class,
 
-            // util
-            TraversalSideEffectsTest.Traversals.class,
-
             // compliance
             CoreTraversalTest.class,
-
-            // strategy
-            ComputerVerificationStrategyProcessTest.StandardTraversals.class,
-
-            // algorithms
-            // PageRankVertexProgramTest.class
 
             // decorations
             ElementIdStrategyProcessTest.class,

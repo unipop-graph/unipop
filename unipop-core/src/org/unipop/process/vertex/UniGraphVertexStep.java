@@ -29,7 +29,7 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
     private final StepDescriptor stepDescriptor;
     private final List<SearchVertexQuery.SearchVertexController> controllers;
     private final int bulk;
-    private Iterator<Traverser<E>> results;
+    private Iterator<Traverser.Admin<E>> results;
 
     public UniGraphVertexStep(VertexStep<E> vertexStep, ControllerManager controllerManager) {
         super(vertexStep.getTraversal());
@@ -48,7 +48,7 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
     }
 
     @Override
-    protected Traverser<E> processNextStart() {
+    protected Traverser.Admin<E> processNextStart() {
         if(results == null)
             results = query();
 
@@ -58,14 +58,14 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
         throw FastNoSuchElementException.instance();
     }
 
-    private Iterator<Traverser<E>> query() {
+    private Iterator<Traverser.Admin<E>> query() {
         UnmodifiableIterator<List<Traverser.Admin<Vertex>>> partitionedTraversers = Iterators.partition(starts, bulk);
         return ConversionUtils.asStream(partitionedTraversers)
-                .<Iterator<Traverser<E>>>map(this::queryBulk)
-                .<Traverser<E>>flatMap(ConversionUtils::asStream).iterator();
+                .<Iterator<Traverser.Admin<E>>>map(this::queryBulk)
+                .<Traverser.Admin<E>>flatMap(ConversionUtils::asStream).iterator();
     }
 
-    private Iterator<Traverser<E>> queryBulk(List<Traverser.Admin<Vertex>> traversers) {
+    private Iterator<Traverser.Admin<E>> queryBulk(List<Traverser.Admin<Vertex>> traversers) {
         Map<Object, List<Traverser<Vertex>>> idToTraverser = new HashMap<>(bulk);
         List<Vertex> vertices = new ArrayList<>(bulk);
         traversers.forEach(traverser -> {
@@ -81,7 +81,7 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
         SearchVertexQuery vertexQuery = new SearchVertexQuery(Edge.class, vertices, direction, predicates, limit, stepDescriptor);
         return controllers.stream().<Iterator<Edge>>map(controller -> controller.search(vertexQuery))
                 .<Edge>flatMap(ConversionUtils::asStream)
-                .<Traverser<E>>flatMap(edge -> toTraversers(edge, idToTraverser)).iterator();
+                .<Traverser.Admin<E>>flatMap(edge -> toTraversers(edge, idToTraverser)).iterator();
     }
 
     private Stream<Traverser.Admin<E>> toTraversers(Edge edge, Map<Object, List<Traverser<Vertex>>> traversers) {

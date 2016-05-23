@@ -22,8 +22,8 @@ public class UnipopStructureSuite extends AbstractGremlinSuite {
             GraphConstructionTest.class,
             VertexTest.class,
             EdgeTest.class,
-            VertexPropertyTest.class,
             PropertyTest.class,
+            VertexPropertyTest.class,
             GraphTest.class,
             FeatureSupportTest.class,
 
@@ -33,24 +33,25 @@ public class UnipopStructureSuite extends AbstractGremlinSuite {
             DetachedPropertyTest.class,
             DetachedVertexTest.class,
 
+            ReferenceGraphTest.class,
+            ReferenceEdgeTest.class,
+            ReferenceVertexPropertyTest.class,
+            ReferenceVertexTest.class,
+
+            SerializationTest.class,
             IoCustomTest.class,
             IoEdgeTest.class,
             IoGraphTest.class,
             IoVertexTest.class,
             IoPropertyTest.class,
             IoTest.class,
-            ReferenceGraphTest.class,
-            ReferenceEdgeTest.class,
-            ReferenceVertexPropertyTest.class,
-            ReferenceVertexTest.class,
-            SerializationTest.class,
 
             CommunityGeneratorTest.class,
             DistributionGeneratorTest.class,
 
-            //ignored tests
-            //StarGraphTest.class,
-            //TransactionTest.class,
-            //VariablesTest.class,
+            //Ignored tests
+//            StarGraphTest.class,
+//            TransactionTest.class,
+//            VariablesTest.class,
     };
 }
