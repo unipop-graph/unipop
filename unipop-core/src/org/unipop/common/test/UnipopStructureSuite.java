@@ -44,12 +44,13 @@ public class UnipopStructureSuite extends AbstractGremlinSuite {
             ReferenceVertexPropertyTest.class,
             ReferenceVertexTest.class,
             SerializationTest.class,
-            StarGraphTest.class,
 
             CommunityGeneratorTest.class,
             DistributionGeneratorTest.class,
 
-            TransactionTest.class,
-            VariablesTest.class,
+            //ignored tests
+            //StarGraphTest.class,
+            //TransactionTest.class,
+            //VariablesTest.class,
     };
 }
