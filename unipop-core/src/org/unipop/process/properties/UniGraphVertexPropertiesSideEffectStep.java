@@ -8,6 +8,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementExce
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.unipop.common.schema.referred.DeferredVertex;
+import org.unipop.query.StepDescriptor;
 import org.unipop.query.controller.ControllerManager;
 import org.unipop.query.search.DeferredVertexQuery;
 
@@ -19,9 +20,11 @@ public class UniGraphVertexPropertiesSideEffectStep extends AbstractStep<Vertex,
     private final int bulk;
     private ControllerManager controllerManager;
     private Iterator<Traverser.Admin<Vertex>> results = EmptyIterator.instance();
+    private StepDescriptor stepDescriptor;
 
     public UniGraphVertexPropertiesSideEffectStep(Traversal.Admin traversal, ControllerManager controllerManager) {
         super(traversal);
+        this.stepDescriptor = new StepDescriptor(this);
         this.controllerManager = controllerManager;
         this.bulk = getTraversal().getGraph().get().configuration().getInt("bulk", 100);
     }
@@ -48,7 +51,7 @@ public class UniGraphVertexPropertiesSideEffectStep extends AbstractStep<Vertex,
                 .collect(Collectors.toList());
 
         if (deferredVertices.size() > 0) {
-            DeferredVertexQuery query = new DeferredVertexQuery(deferredVertices, null);
+            DeferredVertexQuery query = new DeferredVertexQuery(deferredVertices, this.stepDescriptor);
             controllerManager.getControllers(DeferredVertexQuery.DefferedVertexController.class)
                     .forEach(controller -> controller.fetchProperties(query));
         }

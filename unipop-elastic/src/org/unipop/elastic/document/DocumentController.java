@@ -17,6 +17,7 @@ import org.unipop.elastic.common.QueryIterator;
 import org.unipop.elastic.document.schema.DocEdgeSchema;
 import org.unipop.elastic.document.schema.DocSchema;
 import org.unipop.elastic.document.schema.DocVertexSchema;
+import org.unipop.query.StepDescriptor;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.controller.SimpleController;
 import org.unipop.query.mutation.AddEdgeQuery;
@@ -58,7 +59,7 @@ public class DocumentController implements SimpleController {
         Set<PredicatesHolder> schemasPredicates = schemas.stream().map(schema ->
                 schema.toPredicates(uniQuery.getPredicates())).collect(Collectors.toSet());
         PredicatesHolder schemaPredicateHolders = PredicatesHolderFactory.or(schemasPredicates);
-        return search(schemaPredicateHolders, schemas, uniQuery.getLimit());
+        return search(schemaPredicateHolders, schemas, uniQuery.getLimit(), uniQuery.getStepDescriptor());
     }
 
     @Override
@@ -66,7 +67,7 @@ public class DocumentController implements SimpleController {
         Set<PredicatesHolder> schemasPredicates = edgeSchemas.stream().map(schema ->
                 schema.toPredicates(uniQuery.getPredicates(), uniQuery.gertVertices(), uniQuery.getDirection())).collect(Collectors.toSet());
         PredicatesHolder schemaPredicateHolders = PredicatesHolderFactory.or(schemasPredicates);
-        return search(schemaPredicateHolders, edgeSchemas, uniQuery.getLimit());
+        return search(schemaPredicateHolders, edgeSchemas, uniQuery.getLimit(), uniQuery.getStepDescriptor());
     }
 
     @Override
@@ -76,7 +77,7 @@ public class DocumentController implements SimpleController {
         PredicatesHolder schemaPredicateHolders = PredicatesHolderFactory.or(schemasPredicates);
 
         if(schemaPredicateHolders.isEmpty()) return;
-        Iterator<Vertex> search = search(schemaPredicateHolders, vertexSchemas, -1);
+        Iterator<Vertex> search = search(schemaPredicateHolders, vertexSchemas, -1, uniQuery.getStepDescriptor());
 
         Map<Object, DeferredVertex> vertexMap = uniQuery.getVertices().stream().collect(Collectors.toMap(UniElement::id, Function.identity(), (a, b) -> a));
         search.forEachRemaining(newVertex -> {
@@ -134,7 +135,7 @@ public class DocumentController implements SimpleController {
     //endregion
 
     //region Elastic Queries
-    private <E extends Element, S extends DocSchema<E>> Iterator<E> search(PredicatesHolder allPredicates, Set<S> schemas, int limit) {
+    private <E extends Element, S extends DocSchema<E>> Iterator<E> search(PredicatesHolder allPredicates, Set<S> schemas, int limit, StepDescriptor stepDescriptor) {
         if(schemas.size() == 0 || allPredicates.isAborted()) return Iterators.emptyIterator();
 
         FilterBuilder filterBuilder = FilterHelper.createFilterBuilder(allPredicates);
@@ -143,7 +144,7 @@ public class DocumentController implements SimpleController {
         String[] indices = schemas.stream().map(DocSchema::getIndex).toArray(String[]::new);
         refresh(indices);
         QueryIterator.Parser<E> parser = (searchHit) -> schemas.stream().map(schema -> schema.fromFields(searchHit.getSource())).findFirst().get();
-        return new QueryIterator<>(query, 0, limit, client, parser, indices);
+        return new QueryIterator<>(query, stepDescriptor, 0, limit, client, parser, indices);
     }
 
     private <E extends Element> IndexResponse index(Set<? extends DocSchema<E>> schemas, E element, boolean create) {

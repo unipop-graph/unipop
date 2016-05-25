@@ -6,24 +6,28 @@ import java.util.Set;
 
 public class StepDescriptor {
 
-    private final String id;
-    private final Set<String> labels;
-    private MutableMetrics metrics;
+    private Step step;
 
     public StepDescriptor(Step step) {
-        this.id = step.getId();
-        this.labels = step.getLabels();
-        //Optional<StandardTraversalMetrics> metrics = step.getTraversal().asAdmin().getSideEffects().<StandardTraversalMetrics>get(TraversalMetrics.METRICS_KEY);
-        //if(metrics.isPresent()) this.metrics = (MutableMetrics) metrics.get().getMetrics(this.getId());
+        this.step = step;
     }
 
     public String getId(){
-        return id;
+        return step.getId();
     }
     public Set<String> getLabels(){
-        return labels;
+        return step.getLabels();
     }
     public MutableMetrics getMetrics(){
-        return metrics;
+        return null;
+        //Optional<StandardTraversalMetrics> metrics = step.getTraversal().asAdmin().getSideEffects().<StandardTraversalMetrics>get(TraversalMetrics.METRICS_KEY);
+        //if(metrics.isPresent()) return (MutableMetrics) metrics.get().getMetrics(this.getId());
+    }
+
+    @Override
+    public String toString() {
+        return step.toString()
+                + " { ID: " + step.getId()
+                + " }";
     }
 }
