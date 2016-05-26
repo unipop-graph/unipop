@@ -99,7 +99,7 @@ public class UniVertex extends UniElement implements Vertex {
         if (null == vertex) throw Graph.Exceptions.argumentCanNotBeNull("vertex");
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         ElementHelper.validateLabel(label);
-        Map<String, Object> stringObjectMap = ElementHelper.asMap(keyValues);
+        Map<String, Object> stringObjectMap = ConversionUtils.asMap(keyValues);
         stringObjectMap.put(T.label.toString(), label);
         AddEdgeQuery addEdgeQuery = new AddEdgeQuery(this, vertex, stringObjectMap, null);
         return graph.getControllerManager().getControllers(AddEdgeQuery.AddEdgeController.class).stream()

@@ -178,7 +178,7 @@ public class UniGraph implements Graph {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         Optional<String> labelValue = ElementHelper.getLabelValue(keyValues);
         if(labelValue.isPresent()) ElementHelper.validateLabel(labelValue.get());
-        Map<String, Object> stringObjectMap = ElementHelper.asMap(keyValues);
+        Map<String, Object> stringObjectMap = ConversionUtils.asMap(keyValues);
         return controllerManager.getControllers(AddVertexQuery.AddVertexController.class).stream()
                 .map(controller -> controller.addVertex(new AddVertexQuery(stringObjectMap, null)))
                 .findFirst().get();
