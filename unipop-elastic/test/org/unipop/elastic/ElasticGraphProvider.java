@@ -1,5 +1,10 @@
 package org.unipop.elastic;
 
+import com.google.common.io.Resources;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import io.searchbox.client.JestClient;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.FileUtils;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
@@ -7,11 +12,12 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.node.Node;
+import org.unipop.common.test.UnipopGraphProvider;
 import org.unipop.elastic.common.ElasticClientFactory;
 import org.unipop.elastic.common.ElasticHelper;
-import org.unipop.common.test.UnipopGraphProvider;
 
 import java.io.File;
+import java.io.FileReader;
 import java.net.URL;
 import java.util.Map;
 
@@ -19,7 +25,7 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
 
     private static String CLUSTER_NAME = "unipop";
     private static String CONFIGURATION = "basic.json";
-    private Client client;
+    private JestClient client;
 
     public ElasticGraphProvider() throws Exception{
         //patch for failing IO tests that write to disk
@@ -29,8 +35,13 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
         File file = new File(path);
         FileUtils.deleteQuietly(file);
 
-        Node node = ElasticClientFactory.createNode(CLUSTER_NAME, false, 9300);
-        client = node.client();
+//        Node node = ElasticClientFactory.createNode(CLUSTER_NAME, false, 9300);
+
+        JsonObject object = new JsonParser()
+                .parse(new FileReader(Resources.getResource("configuration/" + CONFIGURATION).getFile()))
+                .getAsJsonObject();
+
+        this.client = ElasticClientFactory.createJestClient(object.get("address").getAsString());
     }
 
     @Override
@@ -54,7 +65,7 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
         return id.toString();
     }
 
-    public Client getClient() {
+    public JestClient getClient() {
         return client;
     }
 }

@@ -21,8 +21,10 @@ public class FilterHelper {
     public static FilterBuilder createFilterBuilder(PredicatesHolder predicatesHolder) {
         Set<FilterBuilder> predicateFilters = predicatesHolder.getPredicates().stream()
                 .map(FilterHelper::createFilter).collect(Collectors.toSet());
+
         Set<FilterBuilder> childFilters = predicatesHolder.getChildren().stream()
                 .map(FilterHelper::createFilterBuilder).collect(Collectors.toSet());
+
         predicateFilters.addAll(childFilters);
         FilterBuilder[] filterBuilders = predicateFilters.toArray(new FilterBuilder[predicateFilters.size()]);
 

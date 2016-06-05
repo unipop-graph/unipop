@@ -3,6 +3,8 @@ package org.unipop.elastic.tests;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.impl.PointImpl;
+import io.searchbox.client.JestClient;
+import io.searchbox.indices.mapping.PutMapping;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
@@ -39,7 +41,7 @@ public class SpatialStepTests {
         final Configuration configuration = unipopGraphProvider.newGraphConfiguration("testGraph", this.getClass(), "spatialTests", LoadGraphWith.GraphData.MODERN);
         this.graph = unipopGraphProvider.openTestGraph(configuration);
 
-        createGeoShapeMapping(unipopGraphProvider.getClient(),DOCUMENT_TYPE);
+        createGeoShapeMapping(unipopGraphProvider.getClient(), DOCUMENT_TYPE);
     }
 
 
@@ -47,11 +49,11 @@ public class SpatialStepTests {
     public void geoPointPolygonsIntersectionTest() throws IOException {
         //create polygons
         List<Point> firstPolygonPoints = new ArrayList<Point>();
-        firstPolygonPoints.add(new PointImpl(10,10, SpatialContext.GEO));
-        firstPolygonPoints.add(new PointImpl(8,10, SpatialContext.GEO));
-        firstPolygonPoints.add(new PointImpl(8,8, SpatialContext.GEO));
-        firstPolygonPoints.add(new PointImpl(10,8, SpatialContext.GEO));
-        firstPolygonPoints.add(new PointImpl(10,10, SpatialContext.GEO));
+        firstPolygonPoints.add(new PointImpl(10, 10, SpatialContext.GEO));
+        firstPolygonPoints.add(new PointImpl(8, 10, SpatialContext.GEO));
+        firstPolygonPoints.add(new PointImpl(8, 8, SpatialContext.GEO));
+        firstPolygonPoints.add(new PointImpl(10, 8, SpatialContext.GEO));
+        firstPolygonPoints.add(new PointImpl(10, 10, SpatialContext.GEO));
         Map<String, Object> firstPolygon = buildGeoJsonPolygon(firstPolygonPoints);
         List<Point> secondPolygonPoints = new ArrayList<Point>();
         secondPolygonPoints.add(new PointImpl(14, 10, SpatialContext.GEO));
@@ -62,8 +64,8 @@ public class SpatialStepTests {
         Map<String, Object> secondPolygon = buildGeoJsonPolygon(secondPolygonPoints);
 
         //add the vertices to graph
-        graph.addVertex(T.label,DOCUMENT_TYPE,T.id,"1","location",firstPolygon);
-        graph.addVertex(T.label,DOCUMENT_TYPE,T.id,"2","location",secondPolygon);
+        graph.addVertex(T.label, DOCUMENT_TYPE, T.id, "1", "location", firstPolygon);
+        graph.addVertex(T.label, DOCUMENT_TYPE, T.id, "2", "location", secondPolygon);
 
         GraphTraversalSource g = graph.traversal();
 
@@ -71,18 +73,18 @@ public class SpatialStepTests {
         long intersectionCounter = g.V().has("location", Geo.intersercts(geoJsonPoint)).count().next();
         assertEquals(1l, intersectionCounter);
         Element location = g.V().has("location", Geo.intersercts(geoJsonPoint)).next();
-        assertEquals("1",location.id().toString());
+        assertEquals("1", location.id().toString());
     }
 
     @Test
     public void polygonToPolygonsIntersectionTest() throws IOException {
         //create polygons
         List<Point> firstPolygonPoints = new ArrayList<Point>();
-        firstPolygonPoints.add(new PointImpl(10,10, SpatialContext.GEO));
-        firstPolygonPoints.add(new PointImpl(8,10, SpatialContext.GEO));
-        firstPolygonPoints.add(new PointImpl(8,8, SpatialContext.GEO));
-        firstPolygonPoints.add(new PointImpl(10,8, SpatialContext.GEO));
-        firstPolygonPoints.add(new PointImpl(10,10, SpatialContext.GEO));
+        firstPolygonPoints.add(new PointImpl(10, 10, SpatialContext.GEO));
+        firstPolygonPoints.add(new PointImpl(8, 10, SpatialContext.GEO));
+        firstPolygonPoints.add(new PointImpl(8, 8, SpatialContext.GEO));
+        firstPolygonPoints.add(new PointImpl(10, 8, SpatialContext.GEO));
+        firstPolygonPoints.add(new PointImpl(10, 10, SpatialContext.GEO));
         Map<String, Object> firstPolygon = buildGeoJsonPolygon(firstPolygonPoints);
         List<Point> secondPolygonPoints = new ArrayList<Point>();
         secondPolygonPoints.add(new PointImpl(14, 10, SpatialContext.GEO));
@@ -93,8 +95,8 @@ public class SpatialStepTests {
         Map<String, Object> secondPolygon = buildGeoJsonPolygon(secondPolygonPoints);
 
         //add the vertices to graph
-        graph.addVertex(T.label,DOCUMENT_TYPE,T.id,"1","location",firstPolygon);
-        graph.addVertex(T.label,DOCUMENT_TYPE,T.id,"2","location",secondPolygon);
+        graph.addVertex(T.label, DOCUMENT_TYPE, T.id, "1", "location", firstPolygon);
+        graph.addVertex(T.label, DOCUMENT_TYPE, T.id, "2", "location", secondPolygon);
 
         GraphTraversalSource g = graph.traversal();
 
@@ -102,23 +104,24 @@ public class SpatialStepTests {
         long intersectionCounter = g.V().has("location", Geo.intersercts(geoJsonPoint)).count().next();
         assertEquals(1l, intersectionCounter);
         Element location = g.V().has("location", Geo.intersercts(geoJsonPoint)).next();
-        assertEquals("1",location.id().toString());
+        assertEquals("1", location.id().toString());
 
     }
 
     private Map<String, Object> buildGeoJsonPolygon(List<Point> points) throws IOException {
         Map<String, Object> json = new HashMap<String, Object>();
-        json.put("type","Polygon");
+        json.put("type", "Polygon");
         List<double[]> newPoints = new ArrayList<double[]>();
-        for (Point point : points){
-            newPoints.add(new double[]{point.getX(),point.getY()});
+        for (Point point : points) {
+            newPoints.add(new double[]{point.getX(), point.getY()});
         }
         Object[] pointsArray = newPoints.toArray();
-        Object[] envelopeArray = new Object[] {pointsArray};
-        json.put("coordinates",envelopeArray);
+        Object[] envelopeArray = new Object[]{pointsArray};
+        json.put("coordinates", envelopeArray);
         return json;
     }
-    private void createGeoShapeMapping(Client client, String documentType) throws IOException {
+
+    private void createGeoShapeMapping(JestClient client, String documentType) throws IOException {
 
         final XContentBuilder mappingBuilder =
 
@@ -134,12 +137,13 @@ public class SpatialStepTests {
                         .endObject()
                         .endObject();
 
-        PutMappingResponse putMappingResponse = client.admin().indices()
-                .preparePutMapping("geo_index")
-                .setType(documentType)
-                .setSource(mappingBuilder)
-                .execute().actionGet();
+        PutMapping putMapping = new PutMapping.Builder(
+                "geo_index",
+                documentType,
+                mappingBuilder
+        ).build();
 
+        client.execute(putMapping);
     }
 
 }
