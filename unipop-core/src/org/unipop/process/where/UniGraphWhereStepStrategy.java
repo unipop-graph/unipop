@@ -13,12 +13,13 @@ import org.unipop.process.vertex.UniGraphVertexStepStrategy;
 import org.unipop.process.where.UniGraphWhereTraversalStep;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 
 /**
  * Created by sbarzilay on 5/2/16.
  */
-public class UniGraphWhereStepStartegy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy {
+public class UniGraphWhereStepStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy {
     @Override
     public Set<Class<? extends ProviderOptimizationStrategy>> applyPrior() {
         Set<Class<? extends TraversalStrategy.ProviderOptimizationStrategy>> priorStrategies = new HashSet<>();
@@ -29,18 +30,16 @@ public class UniGraphWhereStepStartegy extends AbstractTraversalStrategy<Travers
 
     @Override
     public void apply(Traversal.Admin<?, ?> traversal) {
-        TraversalHelper.getStepsOfClass(TraversalFilterStep.class, traversal).forEach(whereTraversalStep -> {
-            if (!(((DefaultGraphTraversal) whereTraversalStep.getLocalChildren().get(0)).getStartStep() instanceof PropertiesStep)) {
-                UniGraphWhereTraversalStep uniGraphWhereTraversalStep = new UniGraphWhereTraversalStep(traversal, (Traversal) whereTraversalStep.getLocalChildren().get(0));
-                TraversalHelper.replaceStep(whereTraversalStep, uniGraphWhereTraversalStep, traversal);
-            }
-        });
         TraversalHelper.getStepsOfClass(WhereTraversalStep.class, traversal).forEach(whereTraversalStep -> {
             Traversal.Admin innerWhereTraversal = ((Traversal) whereTraversalStep.getLocalChildren().get(0)).asAdmin();
             TraversalHelper.getStepsOfClass(WhereTraversalStep.WhereStartStep.class, innerWhereTraversal).forEach(whereStartStep -> {
+                Iterator<String> iterator = whereStartStep.getScopeKeys().iterator();
+                String selectKey = null;
+                if (iterator.hasNext())
+                    selectKey = iterator.next();
                 UniGraphWhereTraversalStep.UniGraphWhereStartStep uniGraphWhereStartStep =
                         new UniGraphWhereTraversalStep.UniGraphWhereStartStep(innerWhereTraversal,
-                                whereStartStep.getScopeKeys().iterator().next().toString());
+                                selectKey);
                 TraversalHelper.replaceStep(whereStartStep, uniGraphWhereStartStep, innerWhereTraversal);
 
             });

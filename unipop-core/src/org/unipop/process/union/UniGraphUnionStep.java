@@ -10,6 +10,7 @@ import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.unipop.process.traverser.UniGraphTraverserStep;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by sbarzilay on 6/6/16.
@@ -26,9 +27,7 @@ public class UniGraphUnionStep<S,E> extends AbstractStep<S,E> {
 
     @Override
     public Set<TraverserRequirement> getRequirements() {
-        return new HashSet<TraverserRequirement>() {{
-            add(TraverserRequirement.SINGLE_LOOP);
-        }};
+        return this.unionTraversals.stream().map(Traversal.Admin::getTraverserRequirements).flatMap(Collection::stream).collect(Collectors.toSet());
     }
 
     @Override
