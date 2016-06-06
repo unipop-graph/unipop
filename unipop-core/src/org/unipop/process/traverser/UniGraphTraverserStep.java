@@ -1,4 +1,4 @@
-package org.unipop.process;
+package org.unipop.process.traverser;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
@@ -17,7 +17,7 @@ public class UniGraphTraverserStep<S> extends AbstractStep<S, Traverser<S>> {
     }
 
     @Override
-    protected Traverser<Traverser<S>> processNextStart() throws NoSuchElementException {
+    protected Traverser.Admin<Traverser<S>> processNextStart() throws NoSuchElementException {
         if (starts.hasNext()) {
             Traverser.Admin<S> next = starts.next();
             return next.split(next, this);
