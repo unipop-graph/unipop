@@ -21,7 +21,7 @@ public class DeferredVertex extends UniVertex {
 
     private void validateProperties() {
         if (deferred) {
-            DeferredVertexQuery query = new DeferredVertexQuery(Collections.singletonList(this), null);
+            DeferredVertexQuery query = new DeferredVertexQuery(Collections.singletonList(this), null, null);
             this.graph.getControllerManager().getControllers(DeferredVertexQuery.DefferedVertexController.class).forEach(deferredController ->
                     deferredController.fetchProperties(query));
         }

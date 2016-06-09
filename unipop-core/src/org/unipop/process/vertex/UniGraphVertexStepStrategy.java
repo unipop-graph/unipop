@@ -9,6 +9,8 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.unipop.process.predicate.PredicatesUtil;
 import org.unipop.structure.UniGraph;
 
+import java.util.HashSet;
+
 
 public class UniGraphVertexStepStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy {
 

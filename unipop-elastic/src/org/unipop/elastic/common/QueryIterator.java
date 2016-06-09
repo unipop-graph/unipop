@@ -21,13 +21,17 @@ public class QueryIterator<E extends Element> implements Iterator<E> {
     private Iterator<SearchHit> hits;
 
     public QueryIterator(QueryBuilder query, StepDescriptor stepDescriptor, int scrollSize, int maxSize, Client client,
-                         Parser<E> parser, String... indices) {
+                         Parser<E> parser, String[] fields, String... indices) {
         this.stepDescriptor = stepDescriptor;
         this.scrollSize = scrollSize;
         this.client = client;
         this.parser = parser;
 
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch(indices).setQuery(query);
+
+        if (fields != null)
+            searchRequestBuilder.addFields(fields);
+
         if(maxSize == -1) maxSize = 10000;
 
         if (scrollSize > 0) {

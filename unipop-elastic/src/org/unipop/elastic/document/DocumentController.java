@@ -11,6 +11,7 @@ import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.SearchHitField;
 import org.unipop.common.schema.referred.DeferredVertex;
 import org.unipop.elastic.common.FilterHelper;
 import org.unipop.elastic.common.QueryIterator;
@@ -54,12 +55,12 @@ public class DocumentController implements SimpleController {
 
     //region QueryController
     @Override
-    public <E extends Element>  Iterator<E> search(SearchQuery<E> uniQuery) {
+    public <E extends Element> Iterator<E> search(SearchQuery<E> uniQuery) {
         Set<? extends DocSchema<E>> schemas = getSchemas(uniQuery.getReturnType());
         Set<PredicatesHolder> schemasPredicates = schemas.stream().map(schema ->
                 schema.toPredicates(uniQuery.getPredicates())).collect(Collectors.toSet());
         PredicatesHolder schemaPredicateHolders = PredicatesHolderFactory.or(schemasPredicates);
-        return search(schemaPredicateHolders, schemas, uniQuery.getLimit(), uniQuery.getStepDescriptor());
+        return search(schemaPredicateHolders, schemas, null, uniQuery.getLimit(), uniQuery.getStepDescriptor());
     }
 
     @Override
@@ -67,7 +68,7 @@ public class DocumentController implements SimpleController {
         Set<PredicatesHolder> schemasPredicates = edgeSchemas.stream().map(schema ->
                 schema.toPredicates(uniQuery.getPredicates(), uniQuery.gertVertices(), uniQuery.getDirection())).collect(Collectors.toSet());
         PredicatesHolder schemaPredicateHolders = PredicatesHolderFactory.or(schemasPredicates);
-        return search(schemaPredicateHolders, edgeSchemas, uniQuery.getLimit(), uniQuery.getStepDescriptor());
+        return search(schemaPredicateHolders, edgeSchemas, null, uniQuery.getLimit(), uniQuery.getStepDescriptor());
     }
 
     @Override
@@ -76,13 +77,18 @@ public class DocumentController implements SimpleController {
                 schema.toPredicates(uniQuery.getVertices())).collect(Collectors.toSet());
         PredicatesHolder schemaPredicateHolders = PredicatesHolderFactory.or(schemasPredicates);
 
-        if(schemaPredicateHolders.isEmpty()) return;
-        Iterator<Vertex> search = search(schemaPredicateHolders, vertexSchemas, -1, uniQuery.getStepDescriptor());
+        if (schemaPredicateHolders.isEmpty()) return;
+        Iterator<Vertex> search = search(schemaPredicateHolders, vertexSchemas, uniQuery.getPropertyKeys(), -1, uniQuery.getStepDescriptor());
 
-        Map<Object, DeferredVertex> vertexMap = uniQuery.getVertices().stream().collect(Collectors.toMap(UniElement::id, Function.identity(), (a, b) -> a));
+        Map<Object, List<DeferredVertex>> collect = uniQuery.getVertices().stream().collect(Collectors.groupingBy(UniElement::id));
+//        Map<Object, DeferredVertex> vertexMap = uniQuery.getVertices().stream().collect(Collectors.toMap(UniElement::id, Function.identity(), (a, b) -> a));
+//        search.forEachRemaining(newVertex -> {
+//            DeferredVertex deferredVertex = vertexMap.get(newVertex.id());
+//            if (deferredVertex != null) deferredVertex.loadProperties(newVertex);
+//        });
         search.forEachRemaining(newVertex -> {
-            DeferredVertex deferredVertex = vertexMap.get(newVertex.id());
-            if(deferredVertex != null) deferredVertex.loadProperties(newVertex);
+            List<DeferredVertex> deferredVertex = collect.get(newVertex.id());
+            if (deferredVertex != null) deferredVertex.forEach(v -> v.loadProperties(newVertex));
         });
 
     }
@@ -92,8 +98,7 @@ public class DocumentController implements SimpleController {
         UniEdge edge = new UniEdge(uniQuery.getProperties(), uniQuery.getOutVertex(), uniQuery.getInVertex(), graph);
         try {
             index(this.edgeSchemas, edge, true);
-        }
-        catch(DocumentAlreadyExistsException ex) {
+        } catch (DocumentAlreadyExistsException ex) {
             throw Graph.Exceptions.edgeWithIdAlreadyExists(edge.id());
         }
         return edge;
@@ -104,8 +109,7 @@ public class DocumentController implements SimpleController {
         UniVertex vertex = new UniVertex(uniQuery.getProperties(), graph);
         try {
             index(this.vertexSchemas, vertex, true);
-        }
-        catch(DocumentAlreadyExistsException ex){
+        } catch (DocumentAlreadyExistsException ex) {
             throw Graph.Exceptions.vertexWithIdAlreadyExists(vertex.id());
         }
         return vertex;
@@ -128,29 +132,38 @@ public class DocumentController implements SimpleController {
 
     //region Helpers
     private <E extends Element> Set<? extends DocSchema<E>> getSchemas(Class elementClass) {
-        if(Vertex.class.isAssignableFrom(elementClass))
+        if (Vertex.class.isAssignableFrom(elementClass))
             return (Set<? extends DocSchema<E>>) vertexSchemas;
         else return (Set<? extends DocSchema<E>>) edgeSchemas;
     }
     //endregion
 
     //region Elastic Queries
-    private <E extends Element, S extends DocSchema<E>> Iterator<E> search(PredicatesHolder allPredicates, Set<S> schemas, int limit, StepDescriptor stepDescriptor) {
-        if(schemas.size() == 0 || allPredicates.isAborted()) return Iterators.emptyIterator();
+    private <E extends Element, S extends DocSchema<E>> Iterator<E> search(PredicatesHolder allPredicates, Set<S> schemas, Set<String> propertyKeys, int limit, StepDescriptor stepDescriptor) {
+        if (schemas.size() == 0 || allPredicates.isAborted()) return Iterators.emptyIterator();
 
         FilterBuilder filterBuilder = FilterHelper.createFilterBuilder(allPredicates);
         QueryBuilder query = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), filterBuilder);
 
         String[] indices = schemas.stream().map(DocSchema::getIndex).toArray(String[]::new);
         refresh(indices);
-        QueryIterator.Parser<E> parser = (searchHit) -> schemas.stream().map(schema -> schema.fromFields(searchHit.getSource())).findFirst().get();
-        return new QueryIterator<>(query, stepDescriptor, 0, limit, client, parser, indices);
+        QueryIterator.Parser<E> parser = (searchHit) -> schemas.stream().map(schema -> {
+            if (propertyKeys == null)
+                return schema.fromFields(searchHit.getSource());
+            Map<String, SearchHitField> fields = searchHit.getFields();
+            Map<String, Object> source = new HashMap<>();
+            fields.entrySet().forEach(entry -> source.put(entry.getKey(), entry.getValue().getValue()));
+            return schema.fromFields(source);
+        }).findFirst().get();
+        if (propertyKeys == null)
+            return new QueryIterator<>(query, stepDescriptor, 0, limit, client, parser, null, indices);
+        return new QueryIterator<>(query, stepDescriptor, 0, limit, client, parser, propertyKeys.toArray(new String[propertyKeys.size()]), indices);
     }
 
     private <E extends Element> IndexResponse index(Set<? extends DocSchema<E>> schemas, E element, boolean create) {
-        for(DocSchema<E> schema : schemas) {
+        for (DocSchema<E> schema : schemas) {
             DocSchema.Document document = schema.toDocument(element);
-            if (document!= null) {
+            if (document != null) {
                 IndexRequestBuilder indexRequest = client.prepareIndex(document.getIndex(), document.getType(), document.getId())
                         .setSource(document.getFields()).setCreate(create);
                 dirty = true;
@@ -161,7 +174,7 @@ public class DocumentController implements SimpleController {
     }
 
     private <E extends Element> DeleteResponse delete(Set<? extends DocSchema<E>> schemas, E element) {
-        for(DocSchema<E> schema : schemas) {
+        for (DocSchema<E> schema : schemas) {
             DocSchema.Document document = schema.toDocument(element);
             if (document != null) {
                 DeleteRequestBuilder deleteRequestBuilder = client.prepareDelete(document.getIndex(), document.getType(), document.getId());

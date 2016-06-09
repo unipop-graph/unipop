@@ -34,7 +34,7 @@ public class UniGraphVertexPropertiesSideEffectStep extends AbstractStep<Vertex,
     protected Traverser.Admin<Vertex> processNextStart() throws NoSuchElementException {
         while (!results.hasNext() && starts.hasNext())
             results = query(starts);
-        if(results.hasNext())
+        if (results.hasNext())
             return results.next();
 
         throw FastNoSuchElementException.instance();
@@ -47,12 +47,12 @@ public class UniGraphVertexPropertiesSideEffectStep extends AbstractStep<Vertex,
 
         List<DeferredVertex> deferredVertices = copyTraversers.stream()
                 .filter(traverser -> traverser.get() instanceof DeferredVertex)
-                .<DeferredVertex>map(traverser -> (DeferredVertex)traverser.get())
+                .<DeferredVertex>map(traverser -> (DeferredVertex) traverser.get())
                 .filter(DeferredVertex::isDeferred)
                 .collect(Collectors.toList());
 
         if (deferredVertices.size() > 0) {
-            DeferredVertexQuery query = new DeferredVertexQuery(deferredVertices, this.stepDescriptor);
+            DeferredVertexQuery query = new DeferredVertexQuery(deferredVertices, null, this.stepDescriptor);
             controllerManager.getControllers(DeferredVertexQuery.DefferedVertexController.class)
                     .forEach(controller -> controller.fetchProperties(query));
         }
