@@ -25,7 +25,7 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
 
     private static String CLUSTER_NAME = "unipop";
     private static String CONFIGURATION = "basic.json";
-    private JestClient client;
+    private Client client;
 
     public ElasticGraphProvider() throws Exception{
         //patch for failing IO tests that write to disk
@@ -41,7 +41,7 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
                 .parse(new FileReader(Resources.getResource("configuration/" + CONFIGURATION).getFile()))
                 .getAsJsonObject();
 
-        this.client = ElasticClientFactory.createJestClient(object.get("address").getAsString());
+        this.client = ElasticClientFactory.createNode(CLUSTER_NAME, false, 9300).client();
     }
 
     @Override
@@ -65,7 +65,7 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
         return id.toString();
     }
 
-    public JestClient getClient() {
+    public Client getClient() {
         return client;
     }
 }

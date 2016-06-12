@@ -16,7 +16,7 @@
     {
       "type": "document",
       "index": "edge",
-      "id": "@id",
+      "id": "@_id",
       "label": "@_type",
       "properties": {},
       "dynamicProperties": {

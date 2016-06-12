@@ -121,7 +121,7 @@ public class SpatialStepTests {
         return json;
     }
 
-    private void createGeoShapeMapping(JestClient client, String documentType) throws IOException {
+    private void createGeoShapeMapping(Client client, String documentType) throws IOException {
 
         final XContentBuilder mappingBuilder =
 
@@ -137,13 +137,11 @@ public class SpatialStepTests {
                         .endObject()
                         .endObject();
 
-        PutMapping putMapping = new PutMapping.Builder(
-                "geo_index",
-                documentType,
-                mappingBuilder
-        ).build();
-
-        client.execute(putMapping);
+        PutMappingResponse putMappingResponse = client.admin().indices()
+                .preparePutMapping("geo_index")
+                .setType(documentType)
+                .setSource(mappingBuilder)
+                .execute().actionGet();
     }
 
 }

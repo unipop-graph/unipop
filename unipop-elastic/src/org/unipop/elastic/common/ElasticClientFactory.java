@@ -75,6 +75,7 @@ public class ElasticClientFactory {
                 .put("script.groovy.sandbox.enabled", true)
                 .put("script.disable_dynamic", false)
                 .put("transport.tcp.port", port).build();
+
         Node node = NodeBuilder.nodeBuilder().client(client).data(!client).clusterName(clusterName).settings(settings).build();
         node.start();
         final ClusterHealthResponse clusterHealth = node.client().admin().cluster().prepareHealth().setTimeout(TimeValue.timeValueSeconds(10)).setWaitForGreenStatus().execute().get();

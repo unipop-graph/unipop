@@ -1,21 +1,18 @@
 package org.unipop.elastic.document;
 
-import com.google.common.collect.Iterators;
 import io.searchbox.client.JestClient;
 import io.searchbox.client.JestResult;
 import io.searchbox.core.Delete;
 import io.searchbox.core.DocumentResult;
 import io.searchbox.core.Get;
 import io.searchbox.core.Index;
-import io.searchbox.indices.CreateIndex;
 import io.searchbox.indices.IndicesExists;
 import io.searchbox.indices.Refresh;
-import org.apache.tinkerpop.gremlin.structure.*;
-import org.elasticsearch.action.delete.DeleteRequestBuilder;
-import org.elasticsearch.action.delete.DeleteResponse;
-import org.elasticsearch.action.index.IndexRequestBuilder;
-import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.client.Client;
+import io.searchbox.indices.type.TypeExist;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -28,12 +25,12 @@ import org.unipop.elastic.common.QueryIterator;
 import org.unipop.elastic.document.schema.DocEdgeSchema;
 import org.unipop.elastic.document.schema.DocSchema;
 import org.unipop.elastic.document.schema.DocVertexSchema;
-import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.controller.SimpleController;
 import org.unipop.query.mutation.AddEdgeQuery;
 import org.unipop.query.mutation.AddVertexQuery;
 import org.unipop.query.mutation.PropertyQuery;
 import org.unipop.query.mutation.RemoveQuery;
+import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.query.search.SearchQuery;
@@ -44,7 +41,10 @@ import org.unipop.structure.UniGraph;
 import org.unipop.structure.UniVertex;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -194,7 +194,7 @@ public class DocumentController implements SimpleController {
         for(DocSchema<E> schema : schemas) {
             DocSchema.Document document = schema.toDocument(element);
             if (document != null) {
-                if (create == true) {
+                if (create) {
                     Get getRequest = new Get.Builder(document.getIndex(), document.getId()).build();
                     if (this.client.execute(getRequest).isSucceeded()) {
                         throw new DocumentAlreadyExistsException(
@@ -204,15 +204,16 @@ public class DocumentController implements SimpleController {
                                 document.getId());
                     }
                 }
+
                 Index index = new Index.Builder(Seq.seq(document.getFields()))
                         .id(document.getId())
                         .index(document.getIndex())
                         .type(document.getType())
+                        .refresh(true)
                         .build();
 
 //                IndexRequestBuilder indexRequest = client.prepareIndex(document.getIndex(), document.getType(), document.getId())
 //                        .setSource(document.getFields()).setCreate(create);
-                dirty = true;
                 return this.client.execute(index);
             }
         }
