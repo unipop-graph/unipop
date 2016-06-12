@@ -10,7 +10,6 @@
         <module>unipop-core</module>
         <module>unipop-elastic</module>
         <module>unipop-jdbc</module>
-        <module>unipop-managers</module>
         <module>unipop-test</module>
         <module>unipop-elastic2</module>
     </modules>
