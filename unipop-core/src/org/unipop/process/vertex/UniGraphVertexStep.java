@@ -4,7 +4,6 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.UnmodifiableIterator;
 import org.unipop.query.StepDescriptor;
 import org.unipop.process.predicate.ReceivesPredicatesHolder;
-import org.unipop.query.controller.ControllerManager;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.*;
@@ -14,42 +13,48 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.unipop.common.util.ConversionUtils;
+import org.unipop.query.controller.ControllerManager;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.SearchVertexQuery;
+import org.unipop.structure.UniVertex;
 
 import java.util.*;
 import java.util.stream.Stream;
 
 public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, E> implements ReceivesPredicatesHolder<Vertex, E> {
     private final boolean returnsVertex;
-    private int limit;
     private final Direction direction;
+    private Class<E> returnClass;
+    private String[] edgeLabels = new String[0];
+    private int limit;
     private PredicatesHolder predicates = PredicatesHolderFactory.empty();
     private final StepDescriptor stepDescriptor;
-    private final List<SearchVertexQuery.SearchVertexController> controllers;
+    private List<SearchVertexQuery.SearchVertexController> controllers;
     private final int bulk;
-    private Iterator<Traverser.Admin<E>> results;
+    private Iterator<Traverser.Admin<E>> results = EmptyIterator.instance();
 
     public UniGraphVertexStep(VertexStep<E> vertexStep, ControllerManager controllerManager) {
         super(vertexStep.getTraversal());
         vertexStep.getLabels().forEach(this::addLabel);
         this.direction = vertexStep.getDirection();
+        this.returnClass = vertexStep.getReturnClass();
+        this.returnsVertex = vertexStep.returnsVertex();
         if(vertexStep.getEdgeLabels().length > 0) {
+            this.edgeLabels = vertexStep.getEdgeLabels();
             HasContainer labelsPredicate = new HasContainer(T.label.getAccessor(), P.within(vertexStep.getEdgeLabels()));
             this.predicates = PredicatesHolderFactory.predicate(labelsPredicate);
         }
         else this.predicates = PredicatesHolderFactory.empty();
-        this.returnsVertex = vertexStep.returnsVertex();
-        this.stepDescriptor = new StepDescriptor(this);
         this.controllers = controllerManager.getControllers(SearchVertexQuery.SearchVertexController.class);
+        this.stepDescriptor = new StepDescriptor(this);
         this.bulk = getTraversal().getGraph().get().configuration().getInt("bulk", 100);
         limit = -1;
     }
 
     @Override
     protected Traverser.Admin<E> processNextStart() {
-        if(results == null)
+        if(!results.hasNext() && starts.hasNext())
             results = query();
 
         if(results.hasNext())
@@ -98,38 +103,20 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
 
     private E getReturnElement(Edge edge, Vertex originalVertex) {
         if(!this.returnsVertex) return (E) edge;
-        return (E) vertexToVertex(originalVertex, edge, this.direction);
+        return (E) UniVertex.vertexToVertex(originalVertex, edge, this.direction);
     }
 
-    private Vertex vertexToVertex(Vertex originalVertex, Edge edge, Direction direction) {
-        switch (direction) {
-            case OUT:
-                return edge.inVertex();
-            case IN:
-                return edge.outVertex();
-            case BOTH:
-                Vertex outV = edge.outVertex();
-                Vertex inV = edge.inVertex();
-                if(outV.id().equals(inV.id()))
-                    return outV; //points to self
-                if(originalVertex.id().equals(inV.id()))
-                    return outV;
-                if(originalVertex.id().equals(outV.id()))
-                    return inV;
-            default:
-                throw new IllegalArgumentException(direction.toString());
-        }
-    }
+
 
     @Override
     public void reset() {
         super.reset();
-        this.results = null;
+        this.results = EmptyIterator.instance();
     }
 
     @Override
     public String toString() {
-        return StringFactory.stepString(this, this.getDirection(), this.predicates);
+        return StringFactory.stepString(this, this.direction, Arrays.asList(this.edgeLabels), this.returnClass.getSimpleName().toLowerCase());
     }
 
     @Override

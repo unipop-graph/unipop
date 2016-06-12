@@ -53,7 +53,28 @@ public class UniVertex extends UniElement implements Vertex {
 
     @Override
     public Iterator<Vertex> vertices(Direction direction, String... edgeLabels) {
-        return graph.traversal().V(this).toE(direction, edgeLabels).toV(direction.opposite());
+        Iterator<Edge> edges = this.edges(direction, edgeLabels);
+        return ConversionUtils.asStream(edges).map(edge -> vertexToVertex(this, edge, direction)).iterator();
+    }
+
+    public static Vertex vertexToVertex(Vertex source, Edge edge, Direction direction) {
+        switch (direction) {
+            case OUT:
+                return edge.inVertex();
+            case IN:
+                return edge.outVertex();
+            case BOTH:
+                Vertex outV = edge.outVertex();
+                Vertex inV = edge.inVertex();
+                if(outV.id().equals(inV.id()))
+                    return outV; //points to self
+                if(source.id().equals(inV.id()))
+                    return outV;
+                if(source.id().equals(outV.id()))
+                    return inV;
+            default:
+                throw new IllegalArgumentException(direction.toString());
+        }
     }
 
     @Override
@@ -78,7 +99,7 @@ public class UniVertex extends UniElement implements Vertex {
         if (null == vertex) throw Graph.Exceptions.argumentCanNotBeNull("vertex");
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         ElementHelper.validateLabel(label);
-        Map<String, Object> stringObjectMap = ElementHelper.asMap(keyValues);
+        Map<String, Object> stringObjectMap = ConversionUtils.asMap(keyValues);
         stringObjectMap.put(T.label.toString(), label);
         AddEdgeQuery addEdgeQuery = new AddEdgeQuery(this, vertex, stringObjectMap, null);
         return graph.getControllerManager().getControllers(AddEdgeQuery.AddEdgeController.class).stream()

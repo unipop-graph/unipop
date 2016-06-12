@@ -1,17 +1,18 @@
 package org.unipop.structure;
 
-import org.apache.commons.collections4.iterators.ArrayIterator;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.unipop.common.test.UnipopGraphProvider;
+import org.unipop.common.util.ConversionUtils;
 import org.unipop.process.strategyregistrar.StandardStrategyProvider;
 import org.unipop.process.strategyregistrar.StrategyProvider;
 import org.unipop.query.controller.ConfigurationControllerManager;
@@ -25,9 +26,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import static org.unipop.common.util.ConversionUtils.asStream;
-
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest", method = "g_V_repeatXoutX_timesX5X_asXaX_outXwrittenByX_asXbX_selectXa_bX_count",
+        reason = "Takes too long.")
+//@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest", method = "g_V_repeatXoutX_timesX3X_count",
+//        reason = "Takes too long.")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest", method = "g_V_repeatXoutX_timesX8X_count",
+        reason = "Takes too long.")
 @Graph.OptIn(UnipopGraphProvider.OptIn.UnipopStructureSuite)
 @Graph.OptIn(UnipopGraphProvider.OptIn.UnipopProcessSuite)
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_STANDARD)
@@ -144,21 +151,26 @@ public class UniGraph implements Graph {
     }
 
     private <E extends Element> Iterator<E> query(Class<E> returnType, Object[] ids) {
-        ElementHelper.validateMixedElementIds(returnType, ids);
-        if (ids.length > 0 && Vertex.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator<>(ids);
-        PredicatesHolder predicatesHolder = PredicatesHolderFactory.empty();
-        if(ids.length > 0) {
-//            List<Object> collect = Stream.of(ids).map(id -> {
-//                if (id instanceof Element)
-//                    return ((Element) id).id();
-//                return id;
-//            }).collect(Collectors.toList());
+        PredicatesHolder idPredicate = createIdPredicate(ids, returnType);
+        SearchQuery<E> uniQuery = new SearchQuery<>(returnType, idPredicate, -1, null);
+        return queryControllers.stream().<E>flatMap(controller -> ConversionUtils.asStream(controller.search(uniQuery))).iterator();
+    }
 
-            HasContainer idPredicate = new HasContainer(T.id.getAccessor(), P.within(ids));
-            predicatesHolder = PredicatesHolderFactory.predicate(idPredicate);
+    public static <E extends Element> PredicatesHolder createIdPredicate(Object[] ids, Class<E> returnType) {
+        ElementHelper.validateMixedElementIds(returnType, ids);
+        //if (ids.length > 0 && Vertex.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator<>(ids);
+        if(ids.length > 0) {
+            List<Object> collect = Stream.of(ids).map(id -> {
+                if (id instanceof Element)
+                    return ((Element) id).id();
+                return id;
+            }).collect(Collectors.toList());
+
+            HasContainer idPredicate = new HasContainer(T.id.getAccessor(), P.within(collect));
+            return PredicatesHolderFactory.predicate(idPredicate);
         }
-        SearchQuery<E> uniQuery = new SearchQuery<>(returnType, predicatesHolder, -1, null);
-        return queryControllers.stream().<E>flatMap(controller -> asStream(controller.search(uniQuery))).iterator();
+
+        return PredicatesHolderFactory.empty();
     }
 
     @Override
@@ -166,7 +178,7 @@ public class UniGraph implements Graph {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         Optional<String> labelValue = ElementHelper.getLabelValue(keyValues);
         if(labelValue.isPresent()) ElementHelper.validateLabel(labelValue.get());
-        Map<String, Object> stringObjectMap = ElementHelper.asMap(keyValues);
+        Map<String, Object> stringObjectMap = ConversionUtils.asMap(keyValues);
         return controllerManager.getControllers(AddVertexQuery.AddVertexController.class).stream()
                 .map(controller -> controller.addVertex(new AddVertexQuery(stringObjectMap, null)))
                 .findFirst().get();

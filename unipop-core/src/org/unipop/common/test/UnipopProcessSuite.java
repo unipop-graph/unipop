@@ -20,6 +20,10 @@ public class UnipopProcessSuite extends ProcessStandardSuite {
     }
 
     private static final Class<?>[] allTests = new Class<?>[]{
+            CoreTraversalTest.class,
+            HasTest.Traversals.class,
+            GraphTest.Traversals.class,
+
             // branch
             BranchTest.Traversals.class,
             ChooseTest.Traversals.class,
@@ -27,6 +31,7 @@ public class UnipopProcessSuite extends ProcessStandardSuite {
             LocalTest.Traversals.class,
             RepeatTest.Traversals.class,
             UnionTest.Traversals.class,
+            VertexTest.Traversals.class,
 
             // filter
             AndTest.Traversals.class,
@@ -35,7 +40,6 @@ public class UnipopProcessSuite extends ProcessStandardSuite {
             DedupTest.Traversals.class,
             DropTest.Traversals.class,
             FilterTest.Traversals.class,
-            HasTest.Traversals.class,
             IsTest.Traversals.class,
             OrTest.Traversals.class,
             RangeTest.Traversals.class,
@@ -52,7 +56,6 @@ public class UnipopProcessSuite extends ProcessStandardSuite {
             CountTest.Traversals.class,
             FlatMapTest.Traversals.class,
             FoldTest.Traversals.class,
-            GraphTest.Traversals.class,
             LoopsTest.Traversals.class,
             MapTest.Traversals.class,
             MapKeysTest.Traversals.class,
@@ -69,7 +72,6 @@ public class UnipopProcessSuite extends ProcessStandardSuite {
             ProjectTest.Traversals.class,
             PropertiesTest.Traversals.class,
             SelectTest.Traversals.class,
-            VertexTest.Traversals.class,
             UnfoldTest.Traversals.class,
             ValueMapTest.Traversals.class,
 
@@ -86,9 +88,6 @@ public class UnipopProcessSuite extends ProcessStandardSuite {
             StoreTest.Traversals.class,
             SubgraphTest.Traversals.class,
             TreeTest.Traversals.class,
-
-            // compliance
-            CoreTraversalTest.class,
 
             // decorations
             ElementIdStrategyProcessTest.class,

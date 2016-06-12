@@ -12,7 +12,7 @@ import java.util.Set;
 
 public class PredicatesUtil {
 
-    public static void addPredicates(ReceivesPredicatesHolder step, Traversal.Admin traversal){
+    public static void collectPredicates(ReceivesPredicatesHolder step, Traversal.Admin traversal){
         Step nextStep = step.getNextStep();
         Set<PredicatesHolder> predicates = new HashSet<>();
 
