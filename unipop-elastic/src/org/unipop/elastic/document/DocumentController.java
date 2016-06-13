@@ -143,6 +143,7 @@ public class DocumentController implements SimpleController {
 
         String[] indices = schemas.stream().map(DocSchema::getIndex).toArray(String[]::new);
         refresh(indices);
+
         QueryIterator.Parser<E> parser = (searchHit) -> schemas.stream().map(schema -> schema.fromFields(searchHit.getSource())).findFirst().get();
         return new QueryIterator<>(query, stepDescriptor, 0, limit, client, parser, indices);
     }
