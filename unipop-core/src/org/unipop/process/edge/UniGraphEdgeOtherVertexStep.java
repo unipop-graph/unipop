@@ -58,13 +58,11 @@ public class UniGraphEdgeOtherVertexStep extends AbstractStep<Edge, Vertex> impl
         while (this.starts.hasNext()) {
             Traverser.Admin<Edge> edge = starts.next();
             final List<Object> objects = edge.path().objects();
-            for (int i = objects.size() - 2; i >= 0; i--) {
-                if (objects.get(i) instanceof Vertex) {
-                    Vertex vertex = ElementHelper.areEqual((Vertex) objects.get(i), edge.get().outVertex()) ?
-                            edge.get().inVertex() :
-                            edge.get().outVertex();
-                    vertices.add(edge.split(vertex, this));
-                }
+            if (objects.get(objects.size()-2) instanceof Vertex) {
+                Vertex vertex = ElementHelper.areEqual((Vertex) objects.get(objects.size()-2), edge.get().outVertex()) ?
+                        edge.get().inVertex() :
+                        edge.get().outVertex();
+                vertices.add(edge.split(vertex, this));
             }
         }
 
