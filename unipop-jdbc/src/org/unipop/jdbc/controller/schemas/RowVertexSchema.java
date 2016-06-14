@@ -22,7 +22,7 @@ public class RowVertexSchema extends BaseVertexSchema implements RowSchema<Verte
     }
 
     @Override
-    public String getDatabase(Vertex element) {
+    public String getDatabase() {
         return this.database;
     }
 

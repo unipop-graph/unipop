@@ -9,7 +9,9 @@ import org.unipop.structure.UniGraph;
 import java.util.List;
 
 /**
- * Created by GurRo on 6/13/2016.
+ * @author GurRo
+ * @
+ * @since 6/13/2016
  */
 public class RowEdgeSchema extends BaseEdgeSchema implements RowSchema<Edge> {
     private final String database;
@@ -23,7 +25,7 @@ public class RowEdgeSchema extends BaseEdgeSchema implements RowSchema<Edge> {
     }
 
     @Override
-    public String getDatabase(Edge element) {
+    public String getDatabase() {
         return this.database;
     }
 

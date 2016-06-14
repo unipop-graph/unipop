@@ -1,13 +1,16 @@
 package org.unipop.jdbc.simple;
 
 import com.google.common.collect.Iterators;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
+import org.unipop.common.util.PredicatesTranslator;
 import org.unipop.jdbc.controller.schemas.RowEdgeSchema;
 import org.unipop.jdbc.controller.schemas.RowSchema;
 import org.unipop.jdbc.controller.schemas.RowVertexSchema;
@@ -24,6 +27,7 @@ import org.unipop.query.search.SearchQuery;
 import org.unipop.query.search.SearchVertexQuery;
 import org.unipop.structure.UniEdge;
 import org.unipop.structure.UniGraph;
+import org.unipop.structure.UniVertex;
 
 import java.sql.Connection;
 import java.util.Iterator;
@@ -42,48 +46,40 @@ public class RowController implements SimpleController {
     private final Set<? extends RowVertexSchema> vertexSchemas;
     private final Set<? extends RowEdgeSchema> edgeSchemas;
 
+    private final PredicatesTranslator<Iterable<Condition>> predicatesTranslator;
+
 //    private final RecordMapper<Record, UniVertex> vertexMapper;
 
-    public RowController(UniGraph graph, Connection conn, Set<RowVertexSchema> vertexSchemas, Set<RowEdgeSchema> edgeSchemas) {
+    public RowController(UniGraph graph, Connection conn, Set<RowVertexSchema> vertexSchemas, Set<RowEdgeSchema> edgeSchemas, PredicatesTranslator<Iterable<Condition>> predicatesTranslator) {
         this.graph = graph;
+        //TODO: get sql dialect from configuration
         this.dslContext = DSL.using(conn, SQLDialect.DEFAULT);
         this.vertexSchemas = vertexSchemas;
         this.edgeSchemas = edgeSchemas;
+        this.predicatesTranslator = predicatesTranslator;
     }
 
     @Override
     public <E extends Element> Iterator<E> search(SearchQuery<E> uniQuery) {
         Set<? extends RowSchema<E>> schemas = getSchemas(uniQuery.getReturnType());
-        Set<PredicatesHolder> schemasPredicates = schemas.stream().map(schema ->
-                schema.toPredicates(uniQuery.getPredicates())).collect(Collectors.toSet());
-        PredicatesHolder schemaPredicateHolders = PredicatesHolderFactory.or(schemasPredicates);
+        PredicatesHolder schemaPredicateHolders = extractPredicatesHolder(uniQuery, schemas);
         return search(schemaPredicateHolders, schemas, uniQuery.getLimit(), uniQuery.getStepDescriptor());
-    }
-
-    private <E extends Element> Iterator<E> search(PredicatesHolder allPredicates, Set<? extends RowSchema<E>> schemas, int limit, StepDescriptor stepDescriptor) {
-        if(schemas.size() == 0 || allPredicates.isAborted()) {
-            return Iterators.emptyIterator();
-        }
-
-
-
-
-
-
-
-        throw new NotImplementedException();
     }
 
     @Override
     public Edge addEdge(AddEdgeQuery uniQuery) {
         UniEdge edge = new UniEdge(uniQuery.getProperties(), uniQuery.getOutVertex(), uniQuery.getInVertex(), this.graph);
-//        this.getDslContext().select().from()
-        throw new NotImplementedException();
+        insert(edgeSchemas, edge);
+
+        return edge;
     }
 
     @Override
     public Vertex addVertex(AddVertexQuery uniQuery) {
-        return null;
+        UniVertex vertex = new UniVertex(uniQuery.getProperties(), this.graph);
+        insert(vertexSchemas, vertex);
+
+        return vertex;
     }
 
     @Override
@@ -110,12 +106,43 @@ public class RowController implements SimpleController {
         return dslContext;
     }
 
-    private <E extends Element> Set<RowSchema<E>> getSchemas(Class elementClass) {
-        if(Vertex.class.isAssignableFrom(elementClass)) {
-            return (Set<RowSchema<E>>) vertexSchemas;
+    private <E extends Element> Iterator<E> search(PredicatesHolder allPredicates, Set<? extends RowSchema<E>> schemas, int limit, StepDescriptor stepDescriptor) {
+        if (schemas.size() == 0 || allPredicates.isAborted()) {
+            return Iterators.emptyIterator();
         }
-        else {
+
+        Iterable<Condition> conditions = this.predicatesTranslator.translate(allPredicates);
+        Iterable<String> databases = schemas.stream().map(RowSchema::getDatabase).collect(Collectors.toList());
+        //TODO: Finish
+
+        for (RowSchema<E> schema : schemas) {
+//            schema
+        }
+
+
+        throw new NotImplementedException();
+    }
+
+    private <E extends Element> Set<RowSchema<E>> getSchemas(Class elementClass) {
+        if (Vertex.class.isAssignableFrom(elementClass)) {
+            return (Set<RowSchema<E>>) vertexSchemas;
+        } else {
             return (Set<RowSchema<E>>) edgeSchemas;
+        }
+    }
+
+    private <E extends Element> PredicatesHolder extractPredicatesHolder(SearchQuery<E> uniQuery, Set<? extends RowSchema<E>> schemas) {
+        Set<PredicatesHolder> schemasPredicates = schemas.stream().map(schema ->
+                schema.toPredicates(uniQuery.getPredicates())).collect(Collectors.toSet());
+        return PredicatesHolderFactory.or(schemasPredicates);
+    }
+
+    private <E extends Element> void insert(Set<? extends RowSchema<E>> schemas, E element) {
+        for (RowSchema<E> schema : schemas) {
+            RowSchema.Row row = schema.toRow(element);
+
+            this.getDslContext().insertInto(DSL.table(schema.getTable(element)), CollectionUtils.collect(row.getFields().keySet(), DSL::field))
+                    .values(row.getFields().values()).execute();
         }
     }
 }
