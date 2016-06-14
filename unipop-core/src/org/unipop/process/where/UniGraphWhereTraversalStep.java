@@ -23,7 +23,7 @@ public class UniGraphWhereTraversalStep<S extends Element> extends AbstractStep<
     protected Traversal<S, S> whereTraversal;
     protected Iterator<Traverser.Admin<S>> results;
     protected List<Traverser.Admin<S>> originals;
-
+    protected boolean had = false;
     @Override
     public Set<TraverserRequirement> getRequirements() {
         Set<TraverserRequirement> reqs = new HashSet<>();
@@ -50,14 +50,19 @@ public class UniGraphWhereTraversalStep<S extends Element> extends AbstractStep<
                 }});
                 whereTraversal.asAdmin().addStart(start);
                 originals.add(start);
+                if(whereTraversal.asAdmin().getStartStep() instanceof UniGraphWhereStartStep){
+                    ((UniGraphWhereStartStep) whereTraversal.asAdmin().getStartStep()).addOriginal(start);
+                }
             });
-            if(whereTraversal.asAdmin().getStartStep() instanceof UniGraphWhereStartStep){
-                ((UniGraphWhereStartStep) whereTraversal.asAdmin().getStartStep()).addOriginals(originals);
-            }
+            had = true;
+//            if(whereTraversal.asAdmin().getStartStep() instanceof UniGraphWhereStartStep){
+//                ((UniGraphWhereStartStep) whereTraversal.asAdmin().getStartStep()).addOriginals(originals);
+//            }
         }
-        if (results instanceof EmptyIterator) {
-            List<Traverser.Admin<S>> resultsList = new ArrayList<>();
+        if (had && !results.hasNext()) {
+            HashSet<Traverser.Admin<S>> resultsList = new HashSet<>();
             while (whereTraversal.hasNext()) {
+                had = false;
                 B_O_S_SE_SL_Traverser next = (B_O_S_SE_SL_Traverser) whereTraversal.next();
                 Object whereStep = next.getSideEffects().get("_whereStep");
                 if (whereStep instanceof Traverser)
@@ -82,6 +87,7 @@ public class UniGraphWhereTraversalStep<S extends Element> extends AbstractStep<
         public UniGraphWhereStartStep(Traversal.Admin traversal, String selectKey) {
             super(traversal);
             this.selectKey = selectKey;
+            originals = new ArrayList<>();
         }
 
         @Override
@@ -119,6 +125,10 @@ public class UniGraphWhereTraversalStep<S extends Element> extends AbstractStep<
             return Collections.singleton(selectKey);
         }
 
+        public void addOriginal(Traverser.Admin<S> original){
+            originals.add(original);
+        }
+
         public void addOriginals(List<Traverser.Admin<S>> originals) {
             this.originals = originals;
         }
@@ -137,6 +147,9 @@ public class UniGraphWhereTraversalStep<S extends Element> extends AbstractStep<
         protected Traverser.Admin<S> processNextStart() throws NoSuchElementException {
             Traverser.Admin<S> next = starts.next();
             B_O_S_SE_SL_Traverser traverser = (B_O_S_SE_SL_Traverser) next;
+            if(traverser.getSideEffects().get("_whereStep") instanceof Traverser) {
+                return traverser.getSideEffects().get("_whereStep");
+            }
             ArrayList<Traverser.Admin<S>> whereStep = traverser.getSideEffects().get("_whereStep");
             for (Traverser.Admin<S> stringSMap : whereStep) {
                 if (((Map<String, S>) stringSMap.get()).get(selectKey).equals(next.get())){
