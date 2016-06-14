@@ -3,11 +3,14 @@ package org.unipop.jdbc.simple;
 import com.google.common.collect.Iterators;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.NotImplementedException;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
+import org.jooq.DeleteWhereStep;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 import org.unipop.common.util.PredicatesTranslator;
@@ -30,13 +33,13 @@ import org.unipop.structure.UniGraph;
 import org.unipop.structure.UniVertex;
 
 import java.sql.Connection;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Created by GurRo on 6/12/2016.
- *
  * @author GurRo
  * @since 6/12/2016
  */
@@ -89,6 +92,28 @@ public class RowController implements SimpleController {
 
     @Override
     public <E extends Element> void remove(RemoveQuery<E> uniQuery) {
+        uniQuery.getElements().forEach(el -> {
+            Set<? extends RowSchema<E>> schemas = this.getSchemas(el.getClass());
+
+            for (RowSchema<E> schema : schemas) {
+                DeleteWhereStep delete = this.getDslContext().delete(DSL.table(schema.getTable(el)));
+
+                for (Condition condition : translateElementsToConditions(Collections.singletonList(el))) {
+                    delete.where(condition);
+                }
+
+                delete.execute();
+            }
+        });
+    }
+
+    private <E extends Element> Iterable<Condition> translateElementsToConditions(List<E> elements) {
+        return this.predicatesTranslator.translate(
+                new PredicatesHolder(
+                        PredicatesHolder.Clause.Or,
+                        elements.stream()
+                                .map(e -> new HasContainer("ID", P.eq(e.id())))
+                                .collect(Collectors.toSet()), Collections.EMPTY_SET));
 
     }
 
