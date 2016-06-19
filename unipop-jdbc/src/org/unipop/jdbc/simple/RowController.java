@@ -96,13 +96,12 @@ public class RowController implements SimpleController {
             Set<? extends RowSchema<E>> schemas = this.getSchemas(el.getClass());
 
             for (RowSchema<E> schema : schemas) {
-                DeleteWhereStep delete = this.getDslContext().delete(DSL.table(schema.getTable(el)));
+                DeleteWhereStep deleteStep = this.getDslContext().delete(DSL.table(schema.getTable(el)));
 
                 for (Condition condition : translateElementsToConditions(Collections.singletonList(el))) {
-                    delete.where(condition);
+                    deleteStep.where(condition);
                 }
-
-                delete.execute();
+                deleteStep.execute();
             }
         });
     }
