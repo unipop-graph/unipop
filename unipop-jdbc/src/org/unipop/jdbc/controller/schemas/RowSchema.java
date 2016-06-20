@@ -18,6 +18,12 @@ public interface RowSchema<E extends Element> extends ElementSchema<E> {
         return element.label();
     }
 
+    /**
+     *
+     * @return the full table name, including database prefix
+     */
+    String getTable();
+
     default Object getId(E element) {
         return element.id();
     }
@@ -28,29 +34,22 @@ public interface RowSchema<E extends Element> extends ElementSchema<E> {
             return null;
         }
 
-        String database = this.getDatabase();
         String table = this.getTable(element);
         Object id = this.getId(element);
 
-        return new RowSchema.Row(database, table, id, fields);
+        return new RowSchema.Row(table, id, fields);
     }
 
     class Row {
-        private final String database;
         private final String table;
         private final Object id;
         private final Map<String, Object> fields;
 
 
-        public Row(String database, String table, Object id, Map<String, Object> fields) {
-            this.database = database;
+        public Row(String table, Object id, Map<String, Object> fields) {
             this.table = table;
             this.id = id;
             this.fields = fields;
-        }
-
-        public String getDatabase() {
-            return database;
         }
 
         public String getTable() {

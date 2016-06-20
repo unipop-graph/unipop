@@ -30,4 +30,9 @@ public class RowVertexSchema extends BaseVertexSchema implements RowSchema<Verte
     public String getTable(Vertex element) {
         return this.table == null ? element.label() : this.table;
     }
+
+    @Override
+    public String getTable() {
+        return this.table;
+    }
 }

@@ -2,21 +2,22 @@ package org.unipop.jdbc.simple;
 
 import com.google.common.collect.Iterators;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.jooq.Condition;
-import org.jooq.DSLContext;
-import org.jooq.DeleteWhereStep;
-import org.jooq.SQLDialect;
+import org.jooq.*;
+
+import static org.jooq.impl.DSL.*;
+
 import org.jooq.impl.DSL;
 import org.unipop.common.util.PredicatesTranslator;
 import org.unipop.jdbc.controller.schemas.RowEdgeSchema;
 import org.unipop.jdbc.controller.schemas.RowSchema;
 import org.unipop.jdbc.controller.schemas.RowVertexSchema;
+import org.unipop.jdbc.simple.results.VertexMapper;
+import org.unipop.jdbc.utils.TableStrings;
 import org.unipop.query.StepDescriptor;
 import org.unipop.query.controller.SimpleController;
 import org.unipop.query.mutation.AddEdgeQuery;
@@ -38,6 +39,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * @author GurRo
@@ -53,12 +56,13 @@ public class RowController implements SimpleController {
 
 //    private final RecordMapper<Record, UniVertex> vertexMapper;
 
-    public RowController(UniGraph graph, Connection conn, Set<RowVertexSchema> vertexSchemas, Set<RowEdgeSchema> edgeSchemas, PredicatesTranslator<Iterable<Condition>> predicatesTranslator) {
+    public RowController(UniGraph graph, Connection conn, SQLDialect dialect, Set<RowVertexSchema> vertexSchemas, Set<RowEdgeSchema> edgeSchemas, PredicatesTranslator<Iterable<Condition>> predicatesTranslator) {
         this.graph = graph;
-        //TODO: get sql dialect from configuration
-        this.dslContext = DSL.using(conn, SQLDialect.DEFAULT);
+        this.dslContext = using(conn, dialect);
+
         this.vertexSchemas = vertexSchemas;
         this.edgeSchemas = edgeSchemas;
+
         this.predicatesTranslator = predicatesTranslator;
     }
 
@@ -96,7 +100,7 @@ public class RowController implements SimpleController {
             Set<? extends RowSchema<E>> schemas = this.getSchemas(el.getClass());
 
             for (RowSchema<E> schema : schemas) {
-                DeleteWhereStep deleteStep = this.getDslContext().delete(DSL.table(schema.getTable(el)));
+                DeleteWhereStep deleteStep = this.getDslContext().delete(table(schema.getTable(el)));
 
                 for (Condition condition : translateElementsToConditions(Collections.singletonList(el))) {
                     deleteStep.where(condition);
@@ -104,16 +108,6 @@ public class RowController implements SimpleController {
                 deleteStep.execute();
             }
         });
-    }
-
-    private <E extends Element> Iterable<Condition> translateElementsToConditions(List<E> elements) {
-        return this.predicatesTranslator.translate(
-                new PredicatesHolder(
-                        PredicatesHolder.Clause.Or,
-                        elements.stream()
-                                .map(e -> new HasContainer("ID", P.eq(e.id())))
-                                .collect(Collectors.toSet()), Collections.EMPTY_SET));
-
     }
 
     @Override
@@ -126,25 +120,48 @@ public class RowController implements SimpleController {
         return null;
     }
 
-    public DSLContext getDslContext() {
-        return dslContext;
-    }
-
     private <E extends Element> Iterator<E> search(PredicatesHolder allPredicates, Set<? extends RowSchema<E>> schemas, int limit, StepDescriptor stepDescriptor) {
         if (schemas.size() == 0 || allPredicates.isAborted()) {
             return Iterators.emptyIterator();
         }
 
-        Iterable<Condition> conditions = this.predicatesTranslator.translate(allPredicates);
-        Iterable<String> databases = schemas.stream().map(RowSchema::getDatabase).collect(Collectors.toList());
-        //TODO: Finish
+        Set<Field<Object>> columnsToRetrieve = allPredicates
+                .getPredicates()
+                .stream()
+                .map(HasContainer::getKey)
+                .map(DSL::field)
+                .collect(Collectors.toSet());
 
-        for (RowSchema<E> schema : schemas) {
-//            schema
-        }
+        Iterator<Condition> conditions = this.predicatesTranslator.translate(allPredicates).iterator();
+        Iterator<String> tables = schemas.stream().map(RowSchema::getTable).iterator();
+        String firstTable = tables.next();
+        SelectWhereStep step = createSqlQuery(columnsToRetrieve, firstTable);
 
+        tables.forEachRemaining(table -> step
+                .unionAll(createSqlQuery(columnsToRetrieve, table)));
 
-        throw new NotImplementedException();
+        conditions.forEachRemaining(step::where);
+
+        step.limit(limit);
+
+        return (Iterator<E>) step.fetch().map(new VertexMapper(this.graph)).iterator();
+    }
+
+    private SelectJoinStep<Record> createSqlQuery(Set<Field<Object>> columnsToRetrieve, String table) {
+        return this.getDslContext()
+                .select(Stream.concat(
+                        columnsToRetrieve.stream(),
+                        Stream.of(getTableField(table)))
+                        .collect(Collectors.toSet()))
+                .from(table);
+    }
+
+    public DSLContext getDslContext() {
+        return this.dslContext;
+    }
+
+    private Field<Object> getTableField(String tableName) {
+        return field(String.format("'%s' as '%s'", tableName, TableStrings.TABLE_COLUMN_NAME));
     }
 
     private <E extends Element> Set<RowSchema<E>> getSchemas(Class elementClass) {
@@ -165,8 +182,18 @@ public class RowController implements SimpleController {
         for (RowSchema<E> schema : schemas) {
             RowSchema.Row row = schema.toRow(element);
 
-            this.getDslContext().insertInto(DSL.table(schema.getTable(element)), CollectionUtils.collect(row.getFields().keySet(), DSL::field))
+            this.getDslContext().insertInto(table(schema.getTable(element)), CollectionUtils.collect(row.getFields().keySet(), DSL::field))
                     .values(row.getFields().values()).execute();
         }
+    }
+
+    private <E extends Element> Iterable<Condition> translateElementsToConditions(List<E> elements) {
+        return this.predicatesTranslator.translate(
+                new PredicatesHolder(
+                        PredicatesHolder.Clause.Or,
+                        elements.stream()
+                                .map(e -> new HasContainer("ID", P.eq(e.id())))
+                                .collect(Collectors.toSet()), Collections.EMPTY_SET));
+
     }
 }

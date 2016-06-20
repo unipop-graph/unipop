@@ -33,4 +33,9 @@ public class RowEdgeSchema extends BaseEdgeSchema implements RowSchema<Edge> {
     public String getTable(Edge element) {
         return this.table == null ? element.label() : this.table;
     }
+
+    @Override
+    public String getTable() {
+        return this.table;
+    }
 }
