@@ -1,10 +1,14 @@
 package org.unipop.elastic.plugin;
 
-import org.apache.tinkerpop.gremlin.groovy.plugin.*;
+import org.apache.tinkerpop.gremlin.groovy.plugin.AbstractGremlinPlugin;
+import org.apache.tinkerpop.gremlin.groovy.plugin.IllegalEnvironmentException;
+import org.apache.tinkerpop.gremlin.groovy.plugin.PluginAcceptor;
+import org.apache.tinkerpop.gremlin.groovy.plugin.PluginInitializationException;
 import org.unipop.elastic.ElasticSourceProvider;
 import org.unipop.structure.UniGraph;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
 
 public class ElasticUnipopPlugin extends AbstractGremlinPlugin {
 

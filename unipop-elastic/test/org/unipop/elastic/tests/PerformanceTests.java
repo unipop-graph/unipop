@@ -7,8 +7,8 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Before;
 import org.junit.Test;
-import org.unipop.elastic.ElasticGraphProvider;
 import org.unipop.common.test.UnipopGraphProvider;
+import org.unipop.elastic.ElasticGraphProvider;
 import org.unipop.elastic.common.TimingAccessor;
 
 import java.util.Iterator;

@@ -19,11 +19,6 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
             <version>2.0.0</version>
         </dependency>
         <dependency>
-            <groupId>org.jooq</groupId>
-            <artifactId>jool</artifactId>
-            <version>0.9.10</version>
-        </dependency>
-        <dependency>
             <groupId>com.esotericsoftware.yamlbeans</groupId>
             <artifactId>yamlbeans</artifactId>
             <version>1.09</version>

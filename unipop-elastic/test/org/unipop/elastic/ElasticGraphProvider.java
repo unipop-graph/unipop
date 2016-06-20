@@ -1,23 +1,16 @@
 package org.unipop.elastic;
 
-import com.google.common.io.Resources;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import io.searchbox.client.JestClient;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.FileUtils;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.node.Node;
 import org.unipop.common.test.UnipopGraphProvider;
 import org.unipop.elastic.common.ElasticClientFactory;
 import org.unipop.elastic.common.ElasticHelper;
 
 import java.io.File;
-import java.io.FileReader;
 import java.net.URL;
 import java.util.Map;
 
@@ -34,12 +27,6 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
         String path = new java.io.File( "." ).getCanonicalPath() + "\\data";
         File file = new File(path);
         FileUtils.deleteQuietly(file);
-
-//        Node node = ElasticClientFactory.createNode(CLUSTER_NAME, false, 9300);
-
-        JsonObject object = new JsonParser()
-                .parse(new FileReader(Resources.getResource("configuration/" + CONFIGURATION).getFile()))
-                .getAsJsonObject();
 
         this.client = ElasticClientFactory.createNode(CLUSTER_NAME, false, 9300).client();
     }

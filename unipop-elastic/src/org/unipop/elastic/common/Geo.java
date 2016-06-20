@@ -1,6 +1,7 @@
 package org.unipop.elastic.common;
 
-import com.spatial4j.core.shape.*;
+import com.spatial4j.core.shape.Shape;
+import com.spatial4j.core.shape.SpatialRelation;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.elasticsearch.common.Preconditions;
 import org.elasticsearch.common.geo.ShapeRelation;
@@ -11,7 +12,8 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.function.*;
+import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 
 public enum Geo implements BiPredicate {
 

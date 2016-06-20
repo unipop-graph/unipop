@@ -3,8 +3,6 @@ package org.unipop.elastic.tests;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.impl.PointImpl;
-import io.searchbox.client.JestClient;
-import io.searchbox.indices.mapping.PutMapping;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;

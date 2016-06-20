@@ -6,10 +6,12 @@ import io.searchbox.client.config.HttpClientConfig;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.settings.*;
+import org.elasticsearch.common.settings.ImmutableSettings;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.node.*;
+import org.elasticsearch.node.Node;
+import org.elasticsearch.node.NodeBuilder;
 import org.json.JSONObject;
 
 import java.io.IOException;

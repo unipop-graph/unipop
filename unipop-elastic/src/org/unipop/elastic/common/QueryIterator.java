@@ -1,23 +1,17 @@
 package org.unipop.elastic.common;
 
+import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import io.searchbox.client.JestClient;
 import io.searchbox.client.JestResult;
-import io.searchbox.client.http.JestHttpClient;
 import io.searchbox.core.Search;
 import io.searchbox.core.SearchScroll;
 import io.searchbox.params.Parameters;
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.elasticsearch.action.search.SearchRequestBuilder;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.Client;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.internal.InternalSearchHit;
-import org.jooq.lambda.Seq;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -26,7 +20,6 @@ import java.util.Map;
 public class QueryIterator<E extends Element> implements Iterator<E> {
 
     private JestResult scrollResponse;
-    private String scrollId;
     private final Parser<E> parser;
     private final int scrollSize;
     private JestClient client;
@@ -45,7 +38,7 @@ public class QueryIterator<E extends Element> implements Iterator<E> {
                 .query(query);
 
         Search.Builder searchBuilder = new Search.Builder(searchSourceBuilder.toString())
-                .addIndex(Seq.of(indices).toList());
+                .addIndex(Lists.newArrayList(indices));
 
         if(maxSize == -1) maxSize = 10000;
 
