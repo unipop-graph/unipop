@@ -1,12 +1,17 @@
 package org.unipop.elastic.common;
 
+import io.searchbox.client.JestClient;
+import io.searchbox.client.JestClientFactory;
+import io.searchbox.client.config.HttpClientConfig;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.settings.*;
+import org.elasticsearch.common.settings.ImmutableSettings;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.node.*;
+import org.elasticsearch.node.Node;
+import org.elasticsearch.node.NodeBuilder;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -16,11 +21,12 @@ import java.util.concurrent.ExecutionException;
 public class ElasticClientFactory {
 
     public static class ClientType {
-        public static String TRANSPORT = "TRANSPORT";
-        public static String NODE_CLIENT = "NODE_CLIENT";
-        public static String NODE = "NODE";
+        public static final String TRANSPORT = "TRANSPORT";
+        public static final String NODE_CLIENT = "NODE_CLIENT";
+        public static final String NODE = "NODE";
     }
 
+    @Deprecated
     public static Client create(JSONObject configuration) throws ExecutionException, InterruptedException {
         String clientType = configuration.optString("client", ClientType.NODE);
         String clusterName = configuration.optString("clusterName", "elasticsearch");
@@ -29,20 +35,33 @@ public class ElasticClientFactory {
             String concatenatedAddresses = configuration.optString("address", "127.0.0.1:9300");
             String[] addresses = concatenatedAddresses.split(",");
             InetSocketTransportAddress[] inetSocketTransportAddresses = new InetSocketTransportAddress[addresses.length];
-            for(int i = 0; i < addresses.length; i++) {
+            for (int i = 0; i < addresses.length; i++) {
                 String address = addresses[i];
                 String[] split = address.split(":");
-                if(split.length != 2) throw new IllegalArgumentException("Address invalid:" + address +  ". Should contain ip and port, e.g. 127.0.0.1:9300");
+                if (split.length != 2)
+                    throw new IllegalArgumentException("Address invalid:" + address + ". Should contain ip and port, e.g. 127.0.0.1:9300");
                 inetSocketTransportAddresses[i] = new InetSocketTransportAddress(split[0], Integer.parseInt(split[1]));
             }
             return createTransportClient(clusterName, inetSocketTransportAddresses);
-        }
-        else{
+        } else {
             String port = configuration.optString("elasticsearch.cluster.port", "9300");
             return createNode(clusterName, clientType.equals(ClientType.NODE_CLIENT), Integer.parseInt(port)).client();
         }
     }
 
+    public static JestClient createJestClient(String address) {
+        JestClientFactory factory = new JestClientFactory();
+
+        factory.setHttpClientConfig(
+                new HttpClientConfig
+                        .Builder(address.toString())
+                        .multiThreaded(true)
+                        .build());
+
+        return factory.getObject();
+    }
+
+    @Deprecated
     public static TransportClient createTransportClient(String clusterName, InetSocketTransportAddress... addresses) {
         Settings settings = ImmutableSettings.settingsBuilder()
                 .put("cluster.name", clusterName)
@@ -51,12 +70,14 @@ public class ElasticClientFactory {
         return transportClient;
     }
 
+    @Deprecated
     public static Node createNode(String clusterName, boolean client, int port) throws ExecutionException, InterruptedException {
-        if(port == 0) port = findFreePort();
+        if (port == 0) port = findFreePort();
         Settings settings = NodeBuilder.nodeBuilder().settings()
                 .put("script.groovy.sandbox.enabled", true)
                 .put("script.disable_dynamic", false)
                 .put("transport.tcp.port", port).build();
+
         Node node = NodeBuilder.nodeBuilder().client(client).data(!client).clusterName(clusterName).settings(settings).build();
         node.start();
         final ClusterHealthResponse clusterHealth = node.client().admin().cluster().prepareHealth().setTimeout(TimeValue.timeValueSeconds(10)).setWaitForGreenStatus().execute().get();
@@ -64,6 +85,7 @@ public class ElasticClientFactory {
         return node;
     }
 
+    @Deprecated
     private static int findFreePort() {
         ServerSocket socket = null;
         try {

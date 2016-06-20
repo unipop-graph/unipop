@@ -4,11 +4,13 @@ import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
-import org.apache.tinkerpop.gremlin.structure.T;
 import org.elasticsearch.common.geo.builders.ShapeBuilder;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
-import org.elasticsearch.index.query.*;
+import org.elasticsearch.index.query.FilterBuilder;
+import org.elasticsearch.index.query.FilterBuilders;
+import org.elasticsearch.index.query.GeoShapeFilterBuilder;
+import org.elasticsearch.index.query.IdsFilterBuilder;
 import org.unipop.process.predicate.ExistsP;
 import org.unipop.query.predicates.PredicatesHolder;
 
@@ -21,8 +23,10 @@ public class FilterHelper {
     public static FilterBuilder createFilterBuilder(PredicatesHolder predicatesHolder) {
         Set<FilterBuilder> predicateFilters = predicatesHolder.getPredicates().stream()
                 .map(FilterHelper::createFilter).collect(Collectors.toSet());
+
         Set<FilterBuilder> childFilters = predicatesHolder.getChildren().stream()
                 .map(FilterHelper::createFilterBuilder).collect(Collectors.toSet());
+
         predicateFilters.addAll(childFilters);
         FilterBuilder[] filterBuilders = predicateFilters.toArray(new FilterBuilder[predicateFilters.size()]);
 

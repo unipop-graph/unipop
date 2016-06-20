@@ -23,6 +23,8 @@ public interface DocSchema<E extends Element> extends ElementSchema<E> {
         Object type = fields.getOrDefault("_type", fields.getOrDefault("type", getType(element)));
         String id = fields.getOrDefault("_id", fields.getOrDefault("id", getId(element))).toString();
         String index = getIndex();
+
+        fields.remove("_type");
         return new Document(index, type.toString(), id, fields);
     }
 

@@ -8,8 +8,8 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Before;
 import org.junit.Test;
-import org.unipop.elastic.ElasticGraphProvider;
 import org.unipop.common.test.UnipopGraphProvider;
+import org.unipop.elastic.ElasticGraphProvider;
 
 import java.util.HashMap;
 

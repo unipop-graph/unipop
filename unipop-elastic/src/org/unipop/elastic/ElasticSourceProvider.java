@@ -1,13 +1,13 @@
 package org.unipop.elastic;
 
 import com.google.common.collect.Sets;
-import org.elasticsearch.client.Client;
+import io.searchbox.client.JestClient;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.unipop.common.schema.referred.ReferredVertexSchema;
-import org.unipop.common.property.PropertySchemaFactory;
 import org.unipop.common.property.PropertySchema;
+import org.unipop.common.property.PropertySchemaFactory;
+import org.unipop.common.schema.referred.ReferredVertexSchema;
 import org.unipop.elastic.common.ElasticClientFactory;
 import org.unipop.elastic.common.ElasticHelper;
 import org.unipop.elastic.document.DocumentController;
@@ -17,15 +17,18 @@ import org.unipop.query.controller.SourceProvider;
 import org.unipop.query.controller.UniQueryController;
 import org.unipop.structure.UniGraph;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class ElasticSourceProvider implements SourceProvider {
 
-    private Client client;
+    private JestClient client;
 
     @Override
     public Set<UniQueryController> init(UniGraph graph, JSONObject configuration) throws Exception {
-        this.client = ElasticClientFactory.create(configuration);
+        this.client = ElasticClientFactory.createJestClient(configuration.getString("address"));
 
         Set<DocVertexSchema> docVertexSchemas = new HashSet<>();
         List<JSONObject> vertices = getConfigs(configuration, "vertices");
@@ -73,6 +76,6 @@ public class ElasticSourceProvider implements SourceProvider {
 
     @Override
     public void close() {
-        client.close();
+        client.shutdownClient();
     }
 }

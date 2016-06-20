@@ -4,7 +4,7 @@
     <parent>
         <artifactId>unipop</artifactId>
         <groupId>unipop</groupId>
-        <version>0.1</version>
+        <version>0.2</version>
     </parent>
     <artifactId>unipop-jdbc</artifactId>
     <name>Unipop :: JDBC Controllers</name>

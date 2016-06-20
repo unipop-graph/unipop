@@ -1,18 +1,19 @@
 package org.unipop.elastic.common;
 
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
-import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
+import io.searchbox.client.JestClient;
+import io.searchbox.client.JestResult;
+import io.searchbox.cluster.Health;
+import io.searchbox.indices.CreateIndex;
+import io.searchbox.indices.DeleteIndex;
+import io.searchbox.indices.IndicesExists;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
-import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRequest;
-import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
 import org.elasticsearch.action.admin.indices.mapping.delete.DeleteMappingResponse;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
 import org.elasticsearch.action.deletebyquery.DeleteByQueryResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -22,20 +23,33 @@ import java.util.ArrayList;
 
 public class ElasticHelper {
 
-    public static void createIndex(String indexName, Client client) throws IOException {
-        IndicesExistsRequest request = new IndicesExistsRequest(indexName);
-        IndicesExistsResponse response = client.admin().indices().exists(request).actionGet();
-        if (!response.isExists()) {
-            Settings settings = ImmutableSettings.settingsBuilder().put("index.analysis.analyzer.default.type", "keyword").build();
-            CreateIndexRequestBuilder createIndexRequestBuilder = client.admin().indices().prepareCreate(indexName).setSettings(settings);
-            client.admin().indices().create(createIndexRequestBuilder.request()).actionGet();
+    public static void createIndex(String indexName, JestClient client) throws IOException {
+        CreateIndex createIndexRequest = new CreateIndex.Builder(indexName).build();
+        IndicesExists indicesExistsRequest = new IndicesExists.Builder(indexName).build();
+
+        JestResult existsResult = client.execute(indicesExistsRequest);
+
+//        IndicesExistsRequest request = new IndicesExistsRequest(indexName);
+//        IndicesExistsResponse response = client.admin().indices().exists(request).actionGet();
+        if (!existsResult.isSucceeded()) {
+            Settings settings = ImmutableSettings.settingsBuilder()
+                    .put("index.analysis.analyzer.default.type", "keyword")
+                    .build();
+            CreateIndex createIndexWithSettingsRequest = new CreateIndex.Builder(indexName)
+                    .settings(settings)
+                    .build();
+            client.execute(createIndexRequest);
+
         }
 
-        final ClusterHealthRequest clusterHealthRequest = new ClusterHealthRequest(indexName).timeout(TimeValue.timeValueSeconds(10)).waitForYellowStatus();
-        final ClusterHealthResponse clusterHealth = client.admin().cluster().health(clusterHealthRequest).actionGet();
-        if (clusterHealth.isTimedOut()) {
-            throw new IOException(clusterHealth.getStatus() +
-                    " status returned from cluster '" + client.admin().cluster().toString() +
+        final JestResult healthResult = client.execute(new Health.Builder().build());
+
+        if (!healthResult.isSucceeded()) {
+            throw new IOException(healthResult.getJsonObject().get("status").getAsString() +
+                    " status returned from cluster '" + healthResult
+                    .getJsonObject()
+                    .get("cluster_name")
+                    .getAsString() +
                     "', index '" + indexName + "'");
 
         }
@@ -75,7 +89,11 @@ public class ElasticHelper {
         }
     }
 
+    public static JestResult deleteIndices(JestClient client) throws IOException {
+        return client.execute(new DeleteIndex.Builder("*").build());
+    }
+
     public static DeleteIndexResponse deleteIndices(Client client) {
-        return client.admin().indices().prepareDelete("*").execute().actionGet();
+        return client.admin().indices().delete(new DeleteIndexRequest("*")).actionGet();
     }
 }
