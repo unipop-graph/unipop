@@ -5,6 +5,7 @@ import org.apache.tinkerpop.gremlin.GraphManager;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
+import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -21,6 +22,7 @@ import org.unipop.elastic.ElasticGraphProvider;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.GRATEFUL;
 import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource.computer;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
@@ -38,9 +40,14 @@ public class TemporaryTests extends AbstractGremlinTest {
     }
 
     @Test
-    @LoadGraphWith(MODERN)
+    @LoadGraphWith(GRATEFUL)
     public void test() {
-        Traversal t = g.V().repeat(__.union(__.out("knows").group("a").by("age"), __.out("created").group("b").by("name").by(count())).group("a").by("name")).times(2).cap("a", "b");
+        Traversal t = g.V().<Vertex>match(
+                as("a").in("sungBy").as("b"),
+                as("a").in("writtenBy").as("c"),
+                as("b").out("writtenBy").as("d"))
+                .where(as("c").out("sungBy").as("d"));
+//                .where(as("d").has("name", "Garcia"));
 
         check(t);
     }

@@ -5,6 +5,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.TraversalFilterStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.WhereTraversalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.MatchStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.PropertiesStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
@@ -30,6 +31,8 @@ public class UniGraphWhereStepStrategy extends AbstractTraversalStrategy<Travers
 
     @Override
     public void apply(Traversal.Admin<?, ?> traversal) {
+        if (TraversalHelper.hasStepOfClass(MatchStep.class, traversal) || TraversalHelper.hasStepOfClass(MatchStep.MatchStartStep.class, traversal))
+            return;
         TraversalHelper.getStepsOfClass(WhereTraversalStep.class, traversal).forEach(whereTraversalStep -> {
             Traversal.Admin innerWhereTraversal = ((Traversal) whereTraversalStep.getLocalChildren().get(0)).asAdmin();
             TraversalHelper.getStepsOfClass(WhereTraversalStep.WhereStartStep.class, innerWhereTraversal).forEach(whereStartStep -> {
