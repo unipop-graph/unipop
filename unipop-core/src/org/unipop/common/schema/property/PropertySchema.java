@@ -1,10 +1,9 @@
-package org.unipop.common.property;
+package org.unipop.common.schema.property;
 
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.unipop.query.predicates.PredicatesHolder;
 
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 

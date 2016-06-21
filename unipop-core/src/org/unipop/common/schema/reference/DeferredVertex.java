@@ -1,4 +1,4 @@
-package org.unipop.common.schema.referred;
+package org.unipop.common.schema.reference;
 
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.unipop.query.search.DeferredVertexQuery;
