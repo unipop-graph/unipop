@@ -12,11 +12,6 @@ import org.unipop.structure.UniGraph;
  * @since 6/20/2016
  */
 @RunWith(UnipopProcessSuite.class)
-@GraphProviderClass(provider = , graph = UniGraph.class)
-public class JdbcProcessSuite extends UnipopGraphProvider {
-
-    public JdbcGraphProvider() {
-
-    }
-
+@GraphProviderClass(provider = JdbcGraphProvider.class, graph = UniGraph.class)
+public class JdbcProcessSuite {
 }

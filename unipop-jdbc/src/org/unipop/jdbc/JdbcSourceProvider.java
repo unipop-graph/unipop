@@ -51,7 +51,7 @@ public class JdbcSourceProvider  implements SourceProvider {
         Set<RowVertexSchema> vertexSchemas = extractVertexSchemas(graph, configuration);
         Set<RowEdgeSchema> edgeSchemas = extractEdgeSchemas(graph, configuration);
 
-        RowController controller = new RowController(graph, c, dialect, vertexSchemas, edgeSchemas, new JdbcPredicatesTranslator());
+        RowController controller = new RowController(graph, c, dialect, vertexSchemas, edgeSchemas, predicatesTranslatorSupplier.get());
         return Sets.newHashSet(controller);
     }
 
@@ -103,6 +103,8 @@ public class JdbcSourceProvider  implements SourceProvider {
     private List<JSONObject> getConfigs(JSONObject configuration, String key) throws JSONException {
         List<JSONObject> configs = new ArrayList<>();
         JSONArray configsArray = configuration.optJSONArray(key);
+
+
         for(int i = 0; i < configsArray.length(); i++){
             JSONObject config = configsArray.getJSONObject(i);
             configs.add(config);
