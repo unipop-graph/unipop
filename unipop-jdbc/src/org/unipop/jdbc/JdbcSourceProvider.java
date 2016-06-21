@@ -2,6 +2,7 @@ package org.unipop.jdbc;
 
 import com.google.common.collect.Sets;
 import org.apache.commons.lang.NotImplementedException;
+import org.jooq.Condition;
 import org.jooq.SQLDialect;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -9,6 +10,7 @@ import org.json.JSONObject;
 import org.unipop.common.property.PropertySchema;
 import org.unipop.common.property.PropertySchemaFactory;
 import org.unipop.common.schema.referred.ReferredVertexSchema;
+import org.unipop.common.util.PredicatesTranslator;
 import org.unipop.jdbc.controller.schemas.RowEdgeSchema;
 import org.unipop.jdbc.controller.schemas.RowVertexSchema;
 import org.unipop.jdbc.simple.RowController;
@@ -23,6 +25,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -30,6 +33,16 @@ import java.util.stream.Collectors;
  * @since 21/6/2016
  */
 public class JdbcSourceProvider  implements SourceProvider {
+    private final Supplier<PredicatesTranslator<Iterable<Condition>>> predicatesTranslatorSupplier;
+
+    public JdbcSourceProvider() {
+        this(JdbcPredicatesTranslator::new);
+    }
+
+    public JdbcSourceProvider(Supplier<PredicatesTranslator<Iterable<Condition>>> predicatesTranslatorSupplier) {
+        this.predicatesTranslatorSupplier = predicatesTranslatorSupplier;
+    }
+
     @Override
     public Set<UniQueryController> init(UniGraph graph, JSONObject configuration) throws Exception {
         Connection c = getConnection(configuration);
