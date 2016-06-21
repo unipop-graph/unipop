@@ -1,9 +1,8 @@
-package org.unipop.common.property.impl;
+package org.unipop.common.schema.property;
 
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.unipop.common.property.PropertySchema;
 import org.unipop.common.util.ConversionUtils;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;

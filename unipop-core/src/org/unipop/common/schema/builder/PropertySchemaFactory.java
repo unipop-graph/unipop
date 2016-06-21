@@ -1,20 +1,18 @@
-package org.unipop.common.property;
+package org.unipop.common.schema.builder;
 
 import org.apache.tinkerpop.gremlin.structure.T;
-import org.json.JSONException;
 import org.json.JSONObject;
-import org.unipop.common.property.impl.DynamicPropertiesSchema;
-import org.unipop.common.property.impl.FieldPropertySchema;
-import org.unipop.common.property.impl.MultiFieldPropertySchema;
-import org.unipop.common.property.impl.StaticPropertySchema;
+import org.unipop.common.schema.property.PropertySchema;
+import org.unipop.common.schema.property.DynamicPropertiesSchema;
+import org.unipop.common.schema.property.FieldPropertySchema;
+import org.unipop.common.schema.property.MultiFieldPropertySchema;
+import org.unipop.common.schema.property.StaticPropertySchema;
 
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
 
 public class PropertySchemaFactory {
 
-    public static ArrayList<PropertySchema> createPropertySchemas(JSONObject elementConfig) throws JSONException {
+    public static ArrayList<PropertySchema> createPropertySchemas(JSONObject elementConfig) {
         ArrayList<PropertySchema> schemaProperties = new ArrayList<>();
 
         schemaProperties.add(createPropertySchema(T.id.getAccessor(), elementConfig.get(T.id.toString())));

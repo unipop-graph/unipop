@@ -1,18 +1,22 @@
 package org.unipop.common.schema.base;
 
+import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.unipop.common.schema.EdgeSchema;
+import org.unipop.common.schema.ElementSchema;
 import org.unipop.common.schema.VertexSchema;
+import org.unipop.common.schema.builder.SchemaSet;
 import org.unipop.query.predicates.PredicatesHolder;
-import org.unipop.common.property.PropertySchema;
+import org.unipop.common.schema.property.PropertySchema;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.structure.UniEdge;
 import org.unipop.structure.UniGraph;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class BaseEdgeSchema extends BaseElementSchema<Edge> implements EdgeSchema {
     private final VertexSchema outVertexSchema;
@@ -65,5 +69,13 @@ public class BaseEdgeSchema extends BaseElementSchema<Edge> implements EdgeSchem
     @Override
     public VertexSchema getInVertexSchema() {
         return this.inVertexSchema;
+    }
+
+    @Override
+    public Set<ElementSchema> getAllSchemas() {
+        Set<ElementSchema> allSchemas = super.getAllSchemas();
+        allSchemas.add(outVertexSchema);
+        allSchemas.add(inVertexSchema);
+        return allSchemas;
     }
 }

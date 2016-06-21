@@ -1,8 +1,7 @@
-package org.unipop.common.property.impl;
+package org.unipop.common.schema.property;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
-import org.unipop.common.property.PropertySchema;
 import org.unipop.query.predicates.PredicatesHolder;
 
 import java.util.Collections;

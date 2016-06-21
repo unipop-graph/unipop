@@ -3,7 +3,7 @@ package org.unipop.common.schema.base;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.unipop.common.schema.ElementSchema;
-import org.unipop.common.property.*;
+import org.unipop.common.schema.property.*;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.structure.UniElement;
