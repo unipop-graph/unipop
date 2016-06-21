@@ -12,14 +12,12 @@ import java.util.Set;
  * Created by GurRo on 6/12/2016.
  */
 public interface RowSchema<E extends Element> extends ElementSchema<E> {
-    String getDatabase();
 
     default String getTable(E element) {
         return element.label();
     }
 
     /**
-     *
      * @return the full table name, including database prefix
      */
     String getTable();

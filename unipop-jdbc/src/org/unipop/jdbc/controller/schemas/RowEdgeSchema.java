@@ -14,19 +14,12 @@ import java.util.List;
  * @since 6/13/2016
  */
 public class RowEdgeSchema extends BaseEdgeSchema implements RowSchema<Edge> {
-    private final String database;
     private final String table;
 
-    public RowEdgeSchema(VertexSchema outVertexSchema, VertexSchema inVertexSchema, List<PropertySchema> properties, UniGraph graph, String database, String table) {
+    public RowEdgeSchema(VertexSchema outVertexSchema, VertexSchema inVertexSchema, List<PropertySchema> properties, UniGraph graph, String table) {
         super(outVertexSchema, inVertexSchema, properties, graph);
 
-        this.database = database;
         this.table = table;
-    }
-
-    @Override
-    public String getDatabase() {
-        return this.database;
     }
 
     @Override

@@ -1,0 +1,36 @@
+{
+  "class": "org.unipop.jdbc.JdbcSourceProvider",
+  "address": "localhost:8080 ~~FIX",
+  "sqlDialect": "sqlite",
+  "vertices": [
+    {
+      "table": "rows.vertices",
+      "id": "@ID",
+      "label": "@table_name",
+      "properties": {},
+      "dynamicProperties": false
+    }
+  ],
+  "edges": [
+    {
+      "table": "rows.edges",
+      "id": "@ID",
+      "label": "@table_name",
+      "properties": {},
+      "dynamicProperties": false,
+      "outVertex": {
+        "type": "ref",
+        "id": "@outId",
+        "label": "@outLabel",
+        "properties": {}
+      },
+      "inVertex": {
+        "type": "ref",
+        "id": "@inId",
+        "label": "@inLabel",
+        "properties": {}
+      }
+
+    }
+  ]
+}

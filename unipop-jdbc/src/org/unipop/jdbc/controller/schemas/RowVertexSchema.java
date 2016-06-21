@@ -11,19 +11,12 @@ import java.util.List;
  * Created by GurRo on 6/12/2016.
  */
 public class RowVertexSchema extends BaseVertexSchema implements RowSchema<Vertex> {
-    private final String database;
     private final String table;
 
-    public RowVertexSchema(List<PropertySchema> properties, UniGraph graph, String database, String table) {
+    public RowVertexSchema(List<PropertySchema> properties, UniGraph graph, String table) {
         super(properties, graph);
 
-        this.database = database;
         this.table = table;
-    }
-
-    @Override
-    public String getDatabase() {
-        return this.database;
     }
 
     @Override
