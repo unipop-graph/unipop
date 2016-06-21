@@ -22,7 +22,7 @@ import java.util.ArrayList;
 
 public class ElasticHelper {
 
-    public static void createIndex(String indexName, Client client) throws IOException {
+    public static void createIndex(String indexName, Client client) {
         IndicesExistsRequest request = new IndicesExistsRequest(indexName);
         IndicesExistsResponse response = client.admin().indices().exists(request).actionGet();
         if (!response.isExists()) {
@@ -34,7 +34,7 @@ public class ElasticHelper {
         final ClusterHealthRequest clusterHealthRequest = new ClusterHealthRequest(indexName).timeout(TimeValue.timeValueSeconds(10)).waitForYellowStatus();
         final ClusterHealthResponse clusterHealth = client.admin().cluster().health(clusterHealthRequest).actionGet();
         if (clusterHealth.isTimedOut()) {
-            throw new IOException(clusterHealth.getStatus() +
+            System.out.println(clusterHealth.getStatus() +
                     " status returned from cluster '" + client.admin().cluster().toString() +
                     "', index '" + indexName + "'");
 

@@ -1,4 +1,4 @@
-package org.unipop.common.schema.property;
+package org.unipop.schema.property;
 
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.unipop.query.predicates.PredicatesHolder;
@@ -11,9 +11,9 @@ public class MultiFieldPropertySchema implements PropertySchema {
     private final List<String> fields;
     private String delimiter;
 
-    public MultiFieldPropertySchema(String key, String[] fields, String delimiter) {
+    public MultiFieldPropertySchema(String key, List<String> fields, String delimiter) {
         this.key = key;
-        this.fields = Arrays.asList(fields);
+        this.fields = fields;
         this.delimiter = delimiter;
     }
 

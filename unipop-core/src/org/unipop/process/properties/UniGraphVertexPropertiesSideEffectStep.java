@@ -7,7 +7,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.ExpandableStepIt
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
-import org.unipop.common.schema.reference.DeferredVertex;
+import org.unipop.schema.reference.DeferredVertex;
 import org.unipop.query.StepDescriptor;
 import org.unipop.query.controller.ControllerManager;
 import org.unipop.query.search.DeferredVertexQuery;

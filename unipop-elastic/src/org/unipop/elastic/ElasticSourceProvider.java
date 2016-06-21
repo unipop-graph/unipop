@@ -7,7 +7,7 @@ import org.unipop.elastic.common.ElasticClientFactory;
 import org.unipop.elastic.document.DocumentController;
 import org.unipop.elastic.schemaBuilder.DocEdgeBuilder;
 import org.unipop.elastic.schemaBuilder.DocVertexBuilder;
-import org.unipop.common.schema.builder.SchemaSet;
+import org.unipop.common.util.SchemaSet;
 import org.unipop.query.controller.SourceProvider;
 import org.unipop.query.controller.UniQueryController;
 import org.unipop.structure.UniGraph;
@@ -25,8 +25,8 @@ public class ElasticSourceProvider implements SourceProvider {
         this.client = ElasticClientFactory.create(configuration);
 
         SchemaSet schemas = new SchemaSet();
-        getList(configuration, "vertices").forEach(vertexJson -> schemas.add(new DocVertexBuilder(vertexJson, client, graph).build().getAllSchemas()));
-        getList(configuration, "edges").forEach(edgeJson -> schemas.add(new DocEdgeBuilder(edgeJson, client, graph).build().getAllSchemas()));
+        getList(configuration, "vertices").forEach(vertexJson -> schemas.add(new DocVertexBuilder(vertexJson, client, graph).build()));
+        getList(configuration, "edges").forEach(edgeJson -> schemas.add(new DocEdgeBuilder(edgeJson, client, graph).build()));
         DocumentController documentController = new DocumentController(this.client, schemas, graph);
         return Sets.newHashSet(documentController);
     }

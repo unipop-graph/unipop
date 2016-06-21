@@ -1,15 +1,13 @@
-package org.unipop.common.schema.base;
+package org.unipop.schema.base;
 
-import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.unipop.common.schema.EdgeSchema;
-import org.unipop.common.schema.ElementSchema;
-import org.unipop.common.schema.VertexSchema;
-import org.unipop.common.schema.builder.SchemaSet;
+import org.unipop.schema.EdgeSchema;
+import org.unipop.schema.ElementSchema;
+import org.unipop.schema.VertexSchema;
 import org.unipop.query.predicates.PredicatesHolder;
-import org.unipop.common.schema.property.PropertySchema;
+import org.unipop.schema.property.PropertySchema;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.structure.UniEdge;
 import org.unipop.structure.UniGraph;

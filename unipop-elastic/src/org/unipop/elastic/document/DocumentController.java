@@ -11,13 +11,13 @@ import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.unipop.common.schema.reference.DeferredVertex;
+import org.unipop.schema.reference.DeferredVertex;
 import org.unipop.elastic.common.FilterHelper;
 import org.unipop.elastic.common.QueryIterator;
 import org.unipop.elastic.document.schema.DocEdgeSchema;
 import org.unipop.elastic.document.schema.DocSchema;
 import org.unipop.elastic.document.schema.DocVertexSchema;
-import org.unipop.common.schema.builder.SchemaSet;
+import org.unipop.common.util.SchemaSet;
 import org.unipop.query.StepDescriptor;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.controller.SimpleController;
@@ -48,8 +48,8 @@ public class DocumentController implements SimpleController {
 
     public DocumentController(Client client, SchemaSet schemas, UniGraph graph) {
         this.client = client;
-        this.vertexSchemas = schemas.get(DocVertexSchema.class);
-        this.edgeSchemas = schemas.get(DocEdgeSchema.class);
+        this.vertexSchemas = schemas.get(DocVertexSchema.class, true);
+        this.edgeSchemas = schemas.get(DocEdgeSchema.class, true);
         this.graph = graph;
     }
 

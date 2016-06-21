@@ -1,12 +1,9 @@
-package org.unipop.common.schema;
+package org.unipop.schema;
 
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.unipop.common.schema.builder.SchemaSet;
-import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolder;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 

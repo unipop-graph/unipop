@@ -41,13 +41,13 @@ public class ConversionUtils {
     }
 
     public static List<JSONObject> getList(JSONObject json, String key) {
-        List<JSONObject> objects = new ArrayList<>();
         JSONArray objectsArray = json.optJSONArray(key);
         if(objectsArray == null) return Collections.emptyList();
 
+        List<JSONObject> objects = new ArrayList<>();
         for(int i = 0; i < objectsArray.length(); i++){
-            JSONObject jsonObject = objectsArray.getJSONObject(i);
-            objects.add(jsonObject);
+            JSONObject config = objectsArray.getJSONObject(i);
+            objects.add(config);
         }
         return objects;
     }

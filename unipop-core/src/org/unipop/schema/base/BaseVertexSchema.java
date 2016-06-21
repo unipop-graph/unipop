@@ -1,14 +1,13 @@
-package org.unipop.common.schema.base;
+package org.unipop.schema.base;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.unipop.common.schema.EdgeSchema;
-import org.unipop.common.schema.ElementSchema;
-import org.unipop.common.schema.VertexSchema;
-import org.unipop.common.schema.builder.SchemaSet;
+import org.unipop.schema.EdgeSchema;
+import org.unipop.schema.ElementSchema;
+import org.unipop.schema.VertexSchema;
 import org.unipop.query.predicates.PredicatesHolder;
-import org.unipop.common.schema.property.PropertySchema;
+import org.unipop.schema.property.PropertySchema;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.structure.UniGraph;
 import org.unipop.structure.UniVertex;
@@ -20,24 +19,20 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class BaseVertexSchema extends BaseElementSchema<Vertex> implements VertexSchema {
-    private final Set<EdgeSchema> edgeSchemas;
+    private final Set<EdgeSchema> edgeSchemas = new HashSet<>();
 
-    public BaseVertexSchema(List<PropertySchema> properties, Set<EdgeSchema> edgeSchemas, UniGraph graph) {
+    public BaseVertexSchema(List<PropertySchema> properties, UniGraph graph) {
         super(properties, graph);
-        this.edgeSchemas = edgeSchemas;
+    }
+
+    public void add(EdgeSchema schema) {
+        edgeSchemas.add(schema);
     }
 
     @Override
     public Vertex fromFields(Map<String, Object> fields) {
         Map<String, Object> properties = getProperties(fields);
         return new UniVertex(properties, graph);
-    }
-
-    @Override
-    public Set<ElementSchema> getAllSchemas() {
-        Set<ElementSchema> allSchemas = super.getAllSchemas();
-        allSchemas.addAll(edgeSchemas);
-        return allSchemas;
     }
 
     @Override
@@ -56,5 +51,12 @@ public class BaseVertexSchema extends BaseElementSchema<Vertex> implements Verte
 
         PredicatesHolder labelPredicates = PredicatesHolderFactory.and(ids, labelPredicate);
         return this.toPredicates(labelPredicates);
+    }
+
+    @Override
+    public Set<ElementSchema> getAllSchemas() {
+        Set<ElementSchema> allSchemas = super.getAllSchemas();
+        allSchemas.addAll(edgeSchemas);
+        return allSchemas;
     }
 }

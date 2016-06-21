@@ -1,8 +1,8 @@
-package org.unipop.common.schema.reference;
+package org.unipop.schema.reference;
 
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.unipop.common.schema.base.BaseVertexSchema;
-import org.unipop.common.schema.property.PropertySchema;
+import org.unipop.schema.base.BaseVertexSchema;
+import org.unipop.schema.property.PropertySchema;
 import org.unipop.structure.UniGraph;
 
 import java.util.List;
@@ -11,7 +11,7 @@ import java.util.Map;
 public class ReferenceVertexSchema extends BaseVertexSchema {
 
     public ReferenceVertexSchema(List<PropertySchema> properties, UniGraph graph) {
-        super(properties, null, graph);
+        super(properties, graph);
     }
 
     @Override

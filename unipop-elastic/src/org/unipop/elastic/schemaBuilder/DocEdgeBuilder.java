@@ -1,29 +1,51 @@
 package org.unipop.elastic.schemaBuilder;
 
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.elasticsearch.client.Client;
 import org.json.JSONObject;
-import org.unipop.common.schema.reference.ReferenceVertexSchema;
-import org.unipop.common.schema.reference.ReferenceVertexSchemaBuilder;
+import org.unipop.schema.VertexSchema;
+import org.unipop.schema.reference.ReferenceVertexSchema;
+import org.unipop.schema.reference.ReferenceVertexSchemaBuilder;
 import org.unipop.elastic.document.schema.DocEdgeSchema;
+import org.unipop.elastic.document.schema.DocVertexSchema;
 import org.unipop.structure.UniGraph;
 
 
 public class DocEdgeBuilder extends DocSchemaBuilder<DocEdgeSchema> {
-    private ReferenceVertexSchema outVertexSchema;
-    private ReferenceVertexSchema inVertexSchema;
+
+    private VertexSchema outVertexSchema;
+    private VertexSchema inVertexSchema;
 
     public DocEdgeBuilder(JSONObject json, Client client, UniGraph graph) {
         super(json, client, graph);
-        try {
-            JSONObject outVertex = json.getJSONObject("outVertex");
-            outVertexSchema = new ReferenceVertexSchemaBuilder(outVertex, graph).build();
 
-            JSONObject inVertex = json.getJSONObject("inVertex");
-            inVertexSchema = new ReferenceVertexSchemaBuilder(inVertex, graph).build();
+        buildVertexSchema("outVertex", Direction.OUT);
+        buildVertexSchema("inVertex", Direction.IN);
+    }
+
+    public DocEdgeBuilder(DocVertexSchema docVertexSchema, JSONObject json, Client client, UniGraph graph) {
+        super(docVertexSchema, json, client, graph);
+
+        Direction direction = Direction.valueOf(json.optString("direction"));
+        addVertexSchema(docVertexSchema, direction);
+
+        buildVertexSchema("vertex", direction.opposite());
+    }
+
+    private void buildVertexSchema(String key, Direction direction) {
+        try {
+            JSONObject outVertex = json.getJSONObject(key);
+            ReferenceVertexSchema vertexSchema = new ReferenceVertexSchemaBuilder(outVertex, graph).build();
+            addVertexSchema(vertexSchema, direction);
         }
         catch(Exception ex) {
             ex.printStackTrace();
         }
+    }
+
+    private void addVertexSchema(VertexSchema vertexSchema, Direction direction) {
+        if(direction.equals(Direction.OUT)) this.outVertexSchema = vertexSchema;
+        else this.inVertexSchema = vertexSchema;
     }
 
     @Override
