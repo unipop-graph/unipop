@@ -1,4 +1,4 @@
-package org.unipop.jdbc.simple;
+package org.unipop.jdbc.controller.simple;
 
 import com.google.common.collect.Iterators;
 import org.apache.commons.collections4.CollectionUtils;
@@ -11,10 +11,10 @@ import org.jooq.*;
 import org.jooq.impl.DSL;
 import org.unipop.common.schema.referred.DeferredVertex;
 import org.unipop.common.util.PredicatesTranslator;
-import org.unipop.jdbc.controller.schemas.RowEdgeSchema;
-import org.unipop.jdbc.controller.schemas.RowSchema;
-import org.unipop.jdbc.controller.schemas.RowVertexSchema;
-import org.unipop.jdbc.simple.results.ElementMapper;
+import org.unipop.jdbc.controller.simple.results.ElementMapper;
+import org.unipop.jdbc.schemas.RowEdgeSchema;
+import org.unipop.jdbc.schemas.RowSchema;
+import org.unipop.jdbc.schemas.RowVertexSchema;
 import org.unipop.jdbc.utils.TableStrings;
 import org.unipop.query.StepDescriptor;
 import org.unipop.query.controller.SimpleController;
@@ -99,7 +99,7 @@ public class RowController implements SimpleController {
             for (RowSchema<E> schema : schemas) {
                 DeleteWhereStep deleteStep = this.getDslContext().delete(table(schema.getTable(el)));
 
-                for (Condition condition : this.translateElementsToConditions(Collections.singletonList(el))) {
+                for (Condition condition : this.translateElementsToConditions(schema, Collections.singletonList(el))) {
                     deleteStep.where(condition);
                 }
                 deleteStep.execute();
@@ -179,11 +179,12 @@ public class RowController implements SimpleController {
         return field(String.format("'%s' as '%s'", tableName, TableStrings.TABLE_COLUMN_NAME));
     }
 
+    @SuppressWarnings("unchecked")
     private <E extends Element> Set<RowSchema<E>> getSchemas(Class elementClass) {
         if (Vertex.class.isAssignableFrom(elementClass)) {
-            return (Set<RowSchema<E>>) vertexSchemas;
+            return vertexSchemas.stream().map(v -> (RowSchema<E>) v).collect(Collectors.toSet());
         } else {
-            return (Set<RowSchema<E>>) edgeSchemas;
+            return edgeSchemas.stream().map(e -> (RowSchema<E>) e).collect(Collectors.toSet());
         }
     }
 
@@ -202,12 +203,14 @@ public class RowController implements SimpleController {
         }
     }
 
-    private <E extends Element> Iterable<Condition> translateElementsToConditions(List<E> elements) {
+    private <E extends Element> Iterable<Condition> translateElementsToConditions(RowSchema<E> schema, List<E> elements) {
         return this.predicatesTranslator.translate(
                 new PredicatesHolder(
                         PredicatesHolder.Clause.Or,
                         elements.stream()
-                                .map(e -> new HasContainer("ID", P.eq(e.id())))
+                                .map(schema::toFields)
+                                .map(row -> row.entrySet())
+                                .flatMap(m -> m.stream().map(es -> new HasContainer(es.getKey(), P.within(es.getValue()))))
                                 .collect(Collectors.toSet()), Collections.emptySet()));
 
     }

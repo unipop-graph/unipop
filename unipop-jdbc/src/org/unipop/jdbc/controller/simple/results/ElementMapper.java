@@ -1,9 +1,9 @@
-package org.unipop.jdbc.simple.results;
+package org.unipop.jdbc.controller.simple.results;
 
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.jooq.Record;
 import org.jooq.RecordMapper;
-import org.unipop.jdbc.controller.schemas.RowSchema;
+import org.unipop.jdbc.schemas.RowSchema;
 
 import java.util.Map;
 import java.util.Set;

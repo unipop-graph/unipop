@@ -1,12 +1,9 @@
-package org.unipop.jdbc.controller.schemas;
+package org.unipop.jdbc.schemas;
 
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.jooq.Field;
-import org.jooq.impl.DSL;
 import org.unipop.common.schema.ElementSchema;
 
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Created by GurRo on 6/12/2016.

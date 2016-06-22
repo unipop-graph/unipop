@@ -1,4 +1,4 @@
-package org.unipop.jdbc.controller.schemas;
+package org.unipop.jdbc.schemas;
 
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.unipop.common.property.PropertySchema;
@@ -12,6 +12,7 @@ import java.util.List;
  */
 public class RowVertexSchema extends BaseVertexSchema implements RowSchema<Vertex> {
     private final String table;
+    private final String
 
     public RowVertexSchema(List<PropertySchema> properties, UniGraph graph, String table) {
         super(properties, graph);

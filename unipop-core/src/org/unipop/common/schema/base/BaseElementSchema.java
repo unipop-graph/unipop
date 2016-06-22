@@ -17,6 +17,10 @@ public abstract class BaseElementSchema<E extends Element> implements ElementSch
     protected final List<PropertySchema> propertySchemas;
     protected UniGraph graph;
 
+    public List<PropertySchema> getPropertySchemas() {
+        return propertySchemas;
+    }
+
     public BaseElementSchema(List<PropertySchema> propertySchemas, UniGraph graph) {
         this.propertySchemas = propertySchemas;
         this.graph = graph;

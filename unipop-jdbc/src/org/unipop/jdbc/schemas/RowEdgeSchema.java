@@ -1,4 +1,4 @@
-package org.unipop.jdbc.controller.schemas;
+package org.unipop.jdbc.schemas;
 
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.unipop.common.property.PropertySchema;

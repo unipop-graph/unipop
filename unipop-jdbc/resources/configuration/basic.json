@@ -1,14 +1,14 @@
 {
   "class": "org.unipop.jdbc.JdbcSourceProvider",
-  "address": "localhost:8080 ~~FIX",
-  "sqlDialect": "sqlite",
+  "address": "jdbc:sqlite:test.sqlite",
+  "sqlDialect": "SQLITE",
   "vertices": [
     {
       "table": "rows.vertices",
       "id": "@ID",
       "label": "@table_name",
       "properties": {},
-      "dynamicProperties": false
+      "dynamicProperties": true
     }
   ],
   "edges": [
@@ -17,7 +17,7 @@
       "id": "@ID",
       "label": "@table_name",
       "properties": {},
-      "dynamicProperties": false,
+      "dynamicProperties": true,
       "outVertex": {
         "type": "ref",
         "id": "@outId",
