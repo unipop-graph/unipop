@@ -1,0 +1,69 @@
+{
+  "class": "org.unipop.elastic.ElasticSourceProvider",
+  "client": "TRANSPORT",
+  "clusterName": "unipop",
+  "address": "127.0.0.1:9300",
+  "vertices": [
+    {
+      "type": "document",
+      "_type": "person",
+      "dynamicProperties": {
+        "excludeFields": ["knownBy", "weight", "edgeId"]
+      },
+      "edges": [{
+        "type": "document",
+        "direction": "IN",
+        "id": "@edgeId",
+        "label": "knows",
+        "properties": {
+          "weight": "@weight"
+        },
+        "vertex": {
+          "type": "ref",
+          "id": "@knownBy",
+          "label": "person"
+        }
+      }]
+    },
+    {
+      "type": "document",
+      "index": "vertex",
+      "_type": "*",
+      "id": "@_id",
+      "label": {
+        "field": "_type",
+        "exclude": "person"
+      },
+      "properties": {},
+      "dynamicProperties": true
+    }
+  ],
+  "edges": [
+    {
+      "type": "document",
+      "index": "edge",
+      "_type": "*",
+      "id": "@_id",
+      "label": {
+        "field": "_type",
+        "exclude": "knows"
+      },
+      "properties": {},
+      "dynamicProperties": {
+        "excludeFields": ["outId", "inId", "outLabel", "inLabel"]
+      },
+      "outVertex": {
+        "type": "ref",
+        "id": "@outId",
+        "label": "@outLabel",
+        "properties": {}
+      },
+      "inVertex": {
+        "type": "ref",
+        "id": "@inId",
+        "label": "@inLabel",
+        "properties": {}
+      }
+    }
+  ]
+}
