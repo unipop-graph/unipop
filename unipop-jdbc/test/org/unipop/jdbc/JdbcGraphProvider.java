@@ -1,11 +1,11 @@
 package org.unipop.jdbc;
 
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.unipop.common.test.UnipopGraphProvider;
 
+import java.io.File;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -24,6 +24,9 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
     public JdbcGraphProvider() throws SQLException, ClassNotFoundException {
         Class.forName("org.sqlite.JDBC");
         this.jdbcConnection = DriverManager.getConnection("jdbc:sqlite:test.sqlite");
+
+        new File("test.sqlite").delete();
+
         this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS PERSON(id int , name varchar(100), age int, knows int, edgeid int, weight DOUBLE , created int);");
         this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS animal(id int NOT NULL PRIMARY KEY, name varchar(100), age int);");
         this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS SOFTWARE(id int , name varchar(100), lang VARCHAR(100), created int, edgeid int, weight DOUBLE);");
@@ -45,12 +48,35 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
         URL url = this.getClass().getResource("/configuration/" + CONFIGURATION);
         baseConfiguration.put("providers", new String[]{url.getFile()});
 
+        try {
+            this.jdbcConnection.createStatement().execute(
+                    "CREATE TABLE IF NOT EXISTS vertices(" +
+                            "ID int NOT NULL PRIMARY KEY, " +
+                            "LABEL VARCHAR(100) NOT NULL," +
+                            "name varchar(100), " +
+                            "age int, " +
+                            "location VARCHAR(100)," +
+                            "status VARCHAR(100))");
+
+            this.jdbcConnection.createStatement().execute(
+                    "CREATE TABLE IF NOT EXISTS edges(" +
+                    "ID VARCHAR(100) NOT NULL PRIMARY KEY, " +
+                    "LABEL NOT NULL, " +
+                    "outId VARCHAR(100), " +
+                    "outLabel VARCHAR(100), " +
+                    "inId VARCHAR(100), " +
+                    "inLabel VARCHAR(100))");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
 
         return baseConfiguration;
     }
 
     @Override
     public void clear(Graph graph, Configuration configuration) throws Exception {
-        this.jdbcConnection.close();
+        this.jdbcConnection.createStatement().execute("DELETE FROM vertices");
+        this.jdbcConnection.createStatement().execute("DELETE FROM edges");
     }
 }

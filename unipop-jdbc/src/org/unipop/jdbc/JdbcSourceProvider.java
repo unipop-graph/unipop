@@ -55,21 +55,21 @@ public class JdbcSourceProvider implements SourceProvider {
 
         Set<RowVertexSchema> vertexSchemas = extractVertexSchemas(graph, configuration);
         Set<RowEdgeSchema> edgeSchemas = extractEdgeSchemas(graph, configuration);
-
-        for (RowVertexSchema sc : vertexSchemas) {
-            DSLContext dsl = DSL.using(c, dialect);
-            CreateTableAsStep step = DSL.using(c, dialect).createTable(DSL.table(sc.getTable()));
-            sc.getPropertySchemas()
-                    .stream()
-                    .map(PropertySchema::getFields)
-                    .flatMap(Collection::stream)
-                    .forEach(cn -> step.column(cn, SQLDataType.VARCHAR.length(500)));
-
-            dsl.execute(step);
-
-
-
-        }
+//
+//        for (RowVertexSchema sc : vertexSchemas) {
+//            DSLContext dsl = DSL.using(c, dialect);
+//            CreateTableAsStep step = DSL.using(c, dialect).createTable(DSL.table(sc.getTable()));
+//            sc.getPropertySchemas()
+//                    .stream()
+//                    .map(PropertySchema::getFields)
+//                    .flatMap(Collection::stream)
+//                    .forEach(cn -> step.column(cn, SQLDataType.VARCHAR.length(500)));
+//
+//            dsl.execute(step);
+//
+//
+//
+//        }
 
         this.controller = new RowController(graph, c, dialect, vertexSchemas, edgeSchemas, predicatesTranslatorSupplier.get());
         return Sets.newHashSet(controller);

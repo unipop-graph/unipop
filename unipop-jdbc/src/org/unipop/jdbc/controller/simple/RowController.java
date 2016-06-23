@@ -1,7 +1,9 @@
 package org.unipop.jdbc.controller.simple;
 
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Maps;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.keyvalue.DefaultMapEntry;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -198,9 +200,22 @@ public class RowController implements SimpleController {
         for (RowSchema<E> schema : schemas) {
             RowSchema.Row row = schema.toRow(element);
 
-            this.getDslContext().insertInto(table(schema.getTable(element)), CollectionUtils.collect(row.getFields().keySet(), DSL::field))
-                    .values(row.getFields().values()).execute();
+            int changeSetCount = this.getDslContext().insertInto(table(schema.getTable(element)), CollectionUtils.collect(row.getFields().keySet(), DSL::field))
+                    .values(row.getFields().values())
+                    .onDuplicateKeyIgnore().execute();
+
+            if (changeSetCount == 0) {
+                Map<Field<?>, Object> fieldMap = Maps.newHashMap();
+                row.getFields().entrySet().stream().map(this::mapSet).forEach(en -> fieldMap.put(en.getKey(), en.getValue()));
+
+                this.getDslContext().update(table(schema.getTable(element)))
+                .set(fieldMap).execute();
+            }
         }
+    }
+
+    private Map.Entry<Field<?>, Object> mapSet(Map.Entry<String, Object> entry) {
+        return new DefaultMapEntry<>(field(entry.getKey()), entry.getValue());
     }
 
     private <E extends Element> Iterable<Condition> translateElementsToConditions(RowSchema<E> schema, List<E> elements) {
