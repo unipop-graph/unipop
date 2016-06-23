@@ -1,12 +1,14 @@
 {
   "class": "org.unipop.elastic.ElasticSourceProvider",
-  "client": "TRANSPORT",
   "clusterName": "unipop",
-  "address": "127.0.0.1:9300",
+  "addresses": ["http://localhost:9200"],
   "vertices": [
     {
       "type": "document",
+      "index": "vertex",
       "_type": "person",
+      "id": "@_id",
+      "label": "person",
       "dynamicProperties": {
         "excludeFields": ["knownBy", "weight", "edgeId"]
       },

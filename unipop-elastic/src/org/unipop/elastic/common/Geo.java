@@ -2,7 +2,6 @@ package org.unipop.elastic.common;
 
 import com.spatial4j.core.shape.*;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.elasticsearch.common.Preconditions;
 import org.elasticsearch.common.geo.ShapeRelation;
 import org.elasticsearch.common.geo.builders.ShapeBuilder;
 import org.elasticsearch.common.xcontent.XContentParser;
@@ -66,22 +65,22 @@ public enum Geo implements BiPredicate {
     }
 
     private Shape convertObjectToShapeIfPossible(Object o) throws IOException {
-
-        if(o instanceof Shape) return (Shape) o;
-        String geoShapeStringValue = null;
-        if(o instanceof HashMap) {
-            HashMap map = (HashMap) o;
-            Preconditions.checkArgument(map.containsKey("coordinates") && map.containsKey("type"));
-            geoShapeStringValue = (new JSONObject(map)).toString();
-        }
-        else if (o instanceof String){
-            geoShapeStringValue = (String) o;
-        }
-        Preconditions.checkNotNull(geoShapeStringValue);
-        XContentParser parser = JsonXContent.jsonXContent.createParser(geoShapeStringValue);
-        parser.nextToken();
-
-        return ShapeBuilder.parse(parser).build();
+            return null;
+//        if(o instanceof Shape) return (Shape) o;
+//        String geoShapeStringValue = null;
+//        if(o instanceof HashMap) {
+//            HashMap map = (HashMap) o;
+//            Preconditions.checkArgument(map.containsKey("coordinates") && map.containsKey("type"));
+//            geoShapeStringValue = (new JSONObject(map)).toString();
+//        }
+//        else if (o instanceof String){
+//            geoShapeStringValue = (String) o;
+//        }
+//        Preconditions.checkNotNull(geoShapeStringValue);
+//        XContentParser parser = JsonXContent.jsonXContent.createParser(geoShapeStringValue);
+//        parser.nextToken();
+//
+//        return ShapeBuilder.parse(parser).build();
 
 
     }

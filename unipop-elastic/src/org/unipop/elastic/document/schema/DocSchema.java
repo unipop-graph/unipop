@@ -14,8 +14,8 @@ public interface DocSchema<E extends Element> extends ElementSchema<E> {
     default Document toDocument(E element) {
         Map<String, Object> fields = this.toFields(element);
         if(fields == null) return null;
-        Object type = ObjectUtils.firstNonNull(fields.get("_type"), fields.get("type"), this.getType(), element.label());
-        String id = ObjectUtils.firstNonNull(fields.get("_id"), fields.get("id"), element.id()).toString();
+        Object type = ObjectUtils.firstNonNull(fields.remove("_type"), fields.remove("type"), this.getType(), element.label());
+        String id = ObjectUtils.firstNonNull(fields.remove("_id"), fields.remove("id"), element.id()).toString();
         String index = getIndex();
         return new Document(index, type.toString(), id, fields);
     }

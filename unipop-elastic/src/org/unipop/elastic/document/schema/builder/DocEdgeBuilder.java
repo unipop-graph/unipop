@@ -1,4 +1,4 @@
-package org.unipop.elastic.schemaBuilder;
+package org.unipop.elastic.document.schema.builder;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.elasticsearch.client.Client;
@@ -16,15 +16,15 @@ public class DocEdgeBuilder extends DocSchemaBuilder<DocEdgeSchema> {
     private VertexSchema outVertexSchema;
     private VertexSchema inVertexSchema;
 
-    public DocEdgeBuilder(JSONObject json, Client client, UniGraph graph) {
-        super(json, client, graph);
+    public DocEdgeBuilder(JSONObject json, UniGraph graph) {
+        super(json, graph);
 
         buildVertexSchema("outVertex", Direction.OUT);
         buildVertexSchema("inVertex", Direction.IN);
     }
 
-    public DocEdgeBuilder(DocVertexSchema docVertexSchema, JSONObject json, Client client, UniGraph graph) {
-        super(docVertexSchema, json, client, graph);
+    public DocEdgeBuilder(DocVertexSchema docVertexSchema, JSONObject json, UniGraph graph) {
+        super(docVertexSchema, json, graph);
 
         Direction direction = Direction.valueOf(json.optString("direction"));
         addVertexSchema(docVertexSchema, direction);

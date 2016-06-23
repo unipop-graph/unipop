@@ -1,19 +1,15 @@
 package org.unipop.elastic.document;
 
-import com.google.common.collect.Iterators;
+import io.searchbox.core.*;
+import io.searchbox.indices.Refresh;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.elasticsearch.action.delete.DeleteRequestBuilder;
-import org.elasticsearch.action.delete.DeleteResponse;
-import org.elasticsearch.action.index.IndexRequestBuilder;
-import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.client.Client;
+import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
-import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.unipop.elastic.common.ElasticClient;
 import org.unipop.schema.reference.DeferredVertex;
 import org.unipop.elastic.common.FilterHelper;
-import org.unipop.elastic.common.QueryIterator;
 import org.unipop.elastic.document.schema.DocEdgeSchema;
 import org.unipop.elastic.document.schema.DocSchema;
 import org.unipop.elastic.document.schema.DocVertexSchema;
@@ -40,17 +36,20 @@ import java.util.stream.Collectors;
 
 public class DocumentController implements SimpleController {
 
-    private final Client client;
-    private final Set<? extends DocVertexSchema> vertexSchemas;
-    private final Set<? extends DocEdgeSchema> edgeSchemas;
+    private ElasticClient client;
+    private Set<? extends DocVertexSchema> vertexSchemas;
+    private Set<? extends DocEdgeSchema> edgeSchemas;
     private UniGraph graph;
     private boolean dirty;
 
-    public DocumentController(Client client, SchemaSet schemas, UniGraph graph) {
+    public DocumentController(ElasticClient client, SchemaSet schemas, UniGraph graph) {
         this.client = client;
         this.vertexSchemas = schemas.get(DocVertexSchema.class, true);
         this.edgeSchemas = schemas.get(DocEdgeSchema.class, true);
         this.graph = graph;
+
+        schemas.get(DocSchema.class, true).stream().map(DocSchema::getIndex).distinct().forEach(client::validateIndex);
+        refresh();
     }
 
     //region QueryController
@@ -92,7 +91,7 @@ public class DocumentController implements SimpleController {
     public Edge addEdge(AddEdgeQuery uniQuery) {
         UniEdge edge = new UniEdge(uniQuery.getProperties(), uniQuery.getOutVertex(), uniQuery.getInVertex(), graph);
         try {
-            index(this.edgeSchemas, edge, true);
+            index(this.edgeSchemas, edge);
         }
         catch(DocumentAlreadyExistsException ex) {
             throw Graph.Exceptions.edgeWithIdAlreadyExists(edge.id());
@@ -104,7 +103,7 @@ public class DocumentController implements SimpleController {
     public Vertex addVertex(AddVertexQuery uniQuery) {
         UniVertex vertex = new UniVertex(uniQuery.getProperties(), graph);
         try {
-            index(this.vertexSchemas, vertex, true);
+            index(this.vertexSchemas, vertex);
         }
         catch(DocumentAlreadyExistsException ex){
             throw Graph.Exceptions.vertexWithIdAlreadyExists(vertex.id());
@@ -115,7 +114,7 @@ public class DocumentController implements SimpleController {
     @Override
     public <E extends Element> void property(PropertyQuery<E> uniQuery) {
         Set<? extends DocSchema<E>> schemas = getSchemas(uniQuery.getElement().getClass());
-        index(schemas, uniQuery.getElement(), false);
+        index(schemas, uniQuery.getElement());
     }
 
     @Override
@@ -136,49 +135,57 @@ public class DocumentController implements SimpleController {
     //endregion
 
     //region Elastic Queries
+
+
     private <E extends Element, S extends DocSchema<E>> Iterator<E> search(PredicatesHolder allPredicates, Set<S> schemas, int limit, StepDescriptor stepDescriptor) {
-        if(schemas.size() == 0 || allPredicates.isAborted()) return Iterators.emptyIterator();
+        if(schemas.size() == 0 || allPredicates.isAborted()) return EmptyIterator.instance();
+        refresh();
 
-        FilterBuilder filterBuilder = FilterHelper.createFilterBuilder(allPredicates);
-        QueryBuilder query = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), filterBuilder);
+        QueryBuilder filterBuilder = FilterHelper.createFilterBuilder(allPredicates);
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(filterBuilder).fetchSource(true).size(100);
+        Search.Builder search = new Search.Builder(searchSourceBuilder.toString());
+        schemas.forEach(schema -> search.addIndex(schema.getIndex()));
 
-        String[] indices = schemas.stream().map(DocSchema::getIndex).toArray(String[]::new);
-        refresh(indices);
-        QueryIterator.Parser<E> parser = (searchHit) -> schemas.stream().map(schema -> schema.fromFields(searchHit.getSource())).findFirst().get();
-        return new QueryIterator<>(query, stepDescriptor, 0, limit, client, parser, indices);
+        SearchResult result = client.execute(search.build());
+        if(!result.isSucceeded()) return EmptyIterator.instance();
+
+        return result.getHits(Map.class).stream().map(searchHit -> {
+            Map<String, Object> source = (Map<String, Object>)searchHit.source;
+            source.put("_id", source.remove("es_metadata_id"));
+            source.put("_type", searchHit.type);
+            return schemas.stream().map(schema -> schema.fromFields(source)).findFirst().get();
+        }).iterator();
     }
 
-    private <E extends Element> IndexResponse index(Set<? extends DocSchema<E>> schemas, E element, boolean create) {
+    private <E extends Element> void index(Set<? extends DocSchema<E>> schemas, E element) {
         for(DocSchema<E> schema : schemas) {
             DocSchema.Document document = schema.toDocument(element);
             if (document!= null) {
-                IndexRequestBuilder indexRequest = client.prepareIndex(document.getIndex(), document.getType(), document.getId())
-                        .setSource(document.getFields()).setCreate(create);
+                Index index = new Index.Builder(document.getFields()).index(document.getIndex()).type(document.getType()).id(document.getId()).build();
+                client.execute(index);
                 dirty = true;
-                return indexRequest.execute().actionGet();
             }
         }
-        return null;
     }
 
-    private <E extends Element> DeleteResponse delete(Set<? extends DocSchema<E>> schemas, E element) {
+    private <E extends Element> void delete(Set<? extends DocSchema<E>> schemas, E element) {
         for(DocSchema<E> schema : schemas) {
             DocSchema.Document document = schema.toDocument(element);
             if (document != null) {
-                DeleteRequestBuilder deleteRequestBuilder = client.prepareDelete(document.getIndex(), document.getType(), document.getId());
+                Delete build = new Delete.Builder(document.getId()).index(document.getIndex()).type(document.getType()).build();
+                client.execute(build);
                 dirty = true;
-                return deleteRequestBuilder.execute().actionGet();
             }
         }
-        return null;
     }
 
-    public void refresh(String... indices) {
+    public void refresh() {
         if (dirty) {
-            //client.admin().indices().prepareRefresh(indices).execute().actionGet();
-            client.admin().indices().prepareRefresh().execute().actionGet();
+            Refresh refresh = new Refresh.Builder().refresh(true).build();
+            client.execute(refresh);
             dirty = false;
         }
     }
+
     //endregion
 }
