@@ -40,7 +40,6 @@ public class DocumentController implements SimpleController {
     private Set<? extends DocVertexSchema> vertexSchemas;
     private Set<? extends DocEdgeSchema> edgeSchemas;
     private UniGraph graph;
-    private boolean dirty;
 
     public DocumentController(ElasticClient client, SchemaSet schemas, UniGraph graph) {
         this.client = client;
@@ -48,8 +47,9 @@ public class DocumentController implements SimpleController {
         this.edgeSchemas = schemas.get(DocEdgeSchema.class, true);
         this.graph = graph;
 
-        schemas.get(DocSchema.class, true).stream().map(DocSchema::getIndex).distinct().forEach(client::validateIndex);
-        refresh();
+        Iterator<String> indices = schemas.get(DocSchema.class, true).stream().map(DocSchema::getIndex).distinct().iterator();
+        client.validateIndex(indices);
+
     }
 
     //region QueryController
@@ -139,7 +139,7 @@ public class DocumentController implements SimpleController {
 
     private <E extends Element, S extends DocSchema<E>> Iterator<E> search(PredicatesHolder allPredicates, Set<S> schemas, int limit, StepDescriptor stepDescriptor) {
         if(schemas.size() == 0 || allPredicates.isAborted()) return EmptyIterator.instance();
-        refresh();
+        client.refresh();
 
         QueryBuilder filterBuilder = FilterHelper.createFilterBuilder(allPredicates);
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(filterBuilder).fetchSource(true).size(100);
@@ -162,8 +162,7 @@ public class DocumentController implements SimpleController {
             DocSchema.Document document = schema.toDocument(element);
             if (document!= null) {
                 Index index = new Index.Builder(document.getFields()).index(document.getIndex()).type(document.getType()).id(document.getId()).build();
-                client.execute(index);
-                dirty = true;
+                client.bulk(index);
             }
         }
     }
@@ -173,17 +172,8 @@ public class DocumentController implements SimpleController {
             DocSchema.Document document = schema.toDocument(element);
             if (document != null) {
                 Delete build = new Delete.Builder(document.getId()).index(document.getIndex()).type(document.getType()).build();
-                client.execute(build);
-                dirty = true;
+                client.bulk(build);
             }
-        }
-    }
-
-    public void refresh() {
-        if (dirty) {
-            Refresh refresh = new Refresh.Builder().refresh(true).build();
-            client.execute(refresh);
-            dirty = false;
         }
     }
 

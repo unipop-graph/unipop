@@ -1,5 +1,6 @@
-package org.unipop.elastic.common;
+package org.unipop.elastic;
 
+import org.apache.commons.io.FileUtils;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
@@ -10,12 +11,19 @@ import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
 
 import java.io.File;
+import java.io.IOException;
 
-public class ElasticNode {
+public class LocalNode {
     private final Node node;
     private final Client client;
 
-    public ElasticNode(File dataPath, String clusterName) {
+    public LocalNode(File dataPath) {
+        try {
+            FileUtils.deleteDirectory(dataPath);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         Settings.Builder elasticsearchSettings = Settings.settingsBuilder()
                 .put("path.data", dataPath)
                 .put("script.groovy.sandbox.enabled", true)
@@ -23,9 +31,6 @@ public class ElasticNode {
 
         this.node = NodeBuilder.nodeBuilder()
                 .local(true)
-                .data(true)
-                .client(false)
-                .clusterName(clusterName)
                 .settings(elasticsearchSettings.build())
                 .node();
 
@@ -50,5 +55,9 @@ public class ElasticNode {
 
     public Client getClient() {
         return client;
+    }
+
+    public Node getNode() {
+        return node;
     }
 }
