@@ -1,5 +1,6 @@
 package org.unipop.jdbc.controller.simple;
 
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
 import org.apache.commons.collections4.CollectionUtils;
@@ -39,6 +40,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static org.jooq.impl.DSL.*;
 
@@ -101,10 +103,8 @@ public class RowController implements SimpleController {
             for (RowSchema<E> schema : schemas) {
                 DeleteWhereStep deleteStep = this.getDslContext().delete(table(schema.getTable(el)));
 
-                for (Condition condition : this.translateElementsToConditions(schema, Collections.singletonList(el))) {
-                    deleteStep.where(condition);
-                }
-                deleteStep.execute();
+                Collection<Condition> conditions = this.translateElementsToConditions(schema, Collections.singletonList(el));
+                deleteStep.where(conditions).execute();
             }
         });
     }
@@ -218,15 +218,15 @@ public class RowController implements SimpleController {
         return new DefaultMapEntry<>(field(entry.getKey()), entry.getValue());
     }
 
-    private <E extends Element> Iterable<Condition> translateElementsToConditions(RowSchema<E> schema, List<E> elements) {
-        return this.predicatesTranslator.translate(
+    private <E extends Element> Collection<Condition> translateElementsToConditions(RowSchema<E> schema, List<E> elements) {
+        return StreamSupport.stream(this.predicatesTranslator.translate(
                 new PredicatesHolder(
                         PredicatesHolder.Clause.Or,
                         elements.stream()
                                 .map(schema::toFields)
                                 .map(row -> row.entrySet())
-                                .flatMap(m -> m.stream().map(es -> new HasContainer(es.getKey(), P.within(es.getValue()))))
-                                .collect(Collectors.toSet()), Collections.emptySet()));
+                                .flatMap(m -> m.stream().map(es -> new HasContainer(es.getKey(), P.eq(es.getValue()))))
+                                .collect(Collectors.toSet()), Collections.emptySet())).spliterator(), false).collect(Collectors.toSet());
 
     }
 }
