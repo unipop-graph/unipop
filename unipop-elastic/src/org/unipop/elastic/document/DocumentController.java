@@ -1,35 +1,43 @@
 package org.unipop.elastic.document;
 
-import io.searchbox.core.*;
-import io.searchbox.indices.Refresh;
-import org.apache.tinkerpop.gremlin.structure.*;
+import io.searchbox.core.Delete;
+import io.searchbox.core.Index;
+import io.searchbox.core.Search;
+import io.searchbox.core.SearchResult;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
+import org.apache.tinkerpop.shaded.jackson.databind.JsonNode;
+import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.unipop.common.util.SchemaSet;
 import org.unipop.elastic.common.ElasticClient;
-import org.unipop.schema.reference.DeferredVertex;
 import org.unipop.elastic.common.FilterHelper;
 import org.unipop.elastic.document.schema.DocEdgeSchema;
 import org.unipop.elastic.document.schema.DocSchema;
 import org.unipop.elastic.document.schema.DocVertexSchema;
-import org.unipop.common.util.SchemaSet;
 import org.unipop.query.StepDescriptor;
-import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.controller.SimpleController;
 import org.unipop.query.mutation.AddEdgeQuery;
 import org.unipop.query.mutation.AddVertexQuery;
 import org.unipop.query.mutation.PropertyQuery;
 import org.unipop.query.mutation.RemoveQuery;
+import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.query.search.SearchQuery;
 import org.unipop.query.search.SearchVertexQuery;
+import org.unipop.schema.reference.DeferredVertex;
 import org.unipop.structure.UniEdge;
 import org.unipop.structure.UniElement;
 import org.unipop.structure.UniGraph;
 import org.unipop.structure.UniVertex;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -142,19 +150,32 @@ public class DocumentController implements SimpleController {
         client.refresh();
 
         QueryBuilder filterBuilder = FilterHelper.createFilterBuilder(allPredicates);
-        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(filterBuilder).fetchSource(true).size(100);
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(filterBuilder).fetchSource(true)
+                .size(limit == -1 ? 10000 : limit);
         Search.Builder search = new Search.Builder(searchSourceBuilder.toString());
         schemas.forEach(schema -> search.addIndex(schema.getIndex()));
 
         SearchResult result = client.execute(search.build());
         if(!result.isSucceeded()) return EmptyIterator.instance();
+        return parseResults(schemas, result.getJsonString());
+    }
 
-        return result.getHits(Map.class).stream().map(searchHit -> {
-            Map<String, Object> source = (Map<String, Object>)searchHit.source;
-            source.put("_id", source.remove("es_metadata_id"));
-            source.put("_type", searchHit.type);
-            return schemas.stream().map(schema -> schema.fromFields(source)).findFirst().get();
-        }).iterator();
+    ObjectMapper mapper = new ObjectMapper();
+    private <E extends Element, S extends DocSchema<E>> Iterator<E> parseResults(Set<S> schemas, String result) {
+        List<E> results = new ArrayList<>();
+        try {
+            JsonNode hits = mapper.readTree(result).get("hits").get("hits");
+            for (JsonNode hit : hits) {
+                Map<String, Object> source = mapper.readValue(hit.get("_source").toString(), Map.class);
+                source.put("_id", hit.get("_id").asText());
+                source.put("_type", hit.get("_type").asText());
+                results.add(schemas.stream().map(schema -> schema.fromFields(source)).findFirst().get());
+            }
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        return results.iterator();
     }
 
     private <E extends Element> void index(Set<? extends DocSchema<E>> schemas, E element) {

@@ -11,6 +11,7 @@ import org.elasticsearch.index.query.*;
 import org.unipop.process.predicate.ExistsP;
 import org.unipop.query.predicates.PredicatesHolder;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiPredicate;
@@ -105,8 +106,8 @@ public class FilterHelper {
         if (biPredicate == Contains.without) return QueryBuilders.boolQuery().mustNot(QueryBuilders.existsQuery(key));
         else if (biPredicate == Contains.within) {
             if (value == null) return QueryBuilders.existsQuery(key);
-            else if (value instanceof Iterable)
-                return QueryBuilders.termsQuery(key, (Iterable) value);
+            else if (value instanceof Collection<?>)
+                return QueryBuilders.termsQuery(key, (Collection<?>) value);
             else if (value.getClass().isArray())
                 return QueryBuilders.termsQuery(key, (Object[]) value);
             else return QueryBuilders.termsQuery(key, value);

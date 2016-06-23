@@ -51,4 +51,13 @@ public class ConversionUtils {
         }
         return objects;
     }
+
+    public static List<String> toStringList(JSONArray addressesConfiguration) {
+        List<String> addresses = new ArrayList<>();
+        for(int i = 0; i < addressesConfiguration.length(); i++){
+            String address = addressesConfiguration.getString(i);
+            addresses.add(address);
+        }
+        return addresses;
+    }
 }

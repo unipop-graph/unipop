@@ -10,37 +10,25 @@ import io.searchbox.core.Bulk;
 import io.searchbox.indices.CreateIndex;
 import io.searchbox.indices.IndicesExists;
 import io.searchbox.indices.mapping.PutMapping;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import org.elasticsearch.common.settings.Settings;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 public class ElasticClient {
 
-    private Bulk.Builder bulk;
+    private Map<DocumentIdentifier, BulkableAction> bulk;
     String STRING_NOT_ANALYZED = "{\"dynamic_templates\" : [{\"not_analyzed\" : {\"match\" : \"*\",\"match_mapping_type\" : \"string\", \"mapping\" : {\"type\" : \"string\",\"index\" : \"not_analyzed\"}}}]}";
 
     private final JestClient client;
 
-    public ElasticClient(JSONObject configuration) throws JSONException {
-        JSONArray addressesConfiguration = configuration.getJSONArray("addresses");
-        List<String> addresses = new ArrayList<>();
-        for(int i = 0; i < addressesConfiguration.length(); i++){
-            String address = addressesConfiguration.getString(i);
-            addresses.add(address);
-        }
-
+    public ElasticClient(List<String> addresses) {
         JestClientFactory factory = new JestClientFactory();
-        factory.setHttpClientConfig(new HttpClientConfig
-                .Builder(addresses)
-                .multiThreaded(true)
-                .build());
+        factory.setHttpClientConfig(new HttpClientConfig.Builder(addresses).multiThreaded(true).build());
         this.client = factory.getObject();
-
     }
 
     public void validateIndex(Iterator<String> indices) {
@@ -49,8 +37,10 @@ public class ElasticClient {
                 IndicesExists indicesExistsRequest = new IndicesExists.Builder(indexName).build();
                 JestResult existsResult = client.execute(indicesExistsRequest);
                 if (!existsResult.isSucceeded()) {
-                    CreateIndex createIndexRequest = new CreateIndex.Builder(indexName).build();
+                    Settings settings = Settings.settingsBuilder().put("index.analysis.analyzer.default.type", "keyword").build();;
+                    CreateIndex createIndexRequest = new CreateIndex.Builder(indexName).settings(settings).build();
                     execute(createIndexRequest);
+                    //TODO: Make this work. Using the above "keyword" configuration in the meantime.
                     PutMapping putMapping = new PutMapping.Builder(indexName, "*", STRING_NOT_ANALYZED).build();
                     execute(putMapping);
                 }
@@ -78,12 +68,47 @@ public class ElasticClient {
     }
 
     public void bulk(BulkableAction action) {
-        if(bulk == null) bulk = new Bulk.Builder();
-        bulk.addAction(action);
+        if(bulk != null && bulk.size() >= 500) refresh();
+        if(bulk == null) bulk = new HashMap<>();
+        DocumentIdentifier documentIdentifier = new DocumentIdentifier(action.getId(), action.getType(), action.getIndex());
+        bulk.put(documentIdentifier, action);
     }
 
     public void refresh() {
-        if(bulk != null) execute(bulk.refresh(true).build());
-        bulk = null;
+        if(bulk != null) {
+            Bulk bulkAction = new Bulk.Builder().addAction(this.bulk.values()).refresh(true).build();
+            execute(bulkAction);
+            bulk = null;
+        }
+    }
+
+    class DocumentIdentifier {
+        private final String id;
+        private final String type;
+        private final String index;
+
+        public DocumentIdentifier(String id, String type, String index) {
+            this.id = id;
+            this.type = type;
+            this.index = index;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            DocumentIdentifier that = (DocumentIdentifier) o;
+
+            if (!id.equals(that.id)) return false;
+            if (!type.equals(that.type)) return false;
+            return index.equals(that.index);
+
+        }
+
+        @Override
+        public int hashCode() {
+            return id.hashCode();
+        }
     }
 }
