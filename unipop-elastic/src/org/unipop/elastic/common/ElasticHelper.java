@@ -24,21 +24,19 @@ import java.util.ArrayList;
 public class ElasticHelper {
 
     public static void createIndex(String indexName, JestClient client) throws IOException {
-        CreateIndex createIndexRequest = new CreateIndex.Builder(indexName).build();
         IndicesExists indicesExistsRequest = new IndicesExists.Builder(indexName).build();
-
         JestResult existsResult = client.execute(indicesExistsRequest);
 
-//        IndicesExistsRequest request = new IndicesExistsRequest(indexName);
-//        IndicesExistsResponse response = client.admin().indices().exists(request).actionGet();
         if (!existsResult.isSucceeded()) {
             Settings settings = ImmutableSettings.settingsBuilder()
                     .put("index.analysis.analyzer.default.type", "keyword")
                     .build();
+
             CreateIndex createIndexWithSettingsRequest = new CreateIndex.Builder(indexName)
                     .settings(settings)
                     .build();
-            client.execute(createIndexRequest);
+
+            client.execute(createIndexWithSettingsRequest);
 
         }
 
