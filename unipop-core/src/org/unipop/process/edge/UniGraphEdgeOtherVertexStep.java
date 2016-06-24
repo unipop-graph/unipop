@@ -11,10 +11,12 @@ import org.apache.tinkerpop.gremlin.structure.util.Attachable;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.unipop.common.schema.referred.DeferredVertex;
+import org.unipop.process.bulk.UniBulkStep;
 import org.unipop.process.properties.PropertyFetcher;
 import org.unipop.query.StepDescriptor;
 import org.unipop.query.controller.ControllerManager;
 import org.unipop.query.search.DeferredVertexQuery;
+import org.unipop.structure.UniGraph;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -22,13 +24,12 @@ import java.util.stream.Collectors;
 /**
  * Created by sbarzilay on 6/8/16.
  */
-public class UniGraphEdgeOtherVertexStep extends AbstractStep<Edge, Vertex> implements PropertyFetcher {
-    private Iterator<Traverser.Admin<Vertex>> results = EmptyIterator.instance();
+public class UniGraphEdgeOtherVertexStep extends UniBulkStep<Edge, Vertex> implements PropertyFetcher {
     private Set<String> propertyKeys;
     private List<DeferredVertexQuery.DefferedVertexController> deferredVertexControllers;
 
-    public UniGraphEdgeOtherVertexStep(Traversal.Admin traversal, ControllerManager controllerManager) {
-        super(traversal);
+    public UniGraphEdgeOtherVertexStep(Traversal.Admin traversal, UniGraph graph, ControllerManager controllerManager) {
+        super(traversal, graph);
         this.propertyKeys = null;
         this.deferredVertexControllers = controllerManager.getControllers(DeferredVertexQuery.DefferedVertexController.class);
     }
@@ -51,27 +52,17 @@ public class UniGraphEdgeOtherVertexStep extends AbstractStep<Edge, Vertex> impl
     }
 
     @Override
-    protected Traverser.Admin<Vertex> processNextStart() throws NoSuchElementException {
-        while (!results.hasNext() && starts.hasNext())
-            results = otherEdge();
-        if (results.hasNext())
-            return results.next();
-
-        throw FastNoSuchElementException.instance();
-    }
-
-    private Iterator<Traverser.Admin<Vertex>> otherEdge() {
+    protected Iterator<Traverser.Admin<Vertex>> stepLogic(List<Traverser.Admin<Edge>> traversers) {
         List<Traverser.Admin<Vertex>> vertices = new ArrayList<>();
-        while (this.starts.hasNext()) {
-            Traverser.Admin<Edge> edge = starts.next();
-            final List<Object> objects = edge.path().objects();
+        traversers.forEach(traverser -> {
+            final List<Object> objects = traverser.path().objects();
             if (objects.get(objects.size()-2) instanceof Vertex) {
-                Vertex vertex = ElementHelper.areEqual((Vertex) objects.get(objects.size()-2), edge.get().outVertex()) ?
-                        edge.get().inVertex() :
-                        edge.get().outVertex();
-                vertices.add(edge.split(vertex, this));
+                Vertex vertex = ElementHelper.areEqual((Vertex) objects.get(objects.size()-2), traverser.get().outVertex()) ?
+                        traverser.get().inVertex() :
+                        traverser.get().outVertex();
+                vertices.add(traverser.split(vertex, this));
             }
-        }
+        });
 
         if (propertyKeys == null || propertyKeys.size() > 0){
             List<DeferredVertex> v = vertices.stream().map(Attachable::get).map(vertex -> ((DeferredVertex) vertex)).collect(Collectors.toList());

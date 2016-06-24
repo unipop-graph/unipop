@@ -43,7 +43,7 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void test() {
-        Traversal t = g.V().out().tree().by("name");
+        Traversal t = g.V().where(__.not(out("created")));
 
         check(t);
     }

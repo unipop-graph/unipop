@@ -3,6 +3,7 @@ package org.unipop.process.vertex;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.UnmodifiableIterator;
 import org.unipop.common.schema.referred.DeferredVertex;
+import org.unipop.process.bulk.UniBulkStep;
 import org.unipop.process.properties.PropertyFetcher;
 import org.unipop.query.StepDescriptor;
 import org.unipop.process.predicate.ReceivesPredicatesHolder;
@@ -27,7 +28,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, E> implements ReceivesPredicatesHolder<Vertex, E>, PropertyFetcher {
+public class UniGraphVertexStep<E extends Element> extends UniBulkStep<Vertex, E> implements ReceivesPredicatesHolder<Vertex, E>, PropertyFetcher {
     private final boolean returnsVertex;
     private final Direction direction;
     private Class<E> returnClass;
@@ -37,12 +38,10 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
     private final StepDescriptor stepDescriptor;
     private List<SearchVertexQuery.SearchVertexController> controllers;
     private List<DeferredVertexQuery.DefferedVertexController> defferedVertexControllers;
-    private final int bulk;
-    private Iterator<Traverser.Admin<E>> results = EmptyIterator.instance();
     private Set<String> propertyKeys;
 
     public UniGraphVertexStep(VertexStep<E> vertexStep, UniGraph graph, ControllerManager controllerManager) {
-        super(vertexStep.getTraversal());
+        super(vertexStep.getTraversal(), graph);
         vertexStep.getLabels().forEach(this::addLabel);
         this.direction = vertexStep.getDirection();
         this.returnClass = vertexStep.getReturnClass();
@@ -55,20 +54,8 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
         this.controllers = controllerManager.getControllers(SearchVertexQuery.SearchVertexController.class);
         this.defferedVertexControllers = controllerManager.getControllers(DeferredVertexQuery.DefferedVertexController.class);
         this.stepDescriptor = new StepDescriptor(this);
-        this.bulk = graph.configuration().getInt("bulk", 100);
         this.propertyKeys = null;
         limit = -1;
-    }
-
-    @Override
-    protected Traverser.Admin<E> processNextStart() {
-        if (!results.hasNext() && starts.hasNext())
-            results = query();
-
-        if (results.hasNext())
-            return results.next();
-
-        throw FastNoSuchElementException.instance();
     }
 
     @Override
@@ -88,11 +75,10 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
         this.propertyKeys = null;
     }
 
-    private Iterator<Traverser.Admin<E>> query() {
-        UnmodifiableIterator<List<Traverser.Admin<Vertex>>> partitionedTraversers = Iterators.partition(starts, bulk);
-        return ConversionUtils.asStream(partitionedTraversers)
-                .<Iterator<Traverser.Admin<E>>>map(this::queryBulk)
-                .<Traverser.Admin<E>>flatMap(ConversionUtils::asStream).iterator();
+
+    @Override
+    protected Iterator<Traverser.Admin<E>> stepLogic(List<Traverser.Admin<Vertex>> traversers) {
+        return queryBulk(traversers);
     }
 
     private Iterator<Traverser.Admin<E>> queryBulk(List<Traverser.Admin<Vertex>> traversers) {

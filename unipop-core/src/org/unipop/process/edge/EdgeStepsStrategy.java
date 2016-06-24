@@ -17,13 +17,13 @@ public class EdgeStepsStrategy extends AbstractTraversalStrategy<TraversalStrate
         UniGraph uniGraph = ((UniGraph) traversal.getGraph().get());
 
         TraversalHelper.getStepsOfClass(EdgeOtherVertexStep.class, traversal).forEach(edgeOtherVertexStep -> {
-            UniGraphEdgeOtherVertexStep uniGraphEdgeOtherVertexStep = new UniGraphEdgeOtherVertexStep(traversal, uniGraph.getControllerManager());
+            UniGraphEdgeOtherVertexStep uniGraphEdgeOtherVertexStep = new UniGraphEdgeOtherVertexStep(traversal, uniGraph, uniGraph.getControllerManager());
             edgeOtherVertexStep.getLabels().forEach(uniGraphEdgeOtherVertexStep::addLabel);
             TraversalHelper.replaceStep(edgeOtherVertexStep, uniGraphEdgeOtherVertexStep, traversal);
         });
 
         TraversalHelper.getStepsOfClass(EdgeVertexStep.class, traversal).forEach(edgeVertexStep -> {
-            UniGraphEdgeVertexStep uniGraphEdgeVertexStep = new UniGraphEdgeVertexStep(traversal, edgeVertexStep.getDirection(), uniGraph.getControllerManager());
+            UniGraphEdgeVertexStep uniGraphEdgeVertexStep = new UniGraphEdgeVertexStep(traversal, edgeVertexStep.getDirection(), uniGraph, uniGraph.getControllerManager());
             edgeVertexStep.getLabels().forEach(uniGraphEdgeVertexStep::addLabel);
             TraversalHelper.replaceStep(edgeVertexStep, uniGraphEdgeVertexStep, traversal);
         });
