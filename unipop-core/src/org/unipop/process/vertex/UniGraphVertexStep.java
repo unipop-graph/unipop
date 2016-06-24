@@ -20,6 +20,7 @@ import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.query.search.SearchVertexQuery;
+import org.unipop.structure.UniGraph;
 import org.unipop.structure.UniVertex;
 
 import java.util.*;
@@ -40,7 +41,7 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
     private Iterator<Traverser.Admin<E>> results = EmptyIterator.instance();
     private Set<String> propertyKeys;
 
-    public UniGraphVertexStep(VertexStep<E> vertexStep, ControllerManager controllerManager) {
+    public UniGraphVertexStep(VertexStep<E> vertexStep, UniGraph graph, ControllerManager controllerManager) {
         super(vertexStep.getTraversal());
         vertexStep.getLabels().forEach(this::addLabel);
         this.direction = vertexStep.getDirection();
@@ -54,8 +55,8 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
         this.controllers = controllerManager.getControllers(SearchVertexQuery.SearchVertexController.class);
         this.defferedVertexControllers = controllerManager.getControllers(DeferredVertexQuery.DefferedVertexController.class);
         this.stepDescriptor = new StepDescriptor(this);
-        this.bulk = getTraversal().getGraph().get().configuration().getInt("bulk", 100);
-        this.propertyKeys = new HashSet<>();
+        this.bulk = graph.configuration().getInt("bulk", 100);
+        this.propertyKeys = null;
         limit = -1;
     }
 
@@ -68,6 +69,13 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
             return results.next();
 
         throw FastNoSuchElementException.instance();
+    }
+
+    @Override
+    public void addPropertyKey(String key) {
+        if (getPropertyKeys() == null)
+            propertyKeys = new HashSet<>();
+        this.getPropertyKeys().add(key);
     }
 
     @Override
@@ -100,7 +108,7 @@ public class UniGraphVertexStep<E extends Element> extends AbstractStep<Vertex, 
             traverserList.add(traverser);
             vertices.add(vertex);
         });
-        SearchVertexQuery vertexQuery = new SearchVertexQuery(Edge.class, vertices, direction, predicates, limit, stepDescriptor);
+        SearchVertexQuery vertexQuery = new SearchVertexQuery(Edge.class, vertices, direction, predicates, limit, propertyKeys, stepDescriptor);
         Iterator<Traverser.Admin<E>> traversersIterator = controllers.stream().<Iterator<Edge>>map(controller -> controller.search(vertexQuery))
                 .<Edge>flatMap(ConversionUtils::asStream)
                 .<Traverser.Admin<E>>flatMap(edge -> toTraversers(edge, idToTraverser)).iterator();

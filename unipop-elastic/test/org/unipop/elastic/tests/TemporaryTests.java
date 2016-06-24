@@ -22,6 +22,7 @@ import org.unipop.elastic.ElasticGraphProvider;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.GRATEFUL;
 import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
 import static org.apache.tinkerpop.gremlin.process.traversal.P.without;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource.computer;
@@ -42,7 +43,7 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void test() {
-        Traversal t = g.V("1").repeat(bothE("created").where(without("e")).aggregate("e").otherV()).emit().path();
+        Traversal t = g.V().out().tree().by("name");
 
         check(t);
     }

@@ -29,8 +29,15 @@ public class UniGraphEdgeOtherVertexStep extends AbstractStep<Edge, Vertex> impl
 
     public UniGraphEdgeOtherVertexStep(Traversal.Admin traversal, ControllerManager controllerManager) {
         super(traversal);
-        this.propertyKeys = new HashSet<>();
+        this.propertyKeys = null;
         this.deferredVertexControllers = controllerManager.getControllers(DeferredVertexQuery.DefferedVertexController.class);
+    }
+
+    @Override
+    public void addPropertyKey(String key) {
+        if (getPropertyKeys() == null)
+            propertyKeys = new HashSet<>();
+        this.getPropertyKeys().add(key);
     }
 
     @Override

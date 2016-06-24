@@ -12,6 +12,7 @@ import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHitField;
+import org.unipop.common.schema.base.BaseVertexSchema;
 import org.unipop.common.schema.referred.DeferredVertex;
 import org.unipop.elastic.common.FilterHelper;
 import org.unipop.elastic.common.QueryIterator;
@@ -60,7 +61,12 @@ public class DocumentController implements SimpleController {
         Set<PredicatesHolder> schemasPredicates = schemas.stream().map(schema ->
                 schema.toPredicates(uniQuery.getPredicates())).collect(Collectors.toSet());
         PredicatesHolder schemaPredicateHolders = PredicatesHolderFactory.or(schemasPredicates);
-        return search(schemaPredicateHolders, schemas, null, uniQuery.getLimit(), uniQuery.getStepDescriptor());
+
+        Set<String> propertyKeys = uniQuery.getPropertyKeys();
+        if (propertyKeys != null)
+            getSchemas(uniQuery.getReturnType()).forEach(edgeSchema -> propertyKeys.addAll(edgeSchema.getIdsAndLabelsKeys()));
+
+        return search(schemaPredicateHolders, schemas, propertyKeys, uniQuery.getLimit(), uniQuery.getStepDescriptor());
     }
 
     @Override
@@ -68,7 +74,10 @@ public class DocumentController implements SimpleController {
         Set<PredicatesHolder> schemasPredicates = edgeSchemas.stream().map(schema ->
                 schema.toPredicates(uniQuery.getPredicates(), uniQuery.gertVertices(), uniQuery.getDirection())).collect(Collectors.toSet());
         PredicatesHolder schemaPredicateHolders = PredicatesHolderFactory.or(schemasPredicates);
-        return search(schemaPredicateHolders, edgeSchemas, null, uniQuery.getLimit(), uniQuery.getStepDescriptor());
+        Set<String> propertyKeys = uniQuery.getPropertyKeys();
+        if (propertyKeys != null)
+            edgeSchemas.forEach(edgeSchema -> propertyKeys.addAll(edgeSchema.getIdsAndLabelsKeys()));
+        return search(schemaPredicateHolders, edgeSchemas, propertyKeys, uniQuery.getLimit(), uniQuery.getStepDescriptor());
     }
 
     @Override
@@ -78,14 +87,15 @@ public class DocumentController implements SimpleController {
         PredicatesHolder schemaPredicateHolders = PredicatesHolderFactory.or(schemasPredicates);
 
         if (schemaPredicateHolders.isEmpty()) return;
-        Iterator<Vertex> search = search(schemaPredicateHolders, vertexSchemas, uniQuery.getPropertyKeys(), -1, uniQuery.getStepDescriptor());
+
+        Set<String> propertyKeys = uniQuery.getPropertyKeys();
+        if (propertyKeys != null)
+            vertexSchemas.stream().map(BaseVertexSchema::getIdsAndLabelsKeys).forEach(propertyKeys::addAll);
+
+        Iterator<Vertex> search = search(schemaPredicateHolders, vertexSchemas, propertyKeys, -1, uniQuery.getStepDescriptor());
 
         Map<Object, List<DeferredVertex>> collect = uniQuery.getVertices().stream().collect(Collectors.groupingBy(UniElement::id));
-//        Map<Object, DeferredVertex> vertexMap = uniQuery.getVertices().stream().collect(Collectors.toMap(UniElement::id, Function.identity(), (a, b) -> a));
-//        search.forEachRemaining(newVertex -> {
-//            DeferredVertex deferredVertex = vertexMap.get(newVertex.id());
-//            if (deferredVertex != null) deferredVertex.loadProperties(newVertex);
-//        });
+
         search.forEachRemaining(newVertex -> {
             List<DeferredVertex> deferredVertex = collect.get(newVertex.id());
             if (deferredVertex != null) deferredVertex.forEach(v -> v.loadProperties(newVertex));

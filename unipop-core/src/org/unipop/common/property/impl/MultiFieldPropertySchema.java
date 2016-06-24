@@ -56,4 +56,9 @@ public class MultiFieldPropertySchema implements PropertySchema {
     public PredicatesHolder toPredicates(HasContainer has) {
         return null;
     }
+
+    @Override
+    public String getKey() {
+        return key;
+    }
 }

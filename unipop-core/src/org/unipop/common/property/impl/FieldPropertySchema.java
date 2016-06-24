@@ -60,6 +60,11 @@ public class FieldPropertySchema implements PropertySchema {
     }
 
     @Override
+    public String getKey() {
+        return key;
+    }
+
+    @Override
     public Set<String> getFields() {
         return Collections.singleton(this.field);
     }

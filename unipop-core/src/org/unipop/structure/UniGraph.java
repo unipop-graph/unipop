@@ -75,7 +75,7 @@ public class UniGraph implements Graph {
     }
 
     private StrategyProvider determineStrategyProvider(Configuration configuration) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
-        StrategyProvider strategyProvider = (StrategyProvider)configuration.getProperty("strategyProvider");
+        StrategyProvider strategyProvider = (StrategyProvider) configuration.getProperty("strategyProvider");
         if (strategyProvider == null) {
             String strategyRegistrarClass = configuration.getString("strategyRegistrarClass");
             if (StringUtils.isNotBlank(strategyRegistrarClass)) {
@@ -152,14 +152,14 @@ public class UniGraph implements Graph {
 
     private <E extends Element> Iterator<E> query(Class<E> returnType, Object[] ids) {
         PredicatesHolder idPredicate = createIdPredicate(ids, returnType);
-        SearchQuery<E> uniQuery = new SearchQuery<>(returnType, idPredicate, -1, null);
+        SearchQuery<E> uniQuery = new SearchQuery<>(returnType, idPredicate, -1, null, null);
         return queryControllers.stream().<E>flatMap(controller -> ConversionUtils.asStream(controller.search(uniQuery))).iterator();
     }
 
     public static <E extends Element> PredicatesHolder createIdPredicate(Object[] ids, Class<E> returnType) {
         ElementHelper.validateMixedElementIds(returnType, ids);
         //if (ids.length > 0 && Vertex.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator<>(ids);
-        if(ids.length > 0) {
+        if (ids.length > 0) {
             List<Object> collect = Stream.of(ids).map(id -> {
                 if (id instanceof Element)
                     return ((Element) id).id();
@@ -177,7 +177,7 @@ public class UniGraph implements Graph {
     public Vertex addVertex(final Object... keyValues) {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         Optional<String> labelValue = ElementHelper.getLabelValue(keyValues);
-        if(labelValue.isPresent()) ElementHelper.validateLabel(labelValue.get());
+        if (labelValue.isPresent()) ElementHelper.validateLabel(labelValue.get());
         Map<String, Object> stringObjectMap = ConversionUtils.asMap(keyValues);
         return controllerManager.getControllers(AddVertexQuery.AddVertexController.class).stream()
                 .map(controller -> controller.addVertex(new AddVertexQuery(stringObjectMap, null)))

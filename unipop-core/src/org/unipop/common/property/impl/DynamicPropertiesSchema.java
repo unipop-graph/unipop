@@ -48,4 +48,9 @@ public class DynamicPropertiesSchema implements PropertySchema {
         if(!excludeProperties.contains(has.getKey())) return PredicatesHolderFactory.predicate(has);
         return null;
     }
+
+    @Override
+    public String getKey() {
+        return null;
+    }
 }

@@ -10,14 +10,15 @@ import org.unipop.query.VertexQuery;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 public class SearchVertexQuery extends SearchQuery<Edge> implements VertexQuery {
 
     private final List<Vertex> vertices;
     private final Direction direction;
 
-    public SearchVertexQuery(Class<Edge> returnType, List<Vertex> vertices, Direction direction, PredicatesHolder predicates, int limit, StepDescriptor stepDescriptor) {
-        super(returnType, predicates, limit, stepDescriptor);
+    public SearchVertexQuery(Class<Edge> returnType, List<Vertex> vertices, Direction direction, PredicatesHolder predicates, int limit, Set<String> propertyKeys, StepDescriptor stepDescriptor) {
+        super(returnType, predicates, limit, propertyKeys, stepDescriptor);
         this.vertices = vertices;
         this.direction = direction;
     }

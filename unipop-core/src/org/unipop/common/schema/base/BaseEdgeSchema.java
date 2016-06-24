@@ -2,6 +2,7 @@ package org.unipop.common.schema.base;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.unipop.common.schema.EdgeSchema;
 import org.unipop.common.schema.VertexSchema;
@@ -11,8 +12,9 @@ import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.structure.UniEdge;
 import org.unipop.structure.UniGraph;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class BaseEdgeSchema extends BaseElementSchema<Edge> implements EdgeSchema {
     private final VertexSchema outVertexSchema;
@@ -22,6 +24,25 @@ public class BaseEdgeSchema extends BaseElementSchema<Edge> implements EdgeSchem
         super(properties, graph);
         this.outVertexSchema = outVertexSchema;
         this.inVertexSchema = inVertexSchema;
+    }
+
+    @Override
+    public Set<String> getFieldNames(String key) {
+        Optional<PropertySchema> first = propertySchemas.stream().filter(propertySchema -> propertySchema.getKey().equals(key)).findFirst();
+        if (first.isPresent()) {
+            return first.get().getFields();
+        }
+        return null;
+    }
+
+    @Override
+    public Set<String> getIdsAndLabelsKeys() {
+        return Stream.of(getInVertexSchema().getFieldNames(T.id.getAccessor()),
+                getInVertexSchema().getFieldNames(T.label.getAccessor()),
+                getOutVertexSchema().getFieldNames(T.id.getAccessor()),
+                getOutVertexSchema().getFieldNames(T.label.getAccessor()),
+                getFieldNames(T.id.getAccessor()),
+                getFieldNames(T.label.getAccessor())).flatMap(Collection::stream).collect(Collectors.toSet());
     }
 
     @Override
@@ -52,8 +73,8 @@ public class BaseEdgeSchema extends BaseElementSchema<Edge> implements EdgeSchem
     private PredicatesHolder getVertexPredicates(List<Vertex> vertices, Direction direction) {
         PredicatesHolder outPredicates = this.outVertexSchema.toPredicates(vertices);
         PredicatesHolder inPredicates = this.inVertexSchema.toPredicates(vertices);
-        if(direction.equals(Direction.OUT)) return outPredicates;
-        if(direction.equals(Direction.IN)) return inPredicates;
+        if (direction.equals(Direction.OUT)) return outPredicates;
+        if (direction.equals(Direction.IN)) return inPredicates;
         return PredicatesHolderFactory.or(inPredicates, outPredicates);
     }
 

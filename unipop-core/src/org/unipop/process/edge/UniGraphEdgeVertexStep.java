@@ -34,8 +34,7 @@ public class UniGraphEdgeVertexStep extends AbstractStep<Edge, Vertex> implement
     public UniGraphEdgeVertexStep(Traversal.Admin traversal, Direction direction, ControllerManager controllerManager) {
         super(traversal);
         this.direction = direction;
-        this.propertyKeys = new HashSet<>();
-        propertyKeys.add("id");
+        this.propertyKeys = null;
         this.deferredVertexControllers = controllerManager.getControllers(DeferredVertexQuery.DefferedVertexController.class);
     }
 
@@ -63,6 +62,13 @@ public class UniGraphEdgeVertexStep extends AbstractStep<Edge, Vertex> implement
         }
 
         return vertices.iterator();
+    }
+
+    @Override
+    public void addPropertyKey(String key) {
+        if (getPropertyKeys() == null)
+            propertyKeys = new HashSet<>();
+        this.getPropertyKeys().add(key);
     }
 
     @Override

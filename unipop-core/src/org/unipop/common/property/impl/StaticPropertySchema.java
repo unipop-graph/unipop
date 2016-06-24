@@ -32,6 +32,11 @@ public class StaticPropertySchema implements PropertySchema {
         return null;
     }
 
+    @Override
+    public String getKey() {
+        return key;
+    }
+
     public boolean test(P predicate) {
         return predicate.test(this.value);
     }
