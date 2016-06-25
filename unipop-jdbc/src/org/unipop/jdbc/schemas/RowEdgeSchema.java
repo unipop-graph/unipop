@@ -1,9 +1,9 @@
 package org.unipop.jdbc.schemas;
 
 import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.unipop.common.property.PropertySchema;
-import org.unipop.common.schema.VertexSchema;
-import org.unipop.common.schema.base.BaseEdgeSchema;
+import org.unipop.schema.VertexSchema;
+import org.unipop.schema.base.BaseEdgeSchema;
+import org.unipop.schema.property.PropertySchema;
 import org.unipop.structure.UniGraph;
 
 import java.util.List;

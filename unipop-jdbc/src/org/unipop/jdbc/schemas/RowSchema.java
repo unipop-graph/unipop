@@ -1,7 +1,7 @@
 package org.unipop.jdbc.schemas;
 
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.unipop.common.schema.ElementSchema;
+import org.unipop.schema.ElementSchema;
 
 import java.util.Map;
 

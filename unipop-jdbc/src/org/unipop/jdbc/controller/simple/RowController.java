@@ -13,8 +13,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.jooq.*;
 import org.jooq.impl.DSL;
-import org.unipop.common.schema.referred.DeferredVertex;
 import org.unipop.common.util.PredicatesTranslator;
+import org.unipop.common.util.SchemaSet;
 import org.unipop.jdbc.controller.simple.results.ElementMapper;
 import org.unipop.jdbc.schemas.RowEdgeSchema;
 import org.unipop.jdbc.schemas.RowSchema;
@@ -31,6 +31,7 @@ import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.query.search.SearchQuery;
 import org.unipop.query.search.SearchVertexQuery;
+import org.unipop.schema.reference.DeferredVertex;
 import org.unipop.structure.UniEdge;
 import org.unipop.structure.UniElement;
 import org.unipop.structure.UniGraph;
@@ -51,17 +52,18 @@ import static org.jooq.impl.DSL.*;
 public class RowController implements SimpleController {
     private final DSLContext dslContext;
     private final UniGraph graph;
+
     private final Set<? extends RowVertexSchema> vertexSchemas;
     private final Set<? extends RowEdgeSchema> edgeSchemas;
 
     private final PredicatesTranslator<Iterable<Condition>> predicatesTranslator;
 
-    public RowController(UniGraph graph, Connection conn, SQLDialect dialect, Set<RowVertexSchema> vertexSchemas, Set<RowEdgeSchema> edgeSchemas, PredicatesTranslator<Iterable<Condition>> predicatesTranslator) {
+    public RowController(UniGraph graph, DSLContext context, SchemaSet schemaSet, PredicatesTranslator<Iterable<Condition>> predicatesTranslator) {
         this.graph = graph;
-        this.dslContext = using(conn, dialect);
+        this.dslContext = context;
 
-        this.vertexSchemas = vertexSchemas;
-        this.edgeSchemas = edgeSchemas;
+        this.vertexSchemas = schemaSet.get(RowVertexSchema.class, true);
+        this.edgeSchemas = schemaSet.get(RowEdgeSchema.class, true);
 
         this.predicatesTranslator = predicatesTranslator;
     }
@@ -70,6 +72,7 @@ public class RowController implements SimpleController {
     public <E extends Element> Iterator<E> search(SearchQuery<E> uniQuery) {
         Set<? extends RowSchema<E>> schemas = this.getSchemas(uniQuery.getReturnType());
         PredicatesHolder schemaPredicateHolders = this.extractPredicatesHolder(uniQuery, schemas);
+
         return this.search(schemaPredicateHolders, schemas, uniQuery.getLimit(), uniQuery.getStepDescriptor());
     }
 
@@ -137,8 +140,11 @@ public class RowController implements SimpleController {
 
     @Override
     public Iterator<Edge> search(SearchVertexQuery uniQuery) {
+        Set<PredicatesHolder> schemasPredicates = edgeSchemas.stream().map(schema ->
+                schema.toPredicates(uniQuery.getPredicates(), uniQuery.getVertices(), uniQuery.getDirection())).collect(Collectors.toSet());
+        PredicatesHolder schemaPredicateHolders = PredicatesHolderFactory.or(schemasPredicates);
         return this.search(
-                uniQuery.getPredicates(),
+                schemaPredicateHolders,
                 this.getSchemas(uniQuery.getReturnType()),
                 uniQuery.getLimit(),
                 uniQuery.getStepDescriptor()
