@@ -21,7 +21,7 @@ public class ReduceVertexQuery extends ReduceQuery implements VertexQuery {
     }
 
     @Override
-    public List<Vertex> gertVertices() {
+    public List<Vertex> getVertices() {
         return vertices;
     }
 

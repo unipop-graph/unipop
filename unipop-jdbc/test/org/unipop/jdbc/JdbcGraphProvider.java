@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.unipop.common.test.UnipopGraphProvider;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -48,10 +49,12 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
         URL url = this.getClass().getResource("/configuration/" + CONFIGURATION);
         baseConfiguration.put("providers", new String[]{url.getFile()});
 
+        new File("test.sqlite").delete();
+
         try {
             this.jdbcConnection.createStatement().execute(
                     "CREATE TABLE IF NOT EXISTS vertices(" +
-                            "ID int NOT NULL PRIMARY KEY, " +
+                            "ID VARCHAR(100) NOT NULL PRIMARY KEY, " +
                             "LABEL VARCHAR(100) NOT NULL," +
                             "name varchar(100), " +
                             "age int, " +

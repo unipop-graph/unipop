@@ -23,7 +23,7 @@ public class SearchVertexQuery extends SearchQuery<Edge> implements VertexQuery 
     }
 
     @Override
-    public List<Vertex> gertVertices() {
+    public List<Vertex> getVertices() {
         return vertices;
     }
 

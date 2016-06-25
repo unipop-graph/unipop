@@ -1,6 +1,5 @@
 package org.unipop.jdbc.controller.simple;
 
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
 import org.apache.commons.collections4.CollectionUtils;
@@ -9,7 +8,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.jooq.*;
 import org.jooq.impl.DSL;
 import org.unipop.common.schema.referred.DeferredVertex;
@@ -39,7 +40,6 @@ import java.sql.Connection;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static org.jooq.impl.DSL.*;
@@ -76,7 +76,11 @@ public class RowController implements SimpleController {
     @Override
     public Edge addEdge(AddEdgeQuery uniQuery) {
         UniEdge edge = new UniEdge(uniQuery.getProperties(), uniQuery.getOutVertex(), uniQuery.getInVertex(), this.graph);
-        this.insert(edgeSchemas, edge);
+        try {
+            this.insert(edgeSchemas, edge, true);
+        } catch(IllegalArgumentException ex) {
+            throw Graph.Exceptions.edgeWithIdAlreadyExists(edge.id());
+        }
 
         return edge;
     }
@@ -84,7 +88,11 @@ public class RowController implements SimpleController {
     @Override
     public Vertex addVertex(AddVertexQuery uniQuery) {
         UniVertex vertex = new UniVertex(uniQuery.getProperties(), this.graph);
-        this.insert(vertexSchemas, vertex);
+        try {
+            this.insert(vertexSchemas, vertex, true);
+        } catch (IllegalArgumentException ex) {
+            throw Graph.Exceptions.vertexWithIdAlreadyExists(vertex.id());
+        }
 
         return vertex;
     }
@@ -92,7 +100,7 @@ public class RowController implements SimpleController {
     @Override
     public <E extends Element> void property(PropertyQuery<E> uniQuery) {
         Set<? extends RowSchema<E>> schemas = this.getSchemas(uniQuery.getElement().getClass());
-        this.insert(schemas, uniQuery.getElement());
+        this.insert(schemas, uniQuery.getElement(), false);
     }
 
     @Override
@@ -157,19 +165,21 @@ public class RowController implements SimpleController {
         tables.forEachRemaining(table -> step
                 .unionAll(createSqlQuery(columnsToRetrieve, table)));
 
-        conditions.forEachRemaining(step::where);
+        step.where(IteratorUtils.list(conditions));
 
-        step.limit(limit);
+        if (limit >= 0) {
+            step.limit(limit);
+        }
 
         return (Iterator<E>) step.fetch().map(new ElementMapper(schemas)).iterator();
     }
 
     private SelectJoinStep<Record> createSqlQuery(Set<Field<Object>> columnsToRetrieve, String table) {
         return this.getDslContext()
-                .select(Stream.concat(
+                .select(/*Stream.concat(
                         columnsToRetrieve.stream(),
                         Stream.of(getTableField(table)))
-                        .collect(Collectors.toSet()))
+                        .collect(Collectors.toSet())*/) //TODO: Add back smarter behaviour when properties are implemented.
                 .from(table);
     }
 
@@ -196,7 +206,7 @@ public class RowController implements SimpleController {
         return PredicatesHolderFactory.or(schemasPredicates);
     }
 
-    private <E extends Element> void insert(Set<? extends RowSchema<E>> schemas, E element) {
+    private <E extends Element> void insert(Set<? extends RowSchema<E>> schemas, E element, boolean isNew) {
         for (RowSchema<E> schema : schemas) {
             RowSchema.Row row = schema.toRow(element);
 
@@ -205,6 +215,10 @@ public class RowController implements SimpleController {
                     .onDuplicateKeyIgnore().execute();
 
             if (changeSetCount == 0) {
+                if (isNew) {
+                    throw new IllegalArgumentException("duplicate key already exists");
+                }
+
                 Map<Field<?>, Object> fieldMap = Maps.newHashMap();
                 row.getFields().entrySet().stream().map(this::mapSet).forEach(en -> fieldMap.put(en.getKey(), en.getValue()));
 
@@ -224,9 +238,10 @@ public class RowController implements SimpleController {
                         PredicatesHolder.Clause.Or,
                         elements.stream()
                                 .map(schema::toFields)
-                                .map(row -> row.entrySet())
-                                .flatMap(m -> m.stream().map(es -> new HasContainer(es.getKey(), P.eq(es.getValue()))))
-                                .collect(Collectors.toSet()), Collections.emptySet())).spliterator(), false).collect(Collectors.toSet());
+                                .map(Map::entrySet)
+                                .flatMap(m -> m.stream().map(es -> new HasContainer(es.getKey(), P.within(es.getValue()))))
+                                .collect(Collectors.toSet()), Collections.emptySet())).spliterator(), false)
+                .collect(Collectors.toSet());
 
     }
 }

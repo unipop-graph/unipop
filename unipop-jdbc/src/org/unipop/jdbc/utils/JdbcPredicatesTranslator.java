@@ -50,6 +50,8 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Iterable<C
 
         if (key.equals("~id"))
             return field(T.id.toString()).in(value.getClass().isArray() ? (Object[]) value : new Object[]{value});
+        if (key.equals("~label"))
+            return field(T.label.toString()).in(value.getClass().isArray() ? (Object[]) value : new Object[]{value});
         Field<Object> field = field(key);
         if (predicate instanceof Compare) {
             String predicateString = predicate.toString();
