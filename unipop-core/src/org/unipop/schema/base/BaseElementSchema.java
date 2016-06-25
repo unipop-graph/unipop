@@ -24,11 +24,11 @@ public abstract class BaseElementSchema<E extends Element> implements ElementSch
 
     protected Map<String, Object> getProperties(Map<String, Object> source) {
         Map<String, Object> result = new HashMap<>();
-        this.propertySchemas.forEach((schema) -> {
+        for(PropertySchema schema : this.propertySchemas) {
             Map<String, Object> schemaProperties = schema.toProperties(source);
-            if(schemaProperties != null)
-                schemaProperties.forEach((propKey, propValue) -> result.merge(propKey, propValue, this::mergeProperties));
-        });
+            if(schemaProperties == null) return null;
+            schemaProperties.forEach((propKey, propValue) -> result.merge(propKey, propValue, this::mergeProperties));
+        }
 
         return result;
     }
@@ -45,9 +45,8 @@ public abstract class BaseElementSchema<E extends Element> implements ElementSch
         Map<String, Object> fields = new HashMap<>();
         for(PropertySchema schema : this.propertySchemas) {
             Map<String, Object> schemaFields = schema.toFields(properties);
-            if(schemaFields != null) {
-                schemaFields.forEach((fieldKey, fieldValue) -> fields.merge(fieldKey, fieldValue, this::mergeFields));
-            }
+            if(schemaFields == null) return null;
+            schemaFields.forEach((fieldKey, fieldValue) -> fields.merge(fieldKey, fieldValue, this::mergeFields));
         }
 
         return fields;

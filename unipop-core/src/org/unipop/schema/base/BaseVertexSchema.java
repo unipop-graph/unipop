@@ -32,6 +32,7 @@ public class BaseVertexSchema extends BaseElementSchema<Vertex> implements Verte
     @Override
     public Vertex fromFields(Map<String, Object> fields) {
         Map<String, Object> properties = getProperties(fields);
+        if(properties == null) return null;
         return new UniVertex(properties, graph);
     }
 

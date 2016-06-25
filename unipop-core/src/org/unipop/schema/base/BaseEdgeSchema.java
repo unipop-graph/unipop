@@ -29,17 +29,21 @@ public class BaseEdgeSchema extends BaseElementSchema<Edge> implements EdgeSchem
     @Override
     public Edge fromFields(Map<String, Object> fields) {
         Map<String, Object> edgeProperties = getProperties(fields);
+        if(edgeProperties == null) return null;
         Vertex outVertex = outVertexSchema.fromFields(fields);
+        if(outVertex == null) return null;
         Vertex inVertex = inVertexSchema.fromFields(fields);
+        if(inVertex == null) return null;
         return new UniEdge(edgeProperties, outVertex, inVertex, graph);
     }
 
     @Override
     public Map<String, Object> toFields(Edge edge) {
         Map<String, Object> edgeFields = super.toFields(edge);
+        if(edgeFields == null) return null;
         Map<String, Object> inFields = inVertexSchema.toFields(edge.inVertex());
-        edgeFields.putAll(inFields);
         Map<String, Object> outFields = outVertexSchema.toFields(edge.outVertex());
+        edgeFields.putAll(inFields);
         edgeFields.putAll(outFields);
         return edgeFields;
     }

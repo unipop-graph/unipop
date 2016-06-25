@@ -12,8 +12,8 @@ public abstract class DocSchemaBuilder<S extends DocSchema> extends SchemaBuilde
 
     public DocSchemaBuilder(JSONObject json, UniGraph graph) {
         super(json, graph);
-        this.index = json.optString("index");
-        this.type = json.optString("_type");
+        this.index = json.optString("index", "*");
+        this.type = json.optString("es_type", "*");
     }
 
     public DocSchemaBuilder(DocSchema parent, JSONObject json, UniGraph graph) {

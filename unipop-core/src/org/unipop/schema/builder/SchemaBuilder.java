@@ -23,16 +23,13 @@ public abstract class SchemaBuilder<S extends ElementSchema> {
 
     public abstract S build();
 
-    private void createPropertySchemas() {
-        propertySchemas.add(createPropertySchema(T.id.getAccessor(), json.get(T.id.toString())));
-        propertySchemas.add(createPropertySchema(T.label.getAccessor(), json.get(T.label.toString())));
+    protected void createPropertySchemas() {
+        addPropertySchema(T.id.getAccessor(), json.get(T.id.toString()), false);
+        addPropertySchema(T.label.getAccessor(), json.get(T.label.toString()), false);
 
         JSONObject properties = json.optJSONObject("properties");
         if(properties != null) {
-            properties.keys().forEachRemaining(key -> {
-                PropertySchema propertySchema = createPropertySchema(key, properties.get(key));
-                propertySchemas.add(propertySchema);
-            });
+            properties.keys().forEachRemaining(key -> addPropertySchema(key, properties.get(key), true));
         }
 
         Object dynamicPropertiesConfig = json.opt("dynamicProperties");
@@ -43,36 +40,42 @@ public abstract class SchemaBuilder<S extends ElementSchema> {
 
     }
 
-    private PropertySchema createPropertySchema(String key, Object value) {
+    protected void addPropertySchema(String key, Object value, boolean nullable) {
+        PropertySchema propertySchema = createPropertySchema(key, value, nullable);
+        propertySchemas.add(propertySchema);
+    }
+
+
+    protected PropertySchema createPropertySchema(String key, Object value, boolean nullable) {
         if(value instanceof String) {
             if (value.toString().startsWith("@"))
-                return new FieldPropertySchema(key, value.toString().substring(1));
+                return new FieldPropertySchema(key, value.toString().substring(1), nullable);
             else return new StaticPropertySchema(key, value.toString());
         }
         else if(value instanceof JSONObject) {
             JSONObject config = (JSONObject) value;
             Object field = config.get("field");
             if(field != null && field instanceof String) {
-                return new FieldPropertySchema(key, config);
+                return new FieldPropertySchema(key, config, nullable);
             }
             else if(field instanceof JSONArray) {
                 String delimiter = config.optString("delimiter", "_");
-                return getMultiFieldProperty(key, (JSONArray) value, delimiter);
+                return getMultiFieldProperty(key, (JSONArray) value, delimiter, nullable);
             }
             else throw new IllegalArgumentException("Unrecognized field: " + field + ", property: " + key + " - " + value);
         }
         else if(value instanceof JSONArray) {
-            return getMultiFieldProperty(key, (JSONArray) value, "_");
+            return getMultiFieldProperty(key, (JSONArray) value, "_", nullable);
         }
         else throw new IllegalArgumentException("Unrecognized property: " + key + " - " + value);
     }
 
-    private PropertySchema getMultiFieldProperty(String key, JSONArray fieldsArray, String delimiter) {
+    protected PropertySchema getMultiFieldProperty(String key, JSONArray fieldsArray, String delimiter, boolean nullable) {
         List<String> fields = new ArrayList<>();
         for(int i = 0; i < fieldsArray.length(); i++){
             String field = fieldsArray.getString(i);
             fields.add(field);
         }
-        return new MultiFieldPropertySchema(key, fields, delimiter);
+        return new MultiFieldPropertySchema(key, fields, delimiter, nullable);
     }
 }
