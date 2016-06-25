@@ -1,8 +1,8 @@
 package org.unipop.elastic.document.schema;
 
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.unipop.common.schema.base.BaseVertexSchema;
-import org.unipop.common.property.PropertySchema;
+import org.unipop.schema.base.BaseVertexSchema;
+import org.unipop.schema.property.PropertySchema;
 import org.unipop.structure.UniGraph;
 
 import java.util.List;
@@ -23,8 +23,7 @@ public class DocVertexSchema extends BaseVertexSchema implements DocSchema<Verte
     }
 
     @Override
-    public String getType(Vertex vertex) {
-        if(this.type != null) return this.type;
-        return vertex.label();
+    public String getType() {
+         return this.type;
     }
 }

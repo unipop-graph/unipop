@@ -2,6 +2,7 @@ package org.unipop.common.util;
 
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -37,5 +38,26 @@ public class ConversionUtils {
             }
         }
         return map;
+    }
+
+    public static List<JSONObject> getList(JSONObject json, String key) {
+        JSONArray objectsArray = json.optJSONArray(key);
+        if(objectsArray == null) return Collections.emptyList();
+
+        List<JSONObject> objects = new ArrayList<>();
+        for(int i = 0; i < objectsArray.length(); i++){
+            JSONObject config = objectsArray.getJSONObject(i);
+            objects.add(config);
+        }
+        return objects;
+    }
+
+    public static List<String> toStringList(JSONArray addressesConfiguration) {
+        List<String> addresses = new ArrayList<>();
+        for(int i = 0; i < addressesConfiguration.length(); i++){
+            String address = addressesConfiguration.getString(i);
+            addresses.add(address);
+        }
+        return addresses;
     }
 }

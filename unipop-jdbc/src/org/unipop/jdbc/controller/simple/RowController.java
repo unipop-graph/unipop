@@ -45,7 +45,7 @@ import java.util.stream.StreamSupport;
 import static org.jooq.impl.DSL.*;
 
 /**
- * @author GurRo
+ * @author Gur Ronen
  * @since 6/12/2016
  */
 public class RowController implements SimpleController {

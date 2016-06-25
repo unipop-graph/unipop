@@ -10,7 +10,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
     <artifactId>unipop-elastic</artifactId>
     <name>Unipop :: Elasticsearch Controllers</name>
     <properties>
-        <elasticsearch.version>1.7.2</elasticsearch.version>
+        <elasticsearch.version>2.3.3</elasticsearch.version>
     </properties>
     <dependencies>
         <dependency>
@@ -44,6 +44,11 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
             <groupId>org.elasticsearch</groupId>
             <artifactId>elasticsearch</artifactId>
             <version>${elasticsearch.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.searchbox</groupId>
+            <artifactId>jest</artifactId>
+            <version>2.0.0</version>
         </dependency>
         <dependency>
             <groupId>org.json</groupId>

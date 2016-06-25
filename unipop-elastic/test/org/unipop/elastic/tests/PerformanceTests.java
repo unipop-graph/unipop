@@ -9,13 +9,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.unipop.elastic.ElasticGraphProvider;
 import org.unipop.common.test.UnipopGraphProvider;
-import org.unipop.elastic.common.TimingAccessor;
 
 import java.util.Iterator;
 
 public class PerformanceTests {
 
-    TimingAccessor sw = new TimingAccessor();
     private Graph graph;
 
     @Before
@@ -45,16 +43,15 @@ public class PerformanceTests {
         Iterator<Edge> edgeIterator = graph.edges();
         stopWatch("edge iterator");
 
-        sw.print();
         System.out.println("-----");
     }
 
 
     private void stopWatch(String s) {
-        sw.timer(s).stop();
+
     }
 
     private void startWatch(String s) {
-        sw.timer(s).start();
+
     }
 }

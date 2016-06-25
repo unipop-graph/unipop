@@ -1,5 +1,6 @@
 package org.unipop.structure;
 
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.unipop.query.mutation.PropertyQuery;
@@ -16,20 +17,24 @@ public abstract class UniElement implements Element{
     public UniElement(Map<String, Object> properties, UniGraph graph) {
         this.graph = graph;
 
-        Object id = properties.remove(T.id.getAccessor());
-        if(id == null) id = properties.remove(T.id.toString());
-        this.id = id != null ? id.toString() : new com.eaio.uuid.UUID().toString();
+        this.id = ObjectUtils.firstNonNull(
+                properties.remove(T.id.getAccessor()),
+                properties.remove(T.id.toString()),
+                new com.eaio.uuid.UUID())
+                .toString();
 
-        Object label = properties.remove(T.label.getAccessor());
-        if(label == null) label = properties.remove(T.label.toString());
-        this.label = label != null ? label.toString() : getDefaultLabel();
+        this.label = ObjectUtils.firstNonNull(
+                properties.remove(T.label.getAccessor()),
+                properties.remove(T.label.toString()),
+                getDefaultLabel())
+                .toString();
 
         properties.forEach(this::addPropertyLocal);
     }
 
     protected abstract String getDefaultLabel();
 
-    public Property addPropertyLocal(String key, Object value) {
+    protected Property addPropertyLocal(String key, Object value) {
         ElementHelper.validateProperty(key, value);
         Property property = createProperty(key, value);
         properties.put(key, property);

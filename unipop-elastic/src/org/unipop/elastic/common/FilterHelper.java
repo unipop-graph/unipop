@@ -4,7 +4,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
-import org.apache.tinkerpop.gremlin.structure.T;
 import org.elasticsearch.common.geo.builders.ShapeBuilder;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
@@ -12,33 +11,38 @@ import org.elasticsearch.index.query.*;
 import org.unipop.process.predicate.ExistsP;
 import org.unipop.query.predicates.PredicatesHolder;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
 public class FilterHelper {
-    public static FilterBuilder createFilterBuilder(PredicatesHolder predicatesHolder) {
-        Set<FilterBuilder> predicateFilters = predicatesHolder.getPredicates().stream()
+    public static QueryBuilder createFilterBuilder(PredicatesHolder predicatesHolder) {
+        Set<QueryBuilder> predicateFilters = predicatesHolder.getPredicates().stream()
                 .map(FilterHelper::createFilter).collect(Collectors.toSet());
-        Set<FilterBuilder> childFilters = predicatesHolder.getChildren().stream()
+        Set<QueryBuilder> childFilters = predicatesHolder.getChildren().stream()
                 .map(FilterHelper::createFilterBuilder).collect(Collectors.toSet());
         predicateFilters.addAll(childFilters);
-        FilterBuilder[] filterBuilders = predicateFilters.toArray(new FilterBuilder[predicateFilters.size()]);
 
-        if(predicateFilters.size() == 0) return FilterBuilders.matchAllFilter();
+
+        if(predicateFilters.size() == 0) return QueryBuilders.matchAllQuery();
         if(predicateFilters.size() == 1) return predicateFilters.iterator().next();
 
+
+        BoolQueryBuilder predicatesQuery = QueryBuilders.boolQuery();
         if(predicatesHolder.getClause().equals(PredicatesHolder.Clause.And)){
-            return FilterBuilders.andFilter(filterBuilders);
+            predicateFilters.forEach(predicatesQuery::must);
         }
         else if(predicatesHolder.getClause().equals(PredicatesHolder.Clause.Or)){
-            return  FilterBuilders.orFilter(filterBuilders);
+            predicateFilters.forEach(predicatesQuery::should);
         }
         else throw new IllegalArgumentException("Unexpected clause in predicatesHolder: " + predicatesHolder);
+
+        return predicatesQuery;
     }
 
-    public static FilterBuilder createFilter(HasContainer container) {
+    public static QueryBuilder createFilter(HasContainer container) {
         String key = container.getKey();
         P predicate = container.getPredicate();
         Object value = predicate.getValue();
@@ -51,78 +55,74 @@ public class FilterHelper {
             else if (biPredicate instanceof Geo) return getGeoFilter(key, value, (Geo) biPredicate);
             else throw new IllegalArgumentException("predicate not supported by unipop: " + biPredicate.toString());
         }
-        else if (predicate instanceof ExistsP) return FilterBuilders.existsFilter(key);
+        else if (predicate instanceof ExistsP) return QueryBuilders.existsQuery(key);
         else throw new IllegalArgumentException("HasContainer not supported by unipop");
     }
 
-    private static FilterBuilder getTypeFilter(Object value) {
+    private static QueryBuilder getTypeFilter(Object value) {
         if (value instanceof List) {
             List labels = (List) value;
-            if (labels.size() == 1)
-                return FilterBuilders.typeFilter(labels.get(0).toString());
-            else {
-                FilterBuilder[] filters = new FilterBuilder[labels.size()];
-                for (int i = 0; i < labels.size(); i++)
-                    filters[i] = FilterBuilders.typeFilter(labels.get(i).toString());
-                return FilterBuilders.orFilter(filters);
-            }
-        } else return FilterBuilders.typeFilter(value.toString());
+            BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+            labels.forEach(label -> boolQueryBuilder.should(QueryBuilders.typeQuery(label.toString())));
+            return boolQueryBuilder;
+        }
+        else return QueryBuilders.typeQuery(value.toString());
     }
 
-    private static FilterBuilder getIdsFilter(Object value) {
-        IdsFilterBuilder idsFilterBuilder = FilterBuilders.idsFilter();
+    private static QueryBuilder getIdsFilter(Object value) {
+        IdsQueryBuilder idsQueryBuilder = QueryBuilders.idsQuery();
         if (value instanceof Iterable) {
             for (Object id : (Iterable) value)
-                idsFilterBuilder.addIds(id.toString());
-        } else idsFilterBuilder.addIds(value.toString());
-        return idsFilterBuilder;
+                idsQueryBuilder.addIds(id.toString());
+        } else idsQueryBuilder.addIds(value.toString());
+        return idsQueryBuilder;
     }
 
-    private static FilterBuilder getCompareFilter(String key, Object value, String predicateString) {
+    private static QueryBuilder getCompareFilter(String key, Object value, String predicateString) {
         switch (predicateString) {
             case ("eq"):
-                return FilterBuilders.termFilter(key, value);
+                return QueryBuilders.termQuery(key, value);
             case ("neq"):
-                return FilterBuilders.notFilter(FilterBuilders.termFilter(key, value));
+                return QueryBuilders.boolQuery().mustNot(QueryBuilders.termQuery(key, value));
             case ("gt"):
-                return FilterBuilders.rangeFilter(key).gt(value);
+                return QueryBuilders.rangeQuery(key).gt(value);
             case ("gte"):
-                return FilterBuilders.rangeFilter(key).gte(value);
+                return QueryBuilders.rangeQuery(key).gte(value);
             case ("lt"):
-                return FilterBuilders.rangeFilter(key).lt(value);
+                return QueryBuilders.rangeQuery(key).lt(value);
             case ("lte"):
-                return FilterBuilders.rangeFilter(key).lte(value);
+                return QueryBuilders.rangeQuery(key).lte(value);
             case ("inside"):
                 List items = (List) value;
                 Object firstItem = items.get(0);
                 Object secondItem = items.get(1);
-                return FilterBuilders.rangeFilter(key).from(firstItem).to(secondItem);
+                return QueryBuilders.rangeQuery(key).from(firstItem).to(secondItem);
             default:
                 throw new IllegalArgumentException("predicate not supported in has step: " + predicateString);
         }
     }
 
-    private static FilterBuilder getContainsFilter(String key, Object value, BiPredicate<?, ?> biPredicate) {
-        if (biPredicate == Contains.without) return FilterBuilders.missingFilter(key);
+    private static QueryBuilder getContainsFilter(String key, Object value, BiPredicate<?, ?> biPredicate) {
+        if (biPredicate == Contains.without) return QueryBuilders.boolQuery().mustNot(QueryBuilders.existsQuery(key));
         else if (biPredicate == Contains.within) {
-            if (value == null) return FilterBuilders.existsFilter(key);
-            else if (value instanceof Iterable)
-                return FilterBuilders.termsFilter(key, (Iterable) value);
+            if (value == null) return QueryBuilders.existsQuery(key);
+            else if (value instanceof Collection<?>)
+                return QueryBuilders.termsQuery(key, (Collection<?>) value);
             else if (value.getClass().isArray())
-                return FilterBuilders.termsFilter(key, (Object[]) value);
-            else return FilterBuilders.termsFilter(key, value);
+                return QueryBuilders.termsQuery(key, (Object[]) value);
+            else return QueryBuilders.termsQuery(key, value);
         }
         else throw new IllegalArgumentException("predicate not supported by unipop: " + biPredicate.toString());
     }
 
-    private static FilterBuilder getGeoFilter(String key, Object value, Geo biPredicate) {
+    private static QueryBuilder getGeoFilter(String key, Object value, Geo biPredicate) {
         try {
             String geoJson = value.toString();
             XContentParser parser = JsonXContent.jsonXContent.createParser(geoJson);
             parser.nextToken();
 
             ShapeBuilder shape = ShapeBuilder.parse(parser);
-            return new GeoShapeFilterBuilder(key, shape, biPredicate.getRelation());
+            return new GeoShapeQueryBuilder(key, shape, biPredicate.getRelation());
         } catch (Exception e) {
             return null;
         }

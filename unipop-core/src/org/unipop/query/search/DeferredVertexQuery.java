@@ -1,6 +1,6 @@
 package org.unipop.query.search;
 
-import org.unipop.common.schema.referred.DeferredVertex;
+import org.unipop.schema.reference.DeferredVertex;
 import org.unipop.query.StepDescriptor;
 import org.unipop.query.UniQuery;
 import org.unipop.query.controller.UniQueryController;

@@ -1,9 +1,9 @@
 package org.unipop.elastic.nested.schema;
 
 import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.unipop.common.schema.VertexSchema;
-import org.unipop.common.schema.base.BaseEdgeSchema;
-import org.unipop.common.property.PropertySchema;
+import org.unipop.schema.VertexSchema;
+import org.unipop.schema.base.BaseEdgeSchema;
+import org.unipop.schema.property.PropertySchema;
 import org.unipop.structure.UniGraph;
 
 import java.util.List;
@@ -31,7 +31,7 @@ public class NestedEdgeSchema extends BaseEdgeSchema implements NestedSchema<Edg
     }
 
     @Override
-    public String getType(Edge fields) {
+    public String getType() {
         return this.type;
     }
 }
