@@ -37,13 +37,13 @@ import org.unipop.structure.UniElement;
 import org.unipop.structure.UniGraph;
 import org.unipop.structure.UniVertex;
 
-import java.sql.Connection;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import static org.jooq.impl.DSL.*;
+import static org.jooq.impl.DSL.field;
+import static org.jooq.impl.DSL.table;
 
 /**
  * @author Gur Ronen
@@ -80,7 +80,7 @@ public class RowController implements SimpleController {
     public Edge addEdge(AddEdgeQuery uniQuery) {
         UniEdge edge = new UniEdge(uniQuery.getProperties(), uniQuery.getOutVertex(), uniQuery.getInVertex(), this.graph);
         try {
-            this.insert(edgeSchemas, edge, true);
+            this.insert(edgeSchemas, edge);
         } catch(IllegalArgumentException ex) {
             throw Graph.Exceptions.edgeWithIdAlreadyExists(edge.id());
         }
@@ -92,7 +92,7 @@ public class RowController implements SimpleController {
     public Vertex addVertex(AddVertexQuery uniQuery) {
         UniVertex vertex = new UniVertex(uniQuery.getProperties(), this.graph);
         try {
-            this.insert(vertexSchemas, vertex, true);
+            this.insert(vertexSchemas, vertex);
         } catch (IllegalArgumentException ex) {
             throw Graph.Exceptions.vertexWithIdAlreadyExists(vertex.id());
         }
@@ -103,7 +103,7 @@ public class RowController implements SimpleController {
     @Override
     public <E extends Element> void property(PropertyQuery<E> uniQuery) {
         Set<? extends RowSchema<E>> schemas = this.getSchemas(uniQuery.getElement().getClass());
-        this.insert(schemas, uniQuery.getElement(), false);
+        this.update(schemas, uniQuery.getElement());
     }
 
     @Override
@@ -212,7 +212,7 @@ public class RowController implements SimpleController {
         return PredicatesHolderFactory.or(schemasPredicates);
     }
 
-    private <E extends Element> void insert(Set<? extends RowSchema<E>> schemas, E element, boolean isNew) {
+    private <E extends Element> void insert(Set<? extends RowSchema<E>> schemas, E element) {
         for (RowSchema<E> schema : schemas) {
             RowSchema.Row row = schema.toRow(element);
 
@@ -221,16 +221,22 @@ public class RowController implements SimpleController {
                     .onDuplicateKeyIgnore().execute();
 
             if (changeSetCount == 0) {
-                if (isNew) {
-                    throw new IllegalArgumentException("duplicate key already exists");
-                }
-
-                Map<Field<?>, Object> fieldMap = Maps.newHashMap();
-                row.getFields().entrySet().stream().map(this::mapSet).forEach(en -> fieldMap.put(en.getKey(), en.getValue()));
-
-                this.getDslContext().update(table(schema.getTable(element)))
-                .set(fieldMap).execute();
+                throw new IllegalArgumentException("element with same key already exists:" + row.getId());
             }
+        }
+    }
+
+    private <E extends Element> void update(Set<? extends RowSchema<E>> schemas, E element) {
+        for (RowSchema<E> schema : schemas) {
+            RowSchema.Row row = schema.toRow(element);
+
+            Map<Field<?>, Object> fieldMap = Maps.newHashMap();
+            row.getFields().entrySet().stream().map(this::mapSet).forEach(en -> fieldMap.put(en.getKey(), en.getValue()));
+
+            fieldMap.remove(row.getIdField());
+            this.getDslContext().update(table(schema.getTable()))
+                    .set(fieldMap)
+                    .where(field(row.getIdField()).eq(row.getId())).execute();
         }
     }
 

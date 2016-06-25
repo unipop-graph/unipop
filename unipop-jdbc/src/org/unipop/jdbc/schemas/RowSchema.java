@@ -29,7 +29,7 @@ public interface RowSchema<E extends Element> extends ElementSchema<E> {
             return null;
         }
 
-        String table = this.getTable(element);
+        String table = this.getTable();
         Object id = this.getId(element);
 
         return new RowSchema.Row(table, id, fields);
@@ -40,11 +40,15 @@ public interface RowSchema<E extends Element> extends ElementSchema<E> {
         private final Object id;
         private final Map<String, Object> fields;
 
+        private final String idField;
+
 
         public Row(String table, Object id, Map<String, Object> fields) {
             this.table = table;
             this.id = id;
             this.fields = fields;
+
+            this.idField = this.fields.entrySet().stream().filter(en -> id.equals(en.getValue())).map(Map.Entry::getKey).findFirst().get();
         }
 
         public String getTable() {
@@ -57,6 +61,10 @@ public interface RowSchema<E extends Element> extends ElementSchema<E> {
 
         public Map<String, Object> getFields() {
             return fields;
+        }
+
+        public String getIdField() {
+            return this.idField;
         }
     }
 }

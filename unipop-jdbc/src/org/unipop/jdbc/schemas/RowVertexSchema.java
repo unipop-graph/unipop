@@ -8,7 +8,8 @@ import org.unipop.structure.UniGraph;
 import java.util.List;
 
 /**
- * Created by GurRo on 6/12/2016.
+ * @author GurRonen
+ * @since 6/12/2016.
  */
 public class RowVertexSchema extends BaseVertexSchema implements RowSchema<Vertex> {
     private final String table;
@@ -17,6 +18,7 @@ public class RowVertexSchema extends BaseVertexSchema implements RowSchema<Verte
         super(properties, graph);
 
         this.table = table;
+
     }
 
     @Override

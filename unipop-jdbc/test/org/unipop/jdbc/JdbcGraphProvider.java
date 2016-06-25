@@ -6,7 +6,6 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.unipop.common.test.UnipopGraphProvider;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -23,10 +22,10 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
     private final Connection jdbcConnection;
 
     public JdbcGraphProvider() throws SQLException, ClassNotFoundException {
+        new File("test.sqlite").delete();
+
         Class.forName("org.sqlite.JDBC");
         this.jdbcConnection = DriverManager.getConnection("jdbc:sqlite:test.sqlite");
-
-        new File("test.sqlite").delete();
 
         this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS PERSON(id int , name varchar(100), age int, knows int, edgeid int, weight DOUBLE , created int);");
         this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS animal(id int NOT NULL PRIMARY KEY, name varchar(100), age int);");
@@ -59,16 +58,19 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
                             "name varchar(100), " +
                             "age int, " +
                             "location VARCHAR(100)," +
-                            "status VARCHAR(100))");
+                            "status VARCHAR(100)," +
+                            "lang VARCHAR(100))");
 
             this.jdbcConnection.createStatement().execute(
                     "CREATE TABLE IF NOT EXISTS edges(" +
-                    "ID VARCHAR(100) NOT NULL PRIMARY KEY, " +
-                    "LABEL NOT NULL, " +
-                    "outId VARCHAR(100), " +
-                    "outLabel VARCHAR(100), " +
-                    "inId VARCHAR(100), " +
-                    "inLabel VARCHAR(100))");
+                            "ID VARCHAR(100) NOT NULL PRIMARY KEY, " +
+                            "LABEL NOT NULL, " +
+                            "outId VARCHAR(100), " +
+                            "outLabel VARCHAR(100), " +
+                            "inId VARCHAR(100), " +
+                            "inLabel VARCHAR(100)," +
+                            "year VARCHAR(100)," +
+                            "weight DOUBLE)");
         } catch (SQLException e) {
             e.printStackTrace();
         }

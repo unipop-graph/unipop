@@ -8,9 +8,11 @@
       "id": "@ID",
       "label": "@LABEL",
       "properties": {
+        "name": "@name",
         "age": "@age",
         "location": "@location",
-        "status": "@status"
+        "status": "@status",
+        "lang": "@lang"
       },
       "dynamicProperties": false
     }
@@ -20,7 +22,10 @@
       "table": "edges",
       "id": "@ID",
       "label": "@LABEL",
-      "properties": {},
+      "properties": {
+        "year": "@year",
+        "weight": "@weight"
+      },
       "dynamicProperties": false,
       "outVertex": {
         "type": "ref",
