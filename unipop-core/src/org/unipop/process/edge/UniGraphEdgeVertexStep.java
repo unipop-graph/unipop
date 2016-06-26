@@ -8,8 +8,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.Attachable;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
-import org.unipop.process.bulk.UniBulkStep;
-import org.unipop.process.properties.PropertyFetcher;
+import org.unipop.process.UniPredicatesStep;
 import org.unipop.query.StepDescriptor;
 import org.unipop.query.controller.ControllerManager;
 import org.unipop.query.search.DeferredVertexQuery;
@@ -19,19 +18,14 @@ import org.unipop.structure.UniGraph;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * Created by sbarzilay on 6/8/16.
- */
-public class UniGraphEdgeVertexStep extends UniBulkStep<Edge, Vertex> implements PropertyFetcher {
+public class UniGraphEdgeVertexStep extends UniPredicatesStep<Edge, Vertex> {
 
     private Direction direction;
-    private Set<String> propertyKeys;
     private List<DeferredVertexQuery.DeferredVertexController> deferredVertexControllers;
 
     public UniGraphEdgeVertexStep(Traversal.Admin traversal, Direction direction, UniGraph graph, ControllerManager controllerManager) {
         super(traversal, graph);
         this.direction = direction;
-        this.propertyKeys = null;
         this.deferredVertexControllers = controllerManager.getControllers(DeferredVertexQuery.DeferredVertexController.class);
     }
 
@@ -53,23 +47,6 @@ public class UniGraphEdgeVertexStep extends UniBulkStep<Edge, Vertex> implements
         }
 
         return vertices.iterator();
-    }
-
-    @Override
-    public void addPropertyKey(String key) {
-        if (getPropertyKeys() == null)
-            propertyKeys = new HashSet<>();
-        this.getPropertyKeys().add(key);
-    }
-
-    @Override
-    public Set<String> getPropertyKeys() {
-        return propertyKeys;
-    }
-
-    @Override
-    public void fetchAllKeys() {
-        propertyKeys = null;
     }
 
     @Override

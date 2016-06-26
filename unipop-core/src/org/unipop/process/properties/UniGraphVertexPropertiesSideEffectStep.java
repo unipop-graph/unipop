@@ -2,12 +2,9 @@ package org.unipop.process.properties;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.ExpandableStepIterator;
-import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.Attachable;
-import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
-import org.unipop.process.bulk.UniBulkStep;
+import org.unipop.process.UniBulkStep;
 import org.unipop.schema.reference.DeferredVertex;
 import org.unipop.query.StepDescriptor;
 import org.unipop.query.controller.ControllerManager;

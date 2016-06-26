@@ -4,19 +4,16 @@ import com.google.common.collect.Lists;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.FlatMapStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.B_O_S_SE_SL_Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.DefaultTraversalSideEffects;
-import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
-import org.unipop.process.bulk.UniBulkStep;
+import org.unipop.process.UniBulkStep;
 import org.unipop.process.traverser.UniGraphTraverserStep;
 import org.unipop.structure.UniGraph;
 
 import java.util.*;
 import java.util.function.BinaryOperator;
-import java.util.function.Supplier;
 
 /**
  * Created by sbarzilay on 3/15/16.

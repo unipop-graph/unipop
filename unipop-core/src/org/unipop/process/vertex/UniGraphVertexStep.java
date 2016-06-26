@@ -1,7 +1,8 @@
 package org.unipop.process.vertex;
 
 import org.apache.tinkerpop.gremlin.structure.util.Attachable;
-import org.unipop.process.bulk.UniBulkStep;
+import org.unipop.process.UniBulkStep;
+import org.unipop.process.UniPredicatesStep;
 import org.unipop.process.properties.PropertyFetcher;
 import org.unipop.query.StepDescriptor;
 import org.unipop.process.predicate.ReceivesPredicatesHolder;
@@ -26,7 +27,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class UniGraphVertexStep<E extends Element> extends UniBulkStep<Vertex, E> implements ReceivesPredicatesHolder<Vertex, E>, PropertyFetcher {
+public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Vertex, E> implements ReceivesPredicatesHolder<Vertex, E>{
     private final boolean returnsVertex;
     private final Direction direction;
     private Class<E> returnClass;
@@ -36,7 +37,6 @@ public class UniGraphVertexStep<E extends Element> extends UniBulkStep<Vertex, E
     private final StepDescriptor stepDescriptor;
     private List<SearchVertexQuery.SearchVertexController> controllers;
     private List<DeferredVertexQuery.DeferredVertexController> deferredVertexControllers;
-    private Set<String> propertyKeys;
 
     public UniGraphVertexStep(VertexStep<E> vertexStep, UniGraph graph, ControllerManager controllerManager) {
         super(vertexStep.getTraversal(), graph);
@@ -52,7 +52,6 @@ public class UniGraphVertexStep<E extends Element> extends UniBulkStep<Vertex, E
         this.controllers = controllerManager.getControllers(SearchVertexQuery.SearchVertexController.class);
         this.deferredVertexControllers = controllerManager.getControllers(DeferredVertexQuery.DeferredVertexController.class);
         this.stepDescriptor = new StepDescriptor(this);
-        this.propertyKeys = null;
         limit = -1;
     }
 
@@ -122,24 +121,6 @@ public class UniGraphVertexStep<E extends Element> extends UniBulkStep<Vertex, E
     @Override
     public Set<TraverserRequirement> getRequirements() {
         return Collections.singleton(TraverserRequirement.OBJECT);
-    }
-
-
-    @Override
-    public void addPropertyKey(String key) {
-        if (getPropertyKeys() == null)
-            propertyKeys = new HashSet<>();
-        this.getPropertyKeys().add(key);
-    }
-
-    @Override
-    public Set<String> getPropertyKeys() {
-        return propertyKeys;
-    }
-
-    @Override
-    public void fetchAllKeys() {
-        this.propertyKeys = null;
     }
 
     @Override

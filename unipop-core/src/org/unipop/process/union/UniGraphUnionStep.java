@@ -2,12 +2,10 @@ package org.unipop.process.union;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
-import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
-import org.unipop.process.bulk.UniBulkStep;
+import org.unipop.process.UniBulkStep;
 import org.unipop.process.traverser.UniGraphTraverserStep;
 import org.unipop.structure.UniGraph;
 

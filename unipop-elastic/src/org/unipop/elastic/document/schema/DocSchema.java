@@ -61,10 +61,10 @@ public interface DocSchema<E extends Element> extends ElementSchema<E> {
                 .size(query.getLimit() == -1 ? 10000 : query.getLimit());
 
         if(query.getPropertyKeys() == null) searchSourceBuilder.fetchSource(true);
-        else if(query.getPropertyKeys().size() == 0) searchSourceBuilder.fetchSource(false);
         else {
             Set<String> fields = toFields(query.getPropertyKeys());
-            searchSourceBuilder.fetchSource(fields.toArray(new String[fields.size()]), null);
+            if(fields.size() == 0) searchSourceBuilder.fetchSource(false);
+            else searchSourceBuilder.fetchSource(fields.toArray(new String[fields.size()]), null);
         }
 
         return new Search.Builder(searchSourceBuilder.toString().replace("\n", "")).build();

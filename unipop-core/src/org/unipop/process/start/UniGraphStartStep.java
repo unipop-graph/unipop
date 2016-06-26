@@ -33,7 +33,7 @@ public class UniGraphStartStep<S,E extends Element> extends GraphStep<S,E> imple
         this.controllers = controllerManager.getControllers(SearchQuery.SearchController.class);
         this.setIteratorSupplier(this::query);
         limit = -1;
-        this.propertyKeys = null;
+        this.propertyKeys = new HashSet<>();
     }
 
     private Iterator<E> query() {
@@ -57,20 +57,15 @@ public class UniGraphStartStep<S,E extends Element> extends GraphStep<S,E> imple
         this.limit = limit;
     }
 
+
     @Override
     public void addPropertyKey(String key) {
-        if (getPropertyKeys() == null)
-            propertyKeys = new HashSet<>();
-        this.getPropertyKeys().add(key);
+        if (propertyKeys != null)
+            propertyKeys.add(key);
     }
 
     @Override
     public void fetchAllKeys() {
         this.propertyKeys = null;
-    }
-
-    @Override
-    public Set<String> getPropertyKeys() {
-        return propertyKeys;
     }
 }

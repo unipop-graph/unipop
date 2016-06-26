@@ -1,4 +1,4 @@
-package org.unipop.process.bulk;
+package org.unipop.process;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.UnmodifiableIterator;
