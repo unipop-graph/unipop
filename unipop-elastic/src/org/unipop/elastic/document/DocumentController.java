@@ -54,7 +54,7 @@ public class DocumentController implements SimpleController {
     private Set<? extends DocEdgeSchema> edgeSchemas;
     private UniGraph graph;
 
-    private final Logger logger;
+    private static final Logger logger = LoggerFactory.getLogger(DocumentController.class);
 
     public DocumentController(ElasticClient client, SchemaSet schemas, UniGraph graph) {
         this.client = client;
@@ -62,7 +62,13 @@ public class DocumentController implements SimpleController {
         this.edgeSchemas = schemas.get(DocEdgeSchema.class, true);
         this.graph = graph;
 
-        this.logger = LoggerFactory.getLogger(DocumentController.class);
+        this.logger.debug(
+                "created DocumentController with properties: client: {}, vertexSchemas: {}, edgeSchemas, graph: {}",
+                this.client,
+                this.vertexSchemas,
+                this.edgeSchemas,
+                this.graph
+        );
 
         Iterator<String> indices = schemas.get(DocSchema.class, true).stream().map(DocSchema::getIndex).distinct().iterator();
         client.validateIndex(indices);
@@ -74,12 +80,7 @@ public class DocumentController implements SimpleController {
     public <E extends Element> Iterator<E> search(SearchQuery<E> uniQuery) {
         Set<? extends DocSchema<E>> schemas = getSchemas(uniQuery.getReturnType());
         BiFunction<SearchQuery, DocSchema<E>, PredicatesHolder> toPredicatesFunction = (SearchQuery q, DocSchema<E> schema) -> schema.toPredicates(q.getPredicates());
-        this.logger.debug("executing search with parameters -> SearchQuery: {}, schemas: {}, limit: {}, stepDescriptor: {}",
-                uniQuery,
-                schemas,
-                uniQuery.getLimit(),
-                uniQuery.getStepDescriptor()
-        );
+        this.logger.debug("executing search with parameters -> SearchQuery: {}, schemas: {}", uniQuery, schemas);
 
         Iterator<E> resultIterator = search(schemas, uniQuery, toPredicatesFunction, uniQuery.getLimit(), uniQuery.getStepDescriptor());
         this.logger.info("executed search with SearchQuery: {}, resultIterator: {}", uniQuery, resultIterator);
