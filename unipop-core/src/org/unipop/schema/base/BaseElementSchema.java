@@ -40,7 +40,7 @@ public abstract class BaseElementSchema<E extends Element> implements ElementSch
     @Override
     public Map<String, Object> toFields(E element) {
         Map<String, Object> properties = UniElement.fullProperties(element);
-        assert properties != null;
+        if(properties == null) return null;
 
         Map<String, Object> fields = new HashMap<>();
         for(PropertySchema schema : this.propertySchemas) {
@@ -52,27 +52,23 @@ public abstract class BaseElementSchema<E extends Element> implements ElementSch
         return fields;
     }
 
+    @Override
+    public Set<String> toFields(Set<String> propertyKeys) {
+        return propertySchemas.stream().flatMap(propertySchema ->
+                propertySchema.toFields(propertyKeys).stream()).collect(Collectors.toSet());
+    }
+
     protected Object mergeFields(Object obj1, Object obj2) {
         return obj1;
     }
 
     @Override
     public PredicatesHolder toPredicates(PredicatesHolder predicatesHolder) {
-        Set<PredicatesHolder> predicates = predicatesHolder.getPredicates().stream()
-                .map(this::convertPredicate).collect(Collectors.toSet());
-
-        Set<PredicatesHolder> children = predicatesHolder.getChildren().stream()
-                .map(this::toPredicates).collect(Collectors.toSet());
-
-        predicates.addAll(children);
+        Set<PredicatesHolder> predicates = propertySchemas.stream()
+                .map(schema -> schema.toPredicates(predicatesHolder))
+                .filter(holder -> holder != null)
+                .collect(Collectors.toSet());
 
         return PredicatesHolderFactory.create(predicatesHolder.getClause(), predicates);
-    }
-
-    private PredicatesHolder convertPredicate(HasContainer hasContainer) {
-        return propertySchemas.stream()
-                .map(schema -> schema.toPredicates(hasContainer))
-                .filter(predicatesHolder -> predicatesHolder != null)
-                .findFirst().orElse(PredicatesHolderFactory.abort());
     }
 }

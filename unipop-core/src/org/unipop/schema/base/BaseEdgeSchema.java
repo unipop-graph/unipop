@@ -12,6 +12,7 @@ import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.structure.UniEdge;
 import org.unipop.structure.UniGraph;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -49,6 +50,16 @@ public class BaseEdgeSchema extends BaseElementSchema<Edge> implements EdgeSchem
     }
 
     @Override
+    public Set<String> toFields(Set<String> propertyKeys) {
+        Set<String> fields = new HashSet<>(super.toFields(propertyKeys));
+        Set<String> outFields = outVertexSchema.toFields(propertyKeys);
+        fields.addAll(outFields);
+        Set<String> inFields = inVertexSchema.toFields(propertyKeys);
+        fields.addAll(inFields);
+        return fields;
+    }
+
+    @Override
     public PredicatesHolder toPredicates(PredicatesHolder predicates, List<Vertex> vertices, Direction direction) {
         PredicatesHolder edgePredicates = this.toPredicates(predicates);
         PredicatesHolder vertexPredicates = this.getVertexPredicates(vertices, direction);
@@ -61,16 +72,6 @@ public class BaseEdgeSchema extends BaseElementSchema<Edge> implements EdgeSchem
         if(direction.equals(Direction.OUT)) return outPredicates;
         if(direction.equals(Direction.IN)) return inPredicates;
         return PredicatesHolderFactory.or(inPredicates, outPredicates);
-    }
-
-    @Override
-    public VertexSchema getOutVertexSchema() {
-        return this.outVertexSchema;
-    }
-
-    @Override
-    public VertexSchema getInVertexSchema() {
-        return this.inVertexSchema;
     }
 
     @Override

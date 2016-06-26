@@ -43,8 +43,16 @@ public class DynamicPropertiesSchema implements PropertySchema {
     }
 
     @Override
-    public PredicatesHolder toPredicates(HasContainer has) {
-        if(!excludeProperties.contains(has.getKey())) return PredicatesHolderFactory.predicate(has);
-        return null;
+    public Set<String> toFields(Set<String> propertyKeys) {
+        return propertyKeys.stream().filter(key -> !excludeProperties.contains(key))
+                .collect(Collectors.toSet());
+    }
+
+    @Override
+    public PredicatesHolder toPredicates(PredicatesHolder predicatesHolder) {
+        Set<HasContainer> hasContainers = predicatesHolder.getPredicates().stream().filter(has ->
+                !excludeProperties.contains(has.getKey())).collect(Collectors.toSet());
+
+        return PredicatesHolderFactory.createFromPredicates(predicatesHolder.getClause(), hasContainers);
     }
 }

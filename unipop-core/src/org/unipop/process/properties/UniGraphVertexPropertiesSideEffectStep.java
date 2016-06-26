@@ -2,60 +2,45 @@ package org.unipop.process.properties;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ExpandableStepIterator;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.util.Attachable;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
+import org.unipop.process.bulk.UniBulkStep;
 import org.unipop.schema.reference.DeferredVertex;
 import org.unipop.query.StepDescriptor;
 import org.unipop.query.controller.ControllerManager;
 import org.unipop.query.search.DeferredVertexQuery;
+import org.unipop.structure.UniGraph;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class UniGraphVertexPropertiesSideEffectStep extends AbstractStep<Vertex, Vertex> {
+public class UniGraphVertexPropertiesSideEffectStep extends UniBulkStep<Vertex, Vertex> {
 
-    private final int bulk;
-    private ControllerManager controllerManager;
-    private Iterator<Traverser.Admin<Vertex>> results = EmptyIterator.instance();
+    private final List<DeferredVertexQuery.DeferredVertexController> controllers;
     private StepDescriptor stepDescriptor;
 
-    public UniGraphVertexPropertiesSideEffectStep(Traversal.Admin traversal, ControllerManager controllerManager) {
-        super(traversal);
+    public UniGraphVertexPropertiesSideEffectStep(Traversal.Admin traversal, ControllerManager controllerManager, UniGraph graph) {
+        super(traversal, graph);
         this.stepDescriptor = new StepDescriptor(this);
-        this.controllerManager = controllerManager;
-        this.bulk = getTraversal().getGraph().get().configuration().getInt("bulk", 100);
+        this.controllers = controllerManager.getControllers(DeferredVertexQuery.DeferredVertexController.class);
     }
 
     @Override
-    protected Traverser.Admin<Vertex> processNextStart() throws NoSuchElementException {
-        while (!results.hasNext() && starts.hasNext())
-            results = query(starts);
-        if(results.hasNext())
-            return results.next();
-
-        throw FastNoSuchElementException.instance();
-    }
-
-    private Iterator<Traverser.Admin<Vertex>> query(ExpandableStepIterator<Vertex> traversers) {
-        List<Traverser.Admin<Vertex>> copyTraversers = new ArrayList<>();
-        while (traversers.hasNext() && copyTraversers.size() <= bulk)
-            copyTraversers.add(traversers.next());
-
-        List<DeferredVertex> deferredVertices = copyTraversers.stream()
-                .filter(traverser -> traverser.get() instanceof DeferredVertex)
-                .<DeferredVertex>map(traverser -> (DeferredVertex)traverser.get())
+    protected Iterator<Traverser.Admin<Vertex>> process(List<Traverser.Admin<Vertex>> traversers) {
+        List<DeferredVertex> deferredVertices = traversers.stream().map(Attachable::get)
+                .filter(vertex -> vertex instanceof DeferredVertex)
+                .map(vertex -> ((DeferredVertex) vertex))
                 .filter(DeferredVertex::isDeferred)
                 .collect(Collectors.toList());
 
         if (deferredVertices.size() > 0) {
-            DeferredVertexQuery query = new DeferredVertexQuery(deferredVertices, this.stepDescriptor);
-            controllerManager.getControllers(DeferredVertexQuery.DefferedVertexController.class)
-                    .forEach(controller -> controller.fetchProperties(query));
+            DeferredVertexQuery query = new DeferredVertexQuery(deferredVertices, null, this.stepDescriptor);
+            controllers.forEach(controller -> controller.fetchProperties(query));
         }
 
-        return copyTraversers.iterator();
+        return traversers.iterator();
     }
 }

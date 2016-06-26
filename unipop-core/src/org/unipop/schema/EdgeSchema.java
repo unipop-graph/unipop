@@ -6,10 +6,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.unipop.query.predicates.PredicatesHolder;
 
 import java.util.List;
+import java.util.Set;
 
 public interface EdgeSchema extends ElementSchema<Edge> {
-    VertexSchema getOutVertexSchema();
-    VertexSchema getInVertexSchema();
-
     PredicatesHolder toPredicates(PredicatesHolder predicates, List<Vertex> vertices, Direction direction);
 }

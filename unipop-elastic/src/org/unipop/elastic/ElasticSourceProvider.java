@@ -1,12 +1,12 @@
 package org.unipop.elastic;
 
 import com.google.common.collect.Sets;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.unipop.common.util.ConversionUtils;
 import org.unipop.common.util.SchemaSet;
 import org.unipop.elastic.common.ElasticClient;
 import org.unipop.elastic.document.DocumentController;
-import org.unipop.elastic.document.schema.DocVertexSchema;
 import org.unipop.elastic.document.schema.builder.DocEdgeBuilder;
 import org.unipop.elastic.document.schema.builder.DocVertexBuilder;
 import org.unipop.query.controller.SourceProvider;
@@ -31,21 +31,25 @@ public class ElasticSourceProvider implements SourceProvider {
         this.client = new ElasticClient(addresses);
 
         SchemaSet schemas = new SchemaSet();
-        getList(configuration, "vertices").forEach(vertexJson -> schemas.add(createVertexSchema(vertexJson)));
-        getList(configuration, "edges").forEach(edgeJson -> schemas.add(createEdgeSchema(edgeJson).build()));
+        for(JSONObject json : getList(configuration, "vertices")) {
+            schemas.add(createVertexSchema(json).build());
+        }
+        for(JSONObject json : getList(configuration, "edges")) {
+            schemas.add(createEdgeSchema(json).build());
+        }
 
         return createControllers(schemas);
     }
 
-    public DocVertexSchema createVertexSchema(JSONObject vertexJson) {
-        return new DocVertexBuilder(vertexJson, graph).build();
+    protected DocVertexBuilder createVertexSchema(JSONObject vertexJson) throws JSONException {
+        return new DocVertexBuilder(vertexJson, graph);
     }
 
-    public DocEdgeBuilder createEdgeSchema(JSONObject edgeJson) {
+    protected DocEdgeBuilder createEdgeSchema(JSONObject edgeJson) throws JSONException {
         return new DocEdgeBuilder(edgeJson, graph);
     }
 
-    public Set<UniQueryController> createControllers(SchemaSet schemas) {
+    protected Set<UniQueryController> createControllers(SchemaSet schemas) {
         DocumentController documentController = new DocumentController(client, schemas, graph);
         return Sets.newHashSet(documentController);
     }

@@ -20,30 +20,31 @@ public class StaticPropertySchema implements PropertySchema {
 
     @Override
     public Map<String, Object> toProperties(Map<String, Object> source) {
-        Object value = source.get(this.key);
-        if(value != null && !this.value.equals(value)) return null;
         return Collections.singletonMap(key, this.value);
     }
 
     @Override
     public Map<String, Object> toFields(Map<String, Object> prop) {
-        Object value = prop.get(this.key);
-        if(value != null && !this.value.equals(value)) return null;
-        return Collections.emptyMap();
-    }
-
-    @Override
-    public PredicatesHolder toPredicates(HasContainer has) {
-        if(has.getKey().equals(this.key)) {
-            if(this.test(has.getPredicate())) return PredicatesHolderFactory.empty();
-            else return PredicatesHolderFactory.abort();
-        }
+        Object o = prop.get(this.key);
+        if(o == null || o.equals(this.value)) return Collections.emptyMap();
         return null;
     }
 
     @Override
+    public Set<String> toFields(Set<String> propertyKeys) {
+        return Collections.emptySet();
+    }
+
+    @Override
+    public PredicatesHolder toPredicates(PredicatesHolder predicatesHolder) {
+        HasContainer has = predicatesHolder.findKey(this.key);
+        if(has != null && !test(has.getPredicate())) return PredicatesHolderFactory.abort();
+        return PredicatesHolderFactory.empty();
+    }
+
+    @Override
     public Set<String> getFields() {
-        return Collections.singleton(this.value);
+        return Collections.emptySet();
     }
 
     @Override

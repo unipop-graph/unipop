@@ -72,4 +72,9 @@ public class PredicatesHolderFactory {
         if(clause.equals(PredicatesHolder.Clause.Or)) return or(predicatesHolders);
         return abort();
     }
+
+
+    public static PredicatesHolder createFromPredicates(PredicatesHolder.Clause clause, Set<HasContainer> predicatesHolders) {
+        return new PredicatesHolder(clause, predicatesHolders, null);
+    }
 }

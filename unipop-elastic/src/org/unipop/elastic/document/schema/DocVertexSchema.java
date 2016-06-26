@@ -1,6 +1,9 @@
 package org.unipop.elastic.document.schema;
 
+import io.searchbox.core.Search;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.unipop.query.predicates.PredicatesHolder;
+import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.schema.base.BaseVertexSchema;
 import org.unipop.schema.property.PropertySchema;
 import org.unipop.structure.UniGraph;
@@ -25,5 +28,10 @@ public class DocVertexSchema extends BaseVertexSchema implements DocSchema<Verte
     @Override
     public String getType() {
          return this.type;
+    }
+
+    public Search toPredicates(DeferredVertexQuery query){
+        PredicatesHolder predicatesHolder = this.toPredicates(query.getVertices());
+        return createSearchSource(query, predicatesHolder);
     }
 }

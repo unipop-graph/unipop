@@ -1,10 +1,20 @@
 package org.unipop.elastic.document.schema;
 
+import io.searchbox.core.Search;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.elasticsearch.index.query.*;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.unipop.elastic.common.FilterHelper;
+import org.unipop.query.predicates.PredicatesHolder;
+import org.unipop.query.predicates.PredicatesHolderFactory;
+import org.unipop.query.search.SearchQuery;
 import org.unipop.schema.ElementSchema;
 
 import java.util.Map;
+import java.util.Set;
 
 public interface DocSchema<E extends Element> extends ElementSchema<E> {
 
@@ -14,12 +24,10 @@ public interface DocSchema<E extends Element> extends ElementSchema<E> {
     default Document toDocument(E element) {
         Map<String, Object> fields = this.toFields(element);
         if(fields == null) return null;
-        String type = ObjectUtils.firstNonNull(fields.remove("_type"), fields.remove("type"), this.getType(), element.label()).toString();
+        String type = ObjectUtils.firstNonNull(fields.remove("_type"), this.getType()).toString();
         if (!checkType(type)) return null;
         String id = ObjectUtils.firstNonNull(fields.remove("_id"), fields.remove("id"), element.id()).toString();
-        if(id == null) return null;
         String index = getIndex();
-        if(index == null) return null;
         return new Document(index, type, id, fields);
     }
 
@@ -32,16 +40,42 @@ public interface DocSchema<E extends Element> extends ElementSchema<E> {
         return this.fromFields(fields);
     }
 
+    default Search toPredicates(SearchQuery<E> query){
+        PredicatesHolder predicatesHolder = toPredicates(query.getPredicates());
+        return createSearchSource(query, predicatesHolder);
+    }
+
+    default Search createSearchSource(SearchQuery<E> query, PredicatesHolder predicatesHolder) {
+        if(predicatesHolder.isAborted()) return null;
+
+        if(predicatesHolder.findKey("_type") == null && getType() != null) {
+            PredicatesHolder type = PredicatesHolderFactory.predicate(new HasContainer("_type", P.eq(getType())));
+            predicatesHolder = PredicatesHolderFactory.and(predicatesHolder,type);
+        }
+
+        QueryBuilder queryBuilder = FilterHelper.createFilterBuilder(predicatesHolder);
+        queryBuilder = QueryBuilders.constantScoreQuery(queryBuilder);
+        queryBuilder = QueryBuilders.indicesQuery(queryBuilder, getIndex()).noMatchQuery("none");
+
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(queryBuilder)
+                .size(query.getLimit() == -1 ? 10000 : query.getLimit());
+
+        if(query.getPropertyKeys() == null) searchSourceBuilder.fetchSource(true);
+        else if(query.getPropertyKeys().size() == 0) searchSourceBuilder.fetchSource(false);
+        else {
+            Set<String> fields = toFields(query.getPropertyKeys());
+            searchSourceBuilder.fetchSource(fields.toArray(new String[fields.size()]), null);
+        }
+
+        return new Search.Builder(searchSourceBuilder.toString().replace("\n", "")).build();
+    }
+
     default boolean checkIndex(String index) {
-        if(index == null) return false;
-        if(getIndex() != null && !getIndex().equals("*") && !getIndex().equals(index)) return false;
-        return true;
+        return getIndex().equals(index);
     }
 
     default boolean checkType(String type) {
-        if(type == null) return false;
-        if(getType() != null && !getType().equals("*") && !getType().equals(type)) return false;
-        return true;
+        return type != null && (getType() == null || getType().equals(type));
     }
 
     class Document {

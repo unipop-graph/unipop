@@ -15,5 +15,5 @@ public interface SimpleController extends
         AddEdgeQuery.AddEdgeController,
         PropertyQuery.PropertyController,
         RemoveQuery.RemoveController,
-        DeferredVertexQuery.DefferedVertexController {
+        DeferredVertexQuery.DeferredVertexController {
 }

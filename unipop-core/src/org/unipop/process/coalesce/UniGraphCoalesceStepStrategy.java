@@ -12,7 +12,7 @@ import org.unipop.structure.UniGraph;
 /**
  * Created by sbarzilay on 3/15/16.
  */
-public class UniGraphCoalesceStepStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy{
+public class UniGraphCoalesceStepStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy {
     @Override
     public void apply(Traversal.Admin<?, ?> traversal) {
         Graph graph = traversal.getGraph().get();
@@ -23,7 +23,7 @@ public class UniGraphCoalesceStepStrategy extends AbstractTraversalStrategy<Trav
         UniGraph uniGraph = (UniGraph) graph;
 
         TraversalHelper.getStepsOfClass(CoalesceStep.class, traversal).forEach(coalesceStep -> {
-            UniGraphCoalesceStep uniGraphCoalesceStep = new UniGraphCoalesceStep(coalesceStep.getTraversal(), coalesceStep.getLocalChildren());
+            UniGraphCoalesceStep uniGraphCoalesceStep = new UniGraphCoalesceStep(coalesceStep.getTraversal(), uniGraph, coalesceStep.getLocalChildren());
             TraversalHelper.replaceStep(coalesceStep, uniGraphCoalesceStep, traversal);
         });
     }

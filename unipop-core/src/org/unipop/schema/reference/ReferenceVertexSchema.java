@@ -17,6 +17,7 @@ public class ReferenceVertexSchema extends BaseVertexSchema {
     @Override
     public Vertex fromFields(Map<String, Object> fields) {
         Map<String, Object> properties = getProperties(fields);
+        if(properties == null) return null;
         return new DeferredVertex(properties, graph);
     }
 }

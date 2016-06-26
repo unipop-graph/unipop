@@ -3,6 +3,7 @@ package org.unipop.query.predicates;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 public class PredicatesHolder {
@@ -26,19 +27,40 @@ public class PredicatesHolder {
     public PredicatesHolder.Clause getClause() {
         return this.clause;
     }
+
     public Set<HasContainer> getPredicates() {
         return predicates;
     }
+
     public Set<PredicatesHolder> getChildren() {
         return children;
     }
 
+    public boolean hasPredicates() {
+        return getPredicates().size() > 0;
+    }
 
+    public boolean hasChildren() {
+        return getChildren().size() > 0;
+    }
 
-    public boolean hasPredicates() { return getPredicates().size() > 0; }
-    public boolean hasChildren() { return getChildren().size() > 0; }
-    public boolean isEmpty() { return !hasPredicates() && !hasChildren(); }
-    public boolean notEmpty() { return !isEmpty(); }
-    public boolean isAborted() { return this.clause.equals(Clause.Abort); }
-    public boolean notAborted() { return !isAborted(); }
+    public boolean isEmpty() {
+        return !hasPredicates() && !hasChildren();
+    }
+
+    public boolean notEmpty() {
+        return !isEmpty();
+    }
+
+    public boolean isAborted() {
+        return this.clause.equals(Clause.Abort);
+    }
+
+    public boolean notAborted() {
+        return !isAborted();
+    }
+
+    public HasContainer findKey(String key) {
+        return predicates.stream().filter(has -> has.getKey().equals(key)).findFirst().orElse(null);
+    }
 }

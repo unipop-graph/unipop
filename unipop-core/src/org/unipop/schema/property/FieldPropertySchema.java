@@ -25,6 +25,7 @@ public class FieldPropertySchema implements PropertySchema {
 
     public FieldPropertySchema(String key, JSONObject config, boolean nullable) {
         this.key = key;
+        this.nullable = nullable;
         this.field = config.getString("field");
         JSONArray include = config.optJSONArray("include");
         if(include != null) this.include = ConversionUtils.toSet(include);
@@ -49,16 +50,31 @@ public class FieldPropertySchema implements PropertySchema {
     }
 
     @Override
-    public PredicatesHolder toPredicates(HasContainer has) {
-        if(has.getKey().equals(this.key)) {
-            if (test(has.getPredicate())) {
-                HasContainer hasContainer = new HasContainer(this.field, has.getPredicate());
-                return PredicatesHolderFactory.predicate(hasContainer);
-            }
-            else return PredicatesHolderFactory.abort();
-        }
+    public Set<String> toFields(Set<String> keys) {
+        if(keys.contains(this.key) || !nullable) return Collections.singleton(field);
+        return Collections.emptySet();
+    }
 
-        return null;
+    @Override
+    public PredicatesHolder toPredicates(PredicatesHolder predicatesHolder) {
+        HasContainer has = predicatesHolder.findKey(this.key);
+
+        P predicate;
+        if (has != null && !test(has.getPredicate())) {
+            return PredicatesHolderFactory.abort();
+        }
+        else if(has != null) {
+            predicate = has.getPredicate();
+        }
+        else if(include != null) {
+            predicate = P.within(include);
+        }
+        else if(exclude != null) {
+            predicate = P.without(exclude);
+        } else return PredicatesHolderFactory.empty();
+
+        HasContainer hasContainer = new HasContainer(this.field, predicate);
+        return PredicatesHolderFactory.predicate(hasContainer);
     }
 
     @Override
@@ -80,7 +96,7 @@ public class FieldPropertySchema implements PropertySchema {
         }
         if(this.exclude != null) {
             for (Object exclude : this.exclude) {
-                if (predicate.test(exclude)) return false;
+                if (predicate.test(exclude)) return false; //TODO: handle mixed results
             }
             return true;
         }
