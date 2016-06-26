@@ -27,4 +27,12 @@ public class DocEdgeSchema extends BaseEdgeSchema implements DocSchema<Edge> {
     public String getType() {
         return this.type;
     }
+
+    @Override
+    public String toString() {
+        return "DocEdgeSchema{" +
+                "index='" + index + '\'' +
+                ", type='" + type + '\'' +
+                '}';
+    }
 }

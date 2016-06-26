@@ -26,4 +26,12 @@ public class DocVertexSchema extends BaseVertexSchema implements DocSchema<Verte
     public String getType() {
          return this.type;
     }
+
+    @Override
+    public String toString() {
+        return "DocVertexSchema{" +
+                "index='" + index + '\'' +
+                ", type='" + type + '\'' +
+                '}';
+    }
 }
