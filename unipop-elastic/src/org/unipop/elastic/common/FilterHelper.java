@@ -17,8 +17,12 @@ import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
+/**
+ * TODO: Cleanup and create implementation of PredicatesTranslator with logs.
+ */
 public class FilterHelper {
     public static QueryBuilder createFilterBuilder(PredicatesHolder predicatesHolder) {
+
         Set<QueryBuilder> predicateFilters = predicatesHolder.getPredicates().stream()
                 .map(FilterHelper::createFilter).collect(Collectors.toSet());
         Set<QueryBuilder> childFilters = predicatesHolder.getChildren().stream()

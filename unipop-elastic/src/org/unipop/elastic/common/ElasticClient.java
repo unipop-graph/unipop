@@ -13,6 +13,8 @@ import io.searchbox.indices.Refresh;
 import io.searchbox.indices.mapping.PutMapping;
 import io.searchbox.params.Parameters;
 import org.elasticsearch.common.settings.Settings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -23,9 +25,11 @@ import java.util.Map;
 public class ElasticClient {
 
     private Map<DocumentIdentifier, BulkableAction> bulk;
-    String STRING_NOT_ANALYZED = "{\"dynamic_templates\" : [{\"not_analyzed\" : {\"match\" : \"*\",\"match_mapping_type\" : \"string\", \"mapping\" : {\"type\" : \"string\",\"index\" : \"not_analyzed\"}}}]}";
-
     private final JestClient client;
+
+
+    private final String STRING_NOT_ANALYZED = "{\"dynamic_templates\" : [{\"not_analyzed\" : {\"match\" : \"*\",\"match_mapping_type\" : \"string\", \"mapping\" : {\"type\" : \"string\",\"index\" : \"not_analyzed\"}}}]}";
+    private static final Logger logger = LoggerFactory.getLogger(ElasticClient.class);
 
     public ElasticClient(List<String> addresses) {
         JestClientFactory factory = new JestClientFactory();
@@ -34,22 +38,29 @@ public class ElasticClient {
     }
 
     public void validateIndex(Iterator<String> indices) {
+        logger.debug("validating indices, indices: {}", indices);
         indices.forEachRemaining(indexName -> {
             try {
                 IndicesExists indicesExistsRequest = new IndicesExists.Builder(indexName).build();
+                logger.debug("validating index exists, indexName: {}, indicesExistsRequest: {}", indexName, indicesExistsRequest);
                 JestResult existsResult = client.execute(indicesExistsRequest);
+                logger.debug("executed existence validation, result: {}", existsResult);
                 if (!existsResult.isSucceeded()) {
                     Settings settings = Settings.settingsBuilder().put("index.analysis.analyzer.default.type", "keyword").build();;
+                    logger.debug("index does not exist, creating index with settings: {}", settings);
                     CreateIndex createIndexRequest = new CreateIndex.Builder(indexName).settings(settings).build();
+                    logger.debug("formed createIndexRequest, executing. request: {}", createIndexRequest);
                     execute(createIndexRequest);
                     //TODO: Make this work. Using the above "keyword" configuration in the meantime.
                     PutMapping putMapping = new PutMapping.Builder(indexName, "*", STRING_NOT_ANALYZED).build();
+                    logger.debug("executing putMapping action. request: {}", putMapping);
                     execute(putMapping);
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.error("connection failed to elasticsearch", e);
             }
         });
+        logger.info("completed validating indices. refreshing.");
         refresh();
     }
 
@@ -65,10 +76,12 @@ public class ElasticClient {
     }
 
     public void refresh() {
-        if(bulk != null) {
+        if(this.bulk != null) {
+            logger.debug("flushing bulk and executing it, bulk: {}", this.bulk);
             Bulk bulkAction = new Bulk.Builder().addAction(this.bulk.values()).refresh(true).build();
+            logger.debug("formed bulkAction, executing it. bulkAction: {}", bulkAction);
             execute(bulkAction);
-            bulk = null;
+            this.bulk = null;
         }
 //        Refresh refresh = new Refresh.Builder().refresh(true).allowNoIndices(true).build();
 //        execute(refresh);

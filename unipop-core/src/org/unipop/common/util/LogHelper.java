@@ -9,6 +9,6 @@ import java.util.stream.Collectors;
  */
 public final class LogHelper {
     public static String formatCollection(Collection<?> coll) {
-        return coll.stream().map(Object::toString).collect(Collectors.joining(", ", "{", "}"));
+        return coll.stream().map(Object::toString).collect(Collectors.joining(", ", "{ ", " }"));
     }
 }
