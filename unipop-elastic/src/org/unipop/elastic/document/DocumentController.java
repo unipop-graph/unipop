@@ -15,6 +15,8 @@ import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.unipop.common.util.SchemaSet;
 import org.unipop.elastic.common.ElasticClient;
 import org.unipop.elastic.common.FilterHelper;
@@ -52,11 +54,15 @@ public class DocumentController implements SimpleController {
     private Set<? extends DocEdgeSchema> edgeSchemas;
     private UniGraph graph;
 
+    private final Logger logger;
+
     public DocumentController(ElasticClient client, SchemaSet schemas, UniGraph graph) {
         this.client = client;
         this.vertexSchemas = schemas.get(DocVertexSchema.class, true);
         this.edgeSchemas = schemas.get(DocEdgeSchema.class, true);
         this.graph = graph;
+
+        this.logger = LoggerFactory.getLogger(DocumentController.class);
 
         Iterator<String> indices = schemas.get(DocSchema.class, true).stream().map(DocSchema::getIndex).distinct().iterator();
         client.validateIndex(indices);
@@ -65,66 +71,109 @@ public class DocumentController implements SimpleController {
 
     //region QueryController
     @Override
-    public <E extends Element>  Iterator<E> search(SearchQuery<E> uniQuery) {
+    public <E extends Element> Iterator<E> search(SearchQuery<E> uniQuery) {
         Set<? extends DocSchema<E>> schemas = getSchemas(uniQuery.getReturnType());
         BiFunction<SearchQuery, DocSchema<E>, PredicatesHolder> toPredicatesFunction = (SearchQuery q, DocSchema<E> schema) -> schema.toPredicates(q.getPredicates());
-        return search(schemas, uniQuery, toPredicatesFunction, uniQuery.getLimit(), uniQuery.getStepDescriptor());
+        this.logger.debug("executing search with parameters -> SearchQuery: {}, schemas: {}, limit: {}, stepDescriptor: {}",
+                uniQuery,
+                schemas,
+                uniQuery.getLimit(),
+                uniQuery.getStepDescriptor()
+        );
+
+        Iterator<E> resultIterator = search(schemas, uniQuery, toPredicatesFunction, uniQuery.getLimit(), uniQuery.getStepDescriptor());
+        this.logger.info("executed search with SearchQuery: {}, resultIterator: {}", uniQuery, resultIterator);
+        return resultIterator;
     }
 
     @Override
     public Iterator<Edge> search(SearchVertexQuery uniQuery) {
         BiFunction<SearchVertexQuery, DocEdgeSchema, PredicatesHolder> toPredicatesFunction = (SearchVertexQuery q, DocEdgeSchema schema) ->
                 schema.toPredicates(uniQuery.getPredicates(), uniQuery.gertVertices(), uniQuery.getDirection());
-        return search(edgeSchemas, uniQuery, toPredicatesFunction, uniQuery.getLimit(), uniQuery.getStepDescriptor());
+        this.logger.debug("executing search with SearchVertexQuery: {}", uniQuery);
+        Iterator<Edge> edgeIterator = search(edgeSchemas, uniQuery, toPredicatesFunction, uniQuery.getLimit(), uniQuery.getStepDescriptor());
+        this.logger.info("executed search with SearchVertexQuery: {}, resultEdgeIterator: {}", uniQuery, edgeIterator);
+        return edgeIterator;
     }
 
     @Override
     public void fetchProperties(DeferredVertexQuery uniQuery) {
         BiFunction<DeferredVertexQuery, DocVertexSchema, PredicatesHolder> toPredicatesFunction = (DeferredVertexQuery q, DocVertexSchema schema) ->
                 schema.toPredicates(uniQuery.getVertices());
-        Iterator<Vertex> search = search(vertexSchemas, uniQuery, toPredicatesFunction, -1, uniQuery.getStepDescriptor());
-
+        int limit = -1;
+        this.logger.debug("executing fetch properties with DeferredVertexQuery: {}, VertexSchema: {}, limit: {}",
+                uniQuery,
+                vertexSchemas,
+                limit
+        );
+        Iterator<Vertex> search = search(vertexSchemas, uniQuery, toPredicatesFunction, limit, uniQuery.getStepDescriptor());
+        this.logger.debug("executed search to fetch properties, result: {}", search);
         Map<Object, DeferredVertex> vertexMap = uniQuery.getVertices().stream().collect(Collectors.toMap(UniElement::id, Function.identity(), (a, b) -> a));
+        this.logger.debug("created vertex map of deferred vertices, map: {}", vertexMap);
         search.forEachRemaining(newVertex -> {
             DeferredVertex deferredVertex = vertexMap.get(newVertex.id());
-            if(deferredVertex != null) deferredVertex.loadProperties(newVertex);
+            this.logger.debug("loading deferred vertex if not null with properties, deferredVertex: {}, newVertex: {}",
+                    deferredVertex,
+                    newVertex
+            );
+            if (deferredVertex != null) {
+                deferredVertex.loadProperties(newVertex);
+                this.logger.debug("loaded deferred vertex with properties, filled deferred vertex: {}", deferredVertex);
+            }
         });
+
+        this.logger.info("fetched properties and loaded vertices, filled vertices map: {}", vertexMap);
     }
 
     @Override
     public Edge addEdge(AddEdgeQuery uniQuery) {
+        this.logger.debug("executing edge addition, AddEdgeQuery: {}", uniQuery);
         UniEdge edge = new UniEdge(uniQuery.getProperties(), uniQuery.getOutVertex(), uniQuery.getInVertex(), graph);
+        this.logger.debug("indexing edge with parameters: edgeSchemas: {}, UniEdge: {}", edgeSchemas, edge);
         try {
             index(this.edgeSchemas, edge);
-        }
-        catch(DocumentAlreadyExistsException ex) {
+        } catch (DocumentAlreadyExistsException ex) {
+            this.logger.warn("failed to index edge, elastic document already exists throwing edgeWithIdAlreadyExists", ex);
             throw Graph.Exceptions.edgeWithIdAlreadyExists(edge.id());
         }
+        this.logger.info("executed addEdge successfully, edge added to graph, edge: {}", edge);
         return edge;
     }
 
     @Override
     public Vertex addVertex(AddVertexQuery uniQuery) {
+        this.logger.debug("executing vertex addition, AddVertexQuery: {}", uniQuery);
         UniVertex vertex = new UniVertex(uniQuery.getProperties(), graph);
+        this.logger.debug("indexing vertex with parameters: vertexSchemas: {}, UniVertex: {}", this.vertexSchemas, vertex);
         try {
             index(this.vertexSchemas, vertex);
-        }
-        catch(DocumentAlreadyExistsException ex){
+        } catch (DocumentAlreadyExistsException ex) {
+            this.logger.warn("failed to index vertex, elastic document already exists throwing vertexWithIdAlreadyExists", ex);
             throw Graph.Exceptions.vertexWithIdAlreadyExists(vertex.id());
         }
+        this.logger.info("executed addVertex successfully, vertex added to graph, vertex: {}", vertex);
         return vertex;
     }
 
     @Override
     public <E extends Element> void property(PropertyQuery<E> uniQuery) {
         Set<? extends DocSchema<E>> schemas = getSchemas(uniQuery.getElement().getClass());
-        index(schemas, uniQuery.getElement());
+        this.logger.debug("executing PropertyQuery with parameters: schemas: {}, PropertyQuery: {}", schemas, uniQuery);
+
+        try {
+            index(schemas, uniQuery.getElement());
+        } catch (DocumentAlreadyExistsException ex) {
+            this.logger.warn("failed to update document by PropertyQuery", ex);
+        }
+        this.logger.info("successfully managed to update element with PropertyQuery, element: {}", uniQuery.getElement());
     }
 
     @Override
     public <E extends Element> void remove(RemoveQuery<E> uniQuery) {
+        this.logger.debug("executing RemoveQuery, query: {}", uniQuery);
         uniQuery.getElements().forEach(element -> {
             Set<? extends DocSchema<Element>> schemas = getSchemas(element.getClass());
+            this.logger.debug("deleting element by schemas, schemas: {}, element: {}", schemas, element);
             delete(schemas, element);
         });
     }
@@ -132,7 +181,7 @@ public class DocumentController implements SimpleController {
 
     //region Helpers
     private <E extends Element> Set<? extends DocSchema<E>> getSchemas(Class elementClass) {
-        if(Vertex.class.isAssignableFrom(elementClass))
+        if (Vertex.class.isAssignableFrom(elementClass))
             return (Set<? extends DocSchema<E>>) vertexSchemas;
         else return (Set<? extends DocSchema<E>>) edgeSchemas;
     }
@@ -142,11 +191,11 @@ public class DocumentController implements SimpleController {
 
     private <E extends Element, S extends DocSchema<E>, Q extends UniQuery> Iterator<E> search(Set<? extends S> allSchemas, Q uniQuery, BiFunction<Q, S, PredicatesHolder> toPredicatesFunction, int limit, StepDescriptor stepDescriptor) {
         Map<S, PredicatesHolder> predicatesMap = new HashedMap();
-        for(S schema : allSchemas){
+        for (S schema : allSchemas) {
             PredicatesHolder schemaPredicates = toPredicatesFunction.apply(uniQuery, schema);
-            if(!schemaPredicates.isAborted()) predicatesMap.put(schema, schemaPredicates);
+            if (!schemaPredicates.isAborted()) predicatesMap.put(schema, schemaPredicates);
         }
-        if(predicatesMap.size() == 0) return EmptyIterator.instance();
+        if (predicatesMap.size() == 0) return EmptyIterator.instance();
         PredicatesHolder predicates = PredicatesHolderFactory.or(predicatesMap.values());
         Set<S> schemas = predicatesMap.keySet();
 
@@ -158,11 +207,12 @@ public class DocumentController implements SimpleController {
         schemas.forEach(schema -> search.addIndex(schema.getIndex()));
 
         SearchResult result = client.execute(search.build());
-        if(!result.isSucceeded()) return EmptyIterator.instance();
+        if (!result.isSucceeded()) return EmptyIterator.instance();
         return parseResults(schemas, result.getJsonString());
     }
 
     ObjectMapper mapper = new ObjectMapper();
+
     private <E extends Element, S extends DocSchema<E>> Iterator<E> parseResults(Set<S> schemas, String result) {
         List<E> results = new ArrayList<>();
         try {
@@ -170,22 +220,21 @@ public class DocumentController implements SimpleController {
             for (JsonNode hit : hits) {
                 Map<String, Object> source = mapper.readValue(hit.get("_source").toString(), Map.class);
                 DocSchema.Document document = new DocSchema.Document(hit.get("_index").asText(), hit.get("_type").asText(), hit.get("_id").asText(), source);
-                for(S schema : schemas) {
+                for (S schema : schemas) {
                     E element = schema.fromDocument(document);
-                    if(element != null) results.add(element);
+                    if (element != null) results.add(element);
                 }
             }
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
         return results.iterator();
     }
 
     private <E extends Element> void index(Set<? extends DocSchema<E>> schemas, E element) {
-        for(DocSchema<E> schema : schemas) {
+        for (DocSchema<E> schema : schemas) {
             DocSchema.Document document = schema.toDocument(element);
-            if (document!= null) {
+            if (document != null) {
                 Index index = new Index.Builder(document.getFields()).index(document.getIndex()).type(document.getType()).id(document.getId()).build();
                 client.bulk(index);
             }
@@ -193,7 +242,7 @@ public class DocumentController implements SimpleController {
     }
 
     private <E extends Element> void delete(Set<? extends DocSchema<E>> schemas, E element) {
-        for(DocSchema<E> schema : schemas) {
+        for (DocSchema<E> schema : schemas) {
             DocSchema.Document document = schema.toDocument(element);
             if (document != null) {
                 Delete build = new Delete.Builder(document.getId()).index(document.getIndex()).type(document.getType()).build();
