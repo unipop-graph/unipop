@@ -9,6 +9,7 @@ import org.jooq.Condition;
 import org.jooq.Field;
 import org.jooq.impl.DSL;
 import org.unipop.common.util.PredicatesTranslator;
+import org.unipop.process.predicate.ExistsP;
 import org.unipop.query.predicates.PredicatesHolder;
 
 import java.util.Collection;
@@ -19,9 +20,7 @@ import java.util.function.BiPredicate;
 import static org.jooq.impl.DSL.field;
 
 /**
- * Created by GurRo on 6/14/2016.
- *
- * @author GurRo
+ * @author Gur Ronen
  * @since 6/14/2016
  */
 public class JdbcPredicatesTranslator implements PredicatesTranslator<Iterable<Condition>> {
@@ -87,6 +86,8 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Iterable<C
                     return field.in(((Collection) value).toArray());
                 }
             }
+        } else if (predicate instanceof ExistsP) {
+            return field.isNotNull();
         }
         return null;
     }
