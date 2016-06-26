@@ -41,4 +41,13 @@ public class PredicatesHolder {
     public boolean notEmpty() { return !isEmpty(); }
     public boolean isAborted() { return this.clause.equals(Clause.Abort); }
     public boolean notAborted() { return !isAborted(); }
+
+    @Override
+    public String toString() {
+        return "PredicatesHolder{" +
+                "clause=" + clause +
+                ", predicates=" + predicates +
+                ", children=" + children +
+                '}';
+    }
 }

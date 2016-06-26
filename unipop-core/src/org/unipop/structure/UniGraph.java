@@ -183,4 +183,6 @@ public class UniGraph implements Graph {
                 .map(controller -> controller.addVertex(new AddVertexQuery(stringObjectMap, null)))
                 .findFirst().get();
     }
+
+
 }

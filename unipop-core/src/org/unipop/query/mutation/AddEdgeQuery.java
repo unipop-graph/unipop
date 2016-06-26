@@ -43,4 +43,14 @@ public class AddEdgeQuery extends UniQuery{
     public interface AddEdgeController extends UniQueryController {
         Edge addEdge(AddEdgeQuery uniQuery);
     }
+
+    @Override
+    public String toString() {
+        return "AddEdgeQuery{" +
+                "outVertex=" + outVertex +
+                ", inVertex=" + inVertex +
+                ", properties=" + properties +
+                ", stepDescriptor=" + stepDescriptor +
+                '}';
+    }
 }

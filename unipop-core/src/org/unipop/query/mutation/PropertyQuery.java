@@ -39,4 +39,13 @@ public class PropertyQuery<E extends Element>  extends UniQuery {
     public interface PropertyController extends UniQueryController {
         <E extends Element> void property(PropertyQuery<E> uniQuery);
     }
+
+    @Override
+    public String toString() {
+        return "PropertyQuery{" +
+                "element=" + element +
+                ", property=" + property +
+                ", action=" + action +
+                '}';
+    }
 }

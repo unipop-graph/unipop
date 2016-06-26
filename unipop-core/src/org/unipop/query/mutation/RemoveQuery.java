@@ -22,4 +22,11 @@ public class RemoveQuery<E extends Element> extends UniQuery {
     public interface RemoveController extends UniQueryController {
         <E extends Element>void remove(RemoveQuery<E> uniQuery);
     }
+
+    @Override
+    public String toString() {
+        return "RemoveQuery{" +
+                "elements=" + elements +
+                '}';
+    }
 }

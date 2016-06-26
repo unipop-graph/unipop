@@ -35,4 +35,12 @@ public class SearchVertexQuery extends SearchQuery<Edge> implements VertexQuery 
     public interface SearchVertexController extends UniQueryController {
         Iterator<Edge> search(SearchVertexQuery uniQuery);
     }
+
+    @Override
+    public String toString() {
+        return "SearchVertexQuery{" +
+                "vertices=" + vertices +
+                ", direction=" + direction +
+                '}';
+    }
 }

@@ -22,4 +22,11 @@ public class DeferredVertexQuery extends UniQuery {
     public interface DefferedVertexController extends UniQueryController {
         void fetchProperties(DeferredVertexQuery query);
     }
+
+    @Override
+    public String toString() {
+        return "DeferredVertexQuery{" +
+                "vertices=" + vertices +
+                '}';
+    }
 }
