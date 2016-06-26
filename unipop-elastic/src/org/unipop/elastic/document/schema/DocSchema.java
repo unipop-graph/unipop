@@ -14,10 +14,34 @@ public interface DocSchema<E extends Element> extends ElementSchema<E> {
     default Document toDocument(E element) {
         Map<String, Object> fields = this.toFields(element);
         if(fields == null) return null;
-        Object type = ObjectUtils.firstNonNull(fields.remove("_type"), fields.remove("type"), this.getType(), element.label());
+        String type = ObjectUtils.firstNonNull(fields.remove("_type"), fields.remove("type"), this.getType(), element.label()).toString();
+        if (!checkType(type)) return null;
         String id = ObjectUtils.firstNonNull(fields.remove("_id"), fields.remove("id"), element.id()).toString();
+        if(id == null) return null;
         String index = getIndex();
-        return new Document(index, type.toString(), id, fields);
+        if(index == null) return null;
+        return new Document(index, type, id, fields);
+    }
+
+    default E fromDocument(Document document){
+        if(!checkType(document.getType())) return null;
+        if(!checkIndex(document.getIndex())) return null;
+        Map<String, Object> fields = document.getFields();
+        fields.put("_id", document.getId());
+        fields.put("_type", document.getType());
+        return this.fromFields(fields);
+    }
+
+    default boolean checkIndex(String index) {
+        if(index == null) return false;
+        if(getIndex() != null && !getIndex().equals("*") && !getIndex().equals(index)) return false;
+        return true;
+    }
+
+    default boolean checkType(String type) {
+        if(type == null) return false;
+        if(getType() != null && !getType().equals("*") && !getType().equals(type)) return false;
+        return true;
     }
 
     class Document {

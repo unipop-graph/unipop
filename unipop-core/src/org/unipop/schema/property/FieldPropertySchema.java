@@ -13,15 +13,17 @@ import java.util.*;
 public class FieldPropertySchema implements PropertySchema {
     private String key;
     private String field = null;
+    private boolean nullable;
     protected Set include;
     protected Set exclude;
 
-    public FieldPropertySchema(String key, String field) {
+    public FieldPropertySchema(String key, String field, boolean nullable) {
         this.key = key;
         this.field = field;
+        this.nullable = nullable;
     }
 
-    public FieldPropertySchema(String key, JSONObject config) {
+    public FieldPropertySchema(String key, JSONObject config, boolean nullable) {
         this.key = key;
         this.field = config.getString("field");
         JSONArray include = config.optJSONArray("include");
@@ -33,6 +35,7 @@ public class FieldPropertySchema implements PropertySchema {
     @Override
     public Map<String, Object> toProperties(Map<String, Object> source) {
         Object value = source.get(this.field);
+        if(value == null && nullable) return Collections.emptyMap();
         if(value == null || !test(P.eq(value))) return null;
         return Collections.singletonMap(this.key, value);
     }
@@ -40,6 +43,7 @@ public class FieldPropertySchema implements PropertySchema {
     @Override
     public Map<String, Object> toFields(Map<String, Object> properties) {
         Object value = properties.get(this.key);
+        if(value == null && nullable) return Collections.emptyMap();
         if(value == null || !test(P.eq(value))) return null;
         return Collections.singletonMap(this.field, value);
     }

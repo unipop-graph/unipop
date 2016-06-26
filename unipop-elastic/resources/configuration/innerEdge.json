@@ -6,7 +6,7 @@
     {
       "type": "document",
       "index": "vertex",
-      "_type": "person",
+      "es_type": "person",
       "id": "@_id",
       "label": "person",
       "dynamicProperties": {
@@ -30,11 +30,10 @@
     {
       "type": "document",
       "index": "vertex",
-      "_type": "*",
       "id": "@_id",
       "label": {
         "field": "_type",
-        "exclude": "person"
+        "exclude": ["person"]
       },
       "properties": {},
       "dynamicProperties": true
@@ -44,11 +43,10 @@
     {
       "type": "document",
       "index": "edge",
-      "_type": "*",
       "id": "@_id",
       "label": {
         "field": "_type",
-        "exclude": "knows"
+        "exclude": ["knows"]
       },
       "properties": {},
       "dynamicProperties": {

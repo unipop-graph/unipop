@@ -3,6 +3,7 @@ package org.unipop.query.predicates;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -55,13 +56,13 @@ public class PredicatesHolderFactory {
     public static PredicatesHolder or(PredicatesHolder... predicatesHolders) {
         return or(Sets.newHashSet(predicatesHolders));
     }
-    public static PredicatesHolder or(Set<PredicatesHolder> predicatesHolders) {
+    public static PredicatesHolder or(Collection<PredicatesHolder> predicatesHolders) {
         if(predicatesHolders.size() == 0) return empty();
 
         Set<PredicatesHolder> filteredPredicateHolders = predicatesHolders.stream()
                 .filter(PredicatesHolder::notAborted).collect(Collectors.toSet());
         if(filteredPredicateHolders.size() == 0) return abort();
-        if(filteredPredicateHolders.size() == 1) return predicatesHolders.iterator().next();
+        if(filteredPredicateHolders.size() == 1) return filteredPredicateHolders.iterator().next();
 
         return new PredicatesHolder(PredicatesHolder.Clause.Or, Collections.EMPTY_SET, filteredPredicateHolders);
     }

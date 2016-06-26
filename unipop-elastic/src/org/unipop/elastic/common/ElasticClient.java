@@ -9,7 +9,9 @@ import io.searchbox.client.config.HttpClientConfig;
 import io.searchbox.core.Bulk;
 import io.searchbox.indices.CreateIndex;
 import io.searchbox.indices.IndicesExists;
+import io.searchbox.indices.Refresh;
 import io.searchbox.indices.mapping.PutMapping;
+import io.searchbox.params.Parameters;
 import org.elasticsearch.common.settings.Settings;
 
 import java.io.IOException;
@@ -55,18 +57,6 @@ public class ElasticClient {
         return client;
     }
 
-    public <T extends JestResult> T execute(Action<T> action) {
-        try {
-            T result = client.execute(action);
-            if (!result.isSucceeded())
-                System.out.println(result.getErrorMessage());
-            return result;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
     public void bulk(BulkableAction action) {
         if(bulk != null && bulk.size() >= 500) refresh();
         if(bulk == null) bulk = new HashMap<>();
@@ -79,6 +69,20 @@ public class ElasticClient {
             Bulk bulkAction = new Bulk.Builder().addAction(this.bulk.values()).refresh(true).build();
             execute(bulkAction);
             bulk = null;
+        }
+//        Refresh refresh = new Refresh.Builder().refresh(true).allowNoIndices(true).build();
+//        execute(refresh);
+    }
+
+    public <T extends JestResult> T execute(Action<T> action) {
+        try {
+            T result = client.execute(action);
+            if (!result.isSucceeded())
+                System.out.println(result.getErrorMessage());
+            return result;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
         }
     }
 

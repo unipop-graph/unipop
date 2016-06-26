@@ -11,7 +11,7 @@ public class MultiFieldPropertySchema implements PropertySchema {
     private final List<String> fields;
     private String delimiter;
 
-    public MultiFieldPropertySchema(String key, List<String> fields, String delimiter) {
+    public MultiFieldPropertySchema(String key, List<String> fields, String delimiter, boolean nullable) {
         this.key = key;
         this.fields = fields;
         this.delimiter = delimiter;
@@ -40,15 +40,16 @@ public class MultiFieldPropertySchema implements PropertySchema {
 
     @Override
     public Map<String, Object> toFields(Map<String, Object> properties) {
-        Object value = properties.get(this.key);
-        if(value == null) return null;
-        Map<String, Object> result = new HashMap<>(fields.size());
-        String[] values = value.toString().split(delimiter);
-        //TODO: what if values.length != fields.length ??? o_O
-        for(int i = 0; i < fields.size(); i++) {
-            result.put(fields.get(i), values[i]);
-        }
-        return result;
+        return Collections.emptyMap();
+//        Object value = properties.get(this.key);
+//        if(value == null) return null;
+//        Map<String, Object> result = new HashMap<>(fields.size());
+//        String[] values = value.toString().split(delimiter);
+//        //TODO: what if values.length != fields.length ??? o_O
+//        for(int i = 0; i < fields.size(); i++) {
+//            result.put(fields.get(i), values[i]);
+//        }
+//        return result;
     }
 
     @Override
