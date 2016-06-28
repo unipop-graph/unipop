@@ -9,7 +9,7 @@ import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.apache.tinkerpop.shaded.jackson.databind.JsonNode;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
-import org.unipop.common.util.SchemaSet;
+import org.unipop.schema.builder.SchemaSet;
 import org.unipop.elastic.common.ElasticClient;
 import org.unipop.elastic.document.schema.DocEdgeSchema;
 import org.unipop.elastic.document.schema.DocSchema;

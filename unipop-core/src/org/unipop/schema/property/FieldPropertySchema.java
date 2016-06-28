@@ -4,7 +4,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.unipop.common.util.ConversionUtils;
+import org.unipop.util.ConversionUtils;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 

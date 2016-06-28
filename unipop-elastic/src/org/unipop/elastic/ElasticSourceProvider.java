@@ -3,8 +3,8 @@ package org.unipop.elastic;
 import com.google.common.collect.Sets;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.unipop.common.util.ConversionUtils;
-import org.unipop.common.util.SchemaSet;
+import org.unipop.util.ConversionUtils;
+import org.unipop.schema.builder.SchemaSet;
 import org.unipop.elastic.common.ElasticClient;
 import org.unipop.elastic.document.DocumentController;
 import org.unipop.elastic.document.schema.builder.DocEdgeBuilder;
@@ -16,7 +16,7 @@ import org.unipop.structure.UniGraph;
 import java.util.List;
 import java.util.Set;
 
-import static org.unipop.common.util.ConversionUtils.getList;
+import static org.unipop.util.ConversionUtils.getList;
 
 public class ElasticSourceProvider implements SourceProvider {
 

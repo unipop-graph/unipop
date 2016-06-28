@@ -1,4 +1,4 @@
-package org.unipop.common.util;
+package org.unipop.schema.builder;
 
 import org.unipop.schema.ElementSchema;
 

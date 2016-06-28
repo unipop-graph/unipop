@@ -1,9 +1,8 @@
 package org.unipop.process.start;
 
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.unipop.common.util.ConversionUtils;
+import org.unipop.util.ConversionUtils;
 import org.unipop.process.predicate.ReceivesPredicatesHolder;
 import org.unipop.process.properties.PropertyFetcher;
 import org.unipop.query.StepDescriptor;
@@ -14,8 +13,6 @@ import org.unipop.query.search.SearchQuery;
 import org.unipop.structure.UniGraph;
 
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class UniGraphStartStep<S,E extends Element> extends GraphStep<S,E> implements ReceivesPredicatesHolder<S, E>, PropertyFetcher{
 

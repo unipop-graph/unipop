@@ -1,9 +1,7 @@
 package org.unipop.process.vertex;
 
 import org.apache.tinkerpop.gremlin.structure.util.Attachable;
-import org.unipop.process.UniBulkStep;
 import org.unipop.process.UniPredicatesStep;
-import org.unipop.process.properties.PropertyFetcher;
 import org.unipop.query.StepDescriptor;
 import org.unipop.process.predicate.ReceivesPredicatesHolder;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
@@ -13,7 +11,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequire
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
-import org.unipop.common.util.ConversionUtils;
+import org.unipop.util.ConversionUtils;
 import org.unipop.query.controller.ControllerManager;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;

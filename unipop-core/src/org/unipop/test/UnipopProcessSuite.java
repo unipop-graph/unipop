@@ -1,4 +1,4 @@
-package org.unipop.common.test;
+package org.unipop.test;
 
 import org.apache.tinkerpop.gremlin.process.ProcessStandardSuite;
 import org.apache.tinkerpop.gremlin.process.traversal.CoreTraversalTest;
@@ -20,7 +20,7 @@ public class UnipopProcessSuite extends ProcessStandardSuite {
     }
 
     private static final Class<?>[] allTests = new Class<?>[]{
-            CoreTraversalTest.class,
+            //CoreTraversalTest.class,
             VertexTest.Traversals.class,
             HasTest.Traversals.class,
             GraphTest.Traversals.class,

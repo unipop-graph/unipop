@@ -1,4 +1,4 @@
-package org.unipop.common.util;
+package org.unipop.util;
 
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.json.JSONArray;

@@ -6,7 +6,7 @@ import org.unipop.elastic.document.schema.DocVertexSchema;
 import org.unipop.structure.UniGraph;
 
 
-import static org.unipop.common.util.ConversionUtils.getList;
+import static org.unipop.util.ConversionUtils.getList;
 
 public class DocVertexBuilder extends DocSchemaBuilder<DocVertexSchema> {
     private final DocVertexSchema schema;

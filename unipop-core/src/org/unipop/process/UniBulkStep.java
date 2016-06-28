@@ -7,7 +7,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
-import org.unipop.common.util.ConversionUtils;
+import org.unipop.util.ConversionUtils;
 import org.unipop.structure.UniGraph;
 
 import java.util.Iterator;
