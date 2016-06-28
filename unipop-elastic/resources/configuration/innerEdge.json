@@ -18,12 +18,14 @@
         "id": "@edgeId",
         "label": "knows",
         "properties": {
-          "weight": "@weight"
+          "weight": "@weight",
+          "name": "@edgeName"
         },
         "vertex": {
           "type": "ref",
           "id": "@knownBy",
-          "label": "person"
+          "label": "person",
+          "name": "@vertex_name"
         }
       }]
     },
