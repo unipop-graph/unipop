@@ -16,11 +16,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
-import org.unipop.process.repeat.UniGraphRepeatStepStrategy;
-import org.unipop.process.repeat.UniGraphRepeatStepTemp;
 import org.unipop.process.start.UniGraphStartStepStrategy;
 import org.unipop.process.vertex.UniGraphVertexStepStrategy;
-import org.unipop.structure.UniGraph;
 
 import java.util.ArrayList;
 import java.util.List;

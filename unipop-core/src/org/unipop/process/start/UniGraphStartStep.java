@@ -37,12 +37,6 @@ public class UniGraphStartStep<S,E extends Element> extends GraphStep<S,E> imple
     }
 
     private Iterator<E> query() {
-        Stream.concat(
-                this.predicates.getPredicates().stream(),
-                this.predicates.getChildren().stream()
-                        .map(PredicatesHolder::getPredicates)
-                        .flatMap(Collection::stream)
-        ).map(HasContainer::getKey).forEach(this::addPropertyKey);
         SearchQuery<E> searchQuery = new SearchQuery<>(returnClass, predicates, limit, propertyKeys, stepDescriptor);
         return controllers.stream().<Iterator<E>>map(controller -> controller.search(searchQuery)).flatMap(ConversionUtils::asStream).iterator();
     }
