@@ -8,6 +8,8 @@ import org.unipop.query.predicates.PredicatesHolderFactory;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class StaticPropertySchema implements PropertySchema {
     private final String key;
@@ -37,9 +39,12 @@ public class StaticPropertySchema implements PropertySchema {
 
     @Override
     public PredicatesHolder toPredicates(PredicatesHolder predicatesHolder) {
-        HasContainer has = predicatesHolder.findKey(this.key);
-        if(has != null && !test(has.getPredicate())) return PredicatesHolderFactory.abort();
-        return PredicatesHolderFactory.empty();
+        Set<PredicatesHolder> predicates = predicatesHolder.findKey(this.key).map(has -> {
+            if (has != null && !test(has.getPredicate())) return PredicatesHolderFactory.abort();
+            return PredicatesHolderFactory.empty();
+        }).collect(Collectors.toSet());
+
+        return PredicatesHolderFactory.create(predicatesHolder.getClause(), predicates);
     }
 
     @Override

@@ -10,6 +10,8 @@ import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class FieldPropertySchema implements PropertySchema {
     private String key;
@@ -58,18 +60,20 @@ public class FieldPropertySchema implements PropertySchema {
 
     @Override
     public PredicatesHolder toPredicates(PredicatesHolder predicatesHolder) {
-        HasContainer has = predicatesHolder.findKey(this.key);
+        Stream<HasContainer> hasContainers = predicatesHolder.findKey(this.key);
+        Set<PredicatesHolder> predicateHolders = hasContainers.map(this::toPredicate).collect(Collectors.toSet());
+        return PredicatesHolderFactory.create(predicatesHolder.getClause(), predicateHolders);
+    }
+
+    private PredicatesHolder toPredicate(HasContainer has) {
         P predicate;
         if (has != null && !test(has.getPredicate())) {
             return PredicatesHolderFactory.abort();
-        }
-        else if(has != null) {
+        } else if (has != null) {
             predicate = has.getPredicate();
-        }
-        else if(include != null) {
+        } else if (include != null) {
             predicate = P.within(include);
-        }
-        else if(exclude != null) {
+        } else if (exclude != null) {
             predicate = P.without(exclude);
         } else return PredicatesHolderFactory.empty();
 

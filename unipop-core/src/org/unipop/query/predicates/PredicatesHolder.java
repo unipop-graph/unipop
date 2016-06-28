@@ -3,8 +3,8 @@ package org.unipop.query.predicates;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Stream;
 
 public class PredicatesHolder {
 
@@ -60,7 +60,7 @@ public class PredicatesHolder {
         return !isAborted();
     }
 
-    public HasContainer findKey(String key) {
-        return predicates.stream().filter(has -> has.getKey().equals(key)).findFirst().orElse(null);
+    public Stream<HasContainer> findKey(String key) {
+        return predicates.stream().filter(has -> has.getKey().equals(key));
     }
 }
