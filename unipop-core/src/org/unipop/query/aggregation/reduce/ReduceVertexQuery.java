@@ -8,6 +8,7 @@ import org.unipop.query.controller.UniQueryController;
 import org.unipop.query.predicates.PredicatesHolder;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Gur Ronen
@@ -17,8 +18,8 @@ public class ReduceVertexQuery extends ReduceQuery implements VertexQuery {
     private final List<Vertex> vertices;
     private final Direction direction;
 
-    public ReduceVertexQuery(PredicatesHolder predicates, StepDescriptor stepDescriptor, List<Vertex> vertices, Direction direction) {
-        super(predicates, stepDescriptor, op, columnName);
+    public ReduceVertexQuery(PredicatesHolder predicates, StepDescriptor stepDescriptor, List<Vertex> vertices, Direction direction, Op op, Set<String> fieldName) {
+        super(predicates, stepDescriptor, op, fieldName);
         this.vertices = vertices;
         this.direction = direction;
     }

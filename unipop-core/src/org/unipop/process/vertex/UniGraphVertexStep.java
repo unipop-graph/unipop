@@ -30,14 +30,15 @@ import java.util.stream.Stream;
 public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Vertex, E> implements ReceivesPredicatesHolder<Vertex, E>{
     private final boolean returnsVertex;
     private final Direction direction;
+
     private Class<E> returnClass;
+
     private String[] edgeLabels = new String[0];
     private int limit;
     private PredicatesHolder predicates = PredicatesHolderFactory.empty();
     private final StepDescriptor stepDescriptor;
     private List<SearchVertexQuery.SearchVertexController> controllers;
     private List<DeferredVertexQuery.DeferredVertexController> deferredVertexControllers;
-
     public UniGraphVertexStep(VertexStep<E> vertexStep, UniGraph graph, ControllerManager controllerManager) {
         super(vertexStep.getTraversal(), graph);
         vertexStep.getLabels().forEach(this::addLabel);
@@ -136,5 +137,9 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
     @Override
     public void setLimit(int limit) {
         this.limit = limit;
+    }
+
+    public Class<E> getReturnClass() {
+        return returnClass;
     }
 }
