@@ -1,6 +1,5 @@
 package org.unipop.schema.base;
 
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.unipop.schema.ElementSchema;
 import org.unipop.schema.property.*;
@@ -10,6 +9,7 @@ import org.unipop.structure.UniElement;
 import org.unipop.structure.UniGraph;
 
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 public abstract class BaseElementSchema<E extends Element> implements ElementSchema<E> {
@@ -23,17 +23,14 @@ public abstract class BaseElementSchema<E extends Element> implements ElementSch
     }
 
     protected Map<String, Object> getProperties(Map<String, Object> source) {
-        Map<String, Object> result = new HashMap<>();
-        for(PropertySchema schema : this.propertySchemas) {
-            Map<String, Object> schemaProperties = schema.toProperties(source);
-            if(schemaProperties == null) return null;
-            schemaProperties.forEach((propKey, propValue) -> result.merge(propKey, propValue, this::mergeProperties));
-        }
-
-        return result;
+        List<Map<String, Object>> fieldMaps = this.propertySchemas.stream().map(schema ->
+                schema.toProperties(source)).collect(Collectors.toList());
+        return merge(fieldMaps, this::mergeProperties, false);
     }
 
     protected Object mergeProperties(Object prop1, Object prop2) {
+        if(!prop1.equals(prop2))
+            System.out.println("merging unequal properties '" + prop1 + "' and '" + prop2 + "', schema: " + this);
         return prop1;
     }
 
@@ -42,24 +39,22 @@ public abstract class BaseElementSchema<E extends Element> implements ElementSch
         Map<String, Object> properties = UniElement.fullProperties(element);
         if(properties == null) return null;
 
-        Map<String, Object> fields = new HashMap<>();
-        for(PropertySchema schema : this.propertySchemas) {
-            Map<String, Object> schemaFields = schema.toFields(properties);
-            if(schemaFields == null) return null;
-            schemaFields.forEach((fieldKey, fieldValue) -> fields.merge(fieldKey, fieldValue, this::mergeFields));
-        }
+        List<Map<String, Object>> fieldMaps = this.propertySchemas.stream().map(schema ->
+                schema.toFields(properties)).collect(Collectors.toList());
+        return merge(fieldMaps, this::mergeFields, false);
+    }
 
-        return fields;
+
+    protected Object mergeFields(Object obj1, Object obj2) {
+        if(!obj1.equals(obj2))
+            System.out.println("merging unequal fields '" + obj1 + "' and '" + obj2 + "', schema: " + this);
+        return obj1;
     }
 
     @Override
     public Set<String> toFields(Set<String> propertyKeys) {
         return propertySchemas.stream().flatMap(propertySchema ->
                 propertySchema.toFields(propertyKeys).stream()).collect(Collectors.toSet());
-    }
-
-    protected Object mergeFields(Object obj1, Object obj2) {
-        return obj1;
     }
 
     @Override
@@ -70,5 +65,17 @@ public abstract class BaseElementSchema<E extends Element> implements ElementSch
                 .collect(Collectors.toSet());
 
         return PredicatesHolderFactory.create(predicatesHolder.getClause(), predicates);
+    }
+
+    protected <K, V> Map<K, V> merge(List<Map<K, V>> maps, BiFunction<? super V, ? super V, ? extends V> mergeFunc, Boolean ignoreNull) {
+        Map<K, V> newMap = new HashMap<>(maps.size());
+        for(Map<K, V> current : maps) {
+            if(current == null) {
+                if (!ignoreNull) return null; //a null results indicates to cancel the merge.
+                continue;
+            }
+            current.forEach((fieldKey, fieldValue) -> newMap.merge(fieldKey, fieldValue, mergeFunc));
+        }
+        return newMap;
     }
 }

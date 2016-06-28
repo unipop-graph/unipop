@@ -14,6 +14,7 @@ public abstract class SchemaBuilder<S extends ElementSchema> {
     protected final UniGraph graph;
     protected final JSONObject json;
     protected ArrayList<PropertySchema> propertySchemas = new ArrayList<>();
+    protected DynamicPropertiesSchema dynamicProperties;
 
     public SchemaBuilder(JSONObject json, UniGraph graph) {
         this.json = json;
@@ -34,10 +35,11 @@ public abstract class SchemaBuilder<S extends ElementSchema> {
 
         Object dynamicPropertiesConfig = json.opt("dynamicProperties");
         if(dynamicPropertiesConfig instanceof Boolean && (boolean)dynamicPropertiesConfig)
-            propertySchemas.add(new DynamicPropertiesSchema(propertySchemas));
+            this.dynamicProperties = new DynamicPropertiesSchema(propertySchemas);
         else if(dynamicPropertiesConfig instanceof JSONObject)
-            propertySchemas.add(new DynamicPropertiesSchema(propertySchemas, (JSONObject) dynamicPropertiesConfig));
+            this.dynamicProperties = new DynamicPropertiesSchema(propertySchemas, (JSONObject) dynamicPropertiesConfig);
 
+        if(this.dynamicProperties != null) propertySchemas.add(this.dynamicProperties);
     }
 
     protected void addPropertySchema(String key, Object value, boolean nullable) {

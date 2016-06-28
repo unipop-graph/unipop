@@ -5,7 +5,7 @@ import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.elasticsearch.client.Client;
-import org.unipop.common.test.UnipopGraphProvider;
+import org.unipop.test.UnipopGraphProvider;
 
 import java.io.File;
 import java.net.URL;

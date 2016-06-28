@@ -16,8 +16,8 @@ public class DynamicPropertiesSchema implements PropertySchema {
     private final Set<String> excludeProperties;
 
     public DynamicPropertiesSchema(ArrayList<PropertySchema> otherSchemas) {
-        this.excludeFields = otherSchemas.stream().flatMap(schema -> schema.getFields().stream()).collect(Collectors.toSet());
-        this.excludeProperties = otherSchemas.stream().flatMap(schema -> schema.getProperties().stream()).collect(Collectors.toSet());
+        this.excludeFields = otherSchemas.stream().flatMap(schema -> schema.excludeDynamicFields().stream()).collect(Collectors.toSet());
+        this.excludeProperties = otherSchemas.stream().flatMap(schema -> schema.excludeDynamicProperties().stream()).collect(Collectors.toSet());
     }
 
     public DynamicPropertiesSchema(ArrayList<PropertySchema> otherSchemas, JSONObject config) {

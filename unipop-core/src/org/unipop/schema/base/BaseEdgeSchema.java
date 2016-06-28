@@ -1,5 +1,6 @@
 package org.unipop.schema.base;
 
+import com.google.common.collect.Lists;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -12,10 +13,7 @@ import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.structure.UniEdge;
 import org.unipop.structure.UniGraph;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class BaseEdgeSchema extends BaseElementSchema<Edge> implements EdgeSchema {
     private final VertexSchema outVertexSchema;
@@ -41,12 +39,9 @@ public class BaseEdgeSchema extends BaseElementSchema<Edge> implements EdgeSchem
     @Override
     public Map<String, Object> toFields(Edge edge) {
         Map<String, Object> edgeFields = super.toFields(edge);
-        if(edgeFields == null) return null;
         Map<String, Object> inFields = inVertexSchema.toFields(edge.inVertex());
         Map<String, Object> outFields = outVertexSchema.toFields(edge.outVertex());
-        edgeFields.putAll(inFields);
-        edgeFields.putAll(outFields);
-        return edgeFields;
+        return merge(Lists.newArrayList(edgeFields, inFields, outFields), this::mergeFields, false);
     }
 
     @Override

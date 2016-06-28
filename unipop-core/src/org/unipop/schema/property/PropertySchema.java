@@ -12,7 +12,6 @@ public interface PropertySchema {
     Set<String> toFields(Set<String> propertyKeys);
     PredicatesHolder toPredicates(PredicatesHolder predicatesHolder);
 
-    default Set<String> getFields() { return Collections.EMPTY_SET; }
-    default Set<String> getProperties() { return Collections.EMPTY_SET; }
-
+    default Set<String> excludeDynamicFields() { return Collections.emptySet(); }
+    default Set<String> excludeDynamicProperties() { return Collections.emptySet(); }
 }

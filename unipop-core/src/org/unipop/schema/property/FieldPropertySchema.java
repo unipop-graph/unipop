@@ -1,5 +1,6 @@
 package org.unipop.schema.property;
 
+import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.json.JSONArray;
@@ -58,7 +59,6 @@ public class FieldPropertySchema implements PropertySchema {
     @Override
     public PredicatesHolder toPredicates(PredicatesHolder predicatesHolder) {
         HasContainer has = predicatesHolder.findKey(this.key);
-
         P predicate;
         if (has != null && !test(has.getPredicate())) {
             return PredicatesHolderFactory.abort();
@@ -78,25 +78,31 @@ public class FieldPropertySchema implements PropertySchema {
     }
 
     @Override
-    public Set<String> getFields() {
+    public Set<String> excludeDynamicFields() {
         return Collections.singleton(this.field);
     }
 
     @Override
-    public Set<String> getProperties() {
+    public Set<String> excludeDynamicProperties() {
         return Collections.singleton(this.key);
     }
 
     private boolean test(P predicate) {
+
+
         if(this.include != null){
             for(Object include : this.include) {
                 if(predicate.test(include)) return true;
             }
             return false;
         }
+
+        if(predicate.getBiPredicate() instanceof  Contains) return true; //TODO: make this smarter.
+
         if(this.exclude != null) {
             for (Object exclude : this.exclude) {
-                if (predicate.test(exclude)) return false; //TODO: handle mixed results
+                if (predicate.test(exclude))
+                    return false;
             }
             return true;
         }

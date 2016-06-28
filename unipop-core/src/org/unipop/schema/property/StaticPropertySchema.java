@@ -43,16 +43,11 @@ public class StaticPropertySchema implements PropertySchema {
     }
 
     @Override
-    public Set<String> getFields() {
-        return Collections.emptySet();
-    }
-
-    @Override
-    public Set<String> getProperties() {
+    public Set<String> excludeDynamicProperties() {
         return Collections.singleton(this.key);
     }
 
-    public boolean test(P predicate) {
+    private boolean test(P predicate) {
         return predicate.test(this.value);
     }
 }
