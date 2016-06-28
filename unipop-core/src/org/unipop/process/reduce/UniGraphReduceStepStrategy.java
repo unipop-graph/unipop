@@ -1,17 +1,24 @@
 package org.unipop.process.reduce;
 
+import com.google.common.collect.Sets;
+import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.CountGlobalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.StartStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.unipop.process.predicate.PredicatesUtil;
 import org.unipop.process.start.UniGraphStartStep;
+import org.unipop.process.start.UniGraphStartStepStrategy;
 import org.unipop.process.vertex.UniGraphVertexStep;
+import org.unipop.process.vertex.UniGraphVertexStepStrategy;
 import org.unipop.query.aggregation.reduce.ReduceQuery;
 import org.unipop.structure.UniGraph;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -24,20 +31,19 @@ public class UniGraphReduceStepStrategy extends AbstractTraversalStrategy<Traver
     //region AbstractTraversalStrategy Implementation
     @Override
     public Set<Class<? extends ProviderOptimizationStrategy>> applyPrior() {
-        Set<Class<? extends TraversalStrategy.ProviderOptimizationStrategy>> priorStrategies = new HashSet<>();
-        priorStrategies.add(PredicatesUtil.class);
-        return priorStrategies;
+        return Sets.newHashSet(UniGraphStartStepStrategy.class, UniGraphVertexStepStrategy.class);
     }
 
     @Override
     public void apply(Traversal.Admin<?, ?> traversal) {
-        if(traversal.getEngine().isComputer()) return;
+//        if(traversal.getEngine().isComputer()) return;
 
         Graph graph = traversal.getGraph().get();
         if(!(graph instanceof UniGraph)) return;
 
         UniGraph uniGraph = (UniGraph) graph;
 
+        // Count
         TraversalHelper.getStepsOfAssignableClassRecursively(CountGlobalStep.class, traversal).forEach(step -> {
             UniGraphReduceStep uniReduceStep = null;
             if (UniGraphVertexStep.class.isAssignableFrom(step.getPreviousStep().getClass())) {
@@ -46,19 +52,17 @@ public class UniGraphReduceStepStrategy extends AbstractTraversalStrategy<Traver
                         traversal,
                         uniVertexStep.getReturnClass(),
                         uniGraph.getControllerManager(),
-                        ,
                         ReduceQuery.Op.COUNT
                 );
 
             } else if (UniGraphStartStep.class.isAssignableFrom(step.getPreviousStep().getClass())) {
-                UniGraphStartStep elasticGraphStep = (UniGraphStartStep)step.getPreviousStep();
-                uniReduceStep = new UniGraphCountStep(
+                UniGraphStartStep uniGraphStartStep = (UniGraphStartStep)step.getPreviousStep();
+                uniReduceStep = new UniGraphReduceStep(
                         traversal,
-                        elasticGraphStep.getReturnClass(),
-                        elasticGraphStep.getPredicates(),
-                        elasticGraphStep.getIds(),
-                        new String[0],
-                        Optional.empty(), uniGraph.getControllerManager());
+                        uniGraphStartStep.getReturnClass(),
+                        uniGraph.getControllerManager(),
+                        ReduceQuery.Op.COUNT
+                );
             }
 
             if (uniReduceStep != null) {

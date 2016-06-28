@@ -19,7 +19,7 @@ public class ReduceQuery extends PredicateQuery {
     public enum Op {
         COUNT(() -> 0L, (BinaryOperator) Operator.sumLong),
         SUM(() -> 0L, (BinaryOperator) Operator.sum),
-        MEAN(() -> new MeanGlobalStep.MeanNumber(), new MeanGlobalStep.MeanGlobalBiOperator()),
+        MEAN(MeanGlobalStep.MeanNumber::new, new MeanGlobalStep.MeanGlobalBiOperator()),
         MAX(() -> Long.MIN_VALUE, (BinaryOperator) Operator.max),
         MIN(() -> Long.MAX_VALUE, (BinaryOperator) Operator.min);
 

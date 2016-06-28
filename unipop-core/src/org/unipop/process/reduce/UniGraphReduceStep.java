@@ -45,7 +45,11 @@ public class UniGraphReduceStep<S extends Element> extends ReducingBarrierStep<S
     private List<S> bulk;
 
     //region Constructor
-    public UniGraphReduceStep(Traversal.Admin traversal, Class elementClass, ControllerManager controllerManager, StepDescriptor stepDescriptor, ReduceQuery.Op op) {
+    public UniGraphReduceStep(
+            Traversal.Admin traversal,
+            Class elementClass,
+            ControllerManager controllerManager,
+            ReduceQuery.Op op) {
         super(traversal);
         this.predicatesHolder = PredicatesHolderFactory.empty();
         this.controllerManager = controllerManager;
