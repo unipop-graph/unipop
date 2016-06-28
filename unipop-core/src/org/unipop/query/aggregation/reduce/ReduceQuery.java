@@ -1,7 +1,8 @@
 package org.unipop.query.aggregation.reduce;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Operator;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.MeanGlobalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.*;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierStep;
 import org.unipop.query.StepDescriptor;
 import org.unipop.query.controller.UniQueryController;
 import org.unipop.query.predicates.PredicateQuery;
@@ -16,19 +17,22 @@ import java.util.function.Supplier;
  * @since 6/27/2016
  */
 public class ReduceQuery extends PredicateQuery {
+    //TODO: MUST MOVE TO INTERFACE / MODEL OBJECT INSTEAD OF ENUM
     public enum Op {
-        COUNT(() -> 0L, (BinaryOperator) Operator.sumLong),
-        SUM(() -> 0L, (BinaryOperator) Operator.sum),
-        MEAN(MeanGlobalStep.MeanNumber::new, new MeanGlobalStep.MeanGlobalBiOperator()),
-        MAX(() -> Long.MIN_VALUE, (BinaryOperator) Operator.max),
-        MIN(() -> Long.MAX_VALUE, (BinaryOperator) Operator.min);
+        COUNT(() -> 0L, (BinaryOperator) Operator.sumLong, CountGlobalStep.class),
+        SUM(() -> 0L, (BinaryOperator) Operator.sum, SumGlobalStep.class),
+        MEAN(MeanGlobalStep.MeanNumber::new, new MeanGlobalStep.MeanGlobalBiOperator(), MeanGlobalStep.class),
+        MAX(() -> Long.MIN_VALUE, (BinaryOperator) Operator.max, MaxGlobalStep.class),
+        MIN(() -> Long.MAX_VALUE, (BinaryOperator) Operator.min, MinGlobalStep.class);
 
-            private final Supplier<Number> seedSupplier;
+        private final Supplier<Number> seedSupplier;
         private final BinaryOperator<Number> operator;
+        private final Class<? extends ReducingBarrierStep> stepToReplace;
 
-        Op(Supplier<Number> seedSupplier, BinaryOperator<Number> operator) {
+        Op(Supplier<Number> seedSupplier, BinaryOperator<Number> operator, Class<? extends ReducingBarrierStep> stepToReplace) {
             this.seedSupplier = seedSupplier;
             this.operator = operator;
+            this.stepToReplace = stepToReplace;
         }
 
         public Supplier<Number> getSeedSupplier() {
@@ -37,6 +41,10 @@ public class ReduceQuery extends PredicateQuery {
 
         public BinaryOperator<Number> getOperator() {
             return this.operator;
+        }
+
+        public Class<? extends ReducingBarrierStep> getStepToReplace() {
+            return this.stepToReplace;
         }
     }
 
@@ -58,6 +66,7 @@ public class ReduceQuery extends PredicateQuery {
         return this.fieldName;
     }
 
+    //TODO: split to multiple interfaces per action, to avoid duplication in controllers
     public interface ReduceController extends UniQueryController {
         Number reduce(ReduceQuery uniQuery);
     }

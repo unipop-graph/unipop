@@ -7,6 +7,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.CountGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.StartStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -22,6 +23,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author Gur Ronen
@@ -31,7 +34,7 @@ public class UniGraphReduceStepStrategy extends AbstractTraversalStrategy<Traver
     //region AbstractTraversalStrategy Implementation
     @Override
     public Set<Class<? extends ProviderOptimizationStrategy>> applyPrior() {
-        return Sets.newHashSet(UniGraphStartStepStrategy.class, UniGraphVertexStepStrategy.class);
+        return Stream.of(UniGraphStartStepStrategy.class, UniGraphVertexStepStrategy.class).collect(Collectors.toSet());
     }
 
     @Override
@@ -44,7 +47,16 @@ public class UniGraphReduceStepStrategy extends AbstractTraversalStrategy<Traver
         UniGraph uniGraph = (UniGraph) graph;
 
         // Count
-        TraversalHelper.getStepsOfAssignableClassRecursively(CountGlobalStep.class, traversal).forEach(step -> {
+
+        Stream.of(ReduceQuery.Op.values()).forEach(op -> {
+            replaceStep(traversal, uniGraph, op);
+        });
+
+    }
+
+    //endregion
+    private void replaceStep(Traversal.Admin<?, ?> traversal, UniGraph uniGraph, ReduceQuery.Op reductionOperator) {
+        TraversalHelper.getStepsOfAssignableClassRecursively(reductionOperator.getStepToReplace(), traversal).forEach(step -> {
             UniGraphReduceStep uniReduceStep = null;
             if (UniGraphVertexStep.class.isAssignableFrom(step.getPreviousStep().getClass())) {
                 UniGraphVertexStep uniVertexStep = (UniGraphVertexStep)step.getPreviousStep();
@@ -52,7 +64,7 @@ public class UniGraphReduceStepStrategy extends AbstractTraversalStrategy<Traver
                         traversal,
                         uniVertexStep.getReturnClass(),
                         uniGraph.getControllerManager(),
-                        ReduceQuery.Op.COUNT
+                        reductionOperator
                 );
 
             } else if (UniGraphStartStep.class.isAssignableFrom(step.getPreviousStep().getClass())) {
@@ -61,7 +73,7 @@ public class UniGraphReduceStepStrategy extends AbstractTraversalStrategy<Traver
                         traversal,
                         uniGraphStartStep.getReturnClass(),
                         uniGraph.getControllerManager(),
-                        ReduceQuery.Op.COUNT
+                        reductionOperator
                 );
             }
 
@@ -73,7 +85,6 @@ public class UniGraphReduceStepStrategy extends AbstractTraversalStrategy<Traver
             }
         });
     }
-    //endregion
 
     //region Private Methods
     private void insertStartStepWhenTraversalIsInternal(final Traversal.Admin<?, ?> traversal, Step step) {

@@ -10,6 +10,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequire
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.unipop.process.predicate.ReceivesPredicatesHolder;
 import org.unipop.process.properties.PropertyFetcher;
 import org.unipop.query.StepDescriptor;
@@ -50,17 +51,17 @@ public class UniGraphReduceStep<S extends Element> extends ReducingBarrierStep<S
             Class elementClass,
             ControllerManager controllerManager,
             ReduceQuery.Op op) {
+
         super(traversal);
         this.predicatesHolder = PredicatesHolderFactory.empty();
         this.controllerManager = controllerManager;
-        this.stepDescriptor = stepDescriptor;
+        this.stepDescriptor = new StepDescriptor(this);
         this.op = op;
         this.elementClass = elementClass;
         this.propertyKeys = Sets.newHashSet();
+        this.bulk = Lists.newArrayList();
 
         Supplier<Number> numberSupplier = op.getSeedSupplier();
-
-        this.bulk = Lists.newArrayList();
         this.setSeedSupplier(numberSupplier);
         /**
          * needed for multiple controller result.
@@ -68,6 +69,8 @@ public class UniGraphReduceStep<S extends Element> extends ReducingBarrierStep<S
          */
         this.setReducingBiOperator(op.getOperator());
     }
+
+    //endregion
 
     @Override
     public Set<TraverserRequirement> getRequirements() {
@@ -101,7 +104,8 @@ public class UniGraphReduceStep<S extends Element> extends ReducingBarrierStep<S
         this.limit = limit;
     }
 
-    //TODO: Implement Vertex Query in the future to improve g.V().out().out().count() to g.V().out().specialOutCount()
+    // TODO: Implement Vertex Query in the future to improve
+    // TODO: g.V().out().out().count() - g.V().out.count()
     @Override
     public Number projectTraverser(Traverser.Admin<S> traverser) {
         if (!this.starts.hasNext()) {
@@ -111,7 +115,6 @@ public class UniGraphReduceStep<S extends Element> extends ReducingBarrierStep<S
         return this.getSeedSupplier().get();
     }
 
-
     private Number executeReduceQuery() {
         ReduceQuery query = new ReduceQuery(this.predicatesHolder, this.stepDescriptor, this.op, this.propertyKeys);
 
@@ -119,10 +122,16 @@ public class UniGraphReduceStep<S extends Element> extends ReducingBarrierStep<S
                 .map(rc -> rc.reduce(query)).reduce(this.getBiOperator()).orElseGet(this.getSeedSupplier());
     }
 
+
     private Number executeReduceVertexQuery(List<Vertex> vertices, Direction dir) {
         ReduceVertexQuery query = new ReduceVertexQuery(this.predicatesHolder, this.stepDescriptor, vertices, dir, this.op, this.propertyKeys);
 
         return this.controllerManager.getControllers(ReduceVertexQuery.ReduceVertexController.class).stream()
                 .map(rc -> rc.reduce(query)).reduce(this.getBiOperator()).orElseGet(this.getSeedSupplier());
+    }
+
+    @Override
+    public String toString() {
+        return StringFactory.stepString(this);
     }
 }
