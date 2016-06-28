@@ -1,11 +1,9 @@
 package org.unipop.query.search;
 
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.schema.reference.DeferredVertex;
 import org.unipop.query.StepDescriptor;
-import org.unipop.query.UniQuery;
 import org.unipop.query.controller.UniQueryController;
 
 import java.util.List;

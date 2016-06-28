@@ -10,6 +10,7 @@ import org.unipop.query.VertexQuery;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class SearchVertexQuery extends SearchQuery<Edge> implements VertexQuery {
@@ -24,7 +25,7 @@ public class SearchVertexQuery extends SearchQuery<Edge> implements VertexQuery 
     }
 
     @Override
-    public List<Vertex> gertVertices() {
+    public List<Vertex> getVertices() {
         return vertices;
     }
 

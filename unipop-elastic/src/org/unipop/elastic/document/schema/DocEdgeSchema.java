@@ -33,7 +33,7 @@ public class DocEdgeSchema extends BaseEdgeSchema implements DocSchema<Edge> {
 
 
     public Search toPredicates(SearchVertexQuery query) {
-        PredicatesHolder predicatesHolder = this.toPredicates(query.getPredicates(), query.gertVertices(), query.getDirection());
+        PredicatesHolder predicatesHolder = this.toPredicates(query.getPredicates(), query.getVertices(), query.getDirection());
         return createSearchSource(query, predicatesHolder);
     }
 }
