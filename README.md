@@ -37,7 +37,7 @@ and can become [quite complicated](http://sql2gremlin.com/#_recommendation). Thi
 **Gremlin** can better handle varied, interconnected, frequently changing data:
 - **Data Schema** - Unstructured. It's not necessary to pre-define types and their properties. Graphs only have two types: Vertex & Edge.
 - **Data Connections** - In a graph Edges are "First-class citizens". This allows free exploration of your data.
-- **Flexibility** - Gremlin queries are written in a functional, pipeline-styled structure,
+- **Flexibility** - Gremlin queries are written in a functional, pipeline-structured style,
 providing considerable flexibility.
 - **Usability** - Host Language embedding. Easier to read, write, find errors, and reuse queries.
 

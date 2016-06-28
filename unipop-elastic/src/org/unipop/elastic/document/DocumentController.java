@@ -55,22 +55,19 @@ public class DocumentController implements SimpleController {
     @Override
     public <E extends Element>  Iterator<E> search(SearchQuery<E> uniQuery) {
         Set<? extends DocSchema<E>> schemas = getSchemas(uniQuery.getReturnType());
-        Function<DocSchema<E>, Search> toPredicatesFunction = (schema) ->
-                schema.toPredicates(uniQuery);
+        Function<DocSchema<E>, Search> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery);
         return search(schemas, toPredicatesFunction);
     }
 
     @Override
     public Iterator<Edge> search(SearchVertexQuery uniQuery) {
-        Function<DocEdgeSchema, Search> toPredicatesFunction = (schema) ->
-                schema.toPredicates(uniQuery);
+        Function<DocEdgeSchema, Search> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery);
         return search(edgeSchemas, toPredicatesFunction);
     }
 
     @Override
     public void fetchProperties(DeferredVertexQuery uniQuery) {
-        Function<DocVertexSchema, Search> toPredicatesFunction = (schema) ->
-                schema.toPredicates(uniQuery);
+        Function<DocVertexSchema, Search> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery);
         Iterator<Vertex> search = search(vertexSchemas, toPredicatesFunction);
 
         Map<Object, DeferredVertex> vertexMap = uniQuery.getVertices().stream()

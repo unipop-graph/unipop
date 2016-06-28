@@ -10,6 +10,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.Attachable;
 import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedEdge;
@@ -43,7 +44,12 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void test() {
-        Traversal t = g.V().out().count();
+//        Traversal t = g.V().emit().times(2).repeat(out()).path();
+
+        Traversal t = g.V().as("a").in("created").addE("createdBy").from("a").property("year", 2009).property("acl", "public");
+
+//        g.V().emit(__.has("name", "marko").or().loops().is(2)).repeat(__.out()).values("name");
+
 
         check(t);
     }
@@ -54,11 +60,11 @@ public class TemporaryTests extends AbstractGremlinTest {
     }
 
     private void check(Traversal traversal) {
+//        traversal.profile();
         System.out.println("pre-strategy:" + traversal);
         traversal.hasNext();
         System.out.println("post-strategy:" + traversal);
 
-        //traversal.profile().cap(TraversalMetrics.METRICS_KEY);
         int count = 0;
         while(traversal.hasNext()) {
             System.out.println(traversal.next());

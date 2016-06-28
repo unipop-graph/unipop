@@ -39,6 +39,13 @@ public class UniGraphVertexStepStrategy extends AbstractTraversalStrategy<Traver
                             if (vertexStep.returnsEdge()) PredicatesUtil.collectPredicates(uniGraphVertexStep, child);
                         }
                     });
+                    traversalParent.getGlobalChildren().forEach(child -> {
+                        if(TraversalHelper.stepIndex(vertexStep, child) != -1) {
+                            UniGraphVertexStep uniGraphVertexStep = new UniGraphVertexStep<>(vertexStep, uniGraph, uniGraph.getControllerManager());
+                            TraversalHelper.replaceStep(vertexStep, uniGraphVertexStep, child);
+                            if (vertexStep.returnsEdge()) PredicatesUtil.collectPredicates(uniGraphVertexStep, child);
+                        }
+                    });
                 });
             }
         });
