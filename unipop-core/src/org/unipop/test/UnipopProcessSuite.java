@@ -20,7 +20,7 @@ public class UnipopProcessSuite extends ProcessStandardSuite {
     }
 
     private static final Class<?>[] allTests = new Class<?>[]{
-            //CoreTraversalTest.class,
+            CoreTraversalTest.class,
             VertexTest.Traversals.class,
             HasTest.Traversals.class,
             GraphTest.Traversals.class,
