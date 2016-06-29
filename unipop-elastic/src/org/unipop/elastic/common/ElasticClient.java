@@ -33,24 +33,21 @@ public class ElasticClient {
         this.client = factory.getObject();
     }
 
-    public void validateIndex(Iterator<String> indices) {
-        indices.forEachRemaining(indexName -> {
-            try {
-                IndicesExists indicesExistsRequest = new IndicesExists.Builder(indexName).build();
-                JestResult existsResult = client.execute(indicesExistsRequest);
-                if (!existsResult.isSucceeded()) {
-                    Settings settings = Settings.settingsBuilder().put("index.analysis.analyzer.default.type", "keyword").build();;
-                    CreateIndex createIndexRequest = new CreateIndex.Builder(indexName).settings(settings).build();
-                    execute(createIndexRequest);
-                    //TODO: Make this work. Using the above "keyword" configuration in the meantime.
-                    PutMapping putMapping = new PutMapping.Builder(indexName, "*", STRING_NOT_ANALYZED).build();
-                    execute(putMapping);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
+    public void validateIndex(String indexName) {
+        try {
+            IndicesExists indicesExistsRequest = new IndicesExists.Builder(indexName).build();
+            JestResult existsResult = client.execute(indicesExistsRequest);
+            if (!existsResult.isSucceeded()) {
+                Settings settings = Settings.settingsBuilder().put("index.analysis.analyzer.default.type", "keyword").build();;
+                CreateIndex createIndexRequest = new CreateIndex.Builder(indexName).settings(settings).build();
+                execute(createIndexRequest);
+                //TODO: Make this work. Using the above "keyword" configuration in the meantime.
+                PutMapping putMapping = new PutMapping.Builder(indexName, "*", STRING_NOT_ANALYZED).build();
+                execute(putMapping);
             }
-        });
-        refresh();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public JestClient getClient() {

@@ -8,21 +8,20 @@
       "type": "person",
       "id": "@_id",
       "label": "person",
-      "dynamicProperties": {
-        "excludeFields": ["edgeId", "knownBy", "edgeWeight", "edgeName"]
-      },
+      "dynamicProperties": true,
       "edges": [{
-        "id": "@edgeId",
-        "label": "knows",
-        "direction": "IN",
+        "path": "creations",
+        "id": "@creationId",
+        "label": "created",
+        "direction": "OUT",
         "properties": {
-          "weight": "@edgeWeight",
-          "name": "@edgeName"
+          "weight": "@weight",
+          "name": "@name"
         },
         "vertex": {
           "ref": true,
-          "id": "@knownBy",
-          "label": "person"
+          "id": "@softwareId",
+          "label": "software"
         }
       }]
     },

@@ -25,7 +25,8 @@ public class SchemaSet {
         schemas.forEach(schema -> {
             if(result.contains(schema)) return;
             result.add(schema);
-            addRecursive(result, schema.getAllSchemas());
+            Set childSchemas = schema.getWithChildSchemas();
+            addRecursive(result, childSchemas);
         });
     }
 

@@ -42,15 +42,15 @@ public class ElasticSourceProvider implements SourceProvider {
     }
 
     protected DocVertexBuilder createVertexSchema(JSONObject vertexJson) throws JSONException {
-        return new DocVertexBuilder(vertexJson, graph);
+        return new DocVertexBuilder(vertexJson, client, graph);
     }
 
     protected DocEdgeBuilder createEdgeSchema(JSONObject edgeJson) throws JSONException {
-        return new DocEdgeBuilder(edgeJson, graph);
+        return new DocEdgeBuilder(edgeJson, client, graph);
     }
 
     protected Set<UniQueryController> createControllers(SchemaSet schemas) {
-        DocumentController documentController = new DocumentController(client, schemas, graph);
+        DocumentController documentController = new DocumentController(schemas, client, graph);
         return Sets.newHashSet(documentController);
     }
 
