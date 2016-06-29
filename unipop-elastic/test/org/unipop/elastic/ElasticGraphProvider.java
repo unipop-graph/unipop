@@ -34,6 +34,7 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
         String configurationFile = BasicConfiguration;
         URL url = this.getClass().getResource("/configuration/" + configurationFile);
         baseConfiguration.put("providers", new String[]{url.getFile()});
+        baseConfiguration.put("bulk", 1000);
         return baseConfiguration;
     }
 

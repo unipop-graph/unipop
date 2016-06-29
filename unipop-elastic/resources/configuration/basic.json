@@ -8,7 +8,9 @@
       "index": "vertex",
       "id": "@_id",
       "label": "@_type",
-      "properties": {},
+      "properties": {
+        "gremlin.partitionGraphStrategy.partition": "@partition"
+      },
       "dynamicProperties": true
     }
   ],
@@ -18,7 +20,9 @@
       "index": "edge",
       "id": "@_id",
       "label": "@_type",
-      "properties": {},
+      "properties": {
+        "gremlin.partitionGraphStrategy.partition": "@partition"
+      },
       "dynamicProperties": {
         "excludeFields": ["outId", "inId", "outLabel", "inLabel"]
       },

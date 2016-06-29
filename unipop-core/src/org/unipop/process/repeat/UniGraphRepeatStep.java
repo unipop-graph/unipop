@@ -3,7 +3,6 @@ package org.unipop.process.repeat;
 import com.google.common.collect.Iterators;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
-import org.apache.tinkerpop.gremlin.process.traversal.lambda.LoopTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ComputerAwareStep;
@@ -12,7 +11,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalUtil;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.unipop.process.UniBulkStep;
-import org.unipop.process.traverser.UniGraphTraverserStep;
 import org.unipop.structure.UniGraph;
 
 import java.util.*;
@@ -41,29 +39,21 @@ public class UniGraphRepeatStep<S> extends UniBulkStep<S, S> implements Traversa
 
     public UniGraphRepeatStep(RepeatStep repeatStep, Traversal.Admin traversal, UniGraph graph) {
         super(traversal, graph);
-        this.emitTraversal = repeatStep.getEmitTraversal();
-        this.untilTraversal = repeatStep.getUntilTraversal();
         this.emitFirst = repeatStep.emitFirst;
         this.untilFirst = repeatStep.untilFirst;
         repeatStep.getLabels().forEach(s -> this.addLabel(s.toString()));
         this.repeatTraversal = (Traversal.Admin<S, S>) repeatStep.getGlobalChildren().get(0);
 
-        if (emitTraversal != null) {
-            emitTraversal.addStep(new UniGraphTraverserStep<>(emitTraversal));
-            integrateChild(emitTraversal);
+        if (repeatStep.getEmitTraversal() != null) {
+            emitTraversal = integrateChild(repeatStep.getEmitTraversal());
         }
-        if (untilTraversal != null) {
-            if (untilTraversal instanceof LoopTraversal)
-                untilTraversal = new UniGraphLoopTraversal<>(((LoopTraversal) untilTraversal).getMaxLoops());
-//            untilTraversal.addStep(new UniGraphTraverserStep<>(untilTraversal));
-            integrateChild(untilTraversal);
+        if (repeatStep.getUntilTraversal() != null) {
+            untilTraversal = integrateChild(repeatStep.getUntilTraversal());
         }
 
         emits = new ArrayList<>();
         untils = new ArrayList<>();
     }
-
-
 
     public final boolean doUntil(final Traverser.Admin<S> traverser, boolean utilFirst) {
         return utilFirst == this.untilFirst && null != this.untilTraversal && TraversalUtil.test(traverser, this.untilTraversal);
@@ -98,17 +88,18 @@ public class UniGraphRepeatStep<S> extends UniBulkStep<S, S> implements Traversa
         Iterator<Traverser.Admin<S>> iterator = traversers.iterator();
         boolean lastIter = true;
         while (true) {
-            if (starts.hasNext())
-                iterator = starts;
             if (this.repeatTraversal.getEndStep().hasNext()) {
                 return Iterators.concat(this.repeatTraversal.getEndStep(), emits.iterator());
             } else {
                 if (starts.hasNext())
                     lastIter = true;
-                if (!lastIter)
+                if (!lastIter) {
+                    if (emitFirst && untilFirst)
+                        return emits.iterator();
                     return Iterators.concat(emits.iterator(), untils.iterator());
+                }
                 lastIter = false;
-                while(iterator.hasNext()) {
+                while (iterator.hasNext()) {
                     Traverser.Admin<S> traverser = iterator.next();
                     if (doUntil(traverser, true)) {
                         traverser.resetLoops();
@@ -122,11 +113,34 @@ public class UniGraphRepeatStep<S> extends UniBulkStep<S, S> implements Traversa
                     }
                 }
             }
+            if (starts.hasNext())
+                iterator = starts;
         }
     }
 
-    public Traversal.Admin<S,S> getRepeatTraversal() {
+    public Traversal.Admin<S, S> getRepeatTraversal() {
         return repeatTraversal;
+    }
+
+    public Traversal.Admin<S, ?> getUntilTraversal() {
+        return untilTraversal;
+    }
+
+    public Traversal.Admin<S, ?> getEmitTraversal() {
+        return emitTraversal;
+    }
+
+    public List<Traversal.Admin<S, S>> getGlobalChildren() {
+        return null == this.repeatTraversal ? Collections.emptyList() : Collections.singletonList(this.repeatTraversal);
+    }
+
+    public List<Traversal.Admin<S, ?>> getLocalChildren() {
+        final List<Traversal.Admin<S, ?>> list = new ArrayList<>();
+        if (null != this.untilTraversal)
+            list.add(this.untilTraversal);
+        if (null != this.emitTraversal)
+            list.add(this.emitTraversal);
+        return list;
     }
 
     public static class RepeatEndStep<S> extends ComputerAwareStep<S, S> {

@@ -11,6 +11,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.SideEffectStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.TreeSideEffectStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierStep;
@@ -137,6 +138,16 @@ public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<Traver
         });
 
         TraversalHelper.getStepsOfClass(TreeStep.class, traversal).forEach(treeStep -> {
+            List<PropertyFetcher> propertyFetchers = getAllPropertyFetchersOf(treeStep, traversal);
+            treeStep.getLocalChildren().forEach(t -> {
+                if (t instanceof ElementValueTraversal) {
+                    String propertyKey = ((ElementValueTraversal) t).getPropertyKey();
+                    propertyFetchers.forEach(propertyFetcher -> handlePropertiesSteps(new String[]{propertyKey}, propertyFetcher));
+                }
+            });
+        });
+
+        TraversalHelper.getStepsOfClass(TreeSideEffectStep.class, traversal).forEach(treeStep -> {
             List<PropertyFetcher> propertyFetchers = getAllPropertyFetchersOf(treeStep, traversal);
             treeStep.getLocalChildren().forEach(t -> {
                 if (t instanceof ElementValueTraversal) {

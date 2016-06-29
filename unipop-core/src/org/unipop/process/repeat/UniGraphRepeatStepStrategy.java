@@ -5,6 +5,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.ConnectiveStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.unipop.process.start.UniGraphStartStepStrategy;
@@ -28,10 +29,10 @@ public class UniGraphRepeatStepStrategy extends AbstractTraversalStrategy<Traver
 
     @Override
     public void apply(Traversal.Admin<?, ?> traversal) {
-        if(TraversalHelper.onGraphComputer(traversal)) return;
+        if (TraversalHelper.onGraphComputer(traversal)) return;
 
         Graph graph = traversal.getGraph().get();
-        if(!(graph instanceof UniGraph)) {
+        if (!(graph instanceof UniGraph)) {
             return;
         }
 
@@ -39,9 +40,9 @@ public class UniGraphRepeatStepStrategy extends AbstractTraversalStrategy<Traver
 
         TraversalHelper.getStepsOfClass(RepeatStep.class, traversal).forEach(repeatStep -> {
             UniGraphRepeatStep uniGraphRepeatStep = new UniGraphRepeatStep(repeatStep, traversal.asAdmin(), uniGraph);
-            Traversal.Admin<?, ?> repeatTraversal = uniGraphRepeatStep.getRepeatTraversal();
             if (repeatStep.getUntilTraversal() != null && TraversalHelper.getFirstStepOfAssignableClass(ReducingBarrierStep.class, repeatStep.getUntilTraversal()).isPresent())
                 return;
+            Traversal.Admin<?, ?> repeatTraversal = uniGraphRepeatStep.getRepeatTraversal();
             TraversalHelper.replaceStep(repeatStep, uniGraphRepeatStep, traversal);
             TraversalHelper.getStepsOfClass(RepeatStep.RepeatEndStep.class, repeatTraversal).forEach(repeatEndStep -> {
                 UniGraphRepeatStep.RepeatEndStep uniGraphRepeatEndStep = new UniGraphRepeatStep.RepeatEndStep(repeatTraversal, uniGraphRepeatStep);
