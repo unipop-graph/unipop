@@ -1,20 +1,19 @@
-package org.unipop.elastic.document.schema.nested;
+package org.unipop.elastic.document.schema;
 
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.unipop.elastic.document.schema.DocEdgeSchema;
+import org.unipop.elastic.document.schema.DocVertexSchema;
 import org.unipop.query.predicates.PredicatesHolder;
-import org.unipop.schema.VertexSchema;
 import org.unipop.schema.property.PropertySchema;
 import org.unipop.structure.UniGraph;
 
 import java.util.List;
 
-public class NestedEdgeSchema extends DocEdgeSchema {
+public class NestedVertexSchema extends DocVertexSchema{
     private String path;
 
-    public NestedEdgeSchema(String index, String type, String path, VertexSchema outVertexSchema, VertexSchema inVertexSchema, List<PropertySchema> properties, UniGraph graph) {
-        super(index, type, outVertexSchema, inVertexSchema, properties, graph);
+    public NestedVertexSchema(String index, String type, String path, List<PropertySchema> properties, UniGraph graph) {
+        super(index, type, properties, graph);
         this.path = path;
     }
 

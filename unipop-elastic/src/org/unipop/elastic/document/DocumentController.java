@@ -132,8 +132,16 @@ public class DocumentController implements SimpleController {
         if(!results.isSucceeded()) return EmptyIterator.instance();
 
         Iterator<S> schemaIterator = schemas.keySet().iterator();
-        return results.getResponses().stream().flatMap(result ->
+        return results.getResponses().stream().filter(this::valid).flatMap(result ->
                 schemaIterator.next().parseResults(result.searchResult.getJsonString()).stream()).iterator();
+    }
+
+    private boolean valid(MultiSearchResult.MultiSearchResponse multiSearchResponse) {
+        if(multiSearchResponse.isError) {
+            System.out.println("SearchResponse error: " + multiSearchResponse.errorMessage);
+            return false;
+        }
+        return true;
     }
 
     private <E extends Element> void index(Set<? extends DocSchema<E>> schemas, E element) {

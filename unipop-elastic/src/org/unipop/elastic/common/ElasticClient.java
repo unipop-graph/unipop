@@ -9,14 +9,11 @@ import io.searchbox.client.config.HttpClientConfig;
 import io.searchbox.core.Bulk;
 import io.searchbox.indices.CreateIndex;
 import io.searchbox.indices.IndicesExists;
-import io.searchbox.indices.Refresh;
 import io.searchbox.indices.mapping.PutMapping;
-import io.searchbox.params.Parameters;
 import org.elasticsearch.common.settings.Settings;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -48,6 +45,16 @@ public class ElasticClient {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public JestResult validateNested(String index, String type, String path) {
+        PutMapping putMapping = new PutMapping.Builder(
+                index,
+                type,
+                "{ \"" + type + "\" : { \"properties\" : { \"" + path + "\" : {\"type\" : \"nested\"} } } }"
+        ).build();
+
+        return execute(putMapping);
     }
 
     public JestClient getClient() {

@@ -3,27 +3,41 @@ package org.unipop.elastic.document.schema.builder;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.unipop.elastic.document.schema.DocEdgeSchema;
+import org.unipop.elastic.common.ElasticClient;
 import org.unipop.elastic.document.schema.DocVertexSchema;
-import org.unipop.elastic.document.schema.nested.NestedEdgeSchema;
+import org.unipop.elastic.document.schema.NestedEdgeSchema;
 import org.unipop.schema.VertexSchema;
+import org.unipop.schema.builder.SchemaBuilder;
+import org.unipop.schema.reference.ReferenceVertexSchemaBuilder;
 import org.unipop.structure.UniGraph;
 
-public class NestedEdgeBuilder extends InnerEdgeBuilder {
+public class NestedEdgeBuilder extends SchemaBuilder<NestedEdgeSchema> {
+    private final DocVertexSchema parentVertexSchema;
+    private final Direction parentDirection;
+    private final String index;
+    private final String type;
     private final String path;
+    private final ElasticClient client;
 
-    public NestedEdgeBuilder(DocVertexSchema vertexSchema, Direction direction, String index, String type, String path, JSONObject json, UniGraph graph) throws JSONException {
-        super(vertexSchema, direction, index, type, json, graph);
+    public NestedEdgeBuilder(DocVertexSchema parentVertexSchema, Direction parentDirection, String index, String type, String path, JSONObject json, ElasticClient client, UniGraph graph) throws JSONException {
+        super(json, graph);
+        this.parentVertexSchema = parentVertexSchema;
+        this.parentDirection = parentDirection;
+        this.index = index;
+        this.type = type;
         this.path = path;
-    }
+        this.client = client;
 
-
-    protected VertexSchema createVertexSchema(JSONObject json) throws JSONException {
-        return new NestedVertexBuilder(index, type, path, json, graph).build();
+        client.validateNested(index, type, path);
     }
 
     @Override
-    public DocEdgeSchema build() {
+    public NestedEdgeSchema build() throws JSONException {
+        JSONObject vertexJson = this.json.getJSONObject("vertex");
+        VertexSchema childVertexSchema = new ReferenceVertexSchemaBuilder(vertexJson, graph).build();
+        new NestedVertexBuilder(index, type, path, vertexJson, client, graph).build();
+        VertexSchema outVertexSchema = parentDirection.equals(Direction.OUT) ? parentVertexSchema : childVertexSchema;
+        VertexSchema inVertexSchema = parentDirection.equals(Direction.IN) ? parentVertexSchema : childVertexSchema;
         return new NestedEdgeSchema(index, type, path, outVertexSchema, inVertexSchema, propertySchemas, graph);
     }
 }

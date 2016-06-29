@@ -2,6 +2,7 @@ package org.unipop.schema.builder;
 
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.unipop.schema.property.*;
 import org.unipop.schema.ElementSchema;
@@ -22,7 +23,7 @@ public abstract class SchemaBuilder<S extends ElementSchema> {
         createPropertySchemas();
     }
 
-    public abstract S build();
+    public abstract S build() throws JSONException;
 
     protected void createPropertySchemas() {
         addPropertySchema(T.id.getAccessor(), json.get(T.id.toString()), false);
