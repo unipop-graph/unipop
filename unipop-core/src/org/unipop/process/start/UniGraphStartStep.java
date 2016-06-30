@@ -67,4 +67,9 @@ public class UniGraphStartStep<S,E extends Element> extends GraphStep<S,E> imple
     public void fetchAllKeys() {
         this.propertyKeys = null;
     }
+
+    @Override
+    public Set<String> getKeys() {
+        return propertyKeys;
+    }
 }

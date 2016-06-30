@@ -9,7 +9,7 @@
       "id": "@_id",
       "label": "person",
       "dynamicProperties": {
-        "excludeFields": ["edgeId", "knownBy", "edgeWeight", "edgeName"]
+        "excludeFields": ["edgeId", "knownBy", "edgeWeight", "edgeName", "_type"]
       },
       "edges": [{
         "id": "@edgeId",

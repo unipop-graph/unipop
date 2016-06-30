@@ -26,4 +26,9 @@ public abstract class UniPredicatesStep<S, E> extends UniBulkStep<S, E> implemen
     public void fetchAllKeys() {
         this.propertyKeys = null;
     }
+
+    @Override
+    public Set<String> getKeys() {
+        return propertyKeys;
+    }
 }
