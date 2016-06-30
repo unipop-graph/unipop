@@ -3,10 +3,7 @@ package org.unipop.elastic.tests;
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.GraphManager;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
-import org.apache.tinkerpop.gremlin.process.traversal.Order;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.Path;
-import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
@@ -44,12 +41,7 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void test() {
-//        Traversal t = g.V().emit().times(2).repeat(out()).path();
-
-        Traversal t = g.V().as("a").in("created").addE("createdBy").from("a").property("year", 2009).property("acl", "public");
-
-//        g.V().emit(__.has("name", "marko").or().loops().is(2)).repeat(__.out()).values("name");
-
+        Traversal t = g.V("1").out().out().tree("a").by("name").both().both().cap("a");
 
         check(t);
     }
