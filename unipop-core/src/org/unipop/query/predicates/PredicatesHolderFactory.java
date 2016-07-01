@@ -3,10 +3,7 @@ package org.unipop.query.predicates;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 //TODO: smarter merge: by predicate key
@@ -25,7 +22,7 @@ public class PredicatesHolderFactory {
     }
 
     public static PredicatesHolder and(HasContainer... predicates) {
-        return new PredicatesHolder(PredicatesHolder.Clause.And, Sets.newHashSet(predicates), null);
+        return new PredicatesHolder(PredicatesHolder.Clause.And, Arrays.asList(predicates), null);
     }
 
     public static PredicatesHolder and(PredicatesHolder... predicatesHolders) {
@@ -40,8 +37,8 @@ public class PredicatesHolderFactory {
         if(filteredPredicateHolders.size() == 0) return empty();
         if(filteredPredicateHolders.size() == 1) return filteredPredicateHolders.iterator().next();
 
-        Set<HasContainer> predicates = new HashSet<>();
-        Set<PredicatesHolder> children = new HashSet<>();
+        List<HasContainer> predicates = new ArrayList<>();
+        List<PredicatesHolder> children = new ArrayList<>();
         for(PredicatesHolder predicatesHolder : filteredPredicateHolders){
             if(predicatesHolder.getClause().equals(PredicatesHolder.Clause.And)){
                 predicates.addAll(predicatesHolder.getPredicates());
@@ -59,12 +56,12 @@ public class PredicatesHolderFactory {
     public static PredicatesHolder or(Collection<PredicatesHolder> predicatesHolders) {
         if(predicatesHolders.size() == 0) return empty();
 
-        Set<PredicatesHolder> filteredPredicateHolders = predicatesHolders.stream()
-                .filter(PredicatesHolder::notAborted).collect(Collectors.toSet());
+        List<PredicatesHolder> filteredPredicateHolders = predicatesHolders.stream()
+                .filter(PredicatesHolder::notAborted).collect(Collectors.toList());
         if(filteredPredicateHolders.size() == 0) return abort();
         if(filteredPredicateHolders.size() == 1) return filteredPredicateHolders.iterator().next();
 
-        return new PredicatesHolder(PredicatesHolder.Clause.Or, Collections.EMPTY_SET, filteredPredicateHolders);
+        return new PredicatesHolder(PredicatesHolder.Clause.Or, Collections.EMPTY_LIST, filteredPredicateHolders);
     }
 
     public static PredicatesHolder create(PredicatesHolder.Clause clause, Set<PredicatesHolder> predicatesHolders) {
@@ -75,6 +72,6 @@ public class PredicatesHolderFactory {
 
 
     public static PredicatesHolder createFromPredicates(PredicatesHolder.Clause clause, Set<HasContainer> predicatesHolders) {
-        return new PredicatesHolder(clause, predicatesHolders, null);
+        return new PredicatesHolder(clause, new ArrayList<>(predicatesHolders), null);
     }
 }

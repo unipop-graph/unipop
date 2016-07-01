@@ -42,7 +42,7 @@
       "id": "@_id",
       "label": {
         "field": "_type",
-        "exclude": ["knows"]
+        "exclude": ["created"]
       },
       "properties": {},
       "dynamicProperties": {

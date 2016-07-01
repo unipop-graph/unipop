@@ -1,5 +1,6 @@
 package org.unipop.elastic.document;
 
+import io.searchbox.action.BulkableAction;
 import io.searchbox.core.*;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -8,6 +9,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
+import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.schema.builder.SchemaSet;
 import org.unipop.elastic.common.ElasticClient;
 import org.unipop.elastic.document.schema.DocEdgeSchema;
@@ -38,10 +40,10 @@ public class DocumentController implements SimpleController {
     private Set<? extends DocEdgeSchema> edgeSchemas;
     private UniGraph graph;
 
-    public DocumentController(SchemaSet schemas, ElasticClient client, UniGraph graph) {
+    public DocumentController(Set<? extends DocVertexSchema> vertexSchemas, Set<? extends DocEdgeSchema> edgeSchemas, ElasticClient client, UniGraph graph) {
         this.client = client;
-        this.vertexSchemas = schemas.get(DocVertexSchema.class, true);
-        this.edgeSchemas = schemas.get(DocEdgeSchema.class, true);
+        this.vertexSchemas = vertexSchemas;
+        this.edgeSchemas = edgeSchemas;
         this.graph = graph;
     }
 
@@ -49,20 +51,20 @@ public class DocumentController implements SimpleController {
     @Override
     public <E extends Element>  Iterator<E> search(SearchQuery<E> uniQuery) {
         Set<? extends DocSchema<E>> schemas = getSchemas(uniQuery.getReturnType());
-        Function<DocSchema<E>, Search> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery);
-        return search(schemas, toPredicatesFunction);
+        Function<DocSchema<E>, PredicatesHolder> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery.getPredicates());
+        return search(schemas, uniQuery, toPredicatesFunction);
     }
 
     @Override
     public Iterator<Edge> search(SearchVertexQuery uniQuery) {
-        Function<DocEdgeSchema, Search> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery);
-        return search(edgeSchemas, toPredicatesFunction);
+        Function<DocEdgeSchema, PredicatesHolder> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery.gertVertices(), uniQuery.getDirection(), uniQuery.getPredicates());
+        return search(edgeSchemas, uniQuery, toPredicatesFunction);
     }
 
     @Override
     public void fetchProperties(DeferredVertexQuery uniQuery) {
-        Function<DocVertexSchema, Search> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery);
-        Iterator<Vertex> search = search(vertexSchemas, toPredicatesFunction);
+        Function<DocVertexSchema, PredicatesHolder> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery.getVertices());
+        Iterator<Vertex> search = search(vertexSchemas, uniQuery, toPredicatesFunction);
 
         Map<Object, DeferredVertex> vertexMap = uniQuery.getVertices().stream()
                 .collect(Collectors.toMap(UniElement::id, Function.identity(), (a, b) -> a));
@@ -120,8 +122,12 @@ public class DocumentController implements SimpleController {
     //region Elastic Queries
 
     private <E extends Element, S extends DocSchema<E>> Iterator<E> search(Set<? extends S> allSchemas,
-                                                                           Function<S, Search> toSearchFunction) {
-        Map<S, Search> schemas = allSchemas.stream().map(schema -> Tuple.tuple(schema, toSearchFunction.apply(schema)))
+                                                                           SearchQuery<E> query,
+                                                                           Function<S, PredicatesHolder> toSearchFunction) {
+        Map<S, Search> schemas = allSchemas.stream()
+                .map(schema -> Tuple.tuple(schema, toSearchFunction.apply(schema)))
+                .filter(tuple -> tuple.v2() != null)
+                .map(tuple -> Tuple.tuple(tuple.v1(), tuple.v1().getSearch(query, tuple.v2())))
                 .filter(tuple -> tuple.v2() != null)
                 .collect(Collectors.toMap(Tuple::v1, Tuple::v2));
         if(schemas.size() == 0) return EmptyIterator.instance();
@@ -133,7 +139,7 @@ public class DocumentController implements SimpleController {
 
         Iterator<S> schemaIterator = schemas.keySet().iterator();
         return results.getResponses().stream().filter(this::valid).flatMap(result ->
-                schemaIterator.next().parseResults(result.searchResult.getJsonString()).stream()).iterator();
+                schemaIterator.next().parseResults(result.searchResult.getJsonString(), query).stream()).iterator();
     }
 
     private boolean valid(MultiSearchResult.MultiSearchResponse multiSearchResponse) {
@@ -146,21 +152,15 @@ public class DocumentController implements SimpleController {
 
     private <E extends Element> void index(Set<? extends DocSchema<E>> schemas, E element) {
         for(DocSchema<E> schema : schemas) {
-            DocSchema.Document document = schema.toDocument(element);
-            if (document!= null) {
-                Index index = new Index.Builder(document.getFields()).index(document.getIndex()).type(document.getType()).id(document.getId()).build();
-                client.bulk(index);
-            }
+            BulkableAction<DocumentResult> index = schema.addElement(element);
+            if(index != null) client.bulk(index);
         }
     }
 
     private <E extends Element> void delete(Set<? extends DocSchema<E>> schemas, E element) {
         for(DocSchema<E> schema : schemas) {
-            DocSchema.Document document = schema.toDocument(element);
-            if (document != null) {
-                Delete build = new Delete.Builder(document.getId()).index(document.getIndex()).type(document.getType()).build();
-                client.bulk(build);
-            }
+            Delete.Builder delete = schema.delete(element);
+            if(delete != null) client.bulk(delete.build());
         }
     }
 
