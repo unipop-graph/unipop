@@ -26,8 +26,12 @@ public class LocalNode {
 
         Settings.Builder elasticsearchSettings = Settings.settingsBuilder()
                 .put("path.data", dataPath)
-                .put("script.groovy.sandbox.enabled", true)
-                .put("path.home", "./data/");
+                .put("path.home", "./data/")
+                .put("path.home", "./data/")
+                .put("script.inline", "true")
+                .put("script.indexed", "true")
+                .put("script.update", "true")
+                .put("script.groovy.sandbox.enabled", "true");
 
         this.node = NodeBuilder.nodeBuilder()
                 .local(true)

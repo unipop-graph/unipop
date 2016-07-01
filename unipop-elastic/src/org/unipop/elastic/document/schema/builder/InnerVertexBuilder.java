@@ -1,7 +1,6 @@
 package org.unipop.elastic.document.schema.builder;
 
 import org.json.JSONObject;
-import org.unipop.elastic.document.schema.DocEdgeSchema;
 import org.unipop.elastic.document.schema.DocVertexSchema;
 import org.unipop.schema.builder.SchemaBuilder;
 import org.unipop.structure.UniGraph;

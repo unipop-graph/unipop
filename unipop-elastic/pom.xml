@@ -10,7 +10,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
     <artifactId>unipop-elastic</artifactId>
     <name>Unipop :: Elasticsearch Controllers</name>
     <properties>
-        <elasticsearch.version>2.3.3</elasticsearch.version>
+        <elasticsearch.version>2.1.1</elasticsearch.version>
     </properties>
     <dependencies>
         <dependency>

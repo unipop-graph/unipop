@@ -3,6 +3,8 @@ package org.unipop.elastic;
 import com.google.common.collect.Sets;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.unipop.elastic.document.schema.DocEdgeSchema;
+import org.unipop.elastic.document.schema.DocVertexSchema;
 import org.unipop.util.ConversionUtils;
 import org.unipop.schema.builder.SchemaSet;
 import org.unipop.elastic.common.ElasticClient;
@@ -38,7 +40,11 @@ public class ElasticSourceProvider implements SourceProvider {
             schemas.add(createEdgeSchema(json).build());
         }
 
-        return createControllers(schemas);
+        Set<DocVertexSchema> docVertexSchemas = schemas.get(DocVertexSchema.class, true);
+        Set<DocEdgeSchema> docEdgeSchemas = schemas.get(DocEdgeSchema.class, true);
+
+        DocumentController documentController = new DocumentController(docVertexSchemas, docEdgeSchemas, client, graph);
+        return Sets.newHashSet(documentController);
     }
 
     protected DocVertexBuilder createVertexSchema(JSONObject vertexJson) throws JSONException {
@@ -49,13 +55,8 @@ public class ElasticSourceProvider implements SourceProvider {
         return new DocEdgeBuilder(edgeJson, client, graph);
     }
 
-    protected Set<UniQueryController> createControllers(SchemaSet schemas) {
-        DocumentController documentController = new DocumentController(schemas, client, graph);
-        return Sets.newHashSet(documentController);
-    }
-
     @Override
     public void close() {
-        client.getClient().shutdownClient();
+        client.close();
     }
 }

@@ -35,9 +35,6 @@ public class NestedEdgeBuilder extends SchemaBuilder<NestedEdgeSchema> {
     public NestedEdgeSchema build() throws JSONException {
         JSONObject vertexJson = this.json.getJSONObject("vertex");
         VertexSchema childVertexSchema = new ReferenceVertexSchemaBuilder(vertexJson, graph).build();
-        new NestedVertexBuilder(index, type, path, vertexJson, client, graph).build();
-        VertexSchema outVertexSchema = parentDirection.equals(Direction.OUT) ? parentVertexSchema : childVertexSchema;
-        VertexSchema inVertexSchema = parentDirection.equals(Direction.IN) ? parentVertexSchema : childVertexSchema;
-        return new NestedEdgeSchema(index, type, path, outVertexSchema, inVertexSchema, propertySchemas, graph);
+        return new NestedEdgeSchema(index, type, path, parentVertexSchema, childVertexSchema, parentDirection, propertySchemas, graph);
     }
 }

@@ -9,17 +9,17 @@ import io.searchbox.client.config.HttpClientConfig;
 import io.searchbox.core.Bulk;
 import io.searchbox.indices.CreateIndex;
 import io.searchbox.indices.IndicesExists;
+import io.searchbox.indices.Refresh;
 import io.searchbox.indices.mapping.PutMapping;
 import org.elasticsearch.common.settings.Settings;
 
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class ElasticClient {
 
-    private Map<DocumentIdentifier, BulkableAction> bulk;
+    private List<BulkableAction> bulk;
     String STRING_NOT_ANALYZED = "{\"dynamic_templates\" : [{\"not_analyzed\" : {\"match\" : \"*\",\"match_mapping_type\" : \"string\", \"mapping\" : {\"type\" : \"string\",\"index\" : \"not_analyzed\"}}}]}";
 
     private final JestClient client;
@@ -57,20 +57,15 @@ public class ElasticClient {
         return execute(putMapping);
     }
 
-    public JestClient getClient() {
-        return client;
-    }
-
     public void bulk(BulkableAction action) {
         if(bulk != null && bulk.size() >= 500) refresh();
-        if(bulk == null) bulk = new HashMap<>();
-        DocumentIdentifier documentIdentifier = new DocumentIdentifier(action.getId(), action.getType(), action.getIndex());
-        bulk.put(documentIdentifier, action);
+        if(bulk == null) bulk = new ArrayList<>();
+        bulk.add(action);
     }
 
     public void refresh() {
         if(bulk != null) {
-            Bulk bulkAction = new Bulk.Builder().addAction(this.bulk.values()).refresh(true).build();
+            Bulk bulkAction = new Bulk.Builder().addAction(this.bulk).refresh(true).build();
             execute(bulkAction);
             bulk = null;
         }
@@ -88,6 +83,10 @@ public class ElasticClient {
             e.printStackTrace();
             return null;
         }
+    }
+
+    public void close() {
+        client.shutdownClient();
     }
 
     class DocumentIdentifier {

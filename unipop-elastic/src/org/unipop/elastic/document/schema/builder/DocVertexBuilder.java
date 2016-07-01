@@ -6,6 +6,7 @@ import org.json.JSONObject;
 import org.unipop.elastic.common.ElasticClient;
 import org.unipop.elastic.document.schema.DocEdgeSchema;
 import org.unipop.elastic.document.schema.DocVertexSchema;
+import org.unipop.schema.EdgeSchema;
 import org.unipop.structure.UniGraph;
 
 
@@ -21,12 +22,12 @@ public class DocVertexBuilder extends DocBuilder<DocVertexSchema> {
         this.vertexSchema = new DocVertexSchema(index, type, propertySchemas, graph);
 
         for(JSONObject edgeJson : getList(json, "edges")) {
-            DocEdgeSchema docEdgeSchema = getEdgeSchema(edgeJson);
+            EdgeSchema docEdgeSchema = getEdgeSchema(edgeJson);
             vertexSchema.add(docEdgeSchema);
         }
     }
 
-    private DocEdgeSchema getEdgeSchema(JSONObject edgeJson) throws JSONException {
+    private EdgeSchema getEdgeSchema(JSONObject edgeJson) throws JSONException {
         String path = edgeJson.optString("path", null);
         Direction direction = Direction.valueOf(edgeJson.optString("direction"));
 
