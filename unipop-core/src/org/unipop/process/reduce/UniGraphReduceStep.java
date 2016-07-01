@@ -13,6 +13,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.unipop.process.predicate.ReceivesPredicatesHolder;
 import org.unipop.process.properties.PropertyFetcher;
+import org.unipop.process.reduce.ops.Op;
 import org.unipop.query.StepDescriptor;
 import org.unipop.query.aggregation.reduce.ReduceQuery;
 import org.unipop.query.aggregation.reduce.ReduceVertexQuery;
@@ -37,7 +38,7 @@ public class UniGraphReduceStep<S extends Element> extends ReducingBarrierStep<S
     private PredicatesHolder predicatesHolder;
     private ControllerManager controllerManager;
     private StepDescriptor stepDescriptor;
-    private ReduceQuery.Op op;
+    private Op op;
     private Direction direction;
     private Class elementClass;
     private Set<String> propertyKeys;
@@ -50,7 +51,7 @@ public class UniGraphReduceStep<S extends Element> extends ReducingBarrierStep<S
             Traversal.Admin traversal,
             Class elementClass,
             ControllerManager controllerManager,
-            ReduceQuery.Op op) {
+           Op op) {
 
         super(traversal);
         this.predicatesHolder = PredicatesHolderFactory.empty();
@@ -121,7 +122,6 @@ public class UniGraphReduceStep<S extends Element> extends ReducingBarrierStep<S
         return this.controllerManager.getControllers(ReduceQuery.ReduceController.class).stream()
                 .map(rc -> rc.reduce(query)).reduce(this.getBiOperator()).orElseGet(this.getSeedSupplier());
     }
-
 
     private Number executeReduceVertexQuery(List<Vertex> vertices, Direction dir) {
         ReduceVertexQuery query = new ReduceVertexQuery(this.predicatesHolder, this.stepDescriptor, vertices, dir, this.op, this.propertyKeys);

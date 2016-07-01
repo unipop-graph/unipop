@@ -55,6 +55,29 @@ public class TemporaryTests extends AbstractGremlinTest {
     }
 
     @Test
+    @LoadGraphWith(MODERN)
+    public void reduceTest() {
+        Traversal t1 = g.V().out().count();
+        Traversal t2 = g.V().out().max();
+        Traversal t3 = g.V().out().min();
+        Traversal t4 = g.V().out().sum();
+        Traversal t5 = g.V().out().mean();
+
+        t1.hasNext();
+        t2.hasNext();
+        t3.hasNext();
+        t4.hasNext();
+        t5.hasNext();
+
+
+        System.out.println(t1.next());
+        System.out.println(t2.next());
+        System.out.println(t3.next());
+        System.out.println(t4.next());
+        System.out.println(t5.next());
+    }
+
+    @Test
     public void nullProperty() {
         graph.addVertex("abc", null);
     }

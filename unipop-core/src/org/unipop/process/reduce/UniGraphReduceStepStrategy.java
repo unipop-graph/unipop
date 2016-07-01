@@ -12,6 +12,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversal
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.unipop.process.predicate.PredicatesUtil;
+import org.unipop.process.reduce.ops.Op;
+import org.unipop.process.reduce.ops.OpFactory;
 import org.unipop.process.start.UniGraphStartStep;
 import org.unipop.process.start.UniGraphStartStepStrategy;
 import org.unipop.process.vertex.UniGraphVertexStep;
@@ -25,6 +27,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * @author Gur Ronen
@@ -46,16 +49,21 @@ public class UniGraphReduceStepStrategy extends AbstractTraversalStrategy<Traver
 
         UniGraph uniGraph = (UniGraph) graph;
 
-        // Count
-
-        Stream.of(ReduceQuery.Op.values()).forEach(op -> {
+        StreamSupport.stream(new OpFactory().getOps().spliterator(), false).forEach(op -> {
             replaceStep(traversal, uniGraph, op);
         });
 
     }
 
-    //endregion
-    private void replaceStep(Traversal.Admin<?, ?> traversal, UniGraph uniGraph, ReduceQuery.Op reductionOperator) {
+    //region Private Methods
+    private void insertStartStepWhenTraversalIsInternal(final Traversal.Admin<?, ?> traversal, Step step) {
+        if (!traversal.getParent().equals(EmptyStep.instance())) {
+            StartStep startStep = new StartStep(traversal);
+            TraversalHelper.insertBeforeStep(startStep, step, traversal);
+        }
+    }
+
+    private void replaceStep(Traversal.Admin<?, ?> traversal, UniGraph uniGraph, Op reductionOperator) {
         TraversalHelper.getStepsOfAssignableClassRecursively(reductionOperator.getStepToReplace(), traversal).forEach(step -> {
             UniGraphReduceStep uniReduceStep = null;
             if (UniGraphVertexStep.class.isAssignableFrom(step.getPreviousStep().getClass())) {
@@ -85,14 +93,5 @@ public class UniGraphReduceStepStrategy extends AbstractTraversalStrategy<Traver
             }
         });
     }
-
-    //region Private Methods
-    private void insertStartStepWhenTraversalIsInternal(final Traversal.Admin<?, ?> traversal, Step step) {
-        if (!traversal.getParent().equals(EmptyStep.instance())) {
-            StartStep startStep = new StartStep(traversal);
-            TraversalHelper.insertBeforeStep(startStep, step, traversal);
-        }
-    }
     //endregion
-
 }
