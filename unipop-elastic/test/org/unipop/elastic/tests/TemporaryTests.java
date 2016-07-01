@@ -44,12 +44,7 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void test() {
-//        Traversal t = g.V().emit().times(2).repeat(out()).path();
-
-        Traversal t = g.V().as("a").in("created").addE("createdBy").from("a").property("year", 2009).property("acl", "public");
-
-//        g.V().emit(__.has("name", "marko").or().loops().is(2)).repeat(__.out()).values("name");
-
+        Traversal t = g.V().outE().drop();
 
         check(t);
     }

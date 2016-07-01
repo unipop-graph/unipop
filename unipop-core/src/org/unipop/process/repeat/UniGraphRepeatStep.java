@@ -1,52 +1,66 @@
 package org.unipop.process.repeat;
 
+import com.google.common.collect.Iterators;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
-import org.apache.tinkerpop.gremlin.process.traversal.lambda.LoopTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.lambda.TrueTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ComputerAwareStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
-import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalUtil;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
-import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
-import org.unipop.process.traverser.UniGraphTraverserStep;
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
+import org.unipop.process.UniBulkStep;
+import org.unipop.structure.UniGraph;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
- * Created by sbarzilay on 6/6/16.
+ * Created by TechUser on 6/27/2016.
  */
-public class UniGraphRepeatStep<S> extends AbstractStep<S, S> implements TraversalParent {
+public class UniGraphRepeatStep<S> extends UniBulkStep<S, S> implements TraversalParent {
     private Traversal.Admin<S, S> repeatTraversal = null;
     private Traversal.Admin<S, ?> untilTraversal = null;
     private Traversal.Admin<S, ?> emitTraversal = null;
-    protected Iterator<Traverser.Admin<S>> results = EmptyIterator.instance();
-    protected List<Traverser.Admin<S>> resultList = new ArrayList<>();
     public boolean untilFirst = false;
     public boolean emitFirst = false;
 
-    public UniGraphRepeatStep(Traversal.Admin traversal, RepeatStep repeatStep) {
-        super(traversal);
-        labels = repeatStep.getLabels();
-        untilTraversal = repeatStep.getUntilTraversal();
-        emitTraversal = repeatStep.getEmitTraversal();
-        repeatTraversal = (Traversal.Admin<S, S>) repeatStep.getGlobalChildren().get(0);
-        if (emitTraversal != null) {
-            emitTraversal.addStep(new UniGraphTraverserStep<>(emitTraversal));
-            integrateChild(emitTraversal);
+    private List<Traverser.Admin<S>> emits;
+    private List<Traverser.Admin<S>> untils;
+
+    @Override
+    public Set<TraverserRequirement> getRequirements() {
+        final Set<TraverserRequirement> requirements = this.getSelfAndChildRequirements(TraverserRequirement.BULK);
+        if (requirements.contains(TraverserRequirement.SINGLE_LOOP))
+            requirements.add(TraverserRequirement.NESTED_LOOP);
+        requirements.add(TraverserRequirement.SINGLE_LOOP);
+        return requirements;
+    }
+
+    public UniGraphRepeatStep(RepeatStep repeatStep, Traversal.Admin traversal, UniGraph graph) {
+        super(traversal, graph);
+        this.emitFirst = repeatStep.emitFirst;
+        this.untilFirst = repeatStep.untilFirst;
+        repeatStep.getLabels().forEach(s -> this.addLabel(s.toString()));
+        this.repeatTraversal = (Traversal.Admin<S, S>) repeatStep.getGlobalChildren().get(0);
+
+        if (repeatStep.getEmitTraversal() != null) {
+            emitTraversal = integrateChild(repeatStep.getEmitTraversal());
         }
-        if (untilTraversal != null) {
-            if (untilTraversal instanceof LoopTraversal)
-                untilTraversal = new UniGraphLoopTraversal<>(((LoopTraversal) untilTraversal).getMaxLoops());
-            untilTraversal.addStep(new UniGraphTraverserStep<>(untilTraversal));
-            integrateChild(untilTraversal);
+        if (repeatStep.getUntilTraversal() != null) {
+            untilTraversal = integrateChild(repeatStep.getUntilTraversal());
         }
-        untilFirst = repeatStep.untilFirst;
-        emitFirst = repeatStep.emitFirst;
+
+        emits = new ArrayList<>();
+        untils = new ArrayList<>();
+    }
+
+    public final boolean doUntil(final Traverser.Admin<S> traverser, boolean utilFirst) {
+        return utilFirst == this.untilFirst && null != this.untilTraversal && TraversalUtil.test(traverser, this.untilTraversal);
+    }
+
+    public final boolean doEmit(final Traverser.Admin<S> traverser, boolean emitFirst) {
+        return emitFirst == this.emitFirst && null != this.emitTraversal && TraversalUtil.test(traverser, this.emitTraversal);
     }
 
     @Override
@@ -61,121 +75,126 @@ public class UniGraphRepeatStep<S> extends AbstractStep<S, S> implements Travers
             return StringFactory.stepString(this, this.repeatTraversal, untilString(), emitString());
     }
 
-    private String untilString() {
+    private final String untilString() {
         return null == this.untilTraversal ? "until(false)" : "until(" + this.untilTraversal + ')';
     }
 
-    private String emitString() {
+    private final String emitString() {
         return null == this.emitTraversal ? "emit(false)" : "emit(" + this.emitTraversal + ')';
     }
 
     @Override
-    public Set<TraverserRequirement> getRequirements() {
-        final Set<TraverserRequirement> requirements = this.getSelfAndChildRequirements(TraverserRequirement.BULK);
-        if (requirements.contains(TraverserRequirement.SINGLE_LOOP))
-            requirements.add(TraverserRequirement.NESTED_LOOP);
-        requirements.add(TraverserRequirement.SINGLE_LOOP);
-        return requirements;
+    protected Iterator<Traverser.Admin<S>> process(List<Traverser.Admin<S>> traversers) {
+        Iterator<Traverser.Admin<S>> iterator = traversers.iterator();
+        boolean lastIter = true;
+        while (true) {
+            if (this.repeatTraversal.getEndStep().hasNext()) {
+                return Iterators.concat(this.repeatTraversal.getEndStep(), emits.iterator());
+            } else {
+                if (starts.hasNext())
+                    lastIter = true;
+                if (!lastIter) {
+                    if (emitFirst && untilFirst)
+                        return emits.iterator();
+                    return Iterators.concat(emits.iterator(), untils.iterator());
+                }
+                lastIter = false;
+                while (iterator.hasNext()) {
+                    Traverser.Admin<S> traverser = iterator.next();
+                    if (doUntil(traverser, true)) {
+                        traverser.resetLoops();
+                        untils.add(traverser);
+                    }
+                    this.repeatTraversal.addStart(traverser);
+                    if (doEmit(traverser, true)) {
+                        final Traverser.Admin<S> emitSplit = traverser.split();
+                        emitSplit.resetLoops();
+                        emits.add(emitSplit);
+                    }
+                }
+            }
+            if (starts.hasNext())
+                iterator = starts;
+        }
     }
 
     public Traversal.Admin<S, S> getRepeatTraversal() {
         return repeatTraversal;
     }
 
-    public final List<Traverser.Admin<S>> doUntil(final List<Traverser.Admin<S>> traversers, boolean utilFirst) {
-        if (utilFirst == this.untilFirst && null != this.untilTraversal) {
-            untilTraversal.reset();
-            traversers.forEach(start -> {
-                untilTraversal.addStart(start);
-            });
-            while (untilTraversal.hasNext()) {
-                Object next = untilTraversal.next();
-                resultList.add((Traverser.Admin<S>) next);
-                traversers.remove(next);
-            }
-        }
-        return traversers;
+    public Traversal.Admin<S, ?> getUntilTraversal() {
+        return untilTraversal;
     }
 
-    public final void doEmit(final List<Traverser.Admin<S>> traversers, boolean emitFirst) {
-        if (emitFirst == this.emitFirst && null != this.emitTraversal) {
-            if (emitTraversal instanceof TrueTraversal){
-                traversers.forEach(resultList::add);
-            }
-            else {
-                emitTraversal.reset();
-                traversers.forEach(emitTraversal::addStart);
-                emitTraversal.forEachRemaining(res -> resultList.add((Traverser.Admin<S>) res));
-            }
-        }
+    public Traversal.Admin<S, ?> getEmitTraversal() {
+        return emitTraversal;
     }
 
-    @Override
-    protected Traverser.Admin<S> processNextStart() throws NoSuchElementException {
-        while (!results.hasNext() && starts.hasNext())
-            results = repeat();
-        if (results.hasNext()) {
-            return results.next();
-        }
-        throw FastNoSuchElementException.instance();
+    public List<Traversal.Admin<S, S>> getGlobalChildren() {
+        return null == this.repeatTraversal ? Collections.emptyList() : Collections.singletonList(this.repeatTraversal);
     }
 
-    protected Iterator<Traverser.Admin<S>> repeat(){
-        while (true) {
-            if (this.repeatTraversal.getEndStep().hasNext()) {
-                return this.repeatTraversal.getEndStep();
-            } else {
-                if (!starts.hasNext())
-                    return resultList.stream().map(t -> {t.resetLoops(); return t;}).iterator();
-                List<Traverser.Admin<S>> traversersList = new ArrayList<>();
-                this.starts.forEachRemaining(traversersList::add);
-                List<Traverser.Admin<S>> untils = doUntil(traversersList, true);
-                if (!untils.isEmpty()) {
-                    traversersList = untils.stream().map(Traverser::asAdmin).collect(Collectors.toList());
-                }
-                traversersList.forEach(this.repeatTraversal::addStart);
-                List<Traverser.Admin<S>> splits = new ArrayList<>();
-                traversersList.forEach(t -> splits.add(t.split()));
-                if (untilTraversal == null || !untilFirst || !untils.isEmpty())
-                    doEmit(splits, true);
-            }
-        }
+    public List<Traversal.Admin<S, ?>> getLocalChildren() {
+        final List<Traversal.Admin<S, ?>> list = new ArrayList<>();
+        if (null != this.untilTraversal)
+            list.add(this.untilTraversal);
+        if (null != this.emitTraversal)
+            list.add(this.emitTraversal);
+        return list;
     }
-    public static class UniGraphRepeatEndStep<S> extends ComputerAwareStep<S, S> {
-        UniGraphRepeatStep uniGraphRepeatStep;
 
-        public UniGraphRepeatEndStep(final Traversal.Admin traversal, UniGraphRepeatStep uniGraphRepeatStep) {
+    public static class RepeatEndStep<S> extends ComputerAwareStep<S, S> {
+
+        UniGraphRepeatStep<S> repeatStep;
+
+        public RepeatEndStep(final Traversal.Admin traversal, UniGraphRepeatStep<S> repeatStep) {
             super(traversal);
-            this.uniGraphRepeatStep = uniGraphRepeatStep;
+            this.repeatStep = repeatStep;
         }
 
         @Override
         protected Iterator<Traverser.Admin<S>> standardAlgorithm() throws NoSuchElementException {
             while (true) {
-                if (this.starts.hasNext()) {
-                    List<Traverser.Admin<S>> traversersList = new ArrayList<>();
-                    this.starts.forEachRemaining(traversersList::add);
-                    traversersList.forEach(start -> start.incrLoops(this.getId()));
-                    List<Traverser<S>> untils = uniGraphRepeatStep.doUntil(traversersList, false);
-                    if (!untils.isEmpty()) {
-                        traversersList = untils.stream().map(Traverser::asAdmin).collect(Collectors.toList());
-                        List<Traverser.Admin<S>> splits = new ArrayList<>();
-                        traversersList.forEach(t -> splits.add(t.split()));
-                        uniGraphRepeatStep.doEmit(splits, false);
-                    }
-                    if (!uniGraphRepeatStep.untilFirst && !uniGraphRepeatStep.emitFirst)
-                        traversersList.forEach(uniGraphRepeatStep::addStart);
+                final Traverser.Admin<S> start = this.starts.next();
+                start.incrLoops(this.getId());
+                if (repeatStep.doUntil(start, false)) {
+                    start.resetLoops();
+                    return IteratorUtils.of(start);
+                } else {
+                    if (!repeatStep.untilFirst && !repeatStep.emitFirst)
+                        repeatStep.repeatTraversal.addStart(start);
                     else
-                        traversersList.forEach(uniGraphRepeatStep::addStart);
+                        repeatStep.addStart(start);
+                    if (repeatStep.doEmit(start, false)) {
+                        final Traverser.Admin<S> emitSplit = start.split();
+                        emitSplit.resetLoops();
+                        return IteratorUtils.of(emitSplit);
+                    }
                 }
-                throw FastNoSuchElementException.instance();
-
             }
         }
 
         @Override
         protected Iterator<Traverser.Admin<S>> computerAlgorithm() throws NoSuchElementException {
-            return null;
+            final RepeatStep<S> repeatStep = (RepeatStep<S>) this.getTraversal().getParent();
+            final Traverser.Admin<S> start = this.starts.next();
+            start.incrLoops(repeatStep.getId());
+            if (repeatStep.doUntil(start, false)) {
+                start.resetLoops();
+                start.setStepId(repeatStep.getNextStep().getId());
+                start.addLabels(repeatStep.getLabels());
+                return IteratorUtils.of(start);
+            } else {
+                start.setStepId(repeatStep.getId());
+                if (repeatStep.doEmit(start, false)) {
+                    final Traverser.Admin<S> emitSplit = start.split();
+                    emitSplit.resetLoops();
+                    emitSplit.setStepId(repeatStep.getNextStep().getId());
+                    return IteratorUtils.of(start, emitSplit);
+                }
+                return IteratorUtils.of(start);
+            }
         }
     }
+
 }
