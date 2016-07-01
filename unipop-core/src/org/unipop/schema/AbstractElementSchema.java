@@ -30,7 +30,8 @@ public abstract class AbstractElementSchema<E extends Element> implements Elemen
         return propertySchemas;
     }
 
-    protected Map<String, Object> getProperties(Map<String, Object> source) {
+    @Override
+    public Map<String, Object> getProperties(Map<String, Object> source) {
         List<Map<String, Object>> fieldMaps = this.getPropertySchemas().stream().map(schema ->
                 schema.toProperties(source)).collect(Collectors.toList());
 
