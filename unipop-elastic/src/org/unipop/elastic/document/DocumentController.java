@@ -10,11 +10,7 @@ import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.unipop.query.predicates.PredicatesHolder;
-import org.unipop.schema.builder.SchemaSet;
 import org.unipop.elastic.common.ElasticClient;
-import org.unipop.elastic.document.schema.DocEdgeSchema;
-import org.unipop.elastic.document.schema.DocSchema;
-import org.unipop.elastic.document.schema.DocVertexSchema;
 import org.unipop.query.controller.SimpleController;
 import org.unipop.query.mutation.AddEdgeQuery;
 import org.unipop.query.mutation.AddVertexQuery;
@@ -23,6 +19,7 @@ import org.unipop.query.mutation.RemoveQuery;
 import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.query.search.SearchQuery;
 import org.unipop.query.search.SearchVertexQuery;
+import org.unipop.schema.element.ElementSchema;
 import org.unipop.schema.reference.DeferredVertex;
 import org.unipop.structure.UniEdge;
 import org.unipop.structure.UniElement;
@@ -36,34 +33,50 @@ import java.util.stream.Collectors;
 public class DocumentController implements SimpleController {
 
     private ElasticClient client;
-    private Set<? extends DocVertexSchema> vertexSchemas;
-    private Set<? extends DocEdgeSchema> edgeSchemas;
+    private Set<? extends DocumentVertexSchema> vertexSchemas = new HashSet<>();
+    private Set<? extends DocumentEdgeSchema> edgeSchemas = new HashSet<>();
     private UniGraph graph;
 
-    public DocumentController(Set<? extends DocVertexSchema> vertexSchemas, Set<? extends DocEdgeSchema> edgeSchemas, ElasticClient client, UniGraph graph) {
+    public DocumentController(Set<DocumentSchema> schemas, ElasticClient client, UniGraph graph) {
         this.client = client;
-        this.vertexSchemas = vertexSchemas;
-        this.edgeSchemas = edgeSchemas;
         this.graph = graph;
+        Set<DocumentSchema> documentSchemas = collectSchemas(schemas);
+        this.vertexSchemas = documentSchemas.stream().filter(schema -> schema instanceof DocumentVertexSchema)
+                .map(schema -> ((DocumentVertexSchema)schema)).collect(Collectors.toSet());
+        this.edgeSchemas = documentSchemas.stream().filter(schema -> schema instanceof DocumentEdgeSchema)
+                .map(schema -> ((DocumentEdgeSchema)schema)).collect(Collectors.toSet());
+    }
+
+    private Set<DocumentSchema> collectSchemas(Set<? extends ElementSchema> schemas) {
+        Set<DocumentSchema> docSchemas = new HashSet<>();
+        schemas.forEach(schema -> {
+            if(schema instanceof DocumentSchema) {
+                client.validateIndex(((DocumentSchema)schema).getIndex());
+                docSchemas.add((DocumentSchema) schema);
+                Set<DocumentSchema> childSchemas = collectSchemas(schema.getChildSchemas());
+                docSchemas.addAll(childSchemas);
+            }
+        });
+        return docSchemas;
     }
 
     //region QueryController
     @Override
     public <E extends Element>  Iterator<E> search(SearchQuery<E> uniQuery) {
-        Set<? extends DocSchema<E>> schemas = getSchemas(uniQuery.getReturnType());
-        Function<DocSchema<E>, PredicatesHolder> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery.getPredicates());
+        Set<? extends DocumentSchema<E>> schemas = getSchemas(uniQuery.getReturnType());
+        Function<DocumentSchema<E>, PredicatesHolder> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery.getPredicates());
         return search(schemas, uniQuery, toPredicatesFunction);
     }
 
     @Override
     public Iterator<Edge> search(SearchVertexQuery uniQuery) {
-        Function<DocEdgeSchema, PredicatesHolder> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery.gertVertices(), uniQuery.getDirection(), uniQuery.getPredicates());
+        Function<DocumentEdgeSchema, PredicatesHolder> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery.gertVertices(), uniQuery.getDirection(), uniQuery.getPredicates());
         return search(edgeSchemas, uniQuery, toPredicatesFunction);
     }
 
     @Override
     public void fetchProperties(DeferredVertexQuery uniQuery) {
-        Function<DocVertexSchema, PredicatesHolder> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery.getVertices());
+        Function<DocumentVertexSchema, PredicatesHolder> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery.getVertices());
         Iterator<Vertex> search = search(vertexSchemas, uniQuery, toPredicatesFunction);
 
         Map<Object, DeferredVertex> vertexMap = uniQuery.getVertices().stream()
@@ -100,30 +113,30 @@ public class DocumentController implements SimpleController {
 
     @Override
     public <E extends Element> void property(PropertyQuery<E> uniQuery) {
-        Set<? extends DocSchema<E>> schemas = getSchemas(uniQuery.getElement().getClass());
+        Set<? extends DocumentSchema<E>> schemas = getSchemas(uniQuery.getElement().getClass());
         index(schemas, uniQuery.getElement());
     }
 
     @Override
     public <E extends Element> void remove(RemoveQuery<E> uniQuery) {
         uniQuery.getElements().forEach(element -> {
-            Set<? extends DocSchema<Element>> schemas = getSchemas(element.getClass());
+            Set<? extends DocumentSchema<Element>> schemas = getSchemas(element.getClass());
             delete(schemas, element);
         });
     }
 
-    private <E extends Element> Set<? extends DocSchema<E>> getSchemas(Class elementClass) {
+    private <E extends Element> Set<? extends DocumentSchema<E>> getSchemas(Class elementClass) {
         if(Vertex.class.isAssignableFrom(elementClass))
-            return (Set<? extends DocSchema<E>>) vertexSchemas;
-        else return (Set<? extends DocSchema<E>>) edgeSchemas;
+            return (Set<? extends DocumentSchema<E>>) vertexSchemas;
+        else return (Set<? extends DocumentSchema<E>>) edgeSchemas;
     }
     //endregion
 
     //region Elastic Queries
 
-    private <E extends Element, S extends DocSchema<E>> Iterator<E> search(Set<? extends S> allSchemas,
-                                                                           SearchQuery<E> query,
-                                                                           Function<S, PredicatesHolder> toSearchFunction) {
+    private <E extends Element, S extends DocumentSchema<E>> Iterator<E> search(Set<? extends S> allSchemas,
+                                                                                   SearchQuery<E> query,
+                                                                                   Function<S, PredicatesHolder> toSearchFunction) {
         Map<S, Search> schemas = allSchemas.stream()
                 .map(schema -> Tuple.tuple(schema, toSearchFunction.apply(schema)))
                 .filter(tuple -> tuple.v2() != null)
@@ -150,15 +163,15 @@ public class DocumentController implements SimpleController {
         return true;
     }
 
-    private <E extends Element> void index(Set<? extends DocSchema<E>> schemas, E element) {
-        for(DocSchema<E> schema : schemas) {
+    private <E extends Element> void index(Set<? extends DocumentSchema<E>> schemas, E element) {
+        for(DocumentSchema<E> schema : schemas) {
             BulkableAction<DocumentResult> index = schema.addElement(element);
             if(index != null) client.bulk(index);
         }
     }
 
-    private <E extends Element> void delete(Set<? extends DocSchema<E>> schemas, E element) {
-        for(DocSchema<E> schema : schemas) {
+    private <E extends Element> void delete(Set<? extends DocumentSchema<E>> schemas, E element) {
+        for(DocumentSchema<E> schema : schemas) {
             Delete.Builder delete = schema.delete(element);
             if(delete != null) client.bulk(delete.build());
         }

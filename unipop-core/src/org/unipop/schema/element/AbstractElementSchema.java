@@ -1,9 +1,10 @@
-package org.unipop.schema;
+package org.unipop.schema.element;
 
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.unipop.schema.property.*;
+import org.json.JSONObject;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
+import org.unipop.schema.property.AbstractPropertyContainer;
 import org.unipop.structure.UniElement;
 import org.unipop.structure.UniGraph;
 import org.unipop.util.ConversionUtils;
@@ -11,27 +12,20 @@ import org.unipop.util.ConversionUtils;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public abstract class AbstractElementSchema<E extends Element> implements ElementSchema<E> {
+public abstract class AbstractElementSchema<E extends Element> extends AbstractPropertyContainer implements ElementSchema<E> {
 
-    protected final List<PropertySchema> propertySchemas;
     protected UniGraph graph;
 
-    public AbstractElementSchema(List<PropertySchema> propertySchemas, UniGraph graph) {
-        this.propertySchemas = propertySchemas;
+    public AbstractElementSchema(JSONObject configuration, UniGraph graph) {
+        super(configuration, graph);
         this.graph = graph;
     }
 
-    @Override
     public UniGraph getGraph() {
         return graph;
     }
 
-    protected List<PropertySchema> getPropertySchemas() {
-        return propertySchemas;
-    }
-
-    @Override
-    public Map<String, Object> getProperties(Map<String, Object> source) {
+    protected Map<String, Object> getProperties(Map<String, Object> source) {
         List<Map<String, Object>> fieldMaps = this.getPropertySchemas().stream().map(schema ->
                 schema.toProperties(source)).collect(Collectors.toList());
 

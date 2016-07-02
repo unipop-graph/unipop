@@ -1,6 +1,7 @@
 package org.unipop.elastic.document.schema;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import io.searchbox.action.BulkableAction;
 import io.searchbox.core.DocumentResult;
 import io.searchbox.core.Update;
@@ -13,29 +14,40 @@ import org.apache.tinkerpop.shaded.jackson.core.JsonProcessingException;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.support.QueryInnerHitBuilder;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.unipop.elastic.common.FilterHelper;
+import org.unipop.elastic.document.DocumentEdgeSchema;
 import org.unipop.query.predicates.PredicatesHolder;
-import org.unipop.schema.EdgeSchema;
-import org.unipop.schema.VertexSchema;
-import org.unipop.schema.property.PropertySchema;
+import org.unipop.schema.element.ElementSchema;
+import org.unipop.schema.element.VertexSchema;
+import org.unipop.schema.reference.ReferenceVertexSchema;
 import org.unipop.structure.UniEdge;
 import org.unipop.structure.UniGraph;
 import org.unipop.util.ConversionUtils;
 
 import java.util.*;
 
-public class NestedEdgeSchema extends DocSchema<Edge> implements EdgeSchema {
+public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements DocumentEdgeSchema {
     private String path;
     private final VertexSchema parentVertexSchema;
     private final VertexSchema childVertexSchema;
     private final Direction parentDirection;
 
-    public NestedEdgeSchema(String index, String type, String path, VertexSchema parentVertexSchema, VertexSchema childVertexSchema, Direction parentDirection, List<PropertySchema> properties, UniGraph graph) {
-        super(index, type, properties, graph);
+    public NestedEdgeSchema(VertexSchema parentVertexSchema, Direction parentDirection, String index, String type, String path, JSONObject configuration, UniGraph graph) throws JSONException {
+        super(configuration, graph);
+        this.index = index;
+        this.type = type;
         this.path = path;
         this.parentVertexSchema = parentVertexSchema;
-        this.childVertexSchema = childVertexSchema;
         this.parentDirection = parentDirection;
+        JSONObject childVertexJson = this.json.getJSONObject("vertex");
+        this.childVertexSchema = new ReferenceVertexSchema(childVertexJson, graph);
+    }
+
+    @Override
+    public Set<ElementSchema> getChildSchemas() {
+        return Sets.newHashSet(childVertexSchema);
     }
 
     @Override

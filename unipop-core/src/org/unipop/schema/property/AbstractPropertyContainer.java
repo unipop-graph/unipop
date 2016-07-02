@@ -1,29 +1,28 @@
-package org.unipop.schema.builder;
+package org.unipop.schema.property;
 
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
-import org.unipop.schema.property.*;
-import org.unipop.schema.ElementSchema;
 import org.unipop.structure.UniGraph;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class SchemaBuilder<S extends ElementSchema> {
+public abstract class AbstractPropertyContainer {
     protected final UniGraph graph;
     protected final JSONObject json;
     protected ArrayList<PropertySchema> propertySchemas = new ArrayList<>();
-    protected DynamicPropertiesSchema dynamicProperties;
+    protected DynamicPropertySchema dynamicProperties;
 
-    public SchemaBuilder(JSONObject json, UniGraph graph) {
+    public AbstractPropertyContainer(JSONObject json, UniGraph graph) {
         this.json = json;
         this.graph = graph;
         createPropertySchemas();
     }
 
-    public abstract S build() throws JSONException;
+    protected List<PropertySchema> getPropertySchemas() {
+        return propertySchemas;
+    }
 
     protected void createPropertySchemas() {
         addPropertySchema(T.id.getAccessor(), json.get(T.id.toString()), false);
@@ -36,9 +35,9 @@ public abstract class SchemaBuilder<S extends ElementSchema> {
 
         Object dynamicPropertiesConfig = json.opt("dynamicProperties");
         if(dynamicPropertiesConfig instanceof Boolean && (boolean)dynamicPropertiesConfig)
-            this.dynamicProperties = new DynamicPropertiesSchema(propertySchemas);
+            this.dynamicProperties = new DynamicPropertySchema(propertySchemas);
         else if(dynamicPropertiesConfig instanceof JSONObject)
-            this.dynamicProperties = new DynamicPropertiesSchema(propertySchemas, (JSONObject) dynamicPropertiesConfig);
+            this.dynamicProperties = new DynamicPropertySchema(propertySchemas, (JSONObject) dynamicPropertiesConfig);
 
         if(this.dynamicProperties != null) propertySchemas.add(this.dynamicProperties);
     }

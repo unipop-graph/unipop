@@ -13,30 +13,37 @@ import org.apache.tinkerpop.shaded.jackson.databind.JsonNode;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.unipop.elastic.common.FilterHelper;
+import org.unipop.elastic.document.DocumentSchema;
 import org.unipop.query.predicates.PredicateQuery;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.SearchQuery;
-import org.unipop.schema.AbstractElementSchema;
-import org.unipop.schema.property.PropertySchema;
+import org.unipop.schema.element.AbstractElementSchema;
 import org.unipop.structure.UniGraph;
 
 import java.io.IOException;
 import java.util.*;
 
-public abstract class DocSchema<E extends Element> extends AbstractElementSchema<E> {
-
+public abstract class AbstractDocSchema<E extends Element> extends AbstractElementSchema<E> implements DocumentSchema<E> {
     protected String type;
     protected String index;
     protected ObjectMapper mapper = new ObjectMapper();
 
-    public DocSchema(String index, String type, List<PropertySchema> propertySchemas, UniGraph graph) {
-        super(propertySchemas, graph);
-        this.type = type;
-        this.index = index;
+    public AbstractDocSchema(JSONObject configuration, UniGraph graph) throws JSONException {
+        super(configuration, graph);
+        this.index = json.optString("index", null);
+        this.type = json.optString("type", null);
     }
 
+    @Override
+    public String getIndex() {
+        return index;
+    }
+
+    @Override
     public Search getSearch(SearchQuery<E> query, PredicatesHolder predicatesHolder) {
         if (predicatesHolder.isAborted()) return null;
 
@@ -70,6 +77,7 @@ public abstract class DocSchema<E extends Element> extends AbstractElementSchema
         return new Search.Builder(searchSourceBuilder.toString().replace("\n", ""));
     }
 
+    @Override
     public List<E> parseResults(String result, PredicateQuery query) {
         List<E> results = new ArrayList<>();
         try {
@@ -92,6 +100,7 @@ public abstract class DocSchema<E extends Element> extends AbstractElementSchema
         return results;
     }
 
+    @Override
     public BulkableAction<DocumentResult> addElement(E element) {
         Document document = toDocument(element);
         if (document == null) return null;
@@ -103,6 +112,7 @@ public abstract class DocSchema<E extends Element> extends AbstractElementSchema
                 .build();
     }
 
+    @Override
     public Delete.Builder delete(E element) {
         Document document = toDocument(element);
         if (document == null) return null;

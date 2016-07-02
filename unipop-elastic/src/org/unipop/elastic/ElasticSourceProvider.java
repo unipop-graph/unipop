@@ -3,18 +3,17 @@ package org.unipop.elastic;
 import com.google.common.collect.Sets;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.unipop.elastic.document.DocumentSchema;
 import org.unipop.elastic.document.schema.DocEdgeSchema;
 import org.unipop.elastic.document.schema.DocVertexSchema;
 import org.unipop.util.ConversionUtils;
-import org.unipop.schema.builder.SchemaSet;
 import org.unipop.elastic.common.ElasticClient;
 import org.unipop.elastic.document.DocumentController;
-import org.unipop.elastic.document.schema.builder.DocEdgeBuilder;
-import org.unipop.elastic.document.schema.builder.DocVertexBuilder;
 import org.unipop.query.controller.SourceProvider;
 import org.unipop.query.controller.UniQueryController;
 import org.unipop.structure.UniGraph;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -32,27 +31,24 @@ public class ElasticSourceProvider implements SourceProvider {
         List<String> addresses = ConversionUtils.toStringList(configuration.getJSONArray("addresses"));
         this.client = new ElasticClient(addresses);
 
-        SchemaSet schemas = new SchemaSet();
+        Set<DocumentSchema> schemas = new HashSet<>();
         for(JSONObject json : getList(configuration, "vertices")) {
-            schemas.add(createVertexSchema(json).build());
+            schemas.add(createVertexSchema(json));
         }
         for(JSONObject json : getList(configuration, "edges")) {
-            schemas.add(createEdgeSchema(json).build());
+            schemas.add(createEdgeSchema(json));
         }
 
-        Set<DocVertexSchema> docVertexSchemas = schemas.get(DocVertexSchema.class, true);
-        Set<DocEdgeSchema> docEdgeSchemas = schemas.get(DocEdgeSchema.class, true);
-
-        DocumentController documentController = new DocumentController(docVertexSchemas, docEdgeSchemas, client, graph);
+        DocumentController documentController = new DocumentController(schemas, client, graph);
         return Sets.newHashSet(documentController);
     }
 
-    protected DocVertexBuilder createVertexSchema(JSONObject vertexJson) throws JSONException {
-        return new DocVertexBuilder(vertexJson, client, graph);
+    protected DocVertexSchema createVertexSchema(JSONObject vertexJson) throws JSONException {
+        return new DocVertexSchema(vertexJson, graph);
     }
 
-    protected DocEdgeBuilder createEdgeSchema(JSONObject edgeJson) throws JSONException {
-        return new DocEdgeBuilder(edgeJson, client, graph);
+    protected DocEdgeSchema createEdgeSchema(JSONObject edgeJson) throws JSONException {
+        return new DocEdgeSchema(edgeJson, graph);
     }
 
     @Override

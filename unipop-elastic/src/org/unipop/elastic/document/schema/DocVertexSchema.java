@@ -1,29 +1,50 @@
 package org.unipop.elastic.document.schema;
 
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.unipop.schema.EdgeSchema;
-import org.unipop.schema.ElementSchema;
-import org.unipop.schema.VertexSchema;
-import org.unipop.schema.property.PropertySchema;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.unipop.elastic.document.DocumentVertexSchema;
+import org.unipop.schema.element.EdgeSchema;
+import org.unipop.schema.element.ElementSchema;
 import org.unipop.structure.UniGraph;
+import org.unipop.structure.UniVertex;
 
 import java.util.HashSet;
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
-public class DocVertexSchema extends DocSchema<Vertex> implements VertexSchema {
+import static org.unipop.util.ConversionUtils.getList;
+
+public class DocVertexSchema extends AbstractDocSchema<Vertex> implements DocumentVertexSchema {
     Set<ElementSchema> edgeSchemas = new HashSet<>();
 
-    public DocVertexSchema(String index, String type, List<PropertySchema> properties, UniGraph graph) {
-        super(index, type, properties, graph);
+    public DocVertexSchema(JSONObject configuration, UniGraph graph) throws JSONException {
+        super(configuration, graph);
+
+        for(JSONObject edgeJson : getList(json, "edges")) {
+            EdgeSchema docEdgeSchema = getEdgeSchema(edgeJson);
+            edgeSchemas.add(docEdgeSchema);
+        }
+    }
+
+    private EdgeSchema getEdgeSchema(JSONObject edgeJson) throws JSONException {
+        String path = edgeJson.optString("path", null);
+        Direction direction = Direction.valueOf(edgeJson.optString("direction"));
+
+        if(path == null) return new InnerEdgeSchema(this, direction, index, type, edgeJson, graph);
+        return new NestedEdgeSchema(this, direction, index, type, path, edgeJson, graph);
+    }
+
+    @Override
+    public Vertex createElement(Map<String, Object> fields) {
+        Map<String, Object> properties = getProperties(fields);
+        if(properties == null) return null;
+        return new UniVertex(properties, graph);
     }
 
     @Override
     public Set<ElementSchema> getChildSchemas() {
         return this.edgeSchemas;
-    }
-
-    public void add(EdgeSchema schema) {
-        edgeSchemas.add(schema);
     }
 }

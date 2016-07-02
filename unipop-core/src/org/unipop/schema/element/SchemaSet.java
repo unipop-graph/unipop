@@ -1,6 +1,4 @@
-package org.unipop.schema.builder;
-
-import org.unipop.schema.ElementSchema;
+package org.unipop.schema.element;
 
 import java.util.HashSet;
 import java.util.Set;

@@ -1,9 +1,9 @@
 package org.unipop.schema.reference;
 
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.unipop.query.predicates.PredicatesHolder;
-import org.unipop.schema.VertexSchema;
-import org.unipop.schema.AbstractElementSchema;
+import org.json.JSONObject;
+import org.unipop.schema.element.VertexSchema;
+import org.unipop.schema.element.AbstractElementSchema;
 import org.unipop.schema.property.PropertySchema;
 import org.unipop.structure.UniGraph;
 
@@ -12,7 +12,7 @@ import java.util.Map;
 
 public class ReferenceVertexSchema extends AbstractElementSchema<Vertex> implements VertexSchema {
 
-    public ReferenceVertexSchema(List<PropertySchema> properties, UniGraph graph) {
+    public ReferenceVertexSchema(JSONObject properties, UniGraph graph) {
         super(properties, graph);
     }
 

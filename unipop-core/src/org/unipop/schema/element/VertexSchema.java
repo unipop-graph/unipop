@@ -1,4 +1,4 @@
-package org.unipop.schema;
+package org.unipop.schema.element;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
@@ -18,11 +18,7 @@ public interface VertexSchema extends ElementSchema<Vertex> {
         return Collections.singleton(createElement(fields));
     }
 
-    default Vertex createElement(Map<String, Object> fields) {
-        Map<String, Object> properties = getProperties(fields);
-        if(properties == null) return null;
-        return new UniVertex(properties, getGraph());
-    }
+    Vertex createElement(Map<String, Object> fields);
 
     default PredicatesHolder toPredicates(List<? extends Vertex> vertices) {
         HashSet<PredicatesHolder> predicates = new HashSet<>();

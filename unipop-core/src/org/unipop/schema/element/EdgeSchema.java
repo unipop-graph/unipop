@@ -1,4 +1,4 @@
-package org.unipop.schema;
+package org.unipop.schema.element;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;

@@ -10,17 +10,17 @@ import org.unipop.query.predicates.PredicatesHolderFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class DynamicPropertiesSchema implements PropertySchema {
+public class DynamicPropertySchema implements PropertySchema {
 
     private final Set<String> excludeFields;
     private final Set<String> excludeProperties;
 
-    public DynamicPropertiesSchema(ArrayList<PropertySchema> otherSchemas) {
+    public DynamicPropertySchema(ArrayList<PropertySchema> otherSchemas) {
         this.excludeFields = otherSchemas.stream().flatMap(schema -> schema.excludeDynamicFields().stream()).collect(Collectors.toSet());
         this.excludeProperties = otherSchemas.stream().flatMap(schema -> schema.excludeDynamicProperties().stream()).collect(Collectors.toSet());
     }
 
-    public DynamicPropertiesSchema(ArrayList<PropertySchema> otherSchemas, JSONObject config) {
+    public DynamicPropertySchema(ArrayList<PropertySchema> otherSchemas, JSONObject config) {
         this(otherSchemas);
 
         JSONArray excludeFieldsJson = config.optJSONArray("excludeFields");

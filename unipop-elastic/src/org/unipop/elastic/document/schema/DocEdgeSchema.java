@@ -5,31 +5,40 @@ import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.unipop.elastic.document.DocumentEdgeSchema;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
-import org.unipop.schema.EdgeSchema;
-import org.unipop.schema.ElementSchema;
-import org.unipop.schema.VertexSchema;
-import org.unipop.schema.property.PropertySchema;
+import org.unipop.schema.element.ElementSchema;
+import org.unipop.schema.element.VertexSchema;
+import org.unipop.schema.reference.ReferenceVertexSchema;
 import org.unipop.structure.UniEdge;
 import org.unipop.structure.UniGraph;
 import org.unipop.util.ConversionUtils;
 
 import java.util.*;
 
-public class DocEdgeSchema extends DocSchema<Edge> implements EdgeSchema {
-    protected final VertexSchema outVertexSchema;
-    protected final VertexSchema inVertexSchema;
+public class DocEdgeSchema extends AbstractDocSchema<Edge> implements DocumentEdgeSchema {
+    protected VertexSchema outVertexSchema;
+    protected VertexSchema inVertexSchema;
 
-    public DocEdgeSchema(String index, String type, VertexSchema outVertexSchema, VertexSchema inVertexSchema, List<PropertySchema> properties, UniGraph graph) {
-        super(index, type, properties, graph);
-        this.outVertexSchema = outVertexSchema;
-        this.inVertexSchema = inVertexSchema;
+    public DocEdgeSchema(JSONObject configuration, UniGraph graph) throws JSONException {
+        super(configuration, graph);
+        this.outVertexSchema = createVertexSchema("outVertex");
+        this.inVertexSchema = createVertexSchema("inVertex");
+    }
+
+    protected VertexSchema createVertexSchema(String key) throws JSONException {
+        JSONObject vertexConfiguration = this.json.optJSONObject(key);
+        if(vertexConfiguration == null) return null;
+        if(vertexConfiguration.optBoolean("ref", false)) return new ReferenceVertexSchema(vertexConfiguration, graph);
+        return new DocVertexSchema(vertexConfiguration, graph);
     }
 
     @Override
     public Set<ElementSchema> getChildSchemas() {
-        return Sets.newHashSet(this, outVertexSchema, inVertexSchema);
+        return Sets.newHashSet(outVertexSchema, inVertexSchema);
     }
 
     @Override
@@ -40,7 +49,7 @@ public class DocEdgeSchema extends DocSchema<Edge> implements EdgeSchema {
         if(outVertex == null) return null;
         Vertex inVertex = inVertexSchema.createElement(fields);
         if(inVertex == null) return null;
-        UniEdge uniEdge = new UniEdge(edgeProperties, outVertex, inVertex, getGraph());
+        UniEdge uniEdge = new UniEdge(edgeProperties, outVertex, inVertex, graph);
         return Collections.singleton(uniEdge);
     }
 

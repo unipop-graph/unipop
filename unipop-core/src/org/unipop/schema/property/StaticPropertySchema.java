@@ -1,7 +1,6 @@
 package org.unipop.schema.property;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 
@@ -9,7 +8,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class StaticPropertySchema implements PropertySchema {
     private final String key;
