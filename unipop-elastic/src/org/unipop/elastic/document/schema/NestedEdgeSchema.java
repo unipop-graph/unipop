@@ -16,9 +16,11 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.support.QueryInnerHitBuilder;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.unipop.elastic.common.ElasticClient;
 import org.unipop.elastic.common.FilterHelper;
 import org.unipop.elastic.document.DocumentEdgeSchema;
 import org.unipop.query.predicates.PredicatesHolder;
+import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.schema.element.ElementSchema;
 import org.unipop.schema.element.VertexSchema;
 import org.unipop.schema.reference.ReferenceVertexSchema;
@@ -27,6 +29,7 @@ import org.unipop.structure.UniGraph;
 import org.unipop.util.ConversionUtils;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements DocumentEdgeSchema {
     private String path;
@@ -34,8 +37,8 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
     private final VertexSchema childVertexSchema;
     private final Direction parentDirection;
 
-    public NestedEdgeSchema(VertexSchema parentVertexSchema, Direction parentDirection, String index, String type, String path, JSONObject configuration, UniGraph graph) throws JSONException {
-        super(configuration, graph);
+    public NestedEdgeSchema(VertexSchema parentVertexSchema, Direction parentDirection, String index, String type, String path, JSONObject configuration, ElasticClient client, UniGraph graph) throws JSONException {
+        super(configuration, client, graph);
         this.index = index;
         this.type = type;
         this.path = path;
@@ -43,6 +46,8 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
         this.parentDirection = parentDirection;
         JSONObject childVertexJson = this.json.getJSONObject("vertex");
         this.childVertexSchema = new ReferenceVertexSchema(childVertexJson, graph);
+        
+        client.validateNested(index, type, path);
     }
 
     @Override
@@ -106,13 +111,29 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
     }
 
     @Override
+    public Set<String> toFields(Set<String> propertyKeys) {
+        return super.toFields(propertyKeys).stream().map(key -> path + "." + key).collect(Collectors.toSet());
+    }
+
+    @Override
     public PredicatesHolder toPredicates(PredicatesHolder predicatesHolder) {
         return super.toPredicates(predicatesHolder).map(has -> new HasContainer(path + "." + has.getKey(), has.getPredicate()));
     }
 
     @Override
     public PredicatesHolder toPredicates(List<Vertex> vertices, Direction direction, PredicatesHolder predicates) {
-        return null;
+        PredicatesHolder edgePredicates = this.toPredicates(predicates);
+        PredicatesHolder vertexPredicates = this.getVertexPredicates(vertices, direction);
+        return PredicatesHolderFactory.and(edgePredicates, vertexPredicates);
+    }
+
+    protected PredicatesHolder getVertexPredicates(List<Vertex> vertices, Direction direction) {
+        PredicatesHolder parentPredicates = parentVertexSchema.toPredicates(vertices);
+        PredicatesHolder childPredicates = childVertexSchema.toPredicates(vertices)
+                .map(has -> new HasContainer(path + "." + has.getKey(), has.getPredicate()));
+        if(direction.equals(parentDirection)) return parentPredicates;
+        if(direction.equals(parentDirection.opposite())) return childPredicates;
+        return PredicatesHolderFactory.or(parentPredicates, childPredicates); //Direction.BOTH
     }
 
     @Override
@@ -155,5 +176,4 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
     static String UPDATE_SCRIPT = "if (!ctx._source.containsKey(path)) {ctx._source[path] = [nestedDoc]}; " +
             "else { items_to_remove = []; ctx._source[path].each { item -> if (item[idField] == edgeId) { items_to_remove.add(item); } };" +
             "items_to_remove.each { item -> ctx._source[path].remove(item) }; ctx._source[path] += nestedDoc;}";
-
 }

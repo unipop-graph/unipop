@@ -51,7 +51,6 @@ public class DocumentController implements SimpleController {
         Set<DocumentSchema> docSchemas = new HashSet<>();
         schemas.forEach(schema -> {
             if(schema instanceof DocumentSchema) {
-                client.validateIndex(((DocumentSchema)schema).getIndex());
                 docSchemas.add((DocumentSchema) schema);
                 Set<DocumentSchema> childSchemas = collectSchemas(schema.getChildSchemas());
                 docSchemas.addAll(childSchemas);

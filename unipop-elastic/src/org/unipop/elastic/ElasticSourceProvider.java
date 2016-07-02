@@ -44,11 +44,11 @@ public class ElasticSourceProvider implements SourceProvider {
     }
 
     protected DocVertexSchema createVertexSchema(JSONObject vertexJson) throws JSONException {
-        return new DocVertexSchema(vertexJson, graph);
+        return new DocVertexSchema(vertexJson, client, graph);
     }
 
     protected DocEdgeSchema createEdgeSchema(JSONObject edgeJson) throws JSONException {
-        return new DocEdgeSchema(edgeJson, graph);
+        return new DocEdgeSchema(edgeJson, client, graph);
     }
 
     @Override

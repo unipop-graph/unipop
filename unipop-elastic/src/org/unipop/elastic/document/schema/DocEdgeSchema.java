@@ -7,6 +7,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.unipop.elastic.common.ElasticClient;
 import org.unipop.elastic.document.DocumentEdgeSchema;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
@@ -23,8 +24,8 @@ public class DocEdgeSchema extends AbstractDocSchema<Edge> implements DocumentEd
     protected VertexSchema outVertexSchema;
     protected VertexSchema inVertexSchema;
 
-    public DocEdgeSchema(JSONObject configuration, UniGraph graph) throws JSONException {
-        super(configuration, graph);
+    public DocEdgeSchema(JSONObject configuration, ElasticClient client, UniGraph graph) throws JSONException {
+        super(configuration, client, graph);
         this.outVertexSchema = createVertexSchema("outVertex");
         this.inVertexSchema = createVertexSchema("inVertex");
     }
@@ -33,7 +34,7 @@ public class DocEdgeSchema extends AbstractDocSchema<Edge> implements DocumentEd
         JSONObject vertexConfiguration = this.json.optJSONObject(key);
         if(vertexConfiguration == null) return null;
         if(vertexConfiguration.optBoolean("ref", false)) return new ReferenceVertexSchema(vertexConfiguration, graph);
-        return new DocVertexSchema(vertexConfiguration, graph);
+        return new DocVertexSchema(vertexConfiguration, client, graph);
     }
 
     @Override
@@ -78,7 +79,7 @@ public class DocEdgeSchema extends AbstractDocSchema<Edge> implements DocumentEd
         return PredicatesHolderFactory.and(edgePredicates, vertexPredicates);
     }
 
-    private PredicatesHolder getVertexPredicates(List<Vertex> vertices, Direction direction) {
+    protected PredicatesHolder getVertexPredicates(List<Vertex> vertices, Direction direction) {
         PredicatesHolder outPredicates = this.outVertexSchema.toPredicates(vertices);
         PredicatesHolder inPredicates = this.inVertexSchema.toPredicates(vertices);
         if(direction.equals(Direction.OUT)) return outPredicates;

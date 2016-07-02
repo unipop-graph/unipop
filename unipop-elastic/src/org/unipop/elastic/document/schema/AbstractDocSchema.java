@@ -15,6 +15,7 @@ import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.unipop.elastic.common.ElasticClient;
 import org.unipop.elastic.common.FilterHelper;
 import org.unipop.elastic.document.DocumentSchema;
 import org.unipop.query.predicates.PredicateQuery;
@@ -28,14 +29,18 @@ import java.io.IOException;
 import java.util.*;
 
 public abstract class AbstractDocSchema<E extends Element> extends AbstractElementSchema<E> implements DocumentSchema<E> {
+    protected final ElasticClient client;
     protected String type;
     protected String index;
     protected ObjectMapper mapper = new ObjectMapper();
 
-    public AbstractDocSchema(JSONObject configuration, UniGraph graph) throws JSONException {
+    public AbstractDocSchema(JSONObject configuration, ElasticClient client, UniGraph graph) throws JSONException {
         super(configuration, graph);
+        this.client = client;
         this.index = json.optString("index", null);
         this.type = json.optString("type", null);
+
+        client.validateIndex(index);
     }
 
     @Override

@@ -4,6 +4,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.unipop.elastic.common.ElasticClient;
 import org.unipop.elastic.document.DocumentVertexSchema;
 import org.unipop.schema.element.EdgeSchema;
 import org.unipop.schema.element.ElementSchema;
@@ -17,10 +18,10 @@ import java.util.Set;
 import static org.unipop.util.ConversionUtils.getList;
 
 public class DocVertexSchema extends AbstractDocSchema<Vertex> implements DocumentVertexSchema {
-    Set<ElementSchema> edgeSchemas = new HashSet<>();
+    protected Set<ElementSchema> edgeSchemas = new HashSet<>();
 
-    public DocVertexSchema(JSONObject configuration, UniGraph graph) throws JSONException {
-        super(configuration, graph);
+    public DocVertexSchema(JSONObject configuration, ElasticClient client, UniGraph graph) throws JSONException {
+        super(configuration, client, graph);
 
         for(JSONObject edgeJson : getList(json, "edges")) {
             EdgeSchema docEdgeSchema = getEdgeSchema(edgeJson);
@@ -32,8 +33,8 @@ public class DocVertexSchema extends AbstractDocSchema<Vertex> implements Docume
         String path = edgeJson.optString("path", null);
         Direction direction = Direction.valueOf(edgeJson.optString("direction"));
 
-        if(path == null) return new InnerEdgeSchema(this, direction, index, type, edgeJson, graph);
-        return new NestedEdgeSchema(this, direction, index, type, path, edgeJson, graph);
+        if(path == null) return new InnerEdgeSchema(this, direction, index, type, edgeJson, client, graph);
+        return new NestedEdgeSchema(this, direction, index, type, path, edgeJson, client, graph);
     }
 
     @Override
