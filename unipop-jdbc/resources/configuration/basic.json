@@ -28,13 +28,13 @@
       },
       "dynamicProperties": false,
       "outVertex": {
-        "type": "ref",
+        "ref": "true",
         "id": "@outId",
         "label": "@outLabel",
         "properties": {}
       },
       "inVertex": {
-        "type": "ref",
+        "ref": "true",
         "id": "@inId",
         "label": "@inLabel",
         "properties": {}

@@ -3,7 +3,7 @@ package org.unipop.jdbc.controller.simple.results;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.jooq.Record;
 import org.jooq.RecordMapper;
-import org.unipop.jdbc.schemas.RowSchema;
+import org.unipop.jdbc.schemas.jdbc.JdbcSchema;
 
 import java.util.Map;
 import java.util.Set;
@@ -13,9 +13,9 @@ import java.util.Set;
  * @since 6/20/2016
  */
 public class ElementMapper<E extends Element> implements RecordMapper<Record, Element> {
-    private final Set<RowSchema<E>> rowSchemas;
+    private final Set<JdbcSchema<E>> rowSchemas;
 
-    public ElementMapper(Set<RowSchema<E>> rowSchemas) {
+    public ElementMapper(Set<JdbcSchema<E>> rowSchemas) {
         this.rowSchemas = rowSchemas;
     }
 
@@ -23,6 +23,6 @@ public class ElementMapper<E extends Element> implements RecordMapper<Record, El
     public Element map(Record record) {
         Map<String, Object> dataMap = record.intoMap();
 
-        return rowSchemas.stream().map(schema -> schema.fromFields(dataMap)).findFirst().get();
+        return rowSchemas.stream().flatMap(schema -> schema.fromFields(dataMap).stream()).findFirst().get();
     }
 }

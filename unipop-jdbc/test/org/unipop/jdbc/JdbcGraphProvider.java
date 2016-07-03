@@ -3,7 +3,7 @@ package org.unipop.jdbc;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.unipop.common.test.UnipopGraphProvider;
+import org.unipop.test.UnipopGraphProvider;
 
 import java.io.File;
 import java.net.URL;
@@ -13,7 +13,7 @@ import java.sql.SQLException;
 import java.util.Map;
 
 /**
- * @author GurRo
+ * @author Gur Ronen
  * @since 6/20/2016
  */
 public class JdbcGraphProvider extends UnipopGraphProvider {

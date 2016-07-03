@@ -14,10 +14,9 @@ import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.jooq.*;
 import org.jooq.impl.DSL;
 import org.unipop.common.util.PredicatesTranslator;
-import org.unipop.common.util.SchemaSet;
 import org.unipop.jdbc.controller.simple.results.ElementMapper;
 import org.unipop.jdbc.schemas.RowEdgeSchema;
-import org.unipop.jdbc.schemas.RowSchema;
+import org.unipop.jdbc.schemas.jdbc.JdbcSchema;
 import org.unipop.jdbc.schemas.RowVertexSchema;
 import org.unipop.jdbc.utils.TableStrings;
 import org.unipop.query.StepDescriptor;
@@ -31,6 +30,7 @@ import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.query.search.SearchQuery;
 import org.unipop.query.search.SearchVertexQuery;
+import org.unipop.schema.element.SchemaSet;
 import org.unipop.schema.reference.DeferredVertex;
 import org.unipop.structure.UniEdge;
 import org.unipop.structure.UniElement;
@@ -70,7 +70,7 @@ public class RowController implements SimpleController {
 
     @Override
     public <E extends Element> Iterator<E> search(SearchQuery<E> uniQuery) {
-        Set<? extends RowSchema<E>> schemas = this.getSchemas(uniQuery.getReturnType());
+        Set<? extends JdbcSchema<E>> schemas = this.getSchemas(uniQuery.getReturnType());
         PredicatesHolder schemaPredicateHolders = this.extractPredicatesHolder(uniQuery, schemas);
 
         return this.search(schemaPredicateHolders, schemas, uniQuery.getLimit(), uniQuery.getStepDescriptor());
@@ -81,7 +81,7 @@ public class RowController implements SimpleController {
         UniEdge edge = new UniEdge(uniQuery.getProperties(), uniQuery.getOutVertex(), uniQuery.getInVertex(), this.graph);
         try {
             this.insert(edgeSchemas, edge);
-        } catch(IllegalArgumentException ex) {
+        } catch (IllegalArgumentException ex) {
             throw Graph.Exceptions.edgeWithIdAlreadyExists(edge.id());
         }
 
@@ -102,17 +102,17 @@ public class RowController implements SimpleController {
 
     @Override
     public <E extends Element> void property(PropertyQuery<E> uniQuery) {
-        Set<? extends RowSchema<E>> schemas = this.getSchemas(uniQuery.getElement().getClass());
+        Set<? extends JdbcSchema<E>> schemas = this.getSchemas(uniQuery.getElement().getClass());
         this.update(schemas, uniQuery.getElement());
     }
 
     @Override
     public <E extends Element> void remove(RemoveQuery<E> uniQuery) {
         uniQuery.getElements().forEach(el -> {
-            Set<? extends RowSchema<E>> schemas = this.getSchemas(el.getClass());
+            Set<? extends JdbcSchema<E>> schemas = this.getSchemas(el.getClass());
 
-            for (RowSchema<E> schema : schemas) {
-                DeleteWhereStep deleteStep = this.getDslContext().delete(table(schema.getTable(el)));
+            for (JdbcSchema<E> schema : schemas) {
+                DeleteWhereStep deleteStep = this.getDslContext().delete(table(schema.getTable()));
 
                 Collection<Condition> conditions = this.translateElementsToConditions(schema, Collections.singletonList(el));
                 deleteStep.where(conditions).execute();
@@ -126,7 +126,7 @@ public class RowController implements SimpleController {
                 schema.toPredicates(uniQuery.getVertices())).collect(Collectors.toSet());
         PredicatesHolder schemaPredicateHolders = PredicatesHolderFactory.or(schemasPredicates);
 
-        if(schemaPredicateHolders.isEmpty()) {
+        if (schemaPredicateHolders.isEmpty()) {
             return;
         }
         Iterator<Vertex> search = this.search(schemaPredicateHolders, vertexSchemas, -1, uniQuery.getStepDescriptor());
@@ -134,14 +134,15 @@ public class RowController implements SimpleController {
         Map<Object, DeferredVertex> vertexMap = uniQuery.getVertices().stream().collect(Collectors.toMap(UniElement::id, Function.identity(), (a, b) -> a));
         search.forEachRemaining(newVertex -> {
             DeferredVertex deferredVertex = vertexMap.get(newVertex.id());
-            if(deferredVertex != null) deferredVertex.loadProperties(newVertex);
+            if (deferredVertex != null) deferredVertex.loadProperties(newVertex);
         });
     }
 
     @Override
     public Iterator<Edge> search(SearchVertexQuery uniQuery) {
         Set<PredicatesHolder> schemasPredicates = edgeSchemas.stream().map(schema ->
-                schema.toPredicates(uniQuery.getPredicates(), uniQuery.getVertices(), uniQuery.getDirection())).collect(Collectors.toSet());
+                schema.toPredicates(uniQuery.getVertices(), uniQuery.getDirection(), uniQuery.getPredicates()))
+                .collect(Collectors.toSet());
         PredicatesHolder schemaPredicateHolders = PredicatesHolderFactory.or(schemasPredicates);
         return this.search(
                 schemaPredicateHolders,
@@ -151,7 +152,7 @@ public class RowController implements SimpleController {
         );
     }
 
-    private <E extends Element> Iterator<E> search(PredicatesHolder allPredicates, Set<? extends RowSchema<E>> schemas, int limit, StepDescriptor stepDescriptor) {
+    private <E extends Element> Iterator<E> search(PredicatesHolder allPredicates, Set<? extends JdbcSchema<E>> schemas, int limit, StepDescriptor stepDescriptor) {
         if (schemas.size() == 0 || allPredicates.isAborted()) {
             return Iterators.emptyIterator();
         }
@@ -164,7 +165,7 @@ public class RowController implements SimpleController {
                 .collect(Collectors.toSet());
 
         Iterator<Condition> conditions = this.predicatesTranslator.translate(allPredicates).iterator();
-        Iterator<String> tables = schemas.stream().map(RowSchema::getTable).iterator();
+        Iterator<String> tables = schemas.stream().map(JdbcSchema::getTable).iterator();
         String firstTable = tables.next();
         SelectWhereStep step = createSqlQuery(columnsToRetrieve, firstTable);
 
@@ -198,25 +199,25 @@ public class RowController implements SimpleController {
     }
 
     @SuppressWarnings("unchecked")
-    private <E extends Element> Set<RowSchema<E>> getSchemas(Class elementClass) {
+    private <E extends Element> Set<JdbcSchema<E>> getSchemas(Class elementClass) {
         if (Vertex.class.isAssignableFrom(elementClass)) {
-            return vertexSchemas.stream().map(v -> (RowSchema<E>) v).collect(Collectors.toSet());
+            return vertexSchemas.stream().map(v -> (JdbcSchema<E>) v).collect(Collectors.toSet());
         } else {
-            return edgeSchemas.stream().map(e -> (RowSchema<E>) e).collect(Collectors.toSet());
+            return edgeSchemas.stream().map(e -> (JdbcSchema<E>) e).collect(Collectors.toSet());
         }
     }
 
-    private <E extends Element> PredicatesHolder extractPredicatesHolder(SearchQuery<E> uniQuery, Set<? extends RowSchema<E>> schemas) {
+    private <E extends Element> PredicatesHolder extractPredicatesHolder(SearchQuery<E> uniQuery, Set<? extends JdbcSchema<E>> schemas) {
         Set<PredicatesHolder> schemasPredicates = schemas.stream().map(schema ->
                 schema.toPredicates(uniQuery.getPredicates())).collect(Collectors.toSet());
         return PredicatesHolderFactory.or(schemasPredicates);
     }
 
-    private <E extends Element> void insert(Set<? extends RowSchema<E>> schemas, E element) {
-        for (RowSchema<E> schema : schemas) {
-            RowSchema.Row row = schema.toRow(element);
+    private <E extends Element> void insert(Set<? extends JdbcSchema<E>> schemas, E element) {
+        for (JdbcSchema<E> schema : schemas) {
+            JdbcSchema.Row row = schema.toRow(element);
 
-            int changeSetCount = this.getDslContext().insertInto(table(schema.getTable(element)), CollectionUtils.collect(row.getFields().keySet(), DSL::field))
+            int changeSetCount = this.getDslContext().insertInto(table(schema.getTable()), CollectionUtils.collect(row.getFields().keySet(), DSL::field))
                     .values(row.getFields().values())
                     .onDuplicateKeyIgnore().execute();
 
@@ -226,9 +227,9 @@ public class RowController implements SimpleController {
         }
     }
 
-    private <E extends Element> void update(Set<? extends RowSchema<E>> schemas, E element) {
-        for (RowSchema<E> schema : schemas) {
-            RowSchema.Row row = schema.toRow(element);
+    private <E extends Element> void update(Set<? extends JdbcSchema<E>> schemas, E element) {
+        for (JdbcSchema<E> schema : schemas) {
+            JdbcSchema.Row row = schema.toRow(element);
 
             Map<Field<?>, Object> fieldMap = Maps.newHashMap();
             row.getFields().entrySet().stream().map(this::mapSet).forEach(en -> fieldMap.put(en.getKey(), en.getValue()));
@@ -244,7 +245,7 @@ public class RowController implements SimpleController {
         return new DefaultMapEntry<>(field(entry.getKey()), entry.getValue());
     }
 
-    private <E extends Element> Collection<Condition> translateElementsToConditions(RowSchema<E> schema, List<E> elements) {
+    private <E extends Element> Collection<Condition> translateElementsToConditions(JdbcSchema<E> schema, List<E> elements) {
         return StreamSupport.stream(this.predicatesTranslator.translate(
                 new PredicatesHolder(
                         PredicatesHolder.Clause.Or,
@@ -252,7 +253,7 @@ public class RowController implements SimpleController {
                                 .map(schema::toFields)
                                 .map(Map::entrySet)
                                 .flatMap(m -> m.stream().map(es -> new HasContainer(es.getKey(), P.within(es.getValue()))))
-                                .collect(Collectors.toSet()), Collections.emptySet())).spliterator(), false)
+                                .collect(Collectors.toList()), Collections.emptyList())).spliterator(), false)
                 .collect(Collectors.toSet());
 
     }

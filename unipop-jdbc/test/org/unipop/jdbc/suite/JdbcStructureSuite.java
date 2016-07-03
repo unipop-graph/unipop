@@ -2,9 +2,10 @@ package org.unipop.jdbc.suite;
 
 import org.apache.tinkerpop.gremlin.GraphProviderClass;
 import org.junit.runner.RunWith;
-import org.unipop.common.test.UnipopStructureSuite;
 import org.unipop.jdbc.JdbcGraphProvider;
 import org.unipop.structure.UniGraph;
+import org.unipop.test.UnipopStructureSuite;
+
 
 /**
  * @author Gur Ronen

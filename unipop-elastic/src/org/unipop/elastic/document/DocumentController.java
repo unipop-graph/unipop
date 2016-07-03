@@ -69,7 +69,7 @@ public class DocumentController implements SimpleController {
 
     @Override
     public Iterator<Edge> search(SearchVertexQuery uniQuery) {
-        Function<DocumentEdgeSchema, PredicatesHolder> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery.gertVertices(), uniQuery.getDirection(), uniQuery.getPredicates());
+        Function<DocumentEdgeSchema, PredicatesHolder> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery.getVertices(), uniQuery.getDirection(), uniQuery.getPredicates());
         return search(edgeSchemas, uniQuery, toPredicatesFunction);
     }
 

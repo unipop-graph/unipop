@@ -1,18 +1,19 @@
-package org.unipop.jdbc.schemas;
+package org.unipop.jdbc.schemas.jdbc;
 
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.unipop.schema.ElementSchema;
+import org.unipop.query.predicates.PredicateQuery;
+import org.unipop.schema.element.ElementSchema;
 
+import java.util.List;
 import java.util.Map;
 
 /**
- * Created by GurRo on 6/12/2016.
+ * @author Gur Ronen
+ * @since 6/12/2016
  */
-public interface RowSchema<E extends Element> extends ElementSchema<E> {
+public interface JdbcSchema<E extends Element> extends ElementSchema<E> {
 
-    default String getTable(E element) {
-        return element.label();
-    }
+    List<E> parseResults(String result, PredicateQuery query);
 
     /**
      * @return the full table name, including database prefix
@@ -32,7 +33,7 @@ public interface RowSchema<E extends Element> extends ElementSchema<E> {
         String table = this.getTable();
         Object id = this.getId(element);
 
-        return new RowSchema.Row(table, id, fields);
+        return new JdbcSchema.Row(table, id, fields);
     }
 
     class Row {
