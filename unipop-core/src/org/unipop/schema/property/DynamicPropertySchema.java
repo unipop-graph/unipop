@@ -3,24 +3,24 @@ package org.unipop.schema.property;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.unipop.common.util.ConversionUtils;
+import org.unipop.util.ConversionUtils;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class DynamicPropertiesSchema implements PropertySchema {
+public class DynamicPropertySchema implements PropertySchema {
 
     private final Set<String> excludeFields;
     private final Set<String> excludeProperties;
 
-    public DynamicPropertiesSchema(ArrayList<PropertySchema> otherSchemas) {
-        this.excludeFields = otherSchemas.stream().flatMap(schema -> schema.getFields().stream()).collect(Collectors.toSet());
-        this.excludeProperties = otherSchemas.stream().flatMap(schema -> schema.getProperties().stream()).collect(Collectors.toSet());
+    public DynamicPropertySchema(ArrayList<PropertySchema> otherSchemas) {
+        this.excludeFields = otherSchemas.stream().flatMap(schema -> schema.excludeDynamicFields().stream()).collect(Collectors.toSet());
+        this.excludeProperties = otherSchemas.stream().flatMap(schema -> schema.excludeDynamicProperties().stream()).collect(Collectors.toSet());
     }
 
-    public DynamicPropertiesSchema(ArrayList<PropertySchema> otherSchemas, JSONObject config) {
+    public DynamicPropertySchema(ArrayList<PropertySchema> otherSchemas, JSONObject config) {
         this(otherSchemas);
 
         JSONArray excludeFieldsJson = config.optJSONArray("excludeFields");
@@ -43,8 +43,16 @@ public class DynamicPropertiesSchema implements PropertySchema {
     }
 
     @Override
-    public PredicatesHolder toPredicates(HasContainer has) {
-        if(!excludeProperties.contains(has.getKey())) return PredicatesHolderFactory.predicate(has);
-        return null;
+    public Set<String> toFields(Set<String> propertyKeys) {
+        return propertyKeys.stream().filter(key -> !excludeProperties.contains(key))
+                .collect(Collectors.toSet());
+    }
+
+    @Override
+    public PredicatesHolder toPredicates(PredicatesHolder predicatesHolder) {
+        Set<HasContainer> hasContainers = predicatesHolder.getPredicates().stream().filter(has ->
+                !excludeProperties.contains(has.getKey())).collect(Collectors.toSet());
+
+        return PredicatesHolderFactory.createFromPredicates(predicatesHolder.getClause(), hasContainers);
     }
 }

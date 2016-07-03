@@ -1,6 +1,4 @@
-package org.unipop.common.util;
-
-import org.unipop.schema.ElementSchema;
+package org.unipop.schema.element;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -25,7 +23,8 @@ public class SchemaSet {
         schemas.forEach(schema -> {
             if(result.contains(schema)) return;
             result.add(schema);
-            addRecursive(result, schema.getAllSchemas());
+            Set childSchemas = schema.getChildSchemas();
+            addRecursive(result, childSchemas);
         });
     }
 

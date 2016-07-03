@@ -4,22 +4,21 @@ import com.google.common.collect.Lists;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.FlatMapStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.B_O_S_SE_SL_Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.DefaultTraversalSideEffects;
-import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
+import org.unipop.process.UniBulkStep;
 import org.unipop.process.traverser.UniGraphTraverserStep;
+import org.unipop.structure.UniGraph;
 
 import java.util.*;
 import java.util.function.BinaryOperator;
-import java.util.function.Supplier;
 
 /**
  * Created by sbarzilay on 3/15/16.
  */
-public class UniGraphCoalesceStep<S, E> extends FlatMapStep<S, E> implements TraversalParent {
+public class UniGraphCoalesceStep<S, E> extends UniBulkStep<S, E> implements TraversalParent {
     private final List<Traversal.Admin<S, E>> coalesceTraversals;
     private Iterator<Traverser.Admin<E>> results = EmptyIterator.instance();
 
@@ -30,26 +29,15 @@ public class UniGraphCoalesceStep<S, E> extends FlatMapStep<S, E> implements Tra
         }};
     }
 
-    public UniGraphCoalesceStep(Traversal.Admin traversal, List<Traversal.Admin<S, E>> coalesceTraversals) {
-        super(traversal);
+    public UniGraphCoalesceStep(Traversal.Admin traversal, UniGraph graph, List<Traversal.Admin<S, E>> coalesceTraversals) {
+        super(traversal, graph);
         this.coalesceTraversals = coalesceTraversals;
         this.coalesceTraversals.forEach(t -> t.addStep(new UniGraphTraverserStep<>(t.asAdmin())));
         this.coalesceTraversals.forEach(this::integrateChild);
     }
 
     @Override
-    protected Traverser.Admin<E> processNextStart() {
-
-        while (!results.hasNext() && starts.hasNext())
-            results = query(starts);
-
-        if (results.hasNext())
-            return results.next();
-
-        throw FastNoSuchElementException.instance();
-    }
-
-    private Iterator<Traverser.Admin<E>> query(Iterator<Traverser.Admin<S>> traversers) {
+    protected Iterator<Traverser.Admin<E>> process(List<Traverser.Admin<S>> traversers) {
         List<Traverser.Admin<E>> coalesce = new ArrayList<>();
         List<Traverser.Admin<S>> traversersList = Lists.newArrayList(traversers);
         traversersList.forEach(t -> {
@@ -70,15 +58,6 @@ public class UniGraphCoalesceStep<S, E> extends FlatMapStep<S, E> implements Tra
             }
         });
         return coalesce.iterator();
-    }
-
-    @Override
-    protected Iterator<E> flatMap(Traverser.Admin<S> traverser) {
-        for (final Traversal.Admin<S, E> coalesceTraversal : this.coalesceTraversals) {
-            if (coalesceTraversal.hasNext())
-                return coalesceTraversal;
-        }
-        return EmptyIterator.instance();
     }
 
     @Override

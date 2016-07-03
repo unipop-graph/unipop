@@ -5,11 +5,34 @@
   "vertices": [
     {
       "index": "vertex",
+      "type": "person",
       "id": "@_id",
-      "label": "@_type",
-      "properties": {
-        "gremlin.partitionGraphStrategy.partition": "@partition"
+      "label": "person",
+      "dynamicProperties": true,
+      "edges": [{
+        "path": "creations",
+        "id": "@creationId",
+        "label": "created",
+        "direction": "OUT",
+        "properties": {
+          "weight": "@weight",
+          "name": "@name"
+        },
+        "vertex": {
+          "ref": true,
+          "id": "@softwareId",
+          "label": "software"
+        }
+      }]
+    },
+    {
+      "index": "vertex",
+      "id": "@_id",
+      "label": {
+        "field": "_type",
+        "exclude": ["person"]
       },
+      "properties": {},
       "dynamicProperties": true
     }
   ],
@@ -17,10 +40,11 @@
     {
       "index": "edge",
       "id": "@_id",
-      "label": "@_type",
-      "properties": {
-        "gremlin.partitionGraphStrategy.partition": "@partition"
+      "label": {
+        "field": "_type",
+        "exclude": ["created"]
       },
+      "properties": {},
       "dynamicProperties": {
         "excludeFields": ["outId", "inId", "outLabel", "inLabel"]
       },

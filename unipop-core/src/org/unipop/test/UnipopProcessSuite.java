@@ -1,4 +1,4 @@
-package org.unipop.common.test;
+package org.unipop.test;
 
 import org.apache.tinkerpop.gremlin.process.ProcessStandardSuite;
 import org.apache.tinkerpop.gremlin.process.traversal.CoreTraversalTest;

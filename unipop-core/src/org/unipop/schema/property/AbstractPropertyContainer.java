@@ -1,27 +1,28 @@
-package org.unipop.schema.builder;
+package org.unipop.schema.property;
 
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.unipop.schema.property.*;
-import org.unipop.schema.ElementSchema;
 import org.unipop.structure.UniGraph;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class SchemaBuilder<S extends ElementSchema> {
+public abstract class AbstractPropertyContainer {
     protected final UniGraph graph;
     protected final JSONObject json;
     protected ArrayList<PropertySchema> propertySchemas = new ArrayList<>();
+    protected DynamicPropertySchema dynamicProperties;
 
-    public SchemaBuilder(JSONObject json, UniGraph graph) {
+    public AbstractPropertyContainer(JSONObject json, UniGraph graph) {
         this.json = json;
         this.graph = graph;
         createPropertySchemas();
     }
 
-    public abstract S build();
+    protected List<PropertySchema> getPropertySchemas() {
+        return propertySchemas;
+    }
 
     protected void createPropertySchemas() {
         addPropertySchema(T.id.getAccessor(), json.get(T.id.toString()), false);
@@ -34,10 +35,11 @@ public abstract class SchemaBuilder<S extends ElementSchema> {
 
         Object dynamicPropertiesConfig = json.opt("dynamicProperties");
         if(dynamicPropertiesConfig instanceof Boolean && (boolean)dynamicPropertiesConfig)
-            propertySchemas.add(new DynamicPropertiesSchema(propertySchemas));
+            this.dynamicProperties = new DynamicPropertySchema(propertySchemas);
         else if(dynamicPropertiesConfig instanceof JSONObject)
-            propertySchemas.add(new DynamicPropertiesSchema(propertySchemas, (JSONObject) dynamicPropertiesConfig));
+            this.dynamicProperties = new DynamicPropertySchema(propertySchemas, (JSONObject) dynamicPropertiesConfig);
 
+        if(this.dynamicProperties != null) propertySchemas.add(this.dynamicProperties);
     }
 
     protected void addPropertySchema(String key, Object value, boolean nullable) {

@@ -1,13 +1,13 @@
 package org.unipop.schema.property;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class StaticPropertySchema implements PropertySchema {
     private final String key;
@@ -20,38 +20,37 @@ public class StaticPropertySchema implements PropertySchema {
 
     @Override
     public Map<String, Object> toProperties(Map<String, Object> source) {
-        Object value = source.get(this.key);
-        if(value != null && !this.value.equals(value)) return null;
         return Collections.singletonMap(key, this.value);
     }
 
     @Override
     public Map<String, Object> toFields(Map<String, Object> prop) {
-        Object value = prop.get(this.key);
-        if(value != null && !this.value.equals(value)) return null;
-        return Collections.emptyMap();
-    }
-
-    @Override
-    public PredicatesHolder toPredicates(HasContainer has) {
-        if(has.getKey().equals(this.key)) {
-            if(this.test(has.getPredicate())) return PredicatesHolderFactory.empty();
-            else return PredicatesHolderFactory.abort();
-        }
+        Object o = prop.get(this.key);
+        if(o == null || o.equals(this.value)) return Collections.emptyMap();
         return null;
     }
 
     @Override
-    public Set<String> getFields() {
-        return Collections.singleton(this.value);
+    public Set<String> toFields(Set<String> propertyKeys) {
+        return Collections.emptySet();
     }
 
     @Override
-    public Set<String> getProperties() {
+    public PredicatesHolder toPredicates(PredicatesHolder predicatesHolder) {
+        Set<PredicatesHolder> predicates = predicatesHolder.findKey(this.key).map(has -> {
+            if (has != null && !test(has.getPredicate())) return PredicatesHolderFactory.abort();
+            return PredicatesHolderFactory.empty();
+        }).collect(Collectors.toSet());
+
+        return PredicatesHolderFactory.create(predicatesHolder.getClause(), predicates);
+    }
+
+    @Override
+    public Set<String> excludeDynamicProperties() {
         return Collections.singleton(this.key);
     }
 
-    public boolean test(P predicate) {
+    private boolean test(P predicate) {
         return predicate.test(this.value);
     }
 }

@@ -1,4 +1,4 @@
-package org.unipop.schema;
+package org.unipop.schema.element;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -8,8 +8,5 @@ import org.unipop.query.predicates.PredicatesHolder;
 import java.util.List;
 
 public interface EdgeSchema extends ElementSchema<Edge> {
-    VertexSchema getOutVertexSchema();
-    VertexSchema getInVertexSchema();
-
-    PredicatesHolder toPredicates(PredicatesHolder predicates, List<Vertex> vertices, Direction direction);
+    PredicatesHolder toPredicates(List<Vertex> vertices, Direction direction, PredicatesHolder predicates);
 }

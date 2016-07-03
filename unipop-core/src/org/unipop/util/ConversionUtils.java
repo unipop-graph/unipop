@@ -1,10 +1,11 @@
-package org.unipop.common.util;
+package org.unipop.util;
 
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -59,5 +60,17 @@ public class ConversionUtils {
             addresses.add(address);
         }
         return addresses;
+    }
+
+    public static <K, V> Map<K, V> merge(List<Map<K, V>> maps, BiFunction<? super V, ? super V, ? extends V> mergeFunc, Boolean ignoreNull) {
+        Map<K, V> newMap = new HashMap<>(maps.size());
+        for(Map<K, V> current : maps) {
+            if(current == null) {
+                if (!ignoreNull) return null; //a null results indicates to cancel the merge.
+                continue;
+            }
+            current.forEach((fieldKey, fieldValue) -> newMap.merge(fieldKey, fieldValue, mergeFunc));
+        }
+        return newMap;
     }
 }

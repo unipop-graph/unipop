@@ -7,19 +7,26 @@ import org.unipop.query.StepDescriptor;
 import org.unipop.query.controller.UniQueryController;
 
 import java.util.Iterator;
+import java.util.Set;
 
 public class SearchQuery<E extends Element> extends PredicateQuery {
     private final Class<E> returnType;
     private final int limit;
+    private Set<String> propertyKeys;
 
-    public SearchQuery(Class<E> returnType, PredicatesHolder predicates, int limit, StepDescriptor stepDescriptor) {
+    public SearchQuery(Class<E> returnType, PredicatesHolder predicates, int limit, Set<String> propertyKeys, StepDescriptor stepDescriptor) {
         super(predicates, stepDescriptor);
         this.returnType = returnType;
         this.limit = limit;
+        this.propertyKeys = propertyKeys;
     }
 
     public Class<E> getReturnType(){
         return returnType;
+    }
+
+    public Set<String> getPropertyKeys() {
+        return this.propertyKeys;
     }
 
     public int getLimit(){
