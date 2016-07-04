@@ -40,6 +40,7 @@ import org.unipop.structure.UniVertex;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static org.jooq.impl.DSL.field;
@@ -73,7 +74,7 @@ public class RowController implements SimpleController {
         Set<? extends JdbcSchema<E>> schemas = this.getSchemas(uniQuery.getReturnType());
         PredicatesHolder schemaPredicateHolders = this.extractPredicatesHolder(uniQuery, schemas);
 
-        return this.search(schemaPredicateHolders, schemas, uniQuery.getLimit(), uniQuery.getStepDescriptor());
+        return this.search(schemaPredicateHolders, (Set<JdbcSchema<E>>) schemas, uniQuery.getLimit(), uniQuery.getStepDescriptor());
     }
 
     @Override
@@ -92,7 +93,7 @@ public class RowController implements SimpleController {
     public Vertex addVertex(AddVertexQuery uniQuery) {
         UniVertex vertex = new UniVertex(uniQuery.getProperties(), this.graph);
         try {
-            this.insert(vertexSchemas, vertex);
+            this.insert(this.vertexSchemas, vertex);
         } catch (IllegalArgumentException ex) {
             throw Graph.Exceptions.vertexWithIdAlreadyExists(vertex.id());
         }
@@ -165,20 +166,10 @@ public class RowController implements SimpleController {
                 .collect(Collectors.toSet());
 
         Iterator<Condition> conditions = this.predicatesTranslator.translate(allPredicates).iterator();
-        Iterator<String> tables = schemas.stream().map(JdbcSchema::getTable).iterator();
-        String firstTable = tables.next();
-        SelectWhereStep step = createSqlQuery(columnsToRetrieve, firstTable);
+        Stream<String> tables = schemas.stream().map(JdbcSchema::getTable);
 
-        tables.forEachRemaining(table -> step
-                .unionAll(createSqlQuery(columnsToRetrieve, table)));
-
-        step.where(IteratorUtils.list(conditions));
-
-        if (limit >= 0) {
-            step.limit(limit);
-        }
-
-        return (Iterator<E>) step.fetch().map(new ElementMapper(schemas)).iterator();
+        return (Iterator<E>) tables.flatMap(table -> createSqlQuery(columnsToRetrieve, table)
+                .where(IteratorUtils.list(conditions)).fetch().map(new ElementMapper(schemas)).stream()).distinct().iterator();
     }
 
     private SelectJoinStep<Record> createSqlQuery(Set<Field<Object>> columnsToRetrieve, String table) {
@@ -186,7 +177,7 @@ public class RowController implements SimpleController {
                 .select(/*Stream.concat(
                         columnsToRetrieve.stream(),
                         Stream.of(getTableField(table)))
-                        .collect(Collectors.toSet())*/) //TODO: Add back smarter behaviour when properties are implemented.
+                        .collect(Collectors.toSet())*/) //TODO: Add back smarter behaviour when propertyFetcher is implemented.
                 .from(table);
     }
 

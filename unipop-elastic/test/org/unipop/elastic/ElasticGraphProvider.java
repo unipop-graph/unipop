@@ -41,7 +41,7 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
     public String getSchemaConfiguration(LoadGraphWith.GraphData loadGraphWith) {
          if(loadGraphWith != null && loadGraphWith.equals(LoadGraphWith.GraphData.MODERN)) {
 //            return InnerEdgeConfiguration;
-//             return NestedEdgeConfiguration;
+             return NestedEdgeConfiguration;
          }
          return BasicConfiguration;
     }

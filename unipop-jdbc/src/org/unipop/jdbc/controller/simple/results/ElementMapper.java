@@ -22,7 +22,6 @@ public class ElementMapper<E extends Element> implements RecordMapper<Record, El
     @Override
     public Element map(Record record) {
         Map<String, Object> dataMap = record.intoMap();
-
         return rowSchemas.stream().flatMap(schema -> schema.fromFields(dataMap).stream()).findFirst().get();
     }
 }
