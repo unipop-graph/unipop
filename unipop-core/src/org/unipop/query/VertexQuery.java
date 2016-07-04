@@ -5,6 +5,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.List;
 
 public interface VertexQuery{
-    List<Vertex> gertVertices();
+    List<Vertex> getVertices();
     Direction getDirection();
 }

@@ -1,6 +1,5 @@
 package org.unipop.schema.property;
 
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.unipop.query.predicates.PredicatesHolder;
 
 import java.util.*;
@@ -29,12 +28,12 @@ public class MultiFieldPropertySchema implements PropertySchema {
     }
 
     @Override
-    public Set<String> getFields() {
+    public Set<String> excludeDynamicFields() {
         return new HashSet<>(this.fields);
     }
 
     @Override
-    public Set<String> getProperties() {
+    public Set<String> excludeDynamicProperties() {
         return Collections.singleton(this.key);
     }
 
@@ -53,7 +52,12 @@ public class MultiFieldPropertySchema implements PropertySchema {
     }
 
     @Override
-    public PredicatesHolder toPredicates(HasContainer has) {
+    public Set<String> toFields(Set<String> propertyKeys) {
+        return Collections.emptySet();
+    }
+
+    @Override
+    public PredicatesHolder toPredicates(PredicatesHolder predicatesHolder) {
         return null;
     }
 }

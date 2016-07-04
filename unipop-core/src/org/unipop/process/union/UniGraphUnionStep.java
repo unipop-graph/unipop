@@ -2,12 +2,12 @@ package org.unipop.process.union;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
-import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
+import org.unipop.process.UniBulkStep;
 import org.unipop.process.traverser.UniGraphTraverserStep;
+import org.unipop.structure.UniGraph;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -15,12 +15,12 @@ import java.util.stream.Collectors;
 /**
  * Created by sbarzilay on 6/6/16.
  */
-public class UniGraphUnionStep<S,E> extends AbstractStep<S,E> {
+public class UniGraphUnionStep<S,E> extends UniBulkStep<S,E> {
     Iterator<Traverser.Admin<E>> results = EmptyIterator.instance();
     List<Traversal.Admin<?, E>> unionTraversals;
 
-    public UniGraphUnionStep(Traversal.Admin traversal, final Traversal.Admin<?, E>... unionTraversals) {
-        super(traversal);
+    public UniGraphUnionStep(Traversal.Admin traversal, UniGraph graph, final Traversal.Admin<?, E>... unionTraversals) {
+        super(traversal, graph);
         this.unionTraversals = Arrays.asList(unionTraversals);
         this.unionTraversals.forEach(t -> t.addStep(new UniGraphTraverserStep<>(t)));
     }
@@ -31,28 +31,13 @@ public class UniGraphUnionStep<S,E> extends AbstractStep<S,E> {
     }
 
     @Override
-    protected Traverser.Admin<E> processNextStart() throws NoSuchElementException {
-        while (!results.hasNext() && starts.hasNext())
-            results = union();
-
-        if (results.hasNext())
-            return results.next();
-
-        throw FastNoSuchElementException.instance();
-    }
-
-    protected Iterator<Traverser.Admin<E>> union(){
-        List<Traverser.Admin<S>> startsList = new ArrayList<>();
+    protected Iterator<Traverser.Admin<E>> process(List<Traverser.Admin<S>> traversers) {
         List<Traverser.Admin<E>> results = new ArrayList<>();
-        while (starts.hasNext()){
-            startsList.add(starts.next());
-        }
-        this.unionTraversals.forEach(t -> {
-            startsList.forEach(((Traversal.Admin<S, E>) t)::addStart);
+        this.unionTraversals.forEach(t->{
+            traversers.forEach(((Traversal.Admin<S, E>) t)::addStart);
             while(t.hasNext())
-                results.add(((Traverser.Admin<E>) t.next()));
+                results.add((Traverser.Admin<E>) t.next());
         });
-
         return results.iterator();
     }
 

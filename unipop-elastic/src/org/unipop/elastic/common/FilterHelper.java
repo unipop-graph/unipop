@@ -52,7 +52,7 @@ public class FilterHelper {
         Object value = predicate.getValue();
         BiPredicate<?, ?> biPredicate = predicate.getBiPredicate();
         if (key.equals("id") || key.equals("_id")) return getIdsFilter(value);
-        else if (key.equals("type") || key.equals("_type")) return getTypeFilter(value);
+        else if (key.equals("type") || key.equals("_type")) return getTypeFilter(container);
         else if (biPredicate != null) {
             if (biPredicate instanceof Compare) return getCompareFilter(key, value, biPredicate.toString());
             else if (biPredicate instanceof Contains) return getContainsFilter(key, value, biPredicate);
@@ -63,14 +63,25 @@ public class FilterHelper {
         else throw new IllegalArgumentException("HasContainer not supported by unipop");
     }
 
-    private static QueryBuilder getTypeFilter(Object value) {
-        if (value instanceof List) {
-            List labels = (List) value;
+    private static QueryBuilder getTypeFilter(HasContainer has) {
+        BiPredicate<?, ?> biPredicate = has.getBiPredicate();
+        if (biPredicate instanceof Compare) {
+            QueryBuilder query = QueryBuilders.typeQuery(has.getValue().toString());
+            if(biPredicate.equals(Compare.eq)) return query;
+            return QueryBuilders.boolQuery().mustNot(query);
+        }
+        else if (biPredicate instanceof Contains) {
+            Collection values = (Collection) has.getValue();
             BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-            labels.forEach(label -> boolQueryBuilder.should(QueryBuilders.typeQuery(label.toString())));
+            boolean within = biPredicate.equals(Contains.within);
+            values.forEach(label -> {
+                TypeQueryBuilder typeQueryBuilder = QueryBuilders.typeQuery(label.toString());
+                if(within) boolQueryBuilder.should(typeQueryBuilder);
+                else boolQueryBuilder.mustNot(typeQueryBuilder);
+            });
             return boolQueryBuilder;
         }
-        else return QueryBuilders.typeQuery(value.toString());
+        else throw new IllegalArgumentException("predicate not supported by unipop: " + biPredicate.toString());
     }
 
     private static QueryBuilder getIdsFilter(Object value) {
