@@ -112,7 +112,14 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
 
     @Override
     public Set<String> toFields(Set<String> propertyKeys) {
-        return super.toFields(propertyKeys).stream().map(key -> path + "." + key).collect(Collectors.toSet());
+        Set<String> fields = super.toFields(propertyKeys).stream()
+                .map(key -> path + "." + key).collect(Collectors.toSet());
+        Set<String> parentFields = parentVertexSchema.toFields(propertyKeys);
+        fields.addAll(parentFields);
+        Set<String> childFields = childVertexSchema.toFields(propertyKeys).stream()
+                .map(key -> path + "." + key).collect(Collectors.toSet());
+        fields.addAll(childFields);
+        return fields;
     }
 
     @Override
