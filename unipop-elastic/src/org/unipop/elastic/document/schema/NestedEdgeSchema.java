@@ -44,10 +44,17 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
         this.path = path;
         this.parentVertexSchema = parentVertexSchema;
         this.parentDirection = parentDirection;
-        JSONObject childVertexJson = this.json.getJSONObject("vertex");
-        this.childVertexSchema = new ReferenceVertexSchema(childVertexJson, graph);
-        
+//        JSONObject childVertexJson = this.json.getJSONObject("vertex");
+        this.childVertexSchema = createVertexSchema("vertex");
+
         client.validateNested(index, type, path);
+    }
+
+    protected VertexSchema createVertexSchema(String key) throws JSONException {
+        JSONObject vertexConfiguration = this.json.optJSONObject(key);
+        if (vertexConfiguration == null) return null;
+        if (vertexConfiguration.optBoolean("ref", false)) return new ReferenceVertexSchema(vertexConfiguration, graph);
+        return new NestedVertexSchema(vertexConfiguration, path, index, type, client, graph);
     }
 
     @Override
@@ -58,22 +65,21 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
     @Override
     public Collection<Edge> fromFields(Map<String, Object> fields) {
         Object pathValue = fields.get(this.path);
-        if(pathValue == null) return null;
+        if (pathValue == null) return null;
 
         Vertex parentVertex = parentVertexSchema.createElement(fields);
-        if(parentVertex == null) return null;
+        if (parentVertex == null) return null;
 
-        if(pathValue instanceof Collection){
+        if (pathValue instanceof Collection) {
             List<Edge> edges = new ArrayList<>(((Collection) pathValue).size());
             Collection<Map<String, Object>> edgesFields = (Collection<Map<String, Object>>) pathValue;
-            for(Map<String, Object> edgeFields : edgesFields){
+            for (Map<String, Object> edgeFields : edgesFields) {
                 UniEdge edge = createEdge(parentVertex, edgeFields);
                 if (edge == null) continue;
                 edges.add(edge);
             }
             return edges;
-        }
-        else if(pathValue instanceof Map) {
+        } else if (pathValue instanceof Map) {
             Map<String, Object> edgeFields = (Map<String, Object>) pathValue;
             UniEdge edge = createEdge(parentVertex, edgeFields);
             return Collections.singleton(edge);
@@ -83,23 +89,23 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
 
     private UniEdge createEdge(Vertex parentVertex, Map<String, Object> edgeFields) {
         Map<String, Object> edgeProperties = getProperties(edgeFields);
-        if(edgeProperties == null) return null;
+        if (edgeProperties == null) return null;
         Vertex childVertex = childVertexSchema.createElement(edgeFields);
-        if(childVertex == null) return null;
+        if (childVertex == null) return null;
         UniEdge edge = new UniEdge(edgeProperties,
-                parentDirection.equals(Direction.OUT)?parentVertex:childVertex,
-                parentDirection.equals(Direction.IN)?parentVertex:childVertex, graph);
+                parentDirection.equals(Direction.OUT) ? parentVertex : childVertex,
+                parentDirection.equals(Direction.IN) ? parentVertex : childVertex, graph);
         return edge;
     }
 
     @Override
     public Map<String, Object> toFields(Edge edge) {
         Map<String, Object> parentFields = getVertexFields(edge, parentDirection);
-        if(parentFields == null) return null;
+        if (parentFields == null) return null;
         Map<String, Object> edgeFields = getFields(edge);
         Map<String, Object> childFields = getVertexFields(edge, parentDirection.opposite());
         Map<String, Object> nestedFields = ConversionUtils.merge(Lists.newArrayList(edgeFields, childFields), this::mergeFields, false);
-        if(nestedFields == null) return null;
+        if (nestedFields == null) return null;
         parentFields.put(this.path, new Object[]{nestedFields});
         return parentFields;
     }
@@ -138,8 +144,8 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
         PredicatesHolder parentPredicates = parentVertexSchema.toPredicates(vertices);
         PredicatesHolder childPredicates = childVertexSchema.toPredicates(vertices)
                 .map(has -> new HasContainer(path + "." + has.getKey(), has.getPredicate()));
-        if(direction.equals(parentDirection)) return parentPredicates;
-        if(direction.equals(parentDirection.opposite())) return childPredicates;
+        if (direction.equals(parentDirection)) return parentPredicates;
+        if (direction.equals(parentDirection.opposite())) return childPredicates;
         return PredicatesHolderFactory.or(parentPredicates, childPredicates); //Direction.BOTH
     }
 
@@ -155,11 +161,11 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
     @Override
     public BulkableAction<DocumentResult> addElement(Edge edge) {
         Document document = toDocument(edge);
-        if(document == null) return null;
+        if (document == null) return null;
         Map<String, Object> edgeFields = getFields(edge);
         Map<String, Object> childFields = getVertexFields(edge, parentDirection.opposite());
         Map<String, Object> nestedFields = ConversionUtils.merge(Lists.newArrayList(edgeFields, childFields), this::mergeFields, false);
-        if(nestedFields == null) return null;
+        if (nestedFields == null) return null;
         Set<String> idField = propertySchemas.stream()
                 .map(schema -> schema.toFields(Collections.singleton(T.id.getAccessor()))).findFirst().get();
         try {

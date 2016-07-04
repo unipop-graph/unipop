@@ -1,7 +1,9 @@
 {
   "class": "org.unipop.elastic.ElasticSourceProvider",
   "clusterName": "unipop",
-  "addresses": ["http://localhost:9200"],
+  "addresses": [
+    "http://localhost:9200"
+  ],
   "vertices": [
     {
       "index": "vertex",
@@ -9,31 +11,27 @@
       "id": "@_id",
       "label": "person",
       "dynamicProperties": true,
-      "edges": [{
-        "path": "creations",
-        "id": "@creationId",
-        "label": "created",
-        "direction": "OUT",
-        "properties": {
-          "weight": "@weight",
-          "name": "@name"
-        },
-        "vertex": {
-          "ref": true,
-          "id": "@softwareId",
-          "label": "software"
+      "edges": [
+        {
+          "path": "creations",
+          "id": "@creationId",
+          "label": "created",
+          "direction": "OUT",
+          "properties": {
+            "weight": "@weight",
+            "name": "@name"
+          },
+          "vertex": {
+            "ref": false,
+            "id": "@softwareId",
+            "label": "software",
+            "properties": {
+              "name": "@name",
+              "lang": "@lang"
+            }
+          }
         }
-      }]
-    },
-    {
-      "index": "vertex",
-      "id": "@_id",
-      "label": {
-        "field": "_type",
-        "exclude": ["person"]
-      },
-      "properties": {},
-      "dynamicProperties": true
+      ]
     }
   ],
   "edges": [
@@ -42,11 +40,18 @@
       "id": "@_id",
       "label": {
         "field": "_type",
-        "exclude": ["created"]
+        "exclude": [
+          "created"
+        ]
       },
       "properties": {},
       "dynamicProperties": {
-        "excludeFields": ["outId", "inId", "outLabel", "inLabel"]
+        "excludeFields": [
+          "outId",
+          "inId",
+          "outLabel",
+          "inLabel"
+        ]
       },
       "outVertex": {
         "ref": true,
