@@ -20,7 +20,6 @@ import org.unipop.jdbc.controller.simple.results.ElementMapper;
 import org.unipop.jdbc.schemas.RowEdgeSchema;
 import org.unipop.jdbc.schemas.RowVertexSchema;
 import org.unipop.jdbc.schemas.jdbc.JdbcSchema;
-import org.unipop.jdbc.utils.TableStrings;
 import org.unipop.query.StepDescriptor;
 import org.unipop.query.controller.SimpleController;
 import org.unipop.query.mutation.AddEdgeQuery;
@@ -160,21 +159,30 @@ public class RowController implements SimpleController {
 
     @SuppressWarnings("unchecked")
     private <E extends Element> Iterator<E> search(PredicatesHolder allPredicates, Set<? extends JdbcSchema<E>> schemas, int limit, StepDescriptor stepDescriptor, Set<String> propertyKeys) {
+        logger.debug("executing search with parameters: allPredicates: {}, schemas: {}, limit: {}, stepDescriptor: {}, propertyKeys: {}", allPredicates, schemas, limit, stepDescriptor, propertyKeys);
         if (schemas.size() == 0 || allPredicates.isAborted()) {
+            logger.warn("there are no schemas, or the predicate has been aborted, returning empty iterator. schemas: {}, allPredicates: {}", schemas, allPredicates);
             return Iterators.emptyIterator();
         }
 
         Iterator<Condition> conditions = this.predicatesTranslator.translate(allPredicates).iterator();
+        logger.debug("translated predicates to condition iterator: {}", conditions);
         Stream<String> tables = schemas.stream().map(JdbcSchema::getTable);
+        logger.debug("extracted table names from schemas, tables: {}", tables);
 
         int finalLimit = limit < 0 ? Integer.MAX_VALUE : limit;
+        logger.debug("validated limit, initialLimit: {}, limit used in query: {}", limit, finalLimit);
 
-        return (Iterator<E>) tables.flatMap(table -> createSqlQuery(
-                propertyKeys, table)
-                .where(IteratorUtils.list(conditions))
-                .limit(finalLimit)
-                .fetch()
-                .map(new ElementMapper(schemas)).stream())
+        return (Iterator<E>) tables.flatMap(table -> {
+            Select step = createSqlQuery(
+                    propertyKeys, table)
+                    .where(IteratorUtils.list(conditions))
+                    .limit(finalLimit);
+            logger.debug("executing SQL query, step: {}", step);
+
+            return step.fetch()
+                    .map(new ElementMapper(schemas)).stream();
+        })
                 .distinct()
                 .iterator();
     }
