@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 
 import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.GRATEFUL;
 import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
+import static org.apache.tinkerpop.gremlin.process.traversal.P.eq;
 import static org.apache.tinkerpop.gremlin.process.traversal.P.without;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource.computer;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
@@ -44,7 +45,15 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void test() {
-        Traversal t = g.V().outE().drop();
+        Traversal t = g.V().union(
+                repeat(union(
+                        out("created"),
+                        in("created"))).times(2),
+                repeat(union(
+                        in("created"),
+                        out("created"))).times(2)).label().groupCount();
+        // software=12
+        // person=20
 
         check(t);
     }

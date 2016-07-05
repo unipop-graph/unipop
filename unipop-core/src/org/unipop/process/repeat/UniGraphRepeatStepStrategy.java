@@ -3,6 +3,7 @@ package org.unipop.process.repeat;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.UnionStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.ConnectiveStrategy;
@@ -39,6 +40,9 @@ public class UniGraphRepeatStepStrategy extends AbstractTraversalStrategy<Traver
         UniGraph uniGraph = (UniGraph) graph;
 
         TraversalHelper.getStepsOfClass(RepeatStep.class, traversal).forEach(repeatStep -> {
+            if (TraversalHelper.hasStepOfClass(UnionStep.class, (Traversal.Admin) repeatStep.getGlobalChildren().get(0))) {
+                return;
+            }
             UniGraphRepeatStep uniGraphRepeatStep = new UniGraphRepeatStep(repeatStep, traversal.asAdmin(), uniGraph);
             if (repeatStep.getUntilTraversal() != null && TraversalHelper.getFirstStepOfAssignableClass(ReducingBarrierStep.class, repeatStep.getUntilTraversal()).isPresent())
                 return;
