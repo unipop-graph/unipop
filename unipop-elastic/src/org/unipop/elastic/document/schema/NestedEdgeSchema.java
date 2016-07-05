@@ -123,7 +123,11 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
         Set<String> parentFields = parentVertexSchema.toFields(propertyKeys);
         fields.addAll(parentFields);
         Set<String> childFields = childVertexSchema.toFields(propertyKeys).stream()
-                .map(key -> path + "." + key).collect(Collectors.toSet());
+                .map(key -> {
+                    if (key.contains(path + "."))
+                        return key;
+                    return path + "." + key;
+                }).collect(Collectors.toSet());
         fields.addAll(childFields);
         return fields;
     }

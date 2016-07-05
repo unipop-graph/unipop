@@ -10,7 +10,12 @@
       "type": "person",
       "id": "@_id",
       "label": "person",
-      "dynamicProperties": true,
+      "dynamicProperties": {
+        "excludeFields":[
+          "_type",
+          "creations"
+        ]
+      },
       "edges": [
         {
           "path": "creations",

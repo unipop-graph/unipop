@@ -11,6 +11,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequire
 import org.apache.tinkerpop.gremlin.process.traversal.util.DefaultTraversalSideEffects;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.unipop.process.traverser.UniGraphTraverserStep;
 
@@ -20,10 +21,19 @@ import java.util.*;
  * Created by sbarzilay on 5/2/16.
  */
 public class UniGraphWhereTraversalStep<S extends Element> extends AbstractStep<S, S> implements TraversalParent {
-    protected Traversal<S, S> whereTraversal;
+    protected Traversal.Admin<S, S> whereTraversal;
     protected Iterator<Traverser.Admin<S>> results;
     protected List<Traverser.Admin<S>> originals;
     protected boolean had = false;
+
+    public String toString() {
+        return StringFactory.stepString(this, this.whereTraversal);
+    }
+
+    @Override
+    public List<Traversal.Admin<S, S>> getGlobalChildren() {
+        return Arrays.asList(whereTraversal);
+    }
 
     @Override
     public Set<TraverserRequirement> getRequirements() {
@@ -36,7 +46,7 @@ public class UniGraphWhereTraversalStep<S extends Element> extends AbstractStep<
 
     public UniGraphWhereTraversalStep(Traversal.Admin traversal, Traversal<S, S> whereTraversal) {
         super(traversal);
-        this.whereTraversal = whereTraversal;
+        this.whereTraversal = whereTraversal.asAdmin();
         whereTraversal.asAdmin().addStep(new UniGraphTraverserStep(whereTraversal.asAdmin()));
         originals = new ArrayList<>();
         results = EmptyIterator.instance();
