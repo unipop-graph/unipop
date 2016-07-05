@@ -85,4 +85,12 @@ public class JdbcSourceProvider implements SourceProvider {
         return DriverManager.getConnection(url, user, password);
     }
 
+    @Override
+    public String toString() {
+        return "JdbcSourceProvider{" +
+                "context=" + context +
+                ", predicatesTranslatorSupplier=" + predicatesTranslatorSupplier +
+                ", graph=" + graph +
+                '}';
+    }
 }

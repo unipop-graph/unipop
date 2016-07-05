@@ -31,17 +31,6 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
             <artifactId>unipop-jdbc</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>unipop</groupId>
-            <artifactId>unipop-managers</artifactId>
-            <version>${project.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>junit</groupId>
-                    <artifactId>junit</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
     </dependencies>
     <build>
         <directory>${basedir}/target</directory>

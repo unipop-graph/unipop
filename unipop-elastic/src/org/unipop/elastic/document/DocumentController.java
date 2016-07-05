@@ -9,6 +9,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.elastic.common.ElasticClient;
 import org.unipop.query.controller.SimpleController;
@@ -30,41 +32,46 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class DocumentController implements SimpleController {
+import static org.unipop.common.util.LogHelper.formatCollection;
 
-    private ElasticClient client;
+public class DocumentController implements SimpleController {
+    private static final Logger logger = LoggerFactory.getLogger(DocumentController.class);
+
+    private final ElasticClient client;
+    private final UniGraph graph;
+
     private Set<? extends DocumentVertexSchema> vertexSchemas = new HashSet<>();
     private Set<? extends DocumentEdgeSchema> edgeSchemas = new HashSet<>();
-    private UniGraph graph;
 
     public DocumentController(Set<DocumentSchema> schemas, ElasticClient client, UniGraph graph) {
         this.client = client;
         this.graph = graph;
-        Set<DocumentSchema> documentSchemas = collectSchemas(schemas);
-        this.vertexSchemas = documentSchemas.stream().filter(schema -> schema instanceof DocumentVertexSchema)
-                .map(schema -> ((DocumentVertexSchema)schema)).collect(Collectors.toSet());
-        this.edgeSchemas = documentSchemas.stream().filter(schema -> schema instanceof DocumentEdgeSchema)
-                .map(schema -> ((DocumentEdgeSchema)schema)).collect(Collectors.toSet());
+        logger.debug("instantiated logger with ElasticClient: {}, UniGraph: {}. Schemas: {}",
+                this.client,
+                this.graph,
+                formatCollection(schemas));
+
+        extractDocumentSchemas(schemas);
     }
 
-    private Set<DocumentSchema> collectSchemas(Set<? extends ElementSchema> schemas) {
-        Set<DocumentSchema> docSchemas = new HashSet<>();
-        schemas.forEach(schema -> {
-            if(schema instanceof DocumentSchema) {
-                docSchemas.add((DocumentSchema) schema);
-                Set<DocumentSchema> childSchemas = collectSchemas(schema.getChildSchemas());
-                docSchemas.addAll(childSchemas);
-            }
-        });
-        return docSchemas;
-    }
-
-    //region QueryController
+    //region Query Controller
     @Override
     public <E extends Element>  Iterator<E> search(SearchQuery<E> uniQuery) {
         Set<? extends DocumentSchema<E>> schemas = getSchemas(uniQuery.getReturnType());
         Function<DocumentSchema<E>, PredicatesHolder> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery.getPredicates());
-        return search(schemas, uniQuery, toPredicatesFunction);
+        logger.debug(
+                "executing search with parameters, SearchQuery: {}, Appropiate DocumentSchemas: {}, toPredicatesFunction: {}",
+                uniQuery,
+                schemas,
+                toPredicatesFunction
+                );
+        Iterator<E> resultIterator = search(schemas, uniQuery, toPredicatesFunction);
+        logger.info("execute search with parameters, SearchQuery: {}, Appropriate DocumentSchemas: {}, returned resultIterator: {}",
+                uniQuery,
+                schemas,
+                resultIterator
+        );
+        return resultIterator;
     }
 
     @Override
@@ -90,9 +97,11 @@ public class DocumentController implements SimpleController {
     public Edge addEdge(AddEdgeQuery uniQuery) {
         UniEdge edge = new UniEdge(uniQuery.getProperties(), uniQuery.getOutVertex(), uniQuery.getInVertex(), graph);
         try {
+            logger.debug("attempting to index. edge: {}, edgeSchemas: {}", edge, this.edgeSchemas);
             index(this.edgeSchemas, edge);
         }
         catch(DocumentAlreadyExistsException ex) {
+            logger.info("Document already exists in elastic", ex);
             throw Graph.Exceptions.edgeWithIdAlreadyExists(edge.id());
         }
         return edge;
@@ -105,6 +114,7 @@ public class DocumentController implements SimpleController {
             index(this.vertexSchemas, vertex);
         }
         catch(DocumentAlreadyExistsException ex){
+            logger.info("Document already exists in elastic", ex);
             throw Graph.Exceptions.vertexWithIdAlreadyExists(vertex.id());
         }
         return vertex;
@@ -113,6 +123,7 @@ public class DocumentController implements SimpleController {
     @Override
     public <E extends Element> void property(PropertyQuery<E> uniQuery) {
         Set<? extends DocumentSchema<E>> schemas = getSchemas(uniQuery.getElement().getClass());
+        //updates
         index(schemas, uniQuery.getElement());
     }
 
@@ -142,39 +153,83 @@ public class DocumentController implements SimpleController {
                 .map(tuple -> Tuple.tuple(tuple.v1(), tuple.v1().getSearch(query, tuple.v2())))
                 .filter(tuple -> tuple.v2() != null)
                 .collect(Collectors.toMap(Tuple::v1, Tuple::v2));
-        if(schemas.size() == 0) return EmptyIterator.instance();
-
+        logger.debug("mapped schemas for search, schemas: {}", schemas);
+        if(schemas.size() == 0) {
+            logger.warn("schemas are empty, returning empty iterator");
+            return EmptyIterator.instance();
+        }
+        logger.debug("refreshing client: {}", client);
         client.refresh();
-        MultiSearch.Builder multiSearch = new MultiSearch.Builder(schemas.values());
-        MultiSearchResult results = client.execute(multiSearch.build());
-        if(!results.isSucceeded()) return EmptyIterator.instance();
-
+        MultiSearch multiSearch = new MultiSearch.Builder(schemas.values()).build();
+        logger.debug("built multiSearch: {}", multiSearch);
+        MultiSearchResult results = client.execute(multiSearch);
+        logger.debug("results of multiSearch, results: {}", results);
+        if(!results.isSucceeded()) {
+            logger.warn("results failed to execute, returning empty iterator. results: {}", results);
+            return EmptyIterator.instance();
+        }
         Iterator<S> schemaIterator = schemas.keySet().iterator();
+        logger.debug("executed multiSearch successfully, validating results and parsing with schemas. results: {}, schemaIterator: {}", results, schemaIterator);
         return results.getResponses().stream().filter(this::valid).flatMap(result ->
                 schemaIterator.next().parseResults(result.searchResult.getJsonString(), query).stream()).iterator();
     }
 
     private boolean valid(MultiSearchResult.MultiSearchResponse multiSearchResponse) {
         if(multiSearchResponse.isError) {
-            System.out.println("SearchResponse error: " + multiSearchResponse.errorMessage);
+            logger.error("failed to execute multiSearch: {}", multiSearchResponse);
             return false;
         }
+        logger.debug("multiSearchResult is valid, multiSearch: {}", multiSearchResponse);
         return true;
     }
 
     private <E extends Element> void index(Set<? extends DocumentSchema<E>> schemas, E element) {
+        logger.debug("indexing element, schemas: {}, element: {}", schemas, element);
         for(DocumentSchema<E> schema : schemas) {
             BulkableAction<DocumentResult> index = schema.addElement(element);
-            if(index != null) client.bulk(index);
+
+            if(index != null) {
+                logger.debug("adding element to bulk for schema: {}, element: {}, index: {}, client: {}", schema, element, index, client);
+                client.bulk(index);
+            }
         }
     }
 
     private <E extends Element> void delete(Set<? extends DocumentSchema<E>> schemas, E element) {
+        logger.debug("deleting element, schemas: {}, element: {}", schemas, element);
         for(DocumentSchema<E> schema : schemas) {
             Delete.Builder delete = schema.delete(element);
-            if(delete != null) client.bulk(delete.build());
+            if(delete != null) {
+                logger.debug("deleting schema, DeleteBuilder: {}, client: {}", delete, client);
+                client.bulk(delete.build());
+            }
         }
     }
 
+    //endregion
+
+    //region private helpers
+    private void extractDocumentSchemas(Set<DocumentSchema> schemas) {
+        logger.debug("extracting document schemas to element schemas, DocumentSchemas: {}", schemas);
+        Set<DocumentSchema> documentSchemas = collectSchemas(schemas);
+        this.vertexSchemas = documentSchemas.stream().filter(schema -> schema instanceof DocumentVertexSchema)
+                .map(schema -> ((DocumentVertexSchema)schema)).collect(Collectors.toSet());
+        this.edgeSchemas = documentSchemas.stream().filter(schema -> schema instanceof DocumentEdgeSchema)
+                .map(schema -> ((DocumentEdgeSchema)schema)).collect(Collectors.toSet());
+        logger.info("extraced document schemas, vertexSchemas: {}, edgeSchemas: {}", this.vertexSchemas, this.edgeSchemas);
+    }
+
+    private Set<DocumentSchema> collectSchemas(Set<? extends ElementSchema> schemas) {
+        Set<DocumentSchema> docSchemas = new HashSet<>();
+
+        schemas.forEach(schema -> {
+            if(schema instanceof DocumentSchema) {
+                docSchemas.add((DocumentSchema) schema);
+                Set<DocumentSchema> childSchemas = collectSchemas(schema.getChildSchemas());
+                docSchemas.addAll(childSchemas);
+            }
+        });
+        return docSchemas;
+    }
     //endregion
 }

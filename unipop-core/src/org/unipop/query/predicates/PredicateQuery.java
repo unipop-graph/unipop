@@ -14,4 +14,11 @@ public class PredicateQuery extends UniQuery {
     public PredicatesHolder getPredicates(){
         return predicates;
     }
+
+    @Override
+    public String toString() {
+        return "PredicateQuery{" +
+                "predicates=" + predicates +
+                '}';
+    }
 }
