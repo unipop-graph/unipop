@@ -59,7 +59,19 @@ public class DocumentController implements SimpleController {
     public <E extends Element>  Iterator<E> search(SearchQuery<E> uniQuery) {
         Set<? extends DocumentSchema<E>> schemas = getSchemas(uniQuery.getReturnType());
         Function<DocumentSchema<E>, PredicatesHolder> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery.getPredicates());
-        return search(schemas, uniQuery, toPredicatesFunction);
+        logger.debug(
+                "executing search with parameters, SearchQuery: {}, Appropiate DocumentSchemas: {}, toPredicatesFunction: {}",
+                uniQuery,
+                schemas,
+                toPredicatesFunction
+                );
+        Iterator<E> resultIterator = search(schemas, uniQuery, toPredicatesFunction);
+        logger.info("execute search with parameters, SearchQuery: {}, Appropriate DocumentSchemas: {}, returned resultIterator: {}",
+                uniQuery,
+                schemas,
+                resultIterator
+        );
+        return resultIterator;
     }
 
     @Override
@@ -141,14 +153,23 @@ public class DocumentController implements SimpleController {
                 .map(tuple -> Tuple.tuple(tuple.v1(), tuple.v1().getSearch(query, tuple.v2())))
                 .filter(tuple -> tuple.v2() != null)
                 .collect(Collectors.toMap(Tuple::v1, Tuple::v2));
-        if(schemas.size() == 0) return EmptyIterator.instance();
-
+        logger.debug("mapped schemas for search, schemas: {}", schemas);
+        if(schemas.size() == 0) {
+            logger.warn("schemas are empty, returning empty iterator");
+            return EmptyIterator.instance();
+        }
+        logger.debug("refreshing client: {}", client);
         client.refresh();
-        MultiSearch.Builder multiSearch = new MultiSearch.Builder(schemas.values());
-        MultiSearchResult results = client.execute(multiSearch.build());
-        if(!results.isSucceeded()) return EmptyIterator.instance();
-
+        MultiSearch multiSearch = new MultiSearch.Builder(schemas.values()).build();
+        logger.debug("built multiSearch: {}", multiSearch);
+        MultiSearchResult results = client.execute(multiSearch);
+        logger.debug("results of multiSearch, results: {}", results);
+        if(!results.isSucceeded()) {
+            logger.warn("results failed to execute, returning empty iterator. results: {}", results);
+            return EmptyIterator.instance();
+        }
         Iterator<S> schemaIterator = schemas.keySet().iterator();
+        logger.debug("executed multiSearch successfully, validating results and parsing with schemas. results: {}, schemaIterator: {}", results, schemaIterator);
         return results.getResponses().stream().filter(this::valid).flatMap(result ->
                 schemaIterator.next().parseResults(result.searchResult.getJsonString(), query).stream()).iterator();
     }
@@ -163,16 +184,25 @@ public class DocumentController implements SimpleController {
     }
 
     private <E extends Element> void index(Set<? extends DocumentSchema<E>> schemas, E element) {
+        logger.debug("indexing element, schemas: {}, element: {}", schemas, element);
         for(DocumentSchema<E> schema : schemas) {
             BulkableAction<DocumentResult> index = schema.addElement(element);
-            if(index != null) client.bulk(index);
+
+            if(index != null) {
+                logger.debug("adding element to bulk for schema: {}, element: {}, index: {}, client: {}", schema, element, index, client);
+                client.bulk(index);
+            }
         }
     }
 
     private <E extends Element> void delete(Set<? extends DocumentSchema<E>> schemas, E element) {
+        logger.debug("deleting element, schemas: {}, element: {}", schemas, element);
         for(DocumentSchema<E> schema : schemas) {
             Delete.Builder delete = schema.delete(element);
-            if(delete != null) client.bulk(delete.build());
+            if(delete != null) {
+                logger.debug("deleting schema, DeleteBuilder: {}, client: {}", delete, client);
+                client.bulk(delete.build());
+            }
         }
     }
 
