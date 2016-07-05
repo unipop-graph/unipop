@@ -91,7 +91,7 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
         this.jdbcConnection.createStatement().execute(
                 "CREATE TABLE IF NOT EXISTS vertex_inner(" +
                         "ID VARCHAR(100) NOT NULL PRIMARY KEY, " +
-                        "LABEL VARCHAR(100) NOT NULL," +
+                        "LABEL VARCHAR(100)," +
                         "name varchar(100), " +
                         "age int, " +
                         "lang VARCHAR(100), " +

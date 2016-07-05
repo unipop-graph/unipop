@@ -208,6 +208,10 @@ public class RowController implements SimpleController {
         for (JdbcSchema<E> schema : schemas) {
             JdbcSchema.Row row = schema.toRow(element);
 
+            if (row == null) {
+                continue;
+            }
+
             int changeSetCount = this.getDslContext().insertInto(table(schema.getTable()), CollectionUtils.collect(row.getFields().keySet(), DSL::field))
                     .values(row.getFields().values())
                     .onDuplicateKeyIgnore().execute();
@@ -221,6 +225,10 @@ public class RowController implements SimpleController {
     private <E extends Element> void update(Set<? extends JdbcSchema<E>> schemas, E element) {
         for (JdbcSchema<E> schema : schemas) {
             JdbcSchema.Row row = schema.toRow(element);
+
+            if (row == null) {
+                continue;
+            }
 
             Map<Field<?>, Object> fieldMap = Maps.newHashMap();
             row.getFields().entrySet().stream().map(this::mapSet).forEach(en -> fieldMap.put(en.getKey(), en.getValue()));
