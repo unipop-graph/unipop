@@ -158,6 +158,7 @@ public class RowController implements SimpleController {
         );
     }
 
+    @SuppressWarnings("unchecked")
     private <E extends Element> Iterator<E> search(PredicatesHolder allPredicates, Set<? extends JdbcSchema<E>> schemas, int limit, StepDescriptor stepDescriptor, Set<String> propertyKeys) {
         if (schemas.size() == 0 || allPredicates.isAborted()) {
             return Iterators.emptyIterator();
@@ -169,11 +170,7 @@ public class RowController implements SimpleController {
         int finalLimit = limit < 0 ? Integer.MAX_VALUE : limit;
 
         return (Iterator<E>) tables.flatMap(table -> createSqlQuery(
-                propertyKeys
-                        .stream()
-                        .map(DSL::field)
-                        .collect(Collectors.toSet()),
-                table)
+                propertyKeys, table)
                 .where(IteratorUtils.list(conditions))
                 .limit(finalLimit)
                 .fetch()
@@ -182,21 +179,15 @@ public class RowController implements SimpleController {
                 .iterator();
     }
 
-    private SelectJoinStep<Record> createSqlQuery(Set<Field<Object>> columnsToRetrieve, String table) {
+    private SelectJoinStep<Record> createSqlQuery(Set<String> columnsToRetrieve, String table) {
+        if (columnsToRetrieve == null) {
+            return this.getDslContext().select().from(table);
+
+        }
+
         return this.getDslContext()
-                .select(Stream.concat(
-                        columnsToRetrieve.stream(),
-                        Stream.of(getTableField(table)))
-                        .collect(Collectors.toSet()))
+                .select(columnsToRetrieve.stream().map(DSL::field).collect(Collectors.toList()))
                 .from(table);
-    }
-
-    public DSLContext getDslContext() {
-        return this.dslContext;
-    }
-
-    private Field<Object> getTableField(String tableName) {
-        return field(String.format("'%s' as '%s'", tableName, TableStrings.TABLE_COLUMN_NAME));
     }
 
     @SuppressWarnings("unchecked")
@@ -257,5 +248,9 @@ public class RowController implements SimpleController {
                                 .collect(Collectors.toList()), Collections.emptyList())).spliterator(), false)
                 .collect(Collectors.toSet());
 
+    }
+
+    public DSLContext getDslContext() {
+        return this.dslContext;
     }
 }
