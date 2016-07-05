@@ -6,6 +6,7 @@ import org.jooq.RecordMapper;
 import org.unipop.jdbc.schemas.jdbc.JdbcSchema;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -22,6 +23,6 @@ public class ElementMapper<E extends Element> implements RecordMapper<Record, El
     @Override
     public Element map(Record record) {
         Map<String, Object> dataMap = record.intoMap();
-        return rowSchemas.stream().flatMap(schema -> schema.fromFields(dataMap).stream()).findFirst().get();
+        return rowSchemas.stream().flatMap(schema -> schema.fromFields(dataMap).stream().filter(Objects::nonNull)).findFirst().get();
     }
 }

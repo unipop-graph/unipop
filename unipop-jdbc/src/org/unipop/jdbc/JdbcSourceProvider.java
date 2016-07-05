@@ -50,6 +50,7 @@ public class JdbcSourceProvider implements SourceProvider {
         this.graph = graph;
 
         SchemaSet schemas = new SchemaSet();
+
         getList(configuration, "vertices").forEach(vertexJson -> schemas.add(createVertexSchema(vertexJson)));
         getList(configuration, "edges").forEach(edgeJson -> schemas.add(createEdgeSchema(edgeJson)));
 
@@ -85,4 +86,12 @@ public class JdbcSourceProvider implements SourceProvider {
         return DriverManager.getConnection(url, user, password);
     }
 
+    @Override
+    public String toString() {
+        return "JdbcSourceProvider{" +
+                "context=" + context +
+                ", predicatesTranslatorSupplier=" + predicatesTranslatorSupplier +
+                ", graph=" + graph +
+                '}';
+    }
 }
