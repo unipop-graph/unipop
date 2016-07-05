@@ -24,9 +24,6 @@ import org.unipop.util.ConversionUtils;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * Created by TechUser on 7/4/2016.
- */
 public class NestedVertexSchema extends AbstractDocSchema<Vertex> implements DocumentVertexSchema {
     private String path;
 
@@ -109,8 +106,5 @@ public class NestedVertexSchema extends AbstractDocSchema<Vertex> implements Doc
     @Override
     public PredicatesHolder toPredicates(PredicatesHolder predicatesHolder) {
         return super.toPredicates(predicatesHolder).map(has -> new HasContainer(path + "." + has.getKey(), has.getPredicate()));
-//        List<PredicatesHolder> collect = propertySchemas.stream().map(p-> p.toPredicates(predicatesHolder)).collect(Collectors.toList());
-//        PredicatesHolder or = PredicatesHolderFactory.or(collect);
-//        return or.map(has -> new HasContainer(path + "." + has.getKey(), has.getPredicate()));
     }
 }

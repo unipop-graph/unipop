@@ -44,7 +44,6 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
         this.path = path;
         this.parentVertexSchema = parentVertexSchema;
         this.parentDirection = parentDirection;
-//        JSONObject childVertexJson = this.json.getJSONObject("vertex");
         this.childVertexSchema = createVertexSchema("vertex");
 
         client.validateNested(index, type, path);
@@ -127,7 +126,7 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
                     if (key.contains(path + "."))
                         return key;
                     return path + "." + key;
-                }).collect(Collectors.toSet());
+                }).collect(Collectors.toSet()); //TODO: find a nicer solution...
         fields.addAll(childFields);
         return fields;
     }
