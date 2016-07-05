@@ -214,30 +214,43 @@ public class RowController implements SimpleController {
     }
 
     private <E extends Element> void insert(Set<? extends JdbcSchema<E>> schemas, E element) {
+        logger.debug("executing insertion of element, schemas: {}, element: {}", schemas, element);
         for (JdbcSchema<E> schema : schemas) {
+            logger.debug("executing insertion for specific schema, schema: {}", schema);
             JdbcSchema.Row row = schema.toRow(element);
+            logger.debug("formed row out of schema and element, row: {}", row);
 
-            int changeSetCount = this.getDslContext().insertInto(table(schema.getTable()), CollectionUtils.collect(row.getFields().keySet(), DSL::field))
+            Insert step = this.getDslContext().insertInto(table(schema.getTable()), CollectionUtils.collect(row.getFields().keySet(), DSL::field))
                     .values(row.getFields().values())
-                    .onDuplicateKeyIgnore().execute();
+                    .onDuplicateKeyIgnore();
 
+            logger.info("executing insertion, step: {}", step);
+            int changeSetCount = step.execute();
+            logger.debug("changeSet out of executed step: {}", changeSetCount);
             if (changeSetCount == 0) {
+                logger.warn("change set == 0, invalid insertion. throwing IllegalArgumentException, rowId: {}", row.getId());
                 throw new IllegalArgumentException("element with same key already exists:" + row.getId());
             }
         }
     }
 
     private <E extends Element> void update(Set<? extends JdbcSchema<E>> schemas, E element) {
+        logger.debug("executing update of element, schemas: {}, element: {}", schemas, element);
         for (JdbcSchema<E> schema : schemas) {
+            logger.debug("executing update for specific schema: {}", schema);
             JdbcSchema.Row row = schema.toRow(element);
+            logger.debug("formed row out of schema and element, row: {}", row);
 
             Map<Field<?>, Object> fieldMap = Maps.newHashMap();
             row.getFields().entrySet().stream().map(this::mapSet).forEach(en -> fieldMap.put(en.getKey(), en.getValue()));
-
             fieldMap.remove(row.getIdField());
-            this.getDslContext().update(table(schema.getTable()))
+            logger.debug("formed fieldMap to update, fieldMap: {}", fieldMap);
+
+            Update step = this.getDslContext().update(table(schema.getTable()))
                     .set(fieldMap)
-                    .where(field(row.getIdField()).eq(row.getId())).execute();
+                    .where(field(row.getIdField()).eq(row.getId()));
+            logger.info("executing update statement with following parameters, step: {}, element: {}, schema: {}", step, element, schema);
+            step.execute();
         }
     }
 
