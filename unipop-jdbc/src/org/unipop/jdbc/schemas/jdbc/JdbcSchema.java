@@ -67,5 +67,15 @@ public interface JdbcSchema<E extends Element> extends ElementSchema<E> {
         public String getIdField() {
             return this.idField;
         }
+
+        @Override
+        public String toString() {
+            return "Row{" +
+                    "fields=" + fields +
+                    ", table='" + table + '\'' +
+                    ", id=" + id +
+                    ", idField='" + idField + '\'' +
+                    '}';
+        }
     }
 }

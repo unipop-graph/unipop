@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author GurRonen
+ * @author Gur Ronen
  * @since 6/12/2016.
  */
 public class RowVertexSchema extends AbstractRowSchema<Vertex> implements JdbcVertexSchema {
@@ -29,5 +29,11 @@ public class RowVertexSchema extends AbstractRowSchema<Vertex> implements JdbcVe
         Map<String, Object> properties = getProperties(fields);
         if(properties == null) return null;
         return new UniVertex(properties, graph);
+    }
+
+
+    @Override
+    public String toString() {
+        return "RowVertexSchema{} " + super.toString();
     }
 }

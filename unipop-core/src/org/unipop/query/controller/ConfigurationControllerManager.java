@@ -54,4 +54,12 @@ public class ConfigurationControllerManager implements ControllerManager {
     public void close() {
         sourceProviders.forEach(SourceProvider::close);
     }
+
+    @Override
+    public String toString() {
+        return "ConfigurationControllerManager{" +
+                "controllers=" + controllers +
+                ", sourceProviders=" + sourceProviders +
+                '}';
+    }
 }

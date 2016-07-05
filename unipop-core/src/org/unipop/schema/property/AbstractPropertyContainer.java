@@ -48,6 +48,16 @@ public abstract class AbstractPropertyContainer {
     }
 
 
+    @Override
+    public String toString() {
+        return "AbstractPropertyContainer{" +
+                "dynamicProperties=" + dynamicProperties +
+                ", graph=" + graph +
+                ", json=" + json +
+                ", propertySchemas=" + propertySchemas +
+                '}';
+    }
+
     protected PropertySchema createPropertySchema(String key, Object value, boolean nullable) {
         if(value instanceof String) {
             if (value.toString().startsWith("@"))

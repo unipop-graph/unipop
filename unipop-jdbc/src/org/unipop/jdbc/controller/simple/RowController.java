@@ -112,14 +112,20 @@ public class RowController implements SimpleController {
 
     @Override
     public <E extends Element> void remove(RemoveQuery<E> uniQuery) {
+        logger.debug("executing removal query, RemoveQuery: {}", uniQuery);
         uniQuery.getElements().forEach(el -> {
             Set<? extends JdbcSchema<E>> schemas = this.getSchemas(el.getClass());
+            logger.debug("removing element from all schemas, element: {}, schemas: {}", el, schemas);
 
             for (JdbcSchema<E> schema : schemas) {
+                logger.debug("removing element from schema. element: {}, schema: {}", el, schema);
                 DeleteWhereStep deleteStep = this.getDslContext().delete(table(schema.getTable()));
 
                 Collection<Condition> conditions = this.translateElementsToConditions(schema, Collections.singletonList(el));
-                deleteStep.where(conditions).execute();
+                Delete step = deleteStep.where(conditions);
+
+                logger.info("Created and executing delete step with conditions, step: {}", step);
+                step.execute();
             }
         });
     }
@@ -130,15 +136,37 @@ public class RowController implements SimpleController {
                 schema.toPredicates(uniQuery.getVertices())).collect(Collectors.toSet());
         PredicatesHolder schemaPredicateHolders = PredicatesHolderFactory.or(schemasPredicates);
 
+        logger.debug("fetching properties for DeferredVertices, DeferredVertexQuery: {}, schemaPredicateHolders: {}", uniQuery, schemaPredicateHolders);
+
+
         if (schemaPredicateHolders.isEmpty()) {
+            logger.warn("schemaPredicatesHolder is empty, can't fetch properties for uniQuery. uniQuery: {}, vertexSchemas: {}", uniQuery, this.vertexSchemas);
             return;
         }
-        Iterator<Vertex> search = this.search(schemaPredicateHolders, vertexSchemas, -1, uniQuery.getStepDescriptor(), uniQuery.getPropertyKeys());
+        int limit = -1;
+
+        logger.debug(
+                "executing search for deferred vertices, schemaPredicatesHolders: {}, vertexSchemas: {}, limit: {}, stepDescriptor: {}, propertyKeys: {}",
+                schemaPredicateHolders,
+                this.vertexSchemas,
+                limit,
+                uniQuery.getStepDescriptor(),
+                uniQuery.getPropertyKeys());
+
+        Iterator<Vertex> searchIterator = this.search(schemaPredicateHolders, vertexSchemas, limit, uniQuery.getStepDescriptor(), uniQuery.getPropertyKeys());
 
         Map<Object, DeferredVertex> vertexMap = uniQuery.getVertices().stream().collect(Collectors.toMap(UniElement::id, Function.identity(), (a, b) -> a));
-        search.forEachRemaining(newVertex -> {
+        logger.debug(
+                "mapping between search results and deferred vertices, deferred vertexMap: {}, searchIterator: {}",
+                vertexMap,
+                searchIterator);
+
+        searchIterator.forEachRemaining(newVertex -> {
             DeferredVertex deferredVertex = vertexMap.get(newVertex.id());
-            if (deferredVertex != null) deferredVertex.loadProperties(newVertex);
+            logger.debug("mapping deferred vertex with new vertex, deferred: {}, new vertex: {}", deferredVertex, newVertex);
+            if (deferredVertex != null) {
+                deferredVertex.loadProperties(newVertex);
+            }
         });
     }
 
@@ -273,5 +301,16 @@ public class RowController implements SimpleController {
 
     public DSLContext getDslContext() {
         return this.dslContext;
+    }
+
+    @Override
+    public String toString() {
+        return "RowController{" +
+                "dslContext=" + dslContext +
+                ", graph=" + graph +
+                ", vertexSchemas=" + vertexSchemas +
+                ", edgeSchemas=" + edgeSchemas +
+                ", predicatesTranslator=" + predicatesTranslator +
+                '}';
     }
 }
