@@ -72,7 +72,7 @@ public abstract class AbstractPropertyContainer {
             }
             else if(field instanceof JSONArray) {
                 String delimiter = config.optString("delimiter", "_");
-                return getMultiFieldProperty(key, (JSONArray) value, delimiter, nullable);
+                return getMultiFieldProperty(key, (JSONArray) field, delimiter, nullable);
             }
             else throw new IllegalArgumentException("Unrecognized field: " + field + ", property: " + key + " - " + value);
         }
