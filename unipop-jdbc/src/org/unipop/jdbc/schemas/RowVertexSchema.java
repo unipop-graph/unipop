@@ -37,11 +37,6 @@ public class RowVertexSchema extends AbstractRowSchema<Vertex> implements JdbcVe
     }
 
     @Override
-    public List<Vertex> parseResults(String result, PredicateQuery query) {
-        return null;
-    }
-
-    @Override
     public Vertex createElement(Map<String, Object> fields) {
         Map<String, Object> properties = getProperties(fields);
         if(properties == null) return null;

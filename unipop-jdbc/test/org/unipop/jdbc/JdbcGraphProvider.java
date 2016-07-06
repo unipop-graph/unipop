@@ -171,7 +171,7 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
     public String getSchemaConfiguration(LoadGraphWith.GraphData loadGraphWith) {
         if(loadGraphWith != null && (loadGraphWith.equals(LoadGraphWith.GraphData.MODERN) || loadGraphWith.equals(LoadGraphWith.GraphData.CREW
         ))) {
-            return InnerEdgeConfiguration;
+//            return InnerEdgeConfiguration;
 //            return AdvancedConfiguration;
         }
         return BasicConfiguration;

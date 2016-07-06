@@ -5,6 +5,7 @@ import org.apache.tinkerpop.gremlin.GraphManager;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.junit.Test;
 import org.unipop.jdbc.JdbcGraphProvider;
 
@@ -22,10 +23,13 @@ public class TempTests extends AbstractGremlinTest {
     @LoadGraphWith(LoadGraphWith.GraphData.MODERN)
     @Test
     public void testA() {
+//        System.out.println(g.V("4").toList());
+        System.out.println(g.V("1").to(Direction.OUT, "knows").toList());
+//        System.out.println(g.V("4").bothE().has("weight", P.lt(1d)).toList());
         Traversal t = g.V("4").bothE().has("weight", P.lt(1d)).otherV();
 
 
-        System.out.println(t.toList());
+//        System.out.println(t.toList());
         int x = 6;
     }
 }

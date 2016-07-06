@@ -4,13 +4,15 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.keyvalue.DefaultMapEntry;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
+import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
+import org.javatuples.Tuple;
 import org.jooq.*;
 import org.jooq.impl.DSL;
 import org.slf4j.Logger;
@@ -19,7 +21,9 @@ import org.unipop.common.util.PredicatesTranslator;
 import org.unipop.jdbc.controller.simple.results.ElementMapper;
 import org.unipop.jdbc.schemas.RowEdgeSchema;
 import org.unipop.jdbc.schemas.RowVertexSchema;
+import org.unipop.jdbc.schemas.jdbc.JdbcEdgeSchema;
 import org.unipop.jdbc.schemas.jdbc.JdbcSchema;
+import org.unipop.jdbc.schemas.jdbc.JdbcVertexSchema;
 import org.unipop.query.StepDescriptor;
 import org.unipop.query.controller.SimpleController;
 import org.unipop.query.mutation.AddEdgeQuery;
@@ -41,7 +45,6 @@ import org.unipop.structure.UniVertex;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static org.jooq.impl.DSL.field;
@@ -60,9 +63,9 @@ public class RowController implements SimpleController {
     private final Set<? extends RowVertexSchema> vertexSchemas;
     private final Set<? extends RowEdgeSchema> edgeSchemas;
 
-    private final PredicatesTranslator<Iterable<Condition>> predicatesTranslator;
+    private final PredicatesTranslator<Condition> predicatesTranslator;
 
-    public RowController(UniGraph graph, DSLContext context, SchemaSet schemaSet, PredicatesTranslator<Iterable<Condition>> predicatesTranslator) {
+    public RowController(UniGraph graph, DSLContext context, SchemaSet schemaSet, PredicatesTranslator<Condition> predicatesTranslator) {
         this.graph = graph;
         this.dslContext = context;
 
@@ -75,9 +78,10 @@ public class RowController implements SimpleController {
     @Override
     public <E extends Element> Iterator<E> search(SearchQuery<E> uniQuery) {
         Set<? extends JdbcSchema<E>> schemas = this.getSchemas(uniQuery.getReturnType());
-        PredicatesHolder schemaPredicateHolders = this.extractPredicatesHolder(uniQuery, schemas);
 
-        return this.search(schemaPredicateHolders, schemas, uniQuery.getLimit(), uniQuery.getStepDescriptor(), uniQuery.getPropertyKeys());
+        Function<JdbcSchema<E>, PredicatesHolder> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery.getPredicates());
+
+        return this.search(toPredicatesFunction, schemas, uniQuery);
     }
 
     @Override
@@ -121,7 +125,7 @@ public class RowController implements SimpleController {
                 logger.debug("removing element from schema. element: {}, schema: {}", el, schema);
                 DeleteWhereStep deleteStep = this.getDslContext().delete(table(schema.getTable()));
 
-                Collection<Condition> conditions = this.translateElementsToConditions(schema, Collections.singletonList(el));
+                Condition conditions = this.translateElementsToConditions(schema, Collections.singletonList(el));
                 Delete step = deleteStep.where(conditions);
 
                 logger.info("Created and executing delete step with conditions, step: {}", step);
@@ -132,28 +136,9 @@ public class RowController implements SimpleController {
 
     @Override
     public void fetchProperties(DeferredVertexQuery uniQuery) {
-        Set<PredicatesHolder> schemasPredicates = this.vertexSchemas.stream().map(schema ->
-                schema.toPredicates(uniQuery.getVertices())).collect(Collectors.toSet());
-        PredicatesHolder schemaPredicateHolders = PredicatesHolderFactory.or(schemasPredicates);
+        Function<JdbcVertexSchema, PredicatesHolder> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery.getVertices());
 
-        logger.debug("fetching properties for DeferredVertices, DeferredVertexQuery: {}, schemaPredicateHolders: {}", uniQuery, schemaPredicateHolders);
-
-
-        if (schemaPredicateHolders.isEmpty()) {
-            logger.warn("schemaPredicatesHolder is empty, can't fetch properties for uniQuery. uniQuery: {}, vertexSchemas: {}", uniQuery, this.vertexSchemas);
-            return;
-        }
-        int limit = -1;
-
-        logger.debug(
-                "executing search for deferred vertices, schemaPredicatesHolders: {}, vertexSchemas: {}, limit: {}, stepDescriptor: {}, propertyKeys: {}",
-                schemaPredicateHolders,
-                this.vertexSchemas,
-                limit,
-                uniQuery.getStepDescriptor(),
-                uniQuery.getPropertyKeys());
-
-        Iterator<Vertex> searchIterator = this.search(schemaPredicateHolders, vertexSchemas, limit, uniQuery.getStepDescriptor(), uniQuery.getPropertyKeys());
+        Iterator<Vertex> searchIterator = this.search(toPredicatesFunction, vertexSchemas, uniQuery);
 
         Map<Object, DeferredVertex> vertexMap = uniQuery.getVertices().stream().collect(Collectors.toMap(UniElement::id, Function.identity(), (a, b) -> a));
         logger.debug(
@@ -172,71 +157,47 @@ public class RowController implements SimpleController {
 
     @Override
     public Iterator<Edge> search(SearchVertexQuery uniQuery) {
-        Set<PredicatesHolder> schemasPredicates = edgeSchemas.stream().map(schema ->
-                schema.toPredicates(uniQuery.getVertices(), uniQuery.getDirection(), uniQuery.getPredicates()))
-                .collect(Collectors.toSet());
-        PredicatesHolder schemaPredicateHolders = PredicatesHolderFactory.or(schemasPredicates);
+        Function<JdbcEdgeSchema, PredicatesHolder> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery.getVertices(), uniQuery.getDirection(), uniQuery.getPredicates());
         return this.search(
-                schemaPredicateHolders,
-                this.getSchemas(uniQuery.getReturnType()),
-                uniQuery.getLimit(),
-                uniQuery.getStepDescriptor(),
-                uniQuery.getPropertyKeys()
+                toPredicatesFunction,
+                this.edgeSchemas,
+                uniQuery
         );
     }
 
     @SuppressWarnings("unchecked")
-    private <E extends Element> Iterator<E> search(PredicatesHolder allPredicates, Set<? extends JdbcSchema<E>> schemas, int limit, StepDescriptor stepDescriptor, Set<String> propertyKeys) {
-        logger.debug("executing search with parameters: allPredicates: {}, schemas: {}, limit: {}, stepDescriptor: {}, propertyKeys: {}", allPredicates, schemas, limit, stepDescriptor, propertyKeys);
-        if (schemas.size() == 0 || allPredicates.isAborted()) {
-            logger.warn("there are no schemas, or the predicate has been aborted, returning empty iterator. schemas: {}, allPredicates: {}", schemas, allPredicates);
-            return Iterators.emptyIterator();
+    private <E extends Element, S extends JdbcSchema<E>> Iterator<E> search(Function<S, PredicatesHolder> toSearchFunction, Set<? extends S> allSchemas, SearchQuery<E> query) {
+        logger.debug("executing search with parameters: allPredicates: {}, schemas: {}, query: {}", toSearchFunction, allSchemas, query);
+
+        Map<S, Select> schemas = allSchemas.stream()
+                .map(schema -> Pair.of(schema, toSearchFunction.apply(schema)))
+                .filter(pair -> pair.getRight() != null)
+                .map(pair -> Pair.of(pair.getLeft(), pair.getLeft().getSearch(query, pair.getRight(), this.getDslContext())))
+                .filter(pair -> pair.getRight() != null)
+                .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
+
+
+        logger.debug("mapped schemas for search, schemas: {}", schemas);
+        if(schemas.size() == 0) {
+            logger.warn("schemas are empty, returning empty iterator");
+            return EmptyIterator.instance();
         }
 
-        Iterator<Condition> conditions = this.predicatesTranslator.translate(allPredicates).iterator();
-        logger.debug("translated predicates to condition iterator: {}", conditions);
-        Stream<String> tables = schemas.stream().map(JdbcSchema::getTable);
-        logger.debug("extracted table names from schemas, tables: {}", tables);
-        int finalLimit = limit < 0 ? Integer.MAX_VALUE : limit;
-        logger.debug("validated limit, initialLimit: {}, limit used in query: {}", limit, finalLimit);
+        Iterator<S> schemaIterator = schemas.keySet().iterator();
 
-        return (Iterator<E>) schemas.stream().flatMap(schema -> {
-            Select step = createSqlQuery(
-                    propertyKeys, schema)
-                    .where(IteratorUtils.list(conditions))
-                    .limit(finalLimit);
-            logger.debug("executing SQL query, step: {}", step);
-            return step.fetch()
-                    .map(new ElementMapper(schemas)).stream();
-        })
-                .distinct()
-                .iterator();
-    }
-
-    private SelectJoinStep<Record> createSqlQuery(Set<String> columnsToRetrieve, JdbcSchema schema) {
-        if (columnsToRetrieve == null) {
-            return this.getDslContext().select().from(schema.getTable());
-
-        }
-
-        return this.getDslContext()
-                .select(schema.toFields(columnsToRetrieve).stream().map(DSL::field).collect(Collectors.toList()))
-                .from(schema.getTable());
+        return schemas.values().stream()
+                .map(Select::fetch)
+                .flatMap(res -> schemaIterator.next().parseResults(res, query).stream())
+                .distinct().iterator();
     }
 
     @SuppressWarnings("unchecked")
-    private <E extends Element> Set<JdbcSchema<E>> getSchemas(Class elementClass) {
+    private <E extends Element> Set<? extends JdbcSchema<E>> getSchemas(Class elementClass) {
         if (Vertex.class.isAssignableFrom(elementClass)) {
             return vertexSchemas.stream().map(v -> (JdbcSchema<E>) v).collect(Collectors.toSet());
         } else {
             return edgeSchemas.stream().map(e -> (JdbcSchema<E>) e).collect(Collectors.toSet());
         }
-    }
-
-    private <E extends Element> PredicatesHolder extractPredicatesHolder(SearchQuery<E> uniQuery, Set<? extends JdbcSchema<E>> schemas) {
-        Set<PredicatesHolder> schemasPredicates = schemas.stream().map(schema ->
-                schema.toPredicates(uniQuery.getPredicates())).collect(Collectors.toSet());
-        return PredicatesHolderFactory.or(schemasPredicates);
     }
 
     private <E extends Element> void insert(Set<? extends JdbcSchema<E>> schemas, E element) {
@@ -297,16 +258,15 @@ public class RowController implements SimpleController {
         return new DefaultMapEntry<>(field(entry.getKey()), entry.getValue());
     }
 
-    private <E extends Element> Collection<Condition> translateElementsToConditions(JdbcSchema<E> schema, List<E> elements) {
-        return StreamSupport.stream(this.predicatesTranslator.translate(
+    private <E extends Element> Condition translateElementsToConditions(JdbcSchema<E> schema, List<E> elements) {
+        return this.predicatesTranslator.translate(
                 new PredicatesHolder(
                         PredicatesHolder.Clause.Or,
                         elements.stream()
                                 .map(schema::toFields)
                                 .map(Map::entrySet)
                                 .flatMap(m -> m.stream().map(es -> new HasContainer(es.getKey(), P.within(es.getValue()))))
-                                .collect(Collectors.toList()), Collections.emptyList())).spliterator(), false)
-                .collect(Collectors.toSet());
+                                .collect(Collectors.toList()), Collections.emptyList()));
 
     }
 

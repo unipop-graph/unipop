@@ -153,6 +153,7 @@ public class DocumentController implements SimpleController {
                 .map(tuple -> Tuple.tuple(tuple.v1(), tuple.v1().getSearch(query, tuple.v2())))
                 .filter(tuple -> tuple.v2() != null)
                 .collect(Collectors.toMap(Tuple::v1, Tuple::v2));
+
         logger.debug("mapped schemas for search, schemas: {}", schemas);
         if(schemas.size() == 0) {
             logger.warn("schemas are empty, returning empty iterator");

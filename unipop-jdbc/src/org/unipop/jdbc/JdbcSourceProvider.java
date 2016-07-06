@@ -19,6 +19,7 @@ import org.unipop.structure.UniGraph;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -29,7 +30,7 @@ import static org.unipop.util.ConversionUtils.getList;
  * @since 21/6/2016
  */
 public class JdbcSourceProvider implements SourceProvider {
-    private final Supplier<PredicatesTranslator<Iterable<Condition>>> predicatesTranslatorSupplier;
+    private final Supplier<PredicatesTranslator<Condition>> predicatesTranslatorSupplier;
     private UniGraph graph;
     private DSLContext context;
 
@@ -37,7 +38,7 @@ public class JdbcSourceProvider implements SourceProvider {
         this(JdbcPredicatesTranslator::new);
     }
 
-    public JdbcSourceProvider(Supplier<PredicatesTranslator<Iterable<Condition>>> predicatesTranslatorSupplier) {
+    public JdbcSourceProvider(Supplier<PredicatesTranslator<Condition>> predicatesTranslatorSupplier) {
         this.predicatesTranslatorSupplier = predicatesTranslatorSupplier;
     }
 
