@@ -55,8 +55,8 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
 
     @Override
     protected Iterator<Traverser.Admin<E>> process(List<Traverser.Admin<Vertex>> traversers) {
-        Map<Object, List<Traverser<Vertex>>> idToTraverser = new HashMap<>(bulk);
-        List<Vertex> vertices = new ArrayList<>(bulk);
+        Map<Object, List<Traverser<Vertex>>> idToTraverser = new HashMap<>(traversers.size());
+        List<Vertex> vertices = new ArrayList<>(traversers.size());
         traversers.forEach(traverser -> {
             Vertex vertex = traverser.get();
             List<Traverser<Vertex>> traverserList = idToTraverser.get(vertex.id());
