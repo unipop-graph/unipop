@@ -217,7 +217,7 @@ public class RowController implements SimpleController {
                     .onDuplicateKeyIgnore().execute();
 
             if (changeSetCount == 0) {
-                throw new IllegalArgumentException("element with same key already exists:" + row.getId());
+                throw new IllegalArgumentException("element with same key already exists, or failed to insert:" + row.getId());
             }
         }
     }
