@@ -36,4 +36,12 @@ public class SearchQuery<E extends Element> extends PredicateQuery {
     public interface SearchController extends UniQueryController {
         <E extends Element> Iterator<E> search(SearchQuery<E> uniQuery);
     }
+
+    @Override
+    public String toString() {
+        return "SearchQuery{" +
+                "returnType=" + returnType +
+                ", limit=" + limit +
+                '}';
+    }
 }

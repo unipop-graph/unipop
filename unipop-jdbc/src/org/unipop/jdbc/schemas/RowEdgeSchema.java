@@ -21,7 +21,7 @@ import org.unipop.util.ConversionUtils;
 import java.util.*;
 
 /**
- * @author GurRo
+ * @author Gur Ronen
  * @since 6/13/2016
  */
 public class RowEdgeSchema extends AbstractRowSchema<Edge> implements JdbcEdgeSchema
@@ -98,4 +98,11 @@ public class RowEdgeSchema extends AbstractRowSchema<Edge> implements JdbcEdgeSc
         return PredicatesHolderFactory.or(inPredicates, outPredicates);
     }
 
+    @Override
+    public String toString() {
+        return "RowEdgeSchema{" +
+                "inVertexSchema=" + inVertexSchema +
+                ", outVertexSchema=" + outVertexSchema +
+                "} " + super.toString();
+    }
 }

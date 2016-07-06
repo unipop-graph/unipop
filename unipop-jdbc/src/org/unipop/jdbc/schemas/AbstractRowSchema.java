@@ -28,19 +28,6 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
     }
 
     @Override
-    public Row toRow(E element) {
-        Map<String, Object> fields = this.toFields(element);
-        if (fields == null) {
-            return null;
-        }
-
-        String table = this.getTable();
-        Object id = this.getId(element);
-
-        return new JdbcSchema.Row(table, id, fields);
-    }
-
-    @Override
     public Object getId(E element) {
         return element.id();
     }
@@ -48,5 +35,12 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
     @Override
     public List<E> parseResults(String result, PredicateQuery query) {
         return null;
+    }
+
+    @Override
+    public String toString() {
+        return "AbstractRowSchema{" +
+                "table='" + table + '\'' +
+                "} " + super.toString();
     }
 }

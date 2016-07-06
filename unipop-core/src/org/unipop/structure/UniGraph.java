@@ -105,7 +105,7 @@ public class UniGraph implements Graph {
 
     @Override
     public String toString() {
-        return StringFactory.graphString(this, controllerManager.toString());
+        return StringFactory.graphString(this, "UniGraph"/*, controllerManager.toString()*/);
     }
 
     @Override
@@ -182,4 +182,6 @@ public class UniGraph implements Graph {
                 .map(controller -> controller.addVertex(new AddVertexQuery(stringObjectMap, null)))
                 .findFirst().get();
     }
+
+
 }

@@ -45,6 +45,24 @@ public class UniGraphVertexStepStrategy extends AbstractTraversalStrategy<Traver
                             TraversalHelper.replaceStep(vertexStep, uniGraphVertexStep, child);
                             if (vertexStep.returnsEdge()) PredicatesUtil.collectPredicates(uniGraphVertexStep, child);
                         }
+                        else if (TraversalHelper.hasStepOfAssignableClass(TraversalParent.class, child)){
+                            TraversalHelper.getStepsOfAssignableClass(TraversalParent.class, child).forEach(traversalParent1 -> {
+                                traversalParent.getLocalChildren().forEach(child1 -> {
+                                    if(TraversalHelper.stepIndex(vertexStep, child1) != -1) {
+                                        UniGraphVertexStep uniGraphVertexStep = new UniGraphVertexStep<>(vertexStep, uniGraph, uniGraph.getControllerManager());
+                                        TraversalHelper.replaceStep(vertexStep, uniGraphVertexStep, child1);
+                                        if (vertexStep.returnsEdge()) PredicatesUtil.collectPredicates(uniGraphVertexStep, child1);
+                                    }
+                                });
+                                traversalParent.getGlobalChildren().forEach(child1 -> {
+                                    if(TraversalHelper.stepIndex(vertexStep, child1) != -1) {
+                                        UniGraphVertexStep uniGraphVertexStep = new UniGraphVertexStep<>(vertexStep, uniGraph, uniGraph.getControllerManager());
+                                        TraversalHelper.replaceStep(vertexStep, uniGraphVertexStep, child1);
+                                        if (vertexStep.returnsEdge()) PredicatesUtil.collectPredicates(uniGraphVertexStep, child1);
+                                    }
+                                });
+                            });
+                        }
                     });
                 });
             }

@@ -1,39 +1,42 @@
 {
   "class": "org.unipop.elastic.ElasticSourceProvider",
   "clusterName": "unipop",
-  "addresses": ["http://localhost:9200"],
+  "addresses": [
+    "http://localhost:9200"
+  ],
   "vertices": [
     {
       "index": "vertex",
       "type": "person",
       "id": "@_id",
       "label": "person",
-      "dynamicProperties": true,
-      "edges": [{
-        "path": "creations",
-        "id": "@creationId",
-        "label": "created",
-        "direction": "OUT",
-        "properties": {
-          "weight": "@weight",
-          "name": "@name"
-        },
-        "vertex": {
-          "ref": true,
-          "id": "@softwareId",
-          "label": "software"
-        }
-      }]
-    },
-    {
-      "index": "vertex",
-      "id": "@_id",
-      "label": {
-        "field": "_type",
-        "exclude": ["person"]
+      "dynamicProperties": {
+        "excludeFields":[
+          "_type",
+          "creations"
+        ]
       },
-      "properties": {},
-      "dynamicProperties": true
+      "edges": [
+        {
+          "path": "creations",
+          "id": "@creationId",
+          "label": "created",
+          "direction": "OUT",
+          "properties": {
+            "weight": "@weight",
+            "name": "@name"
+          },
+          "vertex": {
+            "ref": false,
+            "id": "@softwareId",
+            "label": "software",
+            "properties": {
+              "name": "@name",
+              "lang": "@lang"
+            }
+          }
+        }
+      ]
     }
   ],
   "edges": [
@@ -42,11 +45,18 @@
       "id": "@_id",
       "label": {
         "field": "_type",
-        "exclude": ["created"]
+        "exclude": [
+          "created"
+        ]
       },
       "properties": {},
       "dynamicProperties": {
-        "excludeFields": ["outId", "inId", "outLabel", "inLabel"]
+        "excludeFields": [
+          "outId",
+          "inId",
+          "outLabel",
+          "inLabel"
+        ]
       },
       "outVertex": {
         "ref": true,

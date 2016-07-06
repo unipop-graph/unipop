@@ -12,12 +12,16 @@ import io.searchbox.indices.IndicesExists;
 import io.searchbox.indices.Refresh;
 import io.searchbox.indices.mapping.PutMapping;
 import org.elasticsearch.common.settings.Settings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ElasticClient {
+
+    private final static Logger logger = LoggerFactory.getLogger(ElasticClient.class);
 
     private List<BulkableAction> bulk;
     String STRING_NOT_ANALYZED = "{\"dynamic_templates\" : [{\"not_analyzed\" : {\"match\" : \"*\",\"match_mapping_type\" : \"string\", \"mapping\" : {\"type\" : \"string\",\"index\" : \"not_analyzed\"}}}]}";
@@ -33,17 +37,20 @@ public class ElasticClient {
     public void validateIndex(String indexName) {
         try {
             IndicesExists indicesExistsRequest = new IndicesExists.Builder(indexName).build();
+            logger.debug("created indexExistsRequests: {}", indicesExistsRequest);
             JestResult existsResult = client.execute(indicesExistsRequest);
+            logger.debug("indexExistsRequests result: {}", existsResult);
             if (!existsResult.isSucceeded()) {
-                Settings settings = Settings.settingsBuilder().put("index.analysis.analyzer.default.type", "keyword").build();;
+                Settings settings = Settings.settingsBuilder().put("index.analysis.analyzer.default.type", "keyword").build();
                 CreateIndex createIndexRequest = new CreateIndex.Builder(indexName).settings(settings).build();
                 execute(createIndexRequest);
                 //TODO: Make this work. Using the above "keyword" configuration in the meantime.
                 PutMapping putMapping = new PutMapping.Builder(indexName, "*", STRING_NOT_ANALYZED).build();
                 execute(putMapping);
+                logger.info("created index with settings: {}, indexName: {}, putMapping: {}", settings, indexName, putMapping);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("failed to connect to elastic cluster", e);
         }
     }
 
@@ -53,20 +60,20 @@ public class ElasticClient {
                 type,
                 "{ \"" + type + "\" : { \"properties\" : { \"" + path + "\" : {\"type\" : \"nested\"} } } }"
         ).build();
-
+        logger.info("putting mapping for nested, mapping: {}", putMapping);
         return execute(putMapping);
     }
 
     public void bulk(BulkableAction action) {
         if(bulk != null && bulk.size() >= 500) refresh();
         if(bulk == null) bulk = new ArrayList<>();
-        bulk.add(action);
-    }
+        bulk.add(action);    }
 
     public void refresh() {
         if(bulk != null) {
             Bulk bulkAction = new Bulk.Builder().addAction(this.bulk).refresh(true).build();
-            execute(bulkAction);
+            JestResult res = execute(bulkAction);
+            logger.info("executed bulk on client, bulk : {}, bulkAction, JestResult: {}", res);
             bulk = null;
         }
 //        Refresh refresh = new Refresh.Builder().refresh(true).allowNoIndices(true).build();
@@ -86,6 +93,7 @@ public class ElasticClient {
     }
 
     public void close() {
+        logger.info("shutting down client, client: {}", client);
         client.shutdownClient();
     }
 

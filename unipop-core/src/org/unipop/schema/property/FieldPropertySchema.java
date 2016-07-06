@@ -112,4 +112,15 @@ public class FieldPropertySchema implements PropertySchema {
         }
         return true;
     }
+
+    @Override
+    public String toString() {
+        return "FieldPropertySchema{" +
+                "exclude=" + exclude +
+                ", key='" + key + '\'' +
+                ", field='" + field + '\'' +
+                ", nullable=" + nullable +
+                ", include=" + include +
+                '}';
+    }
 }

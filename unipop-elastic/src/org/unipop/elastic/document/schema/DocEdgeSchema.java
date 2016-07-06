@@ -86,4 +86,12 @@ public class DocEdgeSchema extends AbstractDocSchema<Edge> implements DocumentEd
         if(direction.equals(Direction.IN)) return inPredicates;
         return PredicatesHolderFactory.or(inPredicates, outPredicates);
     }
+
+    @Override
+    public String toString() {
+        return "DocEdgeSchema{" +
+                "index='" + index + '\'' +
+                ", type='" + type + '\'' +
+                '}';
+    }
 }

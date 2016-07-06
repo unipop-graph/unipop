@@ -47,7 +47,10 @@ public class RowVertexSchema extends AbstractRowSchema<Vertex> implements JdbcVe
         if(properties == null) return null;
         return new UniVertex(properties, graph);
     }
-
+    @Override
+    public String toString() {
+        return "RowVertexSchema{} " + super.toString();
+    }
 
     private EdgeSchema getEdgeSchema(JSONObject edgeJson) throws JSONException {
         Direction direction = Direction.valueOf(edgeJson.optString("direction"));

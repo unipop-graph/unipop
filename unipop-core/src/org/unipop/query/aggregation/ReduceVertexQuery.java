@@ -33,4 +33,12 @@ public class ReduceVertexQuery extends ReduceQuery implements VertexQuery {
     public interface ReduceVertexController extends UniQueryController {
         void query(ReduceVertexQuery uniQuery);
     }
+
+    @Override
+    public String toString() {
+        return "ReduceVertexQuery{" +
+                "vertices=" + vertices +
+                ", direction=" + direction +
+                '}';
+    }
 }

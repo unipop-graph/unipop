@@ -29,6 +29,11 @@ public class UniGraphCoalesceStep<S, E> extends UniBulkStep<S, E> implements Tra
         }};
     }
 
+    @Override
+    public List<Traversal.Admin<S, E>> getGlobalChildren() {
+        return coalesceTraversals;
+    }
+
     public UniGraphCoalesceStep(Traversal.Admin traversal, UniGraph graph, List<Traversal.Admin<S, E>> coalesceTraversals) {
         super(traversal, graph);
         this.coalesceTraversals = coalesceTraversals;

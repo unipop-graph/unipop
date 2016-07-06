@@ -21,4 +21,11 @@ public class AddVertexQuery extends UniQuery{
     public interface AddVertexController extends UniQueryController {
         Vertex addVertex(AddVertexQuery uniQuery);
     }
+
+    @Override
+    public String toString() {
+        return "AddVertexQuery{" +
+                "properties=" + properties +
+                '}';
+    }
 }

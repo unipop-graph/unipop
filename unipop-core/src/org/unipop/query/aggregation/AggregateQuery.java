@@ -41,4 +41,13 @@ public class AggregateQuery extends PredicateQuery {
     public interface AggregationController extends UniQueryController {
         Map<String, Object> query(AggregateQuery uniQuery);
     }
+
+    @Override
+    public String toString() {
+        return "AggregateQuery{" +
+                "key=" + key +
+                ", values=" + values +
+                ", reduce=" + reduce +
+                '}';
+    }
 }

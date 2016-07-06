@@ -13,7 +13,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public abstract class AbstractElementSchema<E extends Element> extends AbstractPropertyContainer implements ElementSchema<E> {
-
     protected UniGraph graph;
 
     public AbstractElementSchema(JSONObject configuration, UniGraph graph) {
@@ -72,5 +71,12 @@ public abstract class AbstractElementSchema<E extends Element> extends AbstractP
                 .collect(Collectors.toSet());
 
         return PredicatesHolderFactory.create(predicatesHolder.getClause(), predicates);
+    }
+
+    @Override
+    public String toString() {
+        return "AbstractElementSchema{" +
+                "graph=" + graph +
+                "} " + super.toString();
     }
 }

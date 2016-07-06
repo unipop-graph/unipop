@@ -48,4 +48,12 @@ public class DocVertexSchema extends AbstractDocSchema<Vertex> implements Docume
     public Set<ElementSchema> getChildSchemas() {
         return this.edgeSchemas;
     }
+
+    @Override
+    public String toString() {
+        return "DocVertexSchema{" +
+                "index='" + index + '\'' +
+                ", type='" + type + '\'' +
+                '}';
+    }
 }

@@ -68,7 +68,7 @@ public class UnipopProcessSuite extends ProcessStandardSuite {
             SumTest.Traversals.class,
             OrderTest.Traversals.class,
             PathTest.Traversals.class,
-            ProfileTest.Traversals.class,
+//            ProfileTest.Traversals.class,
             ProjectTest.Traversals.class,
             PropertiesTest.Traversals.class,
             SelectTest.Traversals.class,

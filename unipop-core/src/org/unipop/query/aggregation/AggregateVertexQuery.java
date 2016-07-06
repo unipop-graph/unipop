@@ -42,4 +42,12 @@ public class AggregateVertexQuery extends AggregateQuery implements VertexQuery 
     public interface AggregateVertexController extends UniQueryController {
         void query(AggregateVertexQuery uniQuery);
     }
+
+    @Override
+    public String toString() {
+        return "AggregateVertexQuery{" +
+                "vertices=" + vertices +
+                ", direction=" + direction +
+                '}';
+    }
 }
