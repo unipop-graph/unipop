@@ -83,8 +83,10 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
                 .map(vertex -> ((DeferredVertex) vertex))
                 .filter(DeferredVertex::isDeferred)
                 .collect(Collectors.toList());
-        DeferredVertexQuery query = new DeferredVertexQuery(deferredVertices, propertyKeys, this.stepDescriptor);
-        deferredVertexControllers.stream().forEach(controller -> controller.fetchProperties(query));
+        if (deferredVertices.size() > 0) {
+            DeferredVertexQuery query = new DeferredVertexQuery(deferredVertices, propertyKeys, this.stepDescriptor);
+            deferredVertexControllers.stream().forEach(controller -> controller.fetchProperties(query));
+        }
         return copyTraversers.iterator();
     }
 

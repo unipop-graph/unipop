@@ -1,4 +1,4 @@
-package org.unipop.elastic.document.schema;
+package org.unipop.elastic.document.schema.nested;
 
 import io.searchbox.action.BulkableAction;
 import io.searchbox.core.DocumentResult;
@@ -14,6 +14,7 @@ import org.json.JSONObject;
 import org.unipop.elastic.common.ElasticClient;
 import org.unipop.elastic.common.FilterHelper;
 import org.unipop.elastic.document.DocumentVertexSchema;
+import org.unipop.elastic.document.schema.AbstractDocSchema;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.structure.UniElement;

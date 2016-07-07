@@ -1,4 +1,4 @@
-package org.unipop.elastic.document.schema;
+package org.unipop.elastic.document.schema.nested;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -19,6 +19,7 @@ import org.json.JSONObject;
 import org.unipop.elastic.common.ElasticClient;
 import org.unipop.elastic.common.FilterHelper;
 import org.unipop.elastic.document.DocumentEdgeSchema;
+import org.unipop.elastic.document.schema.AbstractDocSchema;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.schema.element.ElementSchema;
@@ -52,7 +53,7 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
     protected VertexSchema createVertexSchema(String key) throws JSONException {
         JSONObject vertexConfiguration = this.json.optJSONObject(key);
         if (vertexConfiguration == null) return null;
-        if (vertexConfiguration.optBoolean("ref", false)) return new ReferenceVertexSchema(vertexConfiguration, graph);
+        if (vertexConfiguration.optBoolean("ref", false)) return new NestedReferenceVertexSchema(vertexConfiguration, path, graph);
         return new NestedVertexSchema(vertexConfiguration, path, index, type, client, graph);
     }
 
