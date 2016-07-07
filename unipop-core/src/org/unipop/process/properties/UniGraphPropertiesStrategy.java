@@ -11,18 +11,22 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.SideEffectStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.TreeSideEffectStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
+import org.unipop.process.repeat.UniGraphRepeatStep;
+import org.unipop.process.repeat.UniGraphRepeatStepStrategy;
+import org.unipop.process.edge.EdgeStepsStrategy;
+import org.unipop.process.edge.UniGraphEdgeOtherVertexStep;
+import org.unipop.process.edge.UniGraphEdgeVertexStep;
 import org.unipop.process.start.UniGraphStartStepStrategy;
 import org.unipop.process.vertex.UniGraphVertexStepStrategy;
+import org.unipop.structure.UniGraph;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -32,7 +36,7 @@ import java.util.stream.Stream;
 public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy {
     @Override
     public Set<Class<? extends ProviderOptimizationStrategy>> applyPrior() {
-        return Sets.newHashSet(UniGraphStartStepStrategy.class, UniGraphVertexStepStrategy.class);
+        return Sets.newHashSet(UniGraphStartStepStrategy.class, UniGraphVertexStepStrategy.class, UniGraphRepeatStepStrategy.class, EdgeStepsStrategy.class);
     }
 
     private void handlePropertiesSteps(String[] propertyKeys, PropertyFetcher propertyFetcher) {
@@ -49,78 +53,88 @@ public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<Traver
     @Override
     public void apply(Traversal.Admin<?, ?> traversal) {
         TraversalHelper.getStepsOfClass(OrderGlobalStep.class, traversal).forEach(orderGlobalStep -> {
-            PropertyFetcher propertyFetcher = getPropertyFetcherStepOf(orderGlobalStep, traversal);
-            if (propertyFetcher != null) {
-                if ((traversal.getParent() instanceof ConnectiveStep) || TraversalHelper.hasStepOfClass(MatchStep.MatchStartStep.class, traversal)) {
-                    propertyFetcher.fetchAllKeys();
-                } else orderGlobalStep.getLocalChildren().forEach(t -> {
-                    if (t instanceof ElementValueTraversal) {
-                        String propertyKey = ((ElementValueTraversal) t).getPropertyKey();
-                        handlePropertiesSteps(new String[]{propertyKey}, propertyFetcher);
-                    }
+            Collection<PropertyFetcher> propertyFetchers = getPropertyFetcherStepOf(orderGlobalStep, traversal);
+            if (propertyFetchers != null) {
+                propertyFetchers.forEach(propertyFetcher -> {
+                    if ((traversal.getParent() instanceof ConnectiveStep) || TraversalHelper.hasStepOfClass(MatchStep.MatchStartStep.class, traversal)) {
+                        propertyFetcher.fetchAllKeys();
+                    } else orderGlobalStep.getLocalChildren().forEach(t -> {
+                        if (t instanceof ElementValueTraversal) {
+                            String propertyKey = ((ElementValueTraversal) t).getPropertyKey();
+                            handlePropertiesSteps(new String[]{propertyKey}, propertyFetcher);
+                        }
+                    });
                 });
             }
         });
 
         TraversalHelper.getStepsOfClass(DedupGlobalStep.class, traversal).forEach(dedupGlobalStep -> {
-            PropertyFetcher propertyFetcher = getPropertyFetcherStepOf(dedupGlobalStep, traversal);
-            if (propertyFetcher != null) {
-                if ((traversal.getParent() instanceof ConnectiveStep) || TraversalHelper.hasStepOfClass(MatchStep.MatchStartStep.class, traversal)) {
-                    propertyFetcher.fetchAllKeys();
-                } else if (dedupGlobalStep.getLocalChildren().size() > 0)
-                    if (dedupGlobalStep.getLocalChildren().get(0) instanceof ElementValueTraversal) {
-                        String propertyKey = ((ElementValueTraversal) dedupGlobalStep.getLocalChildren().get(0)).getPropertyKey();
-                        handlePropertiesSteps(new String[]{propertyKey}, propertyFetcher);
-                    }
+            Collection<PropertyFetcher> propertyFetchers = getPropertyFetcherStepOf(dedupGlobalStep, traversal);
+            if (propertyFetchers != null) {
+                propertyFetchers.forEach(propertyFetcher -> {
+                    if ((traversal.getParent() instanceof ConnectiveStep) || TraversalHelper.hasStepOfClass(MatchStep.MatchStartStep.class, traversal)) {
+                        propertyFetcher.fetchAllKeys();
+                    } else if (dedupGlobalStep.getLocalChildren().size() > 0)
+                        if (dedupGlobalStep.getLocalChildren().get(0) instanceof ElementValueTraversal) {
+                            String propertyKey = ((ElementValueTraversal) dedupGlobalStep.getLocalChildren().get(0)).getPropertyKey();
+                            handlePropertiesSteps(new String[]{propertyKey}, propertyFetcher);
+                        }
+                });
             }
         });
 
         TraversalHelper.getStepsOfClass(PropertyMapStep.class, traversal).forEach(propertyMapStep -> {
-            PropertyFetcher propertyFetcher = getPropertyFetcherStepOf(propertyMapStep, traversal);
-            if (propertyFetcher != null) {
-                if ((traversal.getParent() instanceof ConnectiveStep) || TraversalHelper.hasStepOfClass(MatchStep.MatchStartStep.class, traversal)) {
-                    propertyFetcher.fetchAllKeys();
-                } else
-                    handlePropertiesSteps(propertyMapStep.getPropertyKeys(), propertyFetcher);
+            Collection<PropertyFetcher> propertyFetchers = getPropertyFetcherStepOf(propertyMapStep, traversal);
+            if (propertyFetchers != null) {
+                propertyFetchers.forEach(propertyFetcher -> {
+                    if ((traversal.getParent() instanceof ConnectiveStep) || TraversalHelper.hasStepOfClass(MatchStep.MatchStartStep.class, traversal)) {
+                        propertyFetcher.fetchAllKeys();
+                    } else
+                        handlePropertiesSteps(propertyMapStep.getPropertyKeys(), propertyFetcher);
+                });
             }
         });
 
         TraversalHelper.getStepsOfClass(PropertiesStep.class, traversal).forEach(propertiesStep -> {
-            PropertyFetcher propertyFetcher = getPropertyFetcherStepOf(propertiesStep, traversal);
-            if (propertyFetcher != null) {
-                if ((traversal.getParent() instanceof ConnectiveStep) || TraversalHelper.hasStepOfClass(MatchStep.MatchStartStep.class, traversal)) {
-                    propertyFetcher.fetchAllKeys();
-                } else
-                    handlePropertiesSteps(propertiesStep.getPropertyKeys(), propertyFetcher);
+            Collection<PropertyFetcher> propertyFetchers = getPropertyFetcherStepOf(propertiesStep, traversal);
+            if (propertyFetchers != null) {
+                propertyFetchers.forEach(propertyFetcher -> {
+                    if ((traversal.getParent() instanceof ConnectiveStep) || TraversalHelper.hasStepOfClass(MatchStep.MatchStartStep.class, traversal)) {
+                        propertyFetcher.fetchAllKeys();
+                    } else
+                        handlePropertiesSteps(propertiesStep.getPropertyKeys(), propertyFetcher);
+                });
             }
         });
 
         TraversalHelper.getStepsOfClass(HasStep.class, traversal).forEach(hasStep -> {
-            PropertyFetcher propertyFetcher = getPropertyFetcherStepOf(hasStep, traversal);
-            if (propertyFetcher != null) {
-                if ((traversal.getParent() instanceof ConnectiveStep) || TraversalHelper.hasStepOfClass(MatchStep.MatchStartStep.class, traversal)) {
-                    propertyFetcher.fetchAllKeys();
-                } else {
-                    List<HasContainer> hasContainers = hasStep.getHasContainers();
-                    hasContainers.stream().map(HasContainer::getKey).forEach(propertyFetcher::addPropertyKey);
-                }
+            Collection<PropertyFetcher> propertyFetchers = getPropertyFetcherStepOf(hasStep, traversal);
+            if (propertyFetchers != null) {
+                propertyFetchers.forEach(propertyFetcher -> {
+                    if ((traversal.getParent() instanceof ConnectiveStep) || TraversalHelper.hasStepOfClass(MatchStep.MatchStartStep.class, traversal)) {
+                        propertyFetcher.fetchAllKeys();
+                    } else {
+                        List<HasContainer> hasContainers = hasStep.getHasContainers();
+                        hasContainers.stream().map(HasContainer::getKey).forEach(propertyFetcher::addPropertyKey);
+                    }
+                });
             }
         });
 
         TraversalHelper.getStepsOfClass(WherePredicateStep.class, traversal).forEach(wherePredicateStep -> {
-            PropertyFetcher propertyFetcher = getPropertyFetcherStepOf(wherePredicateStep, traversal);
-            if (propertyFetcher != null)
-                propertyFetcher.fetchAllKeys();
+            Collection<PropertyFetcher> propertyFetchers = getPropertyFetcherStepOf(wherePredicateStep, traversal);
+            if (propertyFetchers != null)
+                propertyFetchers.forEach(PropertyFetcher::fetchAllKeys);
         });
 
         TraversalHelper.getStepsOfAssignableClass(FilterStep.class, traversal).forEach(filterStep -> {
-            PropertyFetcher propertyFetcher = getPropertyFetcherStepOf(filterStep, traversal);
+            Collection<PropertyFetcher> propertyFetchers = getPropertyFetcherStepOf(filterStep, traversal);
             if (!(filterStep instanceof HasStep)
                     && !(filterStep instanceof WherePredicateStep)
                     && !(filterStep instanceof DedupGlobalStep)
                     && !(filterStep instanceof RangeGlobalStep)) {
-                if (propertyFetcher != null)
-                    propertyFetcher.fetchAllKeys();
+                if (propertyFetchers != null)
+                    propertyFetchers.forEach(PropertyFetcher::fetchAllKeys);
             }
         });
 
@@ -144,71 +158,84 @@ public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<Traver
             });
         });
 
-        TraversalHelper.getStepsOfAssignableClass(MapStep.class, traversal).forEach(mapStep -> {
-            PropertyFetcher propertyFetcher = getPropertyFetcherStepOf(mapStep, traversal);
-            if (!(mapStep instanceof PropertyMapStep) && !(mapStep instanceof SelectOneStep) && !(mapStep instanceof PathStep)) {
-                if (propertyFetcher != null)
-                    propertyFetcher.fetchAllKeys();
-            }
-        });
-
-        TraversalHelper.getStepsOfAssignableClass(GroupStep.class, traversal).forEach(groupStep -> {
-            PropertyFetcher propertyFetcher = getPropertyFetcherStepOf(groupStep, traversal);
-            groupStep.getLocalChildren().forEach(t -> {
+        TraversalHelper.getStepsOfClass(TreeSideEffectStep.class, traversal).forEach(treeStep -> {
+            List<PropertyFetcher> propertyFetchers = getAllPropertyFetchersOf(treeStep, traversal);
+            treeStep.getLocalChildren().forEach(t -> {
                 if (t instanceof ElementValueTraversal) {
                     String propertyKey = ((ElementValueTraversal) t).getPropertyKey();
-                    handlePropertiesSteps(new String[]{propertyKey}, propertyFetcher);
-                } else if (t instanceof DefaultGraphTraversal) {
-                    List<Step> steps = ((DefaultGraphTraversal) t).getSteps();
-                    steps.forEach(step -> {
-                        if (step instanceof TraversalMapStep) {
-                            ((TraversalMapStep) step).getLocalChildren().forEach(t2 -> {
-                                if (t2 instanceof ElementValueTraversal) {
-                                    String propertyKey = ((ElementValueTraversal) t2).getPropertyKey();
-                                    handlePropertiesSteps(new String[]{propertyKey}, propertyFetcher);
-                                }
-                            });
-                        } else {
-                            if (step instanceof PropertiesStep) {
-                                String[] propertyKeys = ((PropertiesStep) step).getPropertyKeys();
-                                if (propertyKeys.length == 0)
-                                    propertyFetcher.fetchAllKeys();
-                                else
-                                    for (String propertyKey : propertyKeys) {
-                                        propertyFetcher.addPropertyKey(propertyKey);
-                                    }
-                            }
-                        }
-                    });
+                    propertyFetchers.forEach(propertyFetcher -> handlePropertiesSteps(new String[]{propertyKey}, propertyFetcher));
                 }
             });
         });
 
+        TraversalHelper.getStepsOfAssignableClass(MapStep.class, traversal).forEach(mapStep -> {
+            Collection<PropertyFetcher> propertyFetchers = getPropertyFetcherStepOf(mapStep, traversal);
+            if (!(mapStep instanceof PropertyMapStep) && !(mapStep instanceof SelectOneStep) && !(mapStep instanceof PathStep)) {
+                if (propertyFetchers != null)
+                    propertyFetchers.forEach(PropertyFetcher::fetchAllKeys);
+            }
+        });
+
+        TraversalHelper.getStepsOfAssignableClass(GroupStep.class, traversal).forEach(groupStep -> {
+            Collection<PropertyFetcher> propertyFetchers = getPropertyFetcherStepOf(groupStep, traversal);
+            groupStep.getLocalChildren().forEach(t -> {
+                if (propertyFetchers != null)
+                propertyFetchers.forEach(propertyFetcher -> {
+                    if (t instanceof ElementValueTraversal) {
+                        String propertyKey = ((ElementValueTraversal) t).getPropertyKey();
+                        handlePropertiesSteps(new String[]{propertyKey}, propertyFetcher);
+                    } else if (t instanceof DefaultGraphTraversal) {
+                        List<Step> steps = ((DefaultGraphTraversal) t).getSteps();
+                        steps.forEach(step -> {
+                            if (step instanceof TraversalMapStep) {
+                                ((TraversalMapStep) step).getLocalChildren().forEach(t2 -> {
+                                    if (t2 instanceof ElementValueTraversal) {
+                                        String propertyKey = ((ElementValueTraversal) t2).getPropertyKey();
+                                        handlePropertiesSteps(new String[]{propertyKey}, propertyFetcher);
+                                    }
+                                });
+                            } else {
+                                if (step instanceof PropertiesStep) {
+                                    String[] propertyKeys = ((PropertiesStep) step).getPropertyKeys();
+                                    if (propertyKeys.length == 0)
+                                        propertyFetcher.fetchAllKeys();
+                                    else
+                                        for (String propertyKey : propertyKeys) {
+                                            propertyFetcher.addPropertyKey(propertyKey);
+                                        }
+                                }
+                            }
+                        });
+                    }
+                });
+            });
+        });
+
         TraversalHelper.getStepsOfAssignableClass(GroupCountStep.class, traversal).forEach(groupCountStep -> {
-            PropertyFetcher propertyFetcher = getPropertyFetcherStepOf(groupCountStep, traversal);
+            Collection<PropertyFetcher> propertyFetchers = getPropertyFetcherStepOf(groupCountStep, traversal);
             groupCountStep.getLocalChildren().forEach(t -> {
                 if (t instanceof ElementValueTraversal) {
                     String propertyKey = ((ElementValueTraversal) t).getPropertyKey();
-                    handlePropertiesSteps(new String[]{propertyKey}, propertyFetcher);
+                    propertyFetchers.forEach(propertyFetcher -> handlePropertiesSteps(new String[]{propertyKey}, propertyFetcher));
                 }
             });
         });
 
         TraversalHelper.getStepsOfAssignableClass(ReducingBarrierStep.class, traversal).forEach(reducingBarrierStep -> {
-            PropertyFetcher propertyFetcher = getPropertyFetcherStepOf(reducingBarrierStep, traversal);
+            Collection<PropertyFetcher> propertyFetchers = getPropertyFetcherStepOf(reducingBarrierStep, traversal);
             if (!(reducingBarrierStep instanceof FoldStep)
                     && !(reducingBarrierStep instanceof GroupStep)
                     && !(reducingBarrierStep instanceof GroupCountStep)
                     && !(reducingBarrierStep instanceof TreeStep)) {
-                if (propertyFetcher != null)
-                    propertyFetcher.fetchAllKeys();
+                if (propertyFetchers != null)
+                    propertyFetchers.forEach(PropertyFetcher::fetchAllKeys);
             }
         });
 
         TraversalHelper.getStepsOfAssignableClass(SideEffectStep.class, traversal).forEach(sideEffectStep -> {
-            PropertyFetcher propertyFetcher = getPropertyFetcherStepOf(sideEffectStep, traversal);
-            if (propertyFetcher != null)
-                propertyFetcher.fetchAllKeys();
+            Collection<PropertyFetcher> propertyFetchers = getPropertyFetcherStepOf(sideEffectStep, traversal);
+            if (propertyFetchers != null)
+                propertyFetchers.forEach(PropertyFetcher::fetchAllKeys);
         });
 
         TraversalHelper.getStepsOfAssignableClass(SelectOneStep.class, traversal).forEach(selectOneStep -> {
@@ -252,10 +279,18 @@ public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<Traver
 
         TraversalHelper.getStepsOfClass(OrderGlobalStep.class, traversal).forEach(orderGlobalStep -> {
             orderGlobalStep.getLocalChildren().forEach(child -> TraversalHelper.getStepsOfAssignableClass(LambdaMapStep.class, (Traversal.Admin) child).forEach(lambdaMapStep -> {
-                PropertyFetcher propertyFetcherStepOf = getPropertyFetcherStepOf(orderGlobalStep, traversal);
-                if (propertyFetcherStepOf != null)
-                    propertyFetcherStepOf.fetchAllKeys();
+                Collection<PropertyFetcher> propertyFetcherStepsOf = getPropertyFetcherStepOf(orderGlobalStep, traversal);
+                if (propertyFetcherStepsOf != null)
+                    propertyFetcherStepsOf.forEach(PropertyFetcher::fetchAllKeys);
             }));
+        });
+
+        TraversalHelper.getStepsOfAssignableClass(UniGraphRepeatStep.class, traversal).forEach(uniGraphRepeatStepTemp -> {
+            Traversal.Admin repeatTraversal = uniGraphRepeatStepTemp.getRepeatTraversal();
+            Optional<PropertyFetcher> lastStepOfAssignableClass = TraversalHelper.getLastStepOfAssignableClass(PropertyFetcher.class, repeatTraversal);
+            if (lastStepOfAssignableClass.isPresent()) {
+                lastStepOfAssignableClass.get().fetchAllKeys();
+            }
         });
 
         TraversalHelper.getStepsOfAssignableClass(AddEdgeStep.class, traversal).forEach(addEdgeStep -> {
@@ -268,6 +303,32 @@ public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<Traver
         if (lastStepOfAssignableClass.isPresent()) {
             lastStepOfAssignableClass.get().fetchAllKeys();
         }
+
+        TraversalHelper.getStepsOfAssignableClass(UniGraphEdgeOtherVertexStep.class, traversal).forEach(uniGraphEdgeOtherVertexStep -> {
+            Collection<PropertyFetcher> propertyFetcherStepsOf = getPropertyFetcherStepOf(uniGraphEdgeOtherVertexStep, traversal);
+            if (propertyFetcherStepsOf != null) {
+                Set<String> keys = uniGraphEdgeOtherVertexStep.getKeys();
+                propertyFetcherStepsOf.forEach(propertyFetcher -> {
+                    if (keys != null)
+                        keys.forEach(propertyFetcher::addPropertyKey);
+                    else
+                        propertyFetcher.fetchAllKeys();
+                });
+            }
+        });
+
+        TraversalHelper.getStepsOfAssignableClass(UniGraphEdgeVertexStep.class, traversal).forEach(uniGraphEdgeVertexStep -> {
+            Collection<PropertyFetcher> propertyFetcherStepsOf = getPropertyFetcherStepOf(uniGraphEdgeVertexStep, traversal);
+            if (propertyFetcherStepsOf != null) {
+                Set<String> keys = uniGraphEdgeVertexStep.getKeys();
+                propertyFetcherStepsOf.forEach(propertyFetcher -> {
+                    if (keys != null)
+                        keys.forEach(propertyFetcher::addPropertyKey);
+                    else
+                        propertyFetcher.fetchAllKeys();
+                });
+            }
+        });
     }
 
 
@@ -277,12 +338,22 @@ public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<Traver
         while (!(previous instanceof EmptyStep)) {
             if (previous instanceof PropertyFetcher)
                 propertyFetchers.add((PropertyFetcher) previous);
+            if (previous instanceof TraversalParent) {
+                ((TraversalParent) previous).getLocalChildren()
+                        .forEach(t -> t.getSteps().stream()
+                                .filter(s -> s instanceof PropertyFetcher)
+                                .map(p -> ((PropertyFetcher) p)).forEach(propertyFetchers::add));
+                ((TraversalParent) previous).getGlobalChildren()
+                        .forEach(t -> t.getSteps().stream()
+                                .filter(s -> s instanceof PropertyFetcher)
+                                .map(p -> ((PropertyFetcher) p)).forEach(propertyFetchers::add));
+            }
             previous = previous.getPreviousStep();
         }
         return propertyFetchers;
     }
 
-    private PropertyFetcher getPropertyFetcherStepOf(Step step, Traversal.Admin<?, ?> traversal) {
+    private Collection<PropertyFetcher> getPropertyFetcherStepOf(Step step, Traversal.Admin<?, ?> traversal) {
         Step previous = step.getPreviousStep();
         while (!(previous instanceof PropertyFetcher)) {
             if (previous instanceof DedupGlobalStep || previous instanceof OrderGlobalStep)
@@ -294,8 +365,6 @@ public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<Traver
                     previous = (Step) propertyFetchers.get(propertyFetchers.size() - 1);
                 else
                     return null;
-//                return getPropertyFetcherStepOf(parent.getLocalChildren().get(0).getEndStep(), parent.getLocalChildren().get(0));
-//                previous = traversal.getParent().asStep();
             } else if (previous instanceof TraversalParent) {
                 List<PropertyFetcher> propertyFetchers = Stream.concat(
                         ((TraversalParent) previous).getLocalChildren().stream(),
@@ -304,7 +373,8 @@ public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<Traver
                                 TraversalHelper.getStepsOfAssignableClassRecursively(PropertyFetcher.class, child)
                                         .stream()).collect(Collectors.toList());
                 if (propertyFetchers.size() > 0)
-                    previous = (Step) propertyFetchers.get(propertyFetchers.size() - 1);
+                    return propertyFetchers;
+//                    previous = (Step) propertyFetchers.get(propertyFetchers.size() - 1);
                 else
                     return null;
             } else if (previous instanceof WhereTraversalStep.WhereStartStep)
@@ -312,6 +382,6 @@ public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<Traver
             else
                 previous = previous.getPreviousStep();
         }
-        return (PropertyFetcher) previous;
+        return Collections.singleton((PropertyFetcher) previous);
     }
 }

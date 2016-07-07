@@ -1,0 +1,82 @@
+{
+  "class": "org.unipop.jdbc.JdbcSourceProvider",
+  "address": "jdbc:sqlite:test.sqlite",
+  "sqlDialect": "SQLITE",
+  "vertices": [
+    {
+      "table": "vertex_inner",
+      "id": "@ID",
+      "label": "person",
+      "dynamicProperties": {
+        "excludeFields": [
+          "edgeId",
+          "knownBy",
+          "edgeWeight",
+          "edgeName",
+          "LABEL"
+        ]
+      },
+      "edges": [
+        {
+          "id": "@edgeId",
+          "label": "knows",
+          "direction": "IN",
+          "properties": {
+            "weight": "@edgeWeight",
+            "name": "@edgeName"
+          },
+          "vertex": {
+            "ref": true,
+            "id": "@knownBy",
+            "label": "person"
+          }
+        }
+      ]
+    },
+    {
+      "table": "vertex_inner",
+      "id": "@ID",
+      "label": {
+        "field": "LABEL",
+        "exclude": [
+          "person"
+        ]
+      },
+      "properties": {},
+      "dynamicProperties": true
+    }
+  ],
+  "edges": [
+    {
+      "table": "edges",
+      "id": "@ID",
+      "label": {
+        "field": "LABEL",
+        "exclude": [
+          "knows"
+        ]
+      },
+      "properties": {},
+      "dynamicProperties": {
+        "excludeFields": [
+          "outId",
+          "inId",
+          "outLabel",
+          "inLabel"
+        ]
+      },
+      "outVertex": {
+        "ref": true,
+        "id": "@outId",
+        "label": "@outLabel",
+        "properties": {}
+      },
+      "inVertex": {
+        "ref": true,
+        "id": "@inId",
+        "label": "@inLabel",
+        "properties": {}
+      }
+    }
+  ]
+}

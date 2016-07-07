@@ -10,4 +10,11 @@ public class UniQuery {
     public StepDescriptor getStepDescriptor() {
         return stepDescriptor;
     }
+
+    @Override
+    public String toString() {
+        return "UniQuery{" +
+                "stepDescriptor=" + stepDescriptor +
+                '}';
+    }
 }

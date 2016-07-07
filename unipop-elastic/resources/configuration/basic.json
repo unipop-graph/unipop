@@ -4,32 +4,34 @@
   "addresses": ["http://localhost:9200"],
   "vertices": [
     {
-      "type": "document",
       "index": "vertex",
       "id": "@_id",
       "label": "@_type",
-      "properties": {},
+      "properties": {
+        "gremlin.partitionGraphStrategy.partition": "@partition"
+      },
       "dynamicProperties": true
     }
   ],
   "edges": [
     {
-      "type": "document",
       "index": "edge",
       "id": "@_id",
       "label": "@_type",
-      "properties": {},
+      "properties": {
+        "gremlin.partitionGraphStrategy.partition": "@partition"
+      },
       "dynamicProperties": {
         "excludeFields": ["outId", "inId", "outLabel", "inLabel"]
       },
       "outVertex": {
-        "type": "ref",
+        "ref": true,
         "id": "@outId",
         "label": "@outLabel",
         "properties": {}
       },
       "inVertex": {
-        "type": "ref",
+        "ref": true,
         "id": "@inId",
         "label": "@inLabel",
         "properties": {}

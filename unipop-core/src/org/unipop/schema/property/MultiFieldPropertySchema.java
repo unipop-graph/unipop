@@ -28,12 +28,12 @@ public class MultiFieldPropertySchema implements PropertySchema {
     }
 
     @Override
-    public Set<String> getFields() {
+    public Set<String> excludeDynamicFields() {
         return new HashSet<>(this.fields);
     }
 
     @Override
-    public Set<String> getProperties() {
+    public Set<String> excludeDynamicProperties() {
         return Collections.singleton(this.key);
     }
 

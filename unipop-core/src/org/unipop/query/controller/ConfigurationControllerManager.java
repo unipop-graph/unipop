@@ -15,7 +15,7 @@ public class ConfigurationControllerManager implements ControllerManager {
     protected Set<UniQueryController> controllers = new HashSet<>();
 
     public ConfigurationControllerManager(UniGraph graph, Configuration configuration) throws Exception {
-        String[] providers = configuration.getStringArray("providers");
+        String[] providers = configuration.getString("providers").split(";");
         if(providers.length == 0) throw new InstantiationException("No 'providers' configured for ConfigurationControllerManager");
         for(String provider : providers){
             String providerJson = readFile(provider);
@@ -53,5 +53,13 @@ public class ConfigurationControllerManager implements ControllerManager {
     @Override
     public void close() {
         sourceProviders.forEach(SourceProvider::close);
+    }
+
+    @Override
+    public String toString() {
+        return "ConfigurationControllerManager{" +
+                "controllers=" + controllers +
+                ", sourceProviders=" + sourceProviders +
+                '}';
     }
 }

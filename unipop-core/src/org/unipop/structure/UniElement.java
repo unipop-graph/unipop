@@ -3,6 +3,7 @@ package org.unipop.structure;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.unipop.query.mutation.PropertyQuery;
 import org.unipop.query.mutation.RemoveQuery;
 
@@ -116,5 +117,15 @@ public abstract class UniElement implements Element{
         properties.put(T.label.getAccessor(), element.label());
         element.properties().forEachRemaining(property -> properties.put(property.key(), property.value()));
         return properties;
+    }
+
+    @Override
+    public String toString() {
+        return "UniElement{" +
+                "properties=" + properties +
+                ", id='" + id + '\'' +
+                ", label='" + label + '\'' +
+                ", graph=" + graph +
+                '}';
     }
 }

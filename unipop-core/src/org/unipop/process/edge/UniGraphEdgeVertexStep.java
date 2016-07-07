@@ -42,8 +42,10 @@ public class UniGraphEdgeVertexStep extends UniPredicatesStep<Edge, Vertex> {
                     .map(vertex -> ((DeferredVertex) vertex))
                     .filter(DeferredVertex::isDeferred)
                     .collect(Collectors.toList());
-            DeferredVertexQuery query = new DeferredVertexQuery(v, propertyKeys, new StepDescriptor(this));
-            deferredVertexControllers.forEach(deferredVertexController -> deferredVertexController.fetchProperties(query));
+            if(v.size() > 0) {
+                DeferredVertexQuery query = new DeferredVertexQuery(v, propertyKeys, new StepDescriptor(this));
+                deferredVertexControllers.forEach(deferredVertexController -> deferredVertexController.fetchProperties(query));
+            }
         }
 
         return vertices.iterator();

@@ -19,3 +19,5 @@ out/
 target/
 *.tmp
 build/
+
+*/test.sqlite*

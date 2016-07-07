@@ -1,13 +1,13 @@
 package org.unipop.schema.property;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class StaticPropertySchema implements PropertySchema {
     private final String key;
@@ -37,22 +37,20 @@ public class StaticPropertySchema implements PropertySchema {
 
     @Override
     public PredicatesHolder toPredicates(PredicatesHolder predicatesHolder) {
-        HasContainer has = predicatesHolder.findKey(this.key);
-        if(has != null && !test(has.getPredicate())) return PredicatesHolderFactory.abort();
-        return PredicatesHolderFactory.empty();
+        Set<PredicatesHolder> predicates = predicatesHolder.findKey(this.key).map(has -> {
+            if (has != null && !test(has.getPredicate())) return PredicatesHolderFactory.abort();
+            return PredicatesHolderFactory.empty();
+        }).collect(Collectors.toSet());
+
+        return PredicatesHolderFactory.create(predicatesHolder.getClause(), predicates);
     }
 
     @Override
-    public Set<String> getFields() {
-        return Collections.emptySet();
-    }
-
-    @Override
-    public Set<String> getProperties() {
+    public Set<String> excludeDynamicProperties() {
         return Collections.singleton(this.key);
     }
 
-    public boolean test(P predicate) {
+    private boolean test(P predicate) {
         return predicate.test(this.value);
     }
 }

@@ -2,7 +2,7 @@ package org.unipop.query.aggregation.reduce;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.unipop.process.reduce.ops.Op;
+import org.unipop.query.aggregation.reduce.controllers.ops.Op;
 import org.unipop.query.StepDescriptor;
 import org.unipop.query.VertexQuery;
 import org.unipop.query.controller.UniQueryController;
@@ -39,4 +39,11 @@ public class ReduceVertexQuery extends ReduceQuery implements VertexQuery {
         Number reduce(ReduceVertexQuery uniQuery);
     }
 
+    @Override
+    public String toString() {
+        return "ReduceVertexQuery{" +
+                "direction=" + direction +
+                ", vertices=" + vertices +
+                "} " + super.toString();
+    }
 }

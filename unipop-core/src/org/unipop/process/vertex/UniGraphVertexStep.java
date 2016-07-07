@@ -1,9 +1,7 @@
 package org.unipop.process.vertex;
 
 import org.apache.tinkerpop.gremlin.structure.util.Attachable;
-import org.unipop.process.UniBulkStep;
 import org.unipop.process.UniPredicatesStep;
-import org.unipop.process.properties.PropertyFetcher;
 import org.unipop.query.StepDescriptor;
 import org.unipop.process.predicate.ReceivesPredicatesHolder;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
@@ -13,7 +11,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequire
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
-import org.unipop.common.util.ConversionUtils;
+import org.unipop.util.ConversionUtils;
 import org.unipop.query.controller.ControllerManager;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
@@ -58,8 +56,8 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
 
     @Override
     protected Iterator<Traverser.Admin<E>> process(List<Traverser.Admin<Vertex>> traversers) {
-        Map<Object, List<Traverser<Vertex>>> idToTraverser = new HashMap<>(bulk);
-        List<Vertex> vertices = new ArrayList<>(bulk);
+        Map<Object, List<Traverser<Vertex>>> idToTraverser = new HashMap<>(traversers.size());
+        List<Vertex> vertices = new ArrayList<>(traversers.size());
         traversers.forEach(traverser -> {
             Vertex vertex = traverser.get();
             List<Traverser<Vertex>> traverserList = idToTraverser.get(vertex.id());
@@ -86,8 +84,10 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
                 .map(vertex -> ((DeferredVertex) vertex))
                 .filter(DeferredVertex::isDeferred)
                 .collect(Collectors.toList());
-        DeferredVertexQuery query = new DeferredVertexQuery(deferredVertices, propertyKeys, this.stepDescriptor);
-        deferredVertexControllers.stream().forEach(controller -> controller.fetchProperties(query));
+        if (deferredVertices.size() > 0) {
+            DeferredVertexQuery query = new DeferredVertexQuery(deferredVertices, propertyKeys, this.stepDescriptor);
+            deferredVertexControllers.stream().forEach(controller -> controller.fetchProperties(query));
+        }
         return copyTraversers.iterator();
     }
 

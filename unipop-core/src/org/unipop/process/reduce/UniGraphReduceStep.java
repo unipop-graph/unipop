@@ -1,8 +1,7 @@
 package org.unipop.process.reduce;
 
-import com.clearspring.analytics.util.Lists;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierStep;
@@ -13,10 +12,10 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.unipop.process.predicate.ReceivesPredicatesHolder;
 import org.unipop.process.properties.PropertyFetcher;
-import org.unipop.process.reduce.ops.Op;
 import org.unipop.query.StepDescriptor;
 import org.unipop.query.aggregation.reduce.ReduceQuery;
 import org.unipop.query.aggregation.reduce.ReduceVertexQuery;
+import org.unipop.query.aggregation.reduce.controllers.ops.Op;
 import org.unipop.query.controller.ControllerManager;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
@@ -31,7 +30,7 @@ import java.util.function.Supplier;
  * @since 6/27/2016
  * <p>
  * This step is the replacement for reducing functions in gremlin to Unipop implementations
- * {@link org.unipop.query.aggregation.reduce.ReduceQuery.Op} for a list of reduce methods.
+ * {@link Op} for a list of reduce methods.
  */
 public class UniGraphReduceStep<S extends Element> extends ReducingBarrierStep<S, Number> implements ReceivesPredicatesHolder<S, Number>, PropertyFetcher {
 
@@ -91,6 +90,11 @@ public class UniGraphReduceStep<S extends Element> extends ReducingBarrierStep<S
     }
 
     @Override
+    public Set<String> getKeys() {
+        return this.propertyKeys;
+    }
+
+    @Override
     public void addPredicate(PredicatesHolder predicatesHolder) {
         this.predicatesHolder = PredicatesHolderFactory.and(this.predicatesHolder, predicatesHolder);
     }
@@ -106,7 +110,7 @@ public class UniGraphReduceStep<S extends Element> extends ReducingBarrierStep<S
     }
 
     // TODO: Implement Vertex Query in the future to improve
-    // TODO: g.V().out().out().count() - g.V().out.count()
+    // TODO: g.V().out().out().count() -> g.V().out.specialCount()
     @Override
     public Number projectTraverser(Traverser.Admin<S> traverser) {
         if (!this.starts.hasNext()) {

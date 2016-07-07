@@ -1,17 +1,12 @@
 package org.unipop.query.aggregation.reduce;
 
-import org.apache.tinkerpop.gremlin.process.traversal.Operator;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.*;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierStep;
-import org.unipop.process.reduce.ops.Op;
+import org.unipop.query.aggregation.reduce.controllers.ops.Op;
 import org.unipop.query.StepDescriptor;
 import org.unipop.query.controller.UniQueryController;
 import org.unipop.query.predicates.PredicateQuery;
 import org.unipop.query.predicates.PredicatesHolder;
 
 import java.util.Set;
-import java.util.function.BinaryOperator;
-import java.util.function.Supplier;
 
 /**
  * @author Gur Ronen

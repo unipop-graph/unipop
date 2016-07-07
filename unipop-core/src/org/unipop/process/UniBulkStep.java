@@ -1,13 +1,11 @@
 package org.unipop.process;
 
-import com.google.common.collect.Iterators;
-import com.google.common.collect.UnmodifiableIterator;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
-import org.unipop.common.util.ConversionUtils;
+import org.unipop.util.ConversionUtils;
 import org.unipop.structure.UniGraph;
 
 import java.util.Iterator;
@@ -15,12 +13,16 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 public abstract class UniBulkStep<S, E> extends AbstractStep<S, E> {
-    protected final int bulk;
+    protected final int maxBulk;
+    protected int startBulk;
+    protected int multiplier;
     protected Iterator<Traverser.Admin<E>> results = EmptyIterator.instance();
 
     public UniBulkStep(Traversal.Admin traversal, UniGraph graph) {
         super(traversal);
-        this.bulk = graph.configuration().getInt("bulk", 100);
+        this.maxBulk = graph.configuration().getInt("bulk.max", 100);
+        this.startBulk = graph.configuration().getInt("bulk.start", this.maxBulk);
+        this.multiplier = graph.configuration().getInt("bulk.multiplier", 2);
     }
 
     @Override
@@ -36,7 +38,8 @@ public abstract class UniBulkStep<S, E> extends AbstractStep<S, E> {
     }
 
     private Iterator<Traverser.Admin<E>> process() {
-        UnmodifiableIterator<List<Traverser.Admin<S>>> partitionedTraversers = Iterators.partition(starts, bulk);
+        BulkIterator<Traverser.Admin<S>> partitionedTraversers = new BulkIterator<>(maxBulk, startBulk, multiplier, starts);
+//        UnmodifiableIterator<List<Traverser.Admin<S>>> partitionedTraversers = Iterators.partition(starts, maxBulk);
         return ConversionUtils.asStream(partitionedTraversers)
                 .<Iterator<Traverser.Admin<E>>>map(this::process)
                 .<Traverser.Admin<E>>flatMap(ConversionUtils::asStream).iterator();

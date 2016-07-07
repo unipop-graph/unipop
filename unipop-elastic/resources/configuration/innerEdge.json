@@ -4,31 +4,29 @@
   "addresses": ["http://localhost:9200"],
   "vertices": [
     {
-      "type": "document",
       "index": "vertex",
-      "es_type": "person",
+      "type": "person",
       "id": "@_id",
       "label": "person",
       "dynamicProperties": {
-        "excludeFields": ["knownBy", "weight", "edgeId"]
+        "excludeFields": ["edgeId", "knownBy", "edgeWeight", "edgeName", "_type"]
       },
       "edges": [{
-        "type": "document",
-        "direction": "IN",
         "id": "@edgeId",
         "label": "knows",
+        "direction": "IN",
         "properties": {
-          "weight": "@weight"
+          "weight": "@edgeWeight",
+          "name": "@edgeName"
         },
         "vertex": {
-          "type": "ref",
+          "ref": true,
           "id": "@knownBy",
           "label": "person"
         }
       }]
     },
     {
-      "type": "document",
       "index": "vertex",
       "id": "@_id",
       "label": {
@@ -41,7 +39,6 @@
   ],
   "edges": [
     {
-      "type": "document",
       "index": "edge",
       "id": "@_id",
       "label": {
@@ -53,13 +50,13 @@
         "excludeFields": ["outId", "inId", "outLabel", "inLabel"]
       },
       "outVertex": {
-        "type": "ref",
+        "ref": true,
         "id": "@outId",
         "label": "@outLabel",
         "properties": {}
       },
       "inVertex": {
-        "type": "ref",
+        "ref": true,
         "id": "@inId",
         "label": "@inLabel",
         "properties": {}
