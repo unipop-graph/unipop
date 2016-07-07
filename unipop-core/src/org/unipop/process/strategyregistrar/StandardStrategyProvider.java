@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.unipop.process.coalesce.UniGraphCoalesceStepStrategy;
 import org.unipop.process.edge.EdgeStepsStrategy;
 import org.unipop.process.properties.UniGraphPropertiesStrategy;
+import org.unipop.process.reduce.UniGraphReduceStepStrategy;
 import org.unipop.process.repeat.UniGraphRepeatStepStrategy;
 import org.unipop.process.start.UniGraphStartStepStrategy;
 import org.unipop.process.union.UniGraphUnionStepStrategy;
@@ -24,7 +25,8 @@ public class StandardStrategyProvider implements StrategyProvider {
                 new UniGraphCoalesceStepStrategy(),
                 new UniGraphWhereStepStrategy(),
                 new UniGraphUnionStepStrategy(),
-                new UniGraphRepeatStepStrategy());
+                new UniGraphRepeatStepStrategy(),
+                new UniGraphReduceStepStrategy());
         TraversalStrategies.GlobalCache.getStrategies(Graph.class).toList().forEach(traversalStrategies::addStrategies);
         return traversalStrategies;
     }

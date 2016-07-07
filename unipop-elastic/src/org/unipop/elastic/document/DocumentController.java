@@ -2,6 +2,7 @@ package org.unipop.elastic.document;
 
 import io.searchbox.action.BulkableAction;
 import io.searchbox.core.*;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -11,6 +12,7 @@ import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.unipop.elastic.common.SchemaUtils;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.elastic.common.ElasticClient;
 import org.unipop.query.controller.SimpleController;
@@ -51,7 +53,11 @@ public class DocumentController implements SimpleController {
                 this.graph,
                 formatCollection(schemas));
 
-        extractDocumentSchemas(schemas);
+        Pair<Set<DocumentVertexSchema>, Set<DocumentEdgeSchema>> schemasPair =
+                SchemaUtils.extractDocumentSchemas(schemas);
+
+        this.vertexSchemas = schemasPair.getLeft();
+        this.edgeSchemas = schemasPair.getRight();
     }
 
     //region Query Controller
@@ -188,27 +194,6 @@ public class DocumentController implements SimpleController {
     //endregion
 
     //region private helpers
-    private void extractDocumentSchemas(Set<DocumentSchema> schemas) {
-        logger.debug("extracting document schemas to element schemas, DocumentSchemas: {}", schemas);
-        Set<DocumentSchema> documentSchemas = collectSchemas(schemas);
-        this.vertexSchemas = documentSchemas.stream().filter(schema -> schema instanceof DocumentVertexSchema)
-                .map(schema -> ((DocumentVertexSchema)schema)).collect(Collectors.toSet());
-        this.edgeSchemas = documentSchemas.stream().filter(schema -> schema instanceof DocumentEdgeSchema)
-                .map(schema -> ((DocumentEdgeSchema)schema)).collect(Collectors.toSet());
-        logger.info("extraced document schemas, vertexSchemas: {}, edgeSchemas: {}", this.vertexSchemas, this.edgeSchemas);
-    }
 
-    private Set<DocumentSchema> collectSchemas(Set<? extends ElementSchema> schemas) {
-        Set<DocumentSchema> docSchemas = new HashSet<>();
-
-        schemas.forEach(schema -> {
-            if(schema instanceof DocumentSchema) {
-                docSchemas.add((DocumentSchema) schema);
-                Set<DocumentSchema> childSchemas = collectSchemas(schema.getChildSchemas());
-                docSchemas.addAll(childSchemas);
-            }
-        });
-        return docSchemas;
-    }
     //endregion
 }

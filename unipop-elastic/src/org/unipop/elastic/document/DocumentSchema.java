@@ -16,7 +16,7 @@ public interface DocumentSchema<E extends Element> extends ElementSchema<E>{
 
     String getIndex();
 
-    Search getSearch(SearchQuery<E> query, PredicatesHolder predicatesHolder);
+    String getSearch(SearchQuery<E> query, PredicatesHolder predicatesHolder);
     List<E> parseResults(String result, PredicateQuery query);
 
     BulkableAction<DocumentResult> addElement(E element);
