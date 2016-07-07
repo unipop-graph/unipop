@@ -1,7 +1,7 @@
 {
   "class": "org.unipop.elastic.ElasticSourceProvider",
   "clusterName": "unipop",
-  "addresses": ["http://localhost:9200"],
+  "addresses": "http://localhost:9200",
   "vertices": [
     {
       "index": "vertex",

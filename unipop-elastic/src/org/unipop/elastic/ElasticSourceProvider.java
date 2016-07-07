@@ -28,7 +28,7 @@ public class ElasticSourceProvider implements SourceProvider {
     public Set<UniQueryController> init(UniGraph graph, JSONObject configuration) throws Exception {
         this.graph = graph;
 
-        List<String> addresses = ConversionUtils.toStringList(configuration.getJSONArray("addresses"));
+        List<String> addresses = ConversionUtils.toStringList(configuration, "addresses");
         this.client = new ElasticClient(addresses);
 
         Set<DocumentSchema> schemas = new HashSet<>();

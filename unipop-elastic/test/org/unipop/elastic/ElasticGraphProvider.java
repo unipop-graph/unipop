@@ -5,6 +5,7 @@ import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.elasticsearch.client.Client;
+import org.junit.AssumptionViolatedException;
 import org.unipop.test.UnipopGraphProvider;
 
 import java.io.File;
@@ -47,6 +48,7 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
 //            return InnerEdgeConfiguration;
 //             return NestedEdgeConfiguration;
 //             return NestedRefEdgeConfiguration;
+//             throw new AssumptionViolatedException("test");
          }
          return BasicConfiguration;
     }

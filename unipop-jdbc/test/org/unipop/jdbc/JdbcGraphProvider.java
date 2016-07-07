@@ -22,7 +22,7 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
     private static String InnerEdgeConfiguration = "innerEdge.json";
 
 
-    private final Connection jdbcConnection;
+    private Connection jdbcConnection;
 
     public JdbcGraphProvider() throws SQLException, ClassNotFoundException {
         new File("test.sqlite").delete();
@@ -67,6 +67,8 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
     }
 
     private void createTables() throws SQLException {
+        this.jdbcConnection = DriverManager.getConnection("jdbc:sqlite:test.sqlite");
+
         //region modern tables
         this.jdbcConnection.createStatement().execute(
                 "CREATE TABLE IF NOT EXISTS vertices_modern(" +

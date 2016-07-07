@@ -45,13 +45,7 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void test() {
-        Traversal t = g.V().union(
-                repeat(union(
-                        out("created"),
-                        in("created"))).times(2),
-                repeat(union(
-                        in("created"),
-                        out("created"))).times(2)).label().groupCount();
+        Traversal t = g.V().valueMap();
         // software=12
         // person=20
 

@@ -20,11 +20,17 @@ public class ConversionUtils {
         return StreamSupport.stream(iterable.spliterator(), parallel);
     }
 
-    public static <T> Set<T> toSet(JSONArray jsonArray) {
-        HashSet<T> hashSet = new HashSet<>(jsonArray.length());
-        for(int i = 0; i < jsonArray.length(); i++)
-            hashSet.add((T) jsonArray.get(i));
-        return hashSet;
+    public static <T> Set<T> toSet(JSONObject config, String key) {
+        JSONArray objects = config.optJSONArray(key);
+        if (objects != null) {
+            HashSet<T> hashSet = new HashSet<>(objects.length());
+            for (int i = 0; i < objects.length(); i++)
+                hashSet.add((T) objects.get(i));
+            return hashSet;
+        }
+        Object opt = config.opt(key);
+        if (opt != null) return Collections.singleton((T) opt);
+        return Collections.EMPTY_SET;
     }
 
     public static Map<String, Object> asMap(Object[] keyValues){
@@ -53,13 +59,18 @@ public class ConversionUtils {
         return objects;
     }
 
-    public static List<String> toStringList(JSONArray addressesConfiguration) {
-        List<String> addresses = new ArrayList<>();
-        for(int i = 0; i < addressesConfiguration.length(); i++){
-            String address = addressesConfiguration.getString(i);
-            addresses.add(address);
+    public static List<String> toStringList(JSONObject config, String key) {
+        JSONArray addressesConfiguration = config.optJSONArray(key);
+        if (addressesConfiguration != null) {
+            List<String> addresses = new ArrayList<>();
+            for (int i = 0; i < addressesConfiguration.length(); i++) {
+                String address = addressesConfiguration.getString(i);
+                addresses.add(address);
+            }
+            return addresses;
         }
-        return addresses;
+        else
+            return Collections.singletonList(config.getString(key));
     }
 
     public static <K, V> Map<K, V> merge(List<Map<K, V>> maps, BiFunction<? super V, ? super V, ? extends V> mergeFunc, Boolean ignoreNull) {
