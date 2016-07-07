@@ -24,9 +24,9 @@ public class TempTests extends AbstractGremlinTest {
     @Test
     public void testA() {
 //        System.out.println(g.V("4").toList());
-        System.out.println(g.V("1").to(Direction.OUT, "knows").toList());
+        System.out.println(g.V("1").outE().otherV().toList());
 //        System.out.println(g.V("4").bothE().has("weight", P.lt(1d)).toList());
-        Traversal t = g.V("4").bothE().has("weight", P.lt(1d)).otherV();
+        Traversal t = g.V("1").outE().otherV();
 
 
 //        System.out.println(t.toList());

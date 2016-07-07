@@ -15,6 +15,7 @@ import org.unipop.structure.UniGraph;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author Gur Ronen
@@ -40,7 +41,16 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
 
     @Override
     public List<E> parseResults(Result result, PredicateQuery query) {
-        return result.map(new ElementMapper<>(Collections.singleton(this)));
+        List<Map<String, Object>> maps = result.intoMaps();
+        List<E> elements = maps.stream()
+                .flatMap(r -> {
+                    Collection<E> tableElements = this.fromFields(r);
+                    return Objects.nonNull(tableElements) ? this.fromFields(r).stream() : Stream.empty();
+                })
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+        return elements;
     }
 
     @Override

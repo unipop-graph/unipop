@@ -47,6 +47,11 @@ public class RowVertexSchema extends AbstractRowSchema<Vertex> implements JdbcVe
         return "RowVertexSchema{} " + super.toString();
     }
 
+    @Override
+    public Set<ElementSchema> getChildSchemas() {
+        return this.edgeSchemas;
+    }
+
     private EdgeSchema getEdgeSchema(JSONObject edgeJson) throws JSONException {
         Direction direction = Direction.valueOf(edgeJson.optString("direction"));
 

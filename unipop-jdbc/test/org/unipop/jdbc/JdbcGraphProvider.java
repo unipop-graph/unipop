@@ -90,7 +90,7 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
         //region inner modern tables
         this.jdbcConnection.createStatement().execute(
                 "CREATE TABLE IF NOT EXISTS vertex_inner(" +
-                        "ID VARCHAR(100) NOT NULL PRIMARY KEY, " +
+                        "ID VARCHAR(100) NOT NULL, " +
                         "LABEL VARCHAR(100)," +
                         "name varchar(100), " +
                         "age int, " +
@@ -101,7 +101,8 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
                         "inLabel VARCHAR(100)," +
                         "edgeWeight DOUBLE," +
                         "edgeName VARCHAR(100)," +
-                        "knownBy VARCHAR(100))");
+                        "knownBy VARCHAR(100)," +
+                        "edgeId VARCHAR(100))");
         //endregion
 
 
@@ -171,7 +172,7 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
     public String getSchemaConfiguration(LoadGraphWith.GraphData loadGraphWith) {
         if(loadGraphWith != null && (loadGraphWith.equals(LoadGraphWith.GraphData.MODERN) || loadGraphWith.equals(LoadGraphWith.GraphData.CREW
         ))) {
-//            return InnerEdgeConfiguration;
+            return InnerEdgeConfiguration;
 //            return AdvancedConfiguration;
         }
         return BasicConfiguration;

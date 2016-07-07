@@ -35,6 +35,7 @@ import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.query.search.SearchQuery;
 import org.unipop.query.search.SearchVertexQuery;
+import org.unipop.schema.element.ElementSchema;
 import org.unipop.schema.element.SchemaSet;
 import org.unipop.schema.reference.DeferredVertex;
 import org.unipop.structure.UniEdge;
@@ -60,17 +61,19 @@ public class RowController implements SimpleController {
     private final DSLContext dslContext;
     private final UniGraph graph;
 
-    private final Set<? extends RowVertexSchema> vertexSchemas;
-    private final Set<? extends RowEdgeSchema> edgeSchemas;
+    private Set<? extends RowVertexSchema> vertexSchemas;
+    private Set<? extends RowEdgeSchema> edgeSchemas;
 
     private final PredicatesTranslator<Condition> predicatesTranslator;
 
-    public RowController(UniGraph graph, DSLContext context, SchemaSet schemaSet, PredicatesTranslator<Condition> predicatesTranslator) {
+    public <E extends Element> RowController(UniGraph graph, DSLContext context, Set<JdbcSchema> schemaSet, PredicatesTranslator<Condition> predicatesTranslator) {
         this.graph = graph;
         this.dslContext = context;
 
-        this.vertexSchemas = schemaSet.get(RowVertexSchema.class, true);
-        this.edgeSchemas = schemaSet.get(RowEdgeSchema.class, true);
+//        this.vertexSchemas = schemaSet.get(RowVertexSchema.class, true);
+//        this.edgeSchemas = schemaSet.get(RowEdgeSchema.class, true);
+
+        extractRowSchemas(schemaSet);
 
         this.predicatesTranslator = predicatesTranslator;
     }
@@ -268,6 +271,29 @@ public class RowController implements SimpleController {
                                 .flatMap(m -> m.stream().map(es -> new HasContainer(es.getKey(), P.within(es.getValue()))))
                                 .collect(Collectors.toList()), Collections.emptyList()));
 
+    }
+
+    private <E extends Element> void extractRowSchemas(Set<JdbcSchema> schemas) {
+        logger.debug("extracting row schemas to element schemas, jdbcSchemas: {}", schemas);
+        Set<JdbcSchema<E>> JdbcSchemas = collectSchemas(schemas);
+        this.vertexSchemas = JdbcSchemas.stream().filter(schema -> schema instanceof RowVertexSchema)
+                .map(schema -> ((RowVertexSchema)schema)).collect(Collectors.toSet());
+        this.edgeSchemas = JdbcSchemas.stream().filter(schema -> schema instanceof RowEdgeSchema)
+                .map(schema -> ((RowEdgeSchema)schema)).collect(Collectors.toSet());
+        logger.info("extraced row schemas, vertexSchemas: {}, edgeSchemas: {}", this.vertexSchemas, this.edgeSchemas);
+    }
+
+    private <E extends Element> Set<JdbcSchema<E>> collectSchemas(Set<? extends ElementSchema> schemas) {
+        Set<JdbcSchema<E>> rowSchemas = new HashSet<>();
+
+        schemas.forEach(schema -> {
+            if(schema instanceof JdbcSchema) {
+                rowSchemas.add((JdbcSchema<E>) schema);
+                Set<JdbcSchema<E>> childSchemas = collectSchemas(schema.getChildSchemas());
+                rowSchemas.addAll(childSchemas);
+            }
+        });
+        return rowSchemas;
     }
 
     public DSLContext getDslContext() {

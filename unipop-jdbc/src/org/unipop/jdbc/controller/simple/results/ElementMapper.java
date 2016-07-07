@@ -7,22 +7,22 @@ import org.unipop.jdbc.schemas.jdbc.JdbcSchema;
 
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 /**
- * @author GurRo
+ * @author Gur Ronen
  * @since 6/20/2016
  */
+@Deprecated
 public class ElementMapper<E extends Element> implements RecordMapper<Record, Element> {
-    private final Set<JdbcSchema<E>> rowSchemas;
+    private final JdbcSchema<E> rowSchema;
 
-    public ElementMapper(Set<JdbcSchema<E>> rowSchemas) {
-        this.rowSchemas = rowSchemas;
+    public ElementMapper(JdbcSchema<E> rowSchema) {
+        this.rowSchema = rowSchema;
     }
 
     @Override
     public Element map(Record record) {
         Map<String, Object> dataMap = record.intoMap();
-        return rowSchemas.stream().flatMap(schema -> schema.fromFields(dataMap).stream().filter(Objects::nonNull)).findFirst().get();
+        return rowSchema.fromFields(dataMap).stream().findFirst().get();
     }
 }

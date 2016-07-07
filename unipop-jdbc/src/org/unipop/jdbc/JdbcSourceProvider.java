@@ -10,6 +10,7 @@ import org.unipop.common.util.PredicatesTranslator;
 import org.unipop.jdbc.controller.simple.RowController;
 import org.unipop.jdbc.schemas.RowEdgeSchema;
 import org.unipop.jdbc.schemas.RowVertexSchema;
+import org.unipop.jdbc.schemas.jdbc.JdbcSchema;
 import org.unipop.jdbc.utils.JdbcPredicatesTranslator;
 import org.unipop.query.controller.SourceProvider;
 import org.unipop.query.controller.UniQueryController;
@@ -50,7 +51,7 @@ public class JdbcSourceProvider implements SourceProvider {
         this.context = DSL.using(c, dialect);
         this.graph = graph;
 
-        SchemaSet schemas = new SchemaSet();
+        Set<JdbcSchema> schemas = Sets.newHashSet();
 
         getList(configuration, "vertices").forEach(vertexJson -> schemas.add(createVertexSchema(vertexJson)));
         getList(configuration, "edges").forEach(edgeJson -> schemas.add(createEdgeSchema(edgeJson)));
@@ -71,7 +72,7 @@ public class JdbcSourceProvider implements SourceProvider {
         return new RowEdgeSchema(edgeJson, this.graph);
     }
 
-    public Set<UniQueryController> createControllers(SchemaSet schemas) {
+    public Set<UniQueryController> createControllers(Set<JdbcSchema> schemas) {
         RowController rowController = new RowController(this.graph, this.context, schemas, this.predicatesTranslatorSupplier.get());
         return Sets.newHashSet(rowController);
     }
