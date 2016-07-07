@@ -21,10 +21,12 @@ public interface VertexSchema extends ElementSchema<Vertex> {
     Vertex createElement(Map<String, Object> fields);
 
     default PredicatesHolder toPredicates(List<? extends Vertex> vertices) {
+        if(vertices == null || vertices.size() == 0) return PredicatesHolderFactory.abort();
         HashSet<PredicatesHolder> predicates = new HashSet<>();
         vertices.stream().collect(Collectors.groupingBy(Vertex::label)).forEach((label, labelVertices) -> {
             HasContainer labelPredicate = new HasContainer(T.label.getAccessor(), P.eq(label));
-            HasContainer ids = new HasContainer(T.id.getAccessor(), P.within(labelVertices.stream().map(Vertex::id).collect(Collectors.toList())));
+            HasContainer ids = new HasContainer(T.id.getAccessor(),
+                    P.within(labelVertices.stream().map(Vertex::id).collect(Collectors.toSet())));
             PredicatesHolder labelPredicates = PredicatesHolderFactory.and(ids, labelPredicate);
             PredicatesHolder toPredicates = toPredicates(labelPredicates);
             predicates.add(toPredicates);

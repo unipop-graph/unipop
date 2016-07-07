@@ -6,6 +6,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.unipop.elastic.common.ElasticClient;
 import org.unipop.elastic.document.DocumentVertexSchema;
+import org.unipop.elastic.document.schema.nested.NestedEdgeSchema;
 import org.unipop.schema.element.EdgeSchema;
 import org.unipop.schema.element.ElementSchema;
 import org.unipop.structure.UniGraph;

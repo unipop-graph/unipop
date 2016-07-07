@@ -1,4 +1,4 @@
-package org.unipop.elastic.document.schema;
+package org.unipop.elastic.document.schema.nested;
 
 import io.searchbox.action.BulkableAction;
 import io.searchbox.core.DocumentResult;
@@ -14,6 +14,7 @@ import org.json.JSONObject;
 import org.unipop.elastic.common.ElasticClient;
 import org.unipop.elastic.common.FilterHelper;
 import org.unipop.elastic.document.DocumentVertexSchema;
+import org.unipop.elastic.document.schema.AbstractDocSchema;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.structure.UniElement;
@@ -74,19 +75,6 @@ public class NestedVertexSchema extends AbstractDocSchema<Vertex> implements Doc
         Map<String, Object> properties = getProperties(fields);
         if (properties == null) return null;
         return new UniVertex(properties, graph);
-    }
-
-    @Override
-    public PredicatesHolder toPredicates(List<? extends Vertex> vertices) {
-        HashSet<PredicatesHolder> predicates = new HashSet<>();
-        vertices.stream().collect(Collectors.groupingBy(Vertex::label)).forEach((label, labelVertices) -> {
-            HasContainer labelPredicate = new HasContainer(path + "." + T.label.getAccessor(), P.eq(label));
-            HasContainer ids = new HasContainer(path + "." + T.id.getAccessor(), P.within(labelVertices.stream().map(Vertex::id).collect(Collectors.toSet())));
-            PredicatesHolder labelPredicates = PredicatesHolderFactory.and(ids, labelPredicate);
-            PredicatesHolder toPredicates = toPredicates(labelPredicates);
-            predicates.add(toPredicates);
-        });
-        return PredicatesHolderFactory.or(predicates);
     }
 
     @Override

@@ -59,19 +59,7 @@ public class DocumentController implements SimpleController {
     public <E extends Element>  Iterator<E> search(SearchQuery<E> uniQuery) {
         Set<? extends DocumentSchema<E>> schemas = getSchemas(uniQuery.getReturnType());
         Function<DocumentSchema<E>, PredicatesHolder> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery.getPredicates());
-        logger.debug(
-                "executing search with parameters, SearchQuery: {}, Appropiate DocumentSchemas: {}, toPredicatesFunction: {}",
-                uniQuery,
-                schemas,
-                toPredicatesFunction
-                );
-        Iterator<E> resultIterator = search(schemas, uniQuery, toPredicatesFunction);
-        logger.info("execute search with parameters, SearchQuery: {}, Appropriate DocumentSchemas: {}, returned resultIterator: {}",
-                uniQuery,
-                schemas,
-                resultIterator
-        );
-        return resultIterator;
+        return search(schemas, uniQuery, toPredicatesFunction);
     }
 
     @Override
@@ -97,11 +85,10 @@ public class DocumentController implements SimpleController {
     public Edge addEdge(AddEdgeQuery uniQuery) {
         UniEdge edge = new UniEdge(uniQuery.getProperties(), uniQuery.getOutVertex(), uniQuery.getInVertex(), graph);
         try {
-            logger.debug("attempting to index. edge: {}, edgeSchemas: {}", edge, this.edgeSchemas);
             index(this.edgeSchemas, edge);
         }
         catch(DocumentAlreadyExistsException ex) {
-            logger.info("Document already exists in elastic", ex);
+            logger.warn("Document already exists in elastic", ex);
             throw Graph.Exceptions.edgeWithIdAlreadyExists(edge.id());
         }
         return edge;
@@ -114,7 +101,7 @@ public class DocumentController implements SimpleController {
             index(this.vertexSchemas, vertex);
         }
         catch(DocumentAlreadyExistsException ex){
-            logger.info("Document already exists in elastic", ex);
+            logger.warn("Document already exists in elastic", ex);
             throw Graph.Exceptions.vertexWithIdAlreadyExists(vertex.id());
         }
         return vertex;
@@ -153,23 +140,19 @@ public class DocumentController implements SimpleController {
                 .map(tuple -> Tuple.tuple(tuple.v1(), tuple.v1().getSearch(query, tuple.v2())))
                 .filter(tuple -> tuple.v2() != null)
                 .collect(Collectors.toMap(Tuple::v1, Tuple::v2));
-        logger.debug("mapped schemas for search, schemas: {}", schemas);
-        if(schemas.size() == 0) {
-            logger.warn("schemas are empty, returning empty iterator");
-            return EmptyIterator.instance();
-        }
-        logger.debug("refreshing client: {}", client);
+        logger.debug("Preparing search, query: {}, schemas: {}", query, schemas);
+        if(schemas.size() == 0) return EmptyIterator.instance();
+
         client.refresh();
         MultiSearch multiSearch = new MultiSearch.Builder(schemas.values()).build();
-        logger.debug("built multiSearch: {}", multiSearch);
+        if(logger.isDebugEnabled()) logger.debug("created query: {}", multiSearch.getData(null));
         MultiSearchResult results = client.execute(multiSearch);
-        logger.debug("results of multiSearch, results: {}", results);
-        if(!results.isSucceeded()) {
-            logger.warn("results failed to execute, returning empty iterator. results: {}", results);
+        if(results == null || !results.isSucceeded()) {
+            logger.warn("failed to execute query: {}", results);
             return EmptyIterator.instance();
         }
+        logger.debug("Executed query, results: {}", results);
         Iterator<S> schemaIterator = schemas.keySet().iterator();
-        logger.debug("executed multiSearch successfully, validating results and parsing with schemas. results: {}, schemaIterator: {}", results, schemaIterator);
         return results.getResponses().stream().filter(this::valid).flatMap(result ->
                 schemaIterator.next().parseResults(result.searchResult.getJsonString(), query).stream()).iterator();
     }
@@ -179,28 +162,24 @@ public class DocumentController implements SimpleController {
             logger.error("failed to execute multiSearch: {}", multiSearchResponse);
             return false;
         }
-        logger.debug("multiSearchResult is valid, multiSearch: {}", multiSearchResponse);
         return true;
     }
 
     private <E extends Element> void index(Set<? extends DocumentSchema<E>> schemas, E element) {
-        logger.debug("indexing element, schemas: {}, element: {}", schemas, element);
         for(DocumentSchema<E> schema : schemas) {
             BulkableAction<DocumentResult> index = schema.addElement(element);
-
             if(index != null) {
-                logger.debug("adding element to bulk for schema: {}, element: {}, index: {}, client: {}", schema, element, index, client);
+                logger.debug("indexing element with schema: {}, element: {}, index: {}, client: {}", schema, element, index, client);
                 client.bulk(index);
             }
         }
     }
 
     private <E extends Element> void delete(Set<? extends DocumentSchema<E>> schemas, E element) {
-        logger.debug("deleting element, schemas: {}, element: {}", schemas, element);
         for(DocumentSchema<E> schema : schemas) {
             Delete.Builder delete = schema.delete(element);
             if(delete != null) {
-                logger.debug("deleting schema, DeleteBuilder: {}, client: {}", delete, client);
+                logger.debug("deleting element with schema: {}, element: {}, client: {}", schema, element, client);
                 client.bulk(delete.build());
             }
         }
