@@ -55,8 +55,8 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
 
     @Override
     protected Iterator<Traverser.Admin<E>> process(List<Traverser.Admin<Vertex>> traversers) {
-        Map<Object, List<Traverser<Vertex>>> idToTraverser = new HashMap<>(bulk);
-        List<Vertex> vertices = new ArrayList<>(bulk);
+        Map<Object, List<Traverser<Vertex>>> idToTraverser = new HashMap<>(traversers.size());
+        List<Vertex> vertices = new ArrayList<>(traversers.size());
         traversers.forEach(traverser -> {
             Vertex vertex = traverser.get();
             List<Traverser<Vertex>> traverserList = idToTraverser.get(vertex.id());
@@ -83,8 +83,10 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
                 .map(vertex -> ((DeferredVertex) vertex))
                 .filter(DeferredVertex::isDeferred)
                 .collect(Collectors.toList());
-        DeferredVertexQuery query = new DeferredVertexQuery(deferredVertices, propertyKeys, this.stepDescriptor);
-        deferredVertexControllers.stream().forEach(controller -> controller.fetchProperties(query));
+        if (deferredVertices.size() > 0) {
+            DeferredVertexQuery query = new DeferredVertexQuery(deferredVertices, propertyKeys, this.stepDescriptor);
+            deferredVertexControllers.stream().forEach(controller -> controller.fetchProperties(query));
+        }
         return copyTraversers.iterator();
     }
 

@@ -71,6 +71,7 @@ public class ElasticClient {
 
     public void refresh() {
         if(bulk != null) {
+            logger.info("refreshing elasticsearch indices: {}", this);
             Bulk bulkAction = new Bulk.Builder().addAction(this.bulk).refresh(true).build();
             JestResult res = execute(bulkAction);
             logger.info("executed bulk on client, bulk : {}, bulkAction, JestResult: {}", res);
@@ -87,7 +88,7 @@ public class ElasticClient {
                 System.out.println(result.getErrorMessage());
             return result;
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("failed executing action: {}, error", action, e);
             return null;
         }
     }

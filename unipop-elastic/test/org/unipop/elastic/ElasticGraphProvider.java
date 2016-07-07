@@ -16,6 +16,7 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
     private static String BasicConfiguration = "basic.json";
     private static String InnerEdgeConfiguration = "innerEdge.json";
     private static String NestedEdgeConfiguration = "nestedEdge.json";
+    private static String NestedRefEdgeConfiguration = "nestedRefEdge.json";
     private final File dataPath;
     private LocalNode node;
 
@@ -34,7 +35,10 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
         String configurationFile = getSchemaConfiguration(loadGraphWith);
         URL url = this.getClass().getResource("/configuration/" + configurationFile);
         baseConfiguration.put("providers", new String[]{url.getFile()});
-        baseConfiguration.put("bulk", 1000);
+        baseConfiguration.put("bulk.max", 1000);
+        baseConfiguration.put("bulk.start", 10);
+        baseConfiguration.put("bulk.multiplier", 10);
+
         return baseConfiguration;
     }
 
@@ -42,6 +46,7 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
          if(loadGraphWith != null && loadGraphWith.equals(LoadGraphWith.GraphData.MODERN)) {
 //            return InnerEdgeConfiguration;
 //             return NestedEdgeConfiguration;
+//             return NestedRefEdgeConfiguration;
          }
          return BasicConfiguration;
     }
