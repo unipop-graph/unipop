@@ -77,19 +77,6 @@ public class NestedVertexSchema extends AbstractDocSchema<Vertex> implements Doc
     }
 
     @Override
-    public PredicatesHolder toPredicates(List<? extends Vertex> vertices) {
-        HashSet<PredicatesHolder> predicates = new HashSet<>();
-        vertices.stream().collect(Collectors.groupingBy(Vertex::label)).forEach((label, labelVertices) -> {
-            HasContainer labelPredicate = new HasContainer(path + "." + T.label.getAccessor(), P.eq(label));
-            HasContainer ids = new HasContainer(path + "." + T.id.getAccessor(), P.within(labelVertices.stream().map(Vertex::id).collect(Collectors.toSet())));
-            PredicatesHolder labelPredicates = PredicatesHolderFactory.and(ids, labelPredicate);
-            PredicatesHolder toPredicates = toPredicates(labelPredicates);
-            predicates.add(toPredicates);
-        });
-        return PredicatesHolderFactory.or(predicates);
-    }
-
-    @Override
     public BulkableAction<DocumentResult> addElement(Vertex element) {
         return null;
     }

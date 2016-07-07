@@ -121,12 +121,7 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
                 .map(key -> path + "." + key).collect(Collectors.toSet());
         Set<String> parentFields = parentVertexSchema.toFields(propertyKeys);
         fields.addAll(parentFields);
-        Set<String> childFields = childVertexSchema.toFields(propertyKeys).stream()
-                .map(key -> {
-                    if (key.contains(path + "."))
-                        return key;
-                    return path + "." + key;
-                }).collect(Collectors.toSet()); //TODO: find a nicer solution...
+        Set<String> childFields = childVertexSchema.toFields(propertyKeys);
         fields.addAll(childFields);
         return fields;
     }
@@ -145,8 +140,7 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
 
     protected PredicatesHolder getVertexPredicates(List<Vertex> vertices, Direction direction) {
         PredicatesHolder parentPredicates = parentVertexSchema.toPredicates(vertices);
-        PredicatesHolder childPredicates = childVertexSchema.toPredicates(vertices)
-                .map(has -> new HasContainer(path + "." + has.getKey(), has.getPredicate()));
+        PredicatesHolder childPredicates = childVertexSchema.toPredicates(vertices);
         if (direction.equals(parentDirection)) return parentPredicates;
         if (direction.equals(parentDirection.opposite())) return childPredicates;
         return PredicatesHolderFactory.or(parentPredicates, childPredicates); //Direction.BOTH
