@@ -54,8 +54,10 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
     }
 
     @Override
-    public Select getSearch(SearchQuery<E> query, PredicatesHolder predicates, DSLContext context) {
-        Condition conditions = new JdbcPredicatesTranslator().translate(predicates);
+    public Select getSearch(SearchQuery<E> query, PredicatesHolder predicatesHolder, DSLContext context) {
+        if (predicatesHolder.isAborted()) return null;
+
+        Condition conditions = new JdbcPredicatesTranslator().translate(predicatesHolder);
         int finalLimit = query.getLimit() < 0 ? Integer.MAX_VALUE : query.getLimit();
 
         return createSqlQuery(query.getPropertyKeys(), context)

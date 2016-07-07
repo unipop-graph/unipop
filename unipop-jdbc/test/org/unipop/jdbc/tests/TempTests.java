@@ -23,13 +23,10 @@ public class TempTests extends AbstractGremlinTest {
     @LoadGraphWith(LoadGraphWith.GraphData.MODERN)
     @Test
     public void testA() {
-//        System.out.println(g.V("4").toList());
-        System.out.println(g.V("1").outE().otherV().toList());
-//        System.out.println(g.V("4").bothE().has("weight", P.lt(1d)).toList());
-        Traversal t = g.V("1").outE().otherV();
+        System.out.println(g.V("4").bothE("created").toList());
+        Traversal t = g.V("4").bothE("created");
 
 
-//        System.out.println(t.toList());
         int x = 6;
     }
 }

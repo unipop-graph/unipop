@@ -1,6 +1,5 @@
 package org.unipop.jdbc.utils;
 
-import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
@@ -17,8 +16,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static org.jooq.impl.DSL.field;
 
@@ -29,81 +26,78 @@ import static org.jooq.impl.DSL.field;
 public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition> {
 
     @Override
-    public Condition translate(PredicatesHolder holder) {
-        Condition predicates = this.extractCondition(holder.getPredicates(), holder.getClause());
+    public Condition translate(PredicatesHolder predicatesHolder) {
 
-        Condition children = DSL.trueCondition();
+        Set<Condition> predicateFilters = predicatesHolder.getPredicates().stream()
+                .map(this::extractCondition).collect(Collectors.toSet());
+        Set<Condition> childFilters = predicatesHolder.getChildren().stream()
+                .map(this::translate).collect(Collectors.toSet());
+        predicateFilters.addAll(childFilters);
 
-        for (PredicatesHolder childHolder : holder.getChildren()) {
-            children = appendCondition(children, translate(childHolder), holder.getClause());
+        if(predicateFilters.size() == 0) return DSL.trueCondition();
+        if(predicateFilters.size() == 1) return predicateFilters.iterator().next();
+
+        if(predicatesHolder.getClause().equals(PredicatesHolder.Clause.And)){
+            return predicateFilters.stream().reduce(Condition::and).get();
         }
-
-        return predicates.and(children);
+        else if(predicatesHolder.getClause().equals(PredicatesHolder.Clause.Or)){
+            return predicateFilters.stream().reduce(Condition::or).get();
+        }
+        else throw new IllegalArgumentException("Unexpected clause in predicatesHolder: " + predicatesHolder);
     }
 
-    private Condition extractCondition(Collection<HasContainer> hasContainers, PredicatesHolder.Clause clause) {
-        Condition condition = DSL.trueCondition();
-
-        for (HasContainer hasContainer : hasContainers) {
+    private Condition extractCondition(HasContainer hasContainer) {
             String key = hasContainer.getKey();
             Object value = hasContainer.getValue();
 
             BiPredicate<?, ?> predicate = hasContainer.getBiPredicate();
 
-            if (key.equals(T.label.toString())) return appendCondition(condition, DSL.trueCondition(), clause);
+        if (key.equals(T.label.toString())) return DSL.trueCondition();
 
             if (key.equals("~id"))
-                condition = appendCondition(condition, field(T.id.toString()).in(value.getClass().isArray() ? (Object[]) value : new Object[]{value}), clause);
+                return field(T.id.toString()).in(value.getClass().isArray() ? (Object[]) value : new Object[]{value});
             if (key.equals("~label"))
-                condition = appendCondition(condition, field(T.label.toString()).in(value.getClass().isArray() ? (Object[]) value : new Object[]{value}), clause);
+                return field(T.label.toString()).in(value.getClass().isArray() ? (Object[]) value : new Object[]{value});
             Field<Object> field = field(key);
             if (predicate instanceof Compare) {
                 String predicateString = predicate.toString();
                 switch (predicateString) {
                     case ("eq"):
-                        condition = appendCondition(condition, field.eq(value), clause);
-                        break;
+                        return field.eq(value);
                     case ("neq"):
-                        condition = appendCondition(condition, field.notEqual(value), clause);
-                        break;
+                        return field.notEqual(value);
                     case ("gt"):
-                        condition = appendCondition(condition, field.greaterThan(value), clause);
-                        break;
+                        return field.greaterThan(value);
                     case ("gte"):
-                        condition = appendCondition(condition, field.greaterOrEqual(value), clause);
-                        break;
+                        return field.greaterOrEqual(value);
+
                     case ("lt"):
-                        condition = appendCondition(condition, field.lessThan(value), clause);
-                        break;
+                        return field.lessThan(value);
                     case ("lte"):
-                        condition = appendCondition(condition, field.lessOrEqual(value), clause);
-                        break;
+                        return field.lessOrEqual(value);
                     case ("inside"):
                         List items = (List) value;
                         Object firstItem = items.get(0);
                         Object secondItem = items.get(1);
 
-                        condition = appendCondition(condition, field.between(firstItem, secondItem), clause);
-                        break;
+                        return field.between(firstItem, secondItem);
                     default:
                         throw new IllegalArgumentException("predicate not supported in has step: " + predicate.toString());
                 }
             } else if (predicate instanceof Contains) {
                 if (predicate == Contains.without) {
-                    condition = appendCondition(condition, field.isNull(), clause);
+                    return field.isNull();
                 } else if (predicate == Contains.within) {
-                    if (value == null) return appendCondition(condition, field.isNotNull(), clause);
+                    if (value == null) return field.isNotNull();
                     else {
-                        condition = appendCondition(condition, field.in(((Collection) value).toArray()), clause);
+                        return field.in(((Collection) value).toArray());
                     }
                 }
             } else if (predicate instanceof ExistsP) {
-                condition = appendCondition(condition, field.isNotNull(), clause);
+                return field.isNotNull();
             }
 
-        }
-
-        return condition;
+        throw new IllegalArgumentException("Predicate not supported in JDBC");
     }
 
     private Condition appendCondition(Condition initialCondition, Condition appendingCondition, PredicatesHolder.Clause clause) {
