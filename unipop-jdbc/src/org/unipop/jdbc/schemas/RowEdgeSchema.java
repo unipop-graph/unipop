@@ -26,17 +26,17 @@ import java.util.*;
  */
 public class RowEdgeSchema extends AbstractRowSchema<Edge> implements JdbcEdgeSchema
 {
-    private final VertexSchema inVertexSchema;
-    private final VertexSchema outVertexSchema;
+    protected VertexSchema inVertexSchema;
+    protected VertexSchema outVertexSchema;
 
     public RowEdgeSchema(JSONObject configuration, UniGraph graph) {
         super(configuration, graph);
 
-        this.inVertexSchema = createVertexSchema("inVertex", graph);
-        this.outVertexSchema = createVertexSchema("outVertex", graph);
+        this.inVertexSchema = createVertexSchema("inVertex");
+        this.outVertexSchema = createVertexSchema("outVertex");
     }
 
-    private VertexSchema createVertexSchema(String key, UniGraph graph) throws JSONException {
+    protected VertexSchema createVertexSchema(String key) throws JSONException {
         JSONObject vertexConfiguration = this.json.optJSONObject(key);
         if(vertexConfiguration == null) return null;
         if(vertexConfiguration.optBoolean("ref", false)) return new ReferenceVertexSchema(vertexConfiguration, graph);

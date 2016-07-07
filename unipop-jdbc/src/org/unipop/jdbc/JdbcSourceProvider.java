@@ -10,6 +10,7 @@ import org.unipop.common.util.PredicatesTranslator;
 import org.unipop.jdbc.controller.simple.RowController;
 import org.unipop.jdbc.schemas.RowEdgeSchema;
 import org.unipop.jdbc.schemas.RowVertexSchema;
+import org.unipop.jdbc.schemas.jdbc.JdbcSchema;
 import org.unipop.jdbc.utils.JdbcPredicatesTranslator;
 import org.unipop.query.controller.SourceProvider;
 import org.unipop.query.controller.UniQueryController;
@@ -19,6 +20,7 @@ import org.unipop.structure.UniGraph;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -29,7 +31,7 @@ import static org.unipop.util.ConversionUtils.getList;
  * @since 21/6/2016
  */
 public class JdbcSourceProvider implements SourceProvider {
-    private final Supplier<PredicatesTranslator<Iterable<Condition>>> predicatesTranslatorSupplier;
+    private final Supplier<PredicatesTranslator<Condition>> predicatesTranslatorSupplier;
     private UniGraph graph;
     private DSLContext context;
 
@@ -37,7 +39,7 @@ public class JdbcSourceProvider implements SourceProvider {
         this(JdbcPredicatesTranslator::new);
     }
 
-    public JdbcSourceProvider(Supplier<PredicatesTranslator<Iterable<Condition>>> predicatesTranslatorSupplier) {
+    public JdbcSourceProvider(Supplier<PredicatesTranslator<Condition>> predicatesTranslatorSupplier) {
         this.predicatesTranslatorSupplier = predicatesTranslatorSupplier;
     }
 
@@ -49,7 +51,8 @@ public class JdbcSourceProvider implements SourceProvider {
         this.context = DSL.using(c, dialect);
         this.graph = graph;
 
-        SchemaSet schemas = new SchemaSet();
+        Set<JdbcSchema> schemas = Sets.newHashSet();
+
         getList(configuration, "vertices").forEach(vertexJson -> schemas.add(createVertexSchema(vertexJson)));
         getList(configuration, "edges").forEach(edgeJson -> schemas.add(createEdgeSchema(edgeJson)));
 
@@ -69,7 +72,7 @@ public class JdbcSourceProvider implements SourceProvider {
         return new RowEdgeSchema(edgeJson, this.graph);
     }
 
-    public Set<UniQueryController> createControllers(SchemaSet schemas) {
+    public Set<UniQueryController> createControllers(Set<JdbcSchema> schemas) {
         RowController rowController = new RowController(this.graph, this.context, schemas, this.predicatesTranslatorSupplier.get());
         return Sets.newHashSet(rowController);
     }

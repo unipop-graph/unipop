@@ -32,7 +32,7 @@ public class DynamicPropertySchema implements PropertySchema {
 
     @Override
     public Map<String, Object> toProperties(Map<String, Object> source) {
-        return source.entrySet().stream().filter(prop -> !excludeFields.contains(prop.getKey()))
+        return source.entrySet().stream().filter(prop -> !excludeFields.contains(prop.getKey()) && prop.getValue() != null)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 

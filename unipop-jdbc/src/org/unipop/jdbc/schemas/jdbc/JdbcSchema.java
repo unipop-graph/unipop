@@ -1,7 +1,12 @@
 package org.unipop.jdbc.schemas.jdbc;
 
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.jooq.DSLContext;
+import org.jooq.Result;
+import org.jooq.Select;
 import org.unipop.query.predicates.PredicateQuery;
+import org.unipop.query.predicates.PredicatesHolder;
+import org.unipop.query.search.SearchQuery;
 import org.unipop.schema.element.ElementSchema;
 
 import java.util.List;
@@ -13,7 +18,8 @@ import java.util.Map;
  */
 public interface JdbcSchema<E extends Element> extends ElementSchema<E> {
 
-    List<E> parseResults(String result, PredicateQuery query);
+    Select getSearch(SearchQuery<E> query, PredicatesHolder predicates, DSLContext context);
+    List<E> parseResults(Result result, PredicateQuery query);
 
     /**
      * @return the full table name, including database prefix

@@ -19,6 +19,8 @@ import java.util.Map;
 public class JdbcGraphProvider extends UnipopGraphProvider {
     private static String BasicConfiguration = "basic.json";
     private static String AdvancedConfiguration = "advanced.json";
+    private static String InnerEdgeConfiguration = "innerEdge.json";
+
 
     private final Connection jdbcConnection;
 
@@ -85,6 +87,25 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
                         "weight DOUBLE)");
         //endregion
 
+        //region inner modern tables
+        this.jdbcConnection.createStatement().execute(
+                "CREATE TABLE IF NOT EXISTS vertex_inner(" +
+                        "ID VARCHAR(100) NOT NULL, " +
+                        "LABEL VARCHAR(100)," +
+                        "name varchar(100), " +
+                        "age int, " +
+                        "lang VARCHAR(100), " +
+                        "outId VARCHAR(100), " +
+                        "outLabel VARCHAR(100), " +
+                        "inId VARCHAR(100), " +
+                        "inLabel VARCHAR(100)," +
+                        "edgeWeight DOUBLE," +
+                        "edgeName VARCHAR(100)," +
+                        "knownBy VARCHAR(100)," +
+                        "edgeId VARCHAR(100))");
+        //endregion
+
+
         //region crew tables
         this.jdbcConnection.createStatement().execute(
                 "CREATE TABLE IF NOT EXISTS vertices_crew(" +
@@ -143,14 +164,16 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
         this.jdbcConnection.createStatement().execute("DROP TABLE vertices");
         this.jdbcConnection.createStatement().execute("DROP TABLE edges");
 
+        this.jdbcConnection.createStatement().execute("DROP TABLE vertex_inner");
+
         createTables();
     }
 
     public String getSchemaConfiguration(LoadGraphWith.GraphData loadGraphWith) {
         if(loadGraphWith != null && (loadGraphWith.equals(LoadGraphWith.GraphData.MODERN) || loadGraphWith.equals(LoadGraphWith.GraphData.CREW
         ))) {
-//            return InnerEdgeConfiguration;
-            return AdvancedConfiguration;
+            return InnerEdgeConfiguration;
+//            return AdvancedConfiguration;
         }
         return BasicConfiguration;
     }
