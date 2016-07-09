@@ -15,21 +15,21 @@ import java.util.Set;
 public class ReduceQuery extends PredicateQuery {
 
     private final Op op;
-    private final Set<String> fieldName;
+    private final Set<String> fieldNames;
 
-    public ReduceQuery(PredicatesHolder predicates, StepDescriptor stepDescriptor, Op op, Set<String> fieldName) {
+    public ReduceQuery(PredicatesHolder predicates, StepDescriptor stepDescriptor, Op op, Set<String> fieldNames) {
         super(predicates, stepDescriptor);
 
         this.op = op;
-        this.fieldName = fieldName;
+        this.fieldNames = fieldNames;
     }
 
     public Op getOp() {
         return this.op;
     }
 
-    public Set<String> getFieldName() {
-        return this.fieldName;
+    public Set<String> getFieldNames() {
+        return this.fieldNames;
     }
 
     //TODO: split to multiple interfaces per action, to avoid duplication in controllers

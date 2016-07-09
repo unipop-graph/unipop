@@ -1,7 +1,5 @@
 package org.unipop.elastic.document;
 
-import io.searchbox.action.AbstractAction;
-import io.searchbox.core.Count;
 import io.searchbox.core.MultiSearch;
 import io.searchbox.core.MultiSearchResult;
 import io.searchbox.core.Search;
@@ -76,14 +74,17 @@ public class DocumentReduceController implements CountController, SumController,
     }
 
     private <E extends Element, S extends DocumentSchema<E>> Iterator<E> search(Set<? extends S> allSchemas,
-                                                                                SearchQuery<E> query,
+                                                                                ReduceQuery reduceQuery,
                                                                                 Function<S, PredicatesHolder> toSearchFunction) {
-        Map<S, AbstractAction> schemas = allSchemas.stream()
+        SearchQuery<E> searchQuery /*= new SearchQuery<>(Vertex.class, reduceQuery.getPredicates(), 0, reduceQuery.getFieldNames())*/;
+
+        Map<S, Search> schemas = allSchemas.stream()
                 .map(schema -> Tuple.tuple(schema, toSearchFunction.apply(schema)))
                 .filter(tuple -> tuple.v2() != null)
-                .map(tuple -> Tuple.tuple(tuple.v1(), new Count.Builder().query(tuple.v1().getSearch(query, tuple.v2())).build()))
+                .map(tuple -> Tuple.tuple(tuple.v1(), tuple.v1().getSearch(searchQuery, tuple.v2())))
                 .filter(tuple -> tuple.v2() != null)
                 .collect(Collectors.toMap(Tuple::v1, Tuple::v2));
+
         if(schemas.size() == 0) return EmptyIterator.instance();
 
         client.refresh();
@@ -94,7 +95,7 @@ public class DocumentReduceController implements CountController, SumController,
         }
         Iterator<S> schemaIterator = schemas.keySet().iterator();
         return results.getResponses().stream().filter(this::valid).flatMap(result ->
-                schemaIterator.next().parseResults(result.searchResult.getJsonString(), query).stream()).iterator();
+                schemaIterator.next().parseResults(result.searchResult.getJsonString(), searchQuery).stream()).iterator();
     }
 
     private boolean valid(MultiSearchResult.MultiSearchResponse multiSearchResponse) {

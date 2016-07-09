@@ -49,7 +49,7 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
     }
 
     @Override
-    public String getSearch(SearchQuery<E> query, PredicatesHolder predicatesHolder) {
+    public Search getSearch(SearchQuery<E> query, PredicatesHolder predicatesHolder) {
         if (predicatesHolder.isAborted()) return null;
 
         if (predicatesHolder.findKey("_type") == null && this.type != null) {
@@ -58,7 +58,7 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
         }
 
         QueryBuilder queryBuilder = createQueryBuilder(predicatesHolder);
-        return createSearch(query, queryBuilder);
+        return createSearch(query, queryBuilder).build();
     }
 
     protected QueryBuilder createQueryBuilder(PredicatesHolder predicatesHolder) {
@@ -68,7 +68,7 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
         return queryBuilder;
     }
 
-    protected String createSearch(SearchQuery<E> query, QueryBuilder queryBuilder) {
+    protected Search.Builder createSearch(SearchQuery<E> query, QueryBuilder queryBuilder) {
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(queryBuilder)
                 .size(query.getLimit() == -1 ? 10000 : query.getLimit());
 
@@ -79,7 +79,7 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
             else searchSourceBuilder.fetchSource(fields.toArray(new String[fields.size()]), null);
         }
 
-        return searchSourceBuilder.toString().replace("\n", "");
+        return new Search.Builder(searchSourceBuilder.toString().replace("\n", ""));
     }
 
     @Override
