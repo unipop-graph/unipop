@@ -4,7 +4,6 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.jooq.*;
 import org.jooq.impl.DSL;
 import org.json.JSONObject;
-import org.unipop.jdbc.controller.simple.results.ElementMapper;
 import org.unipop.jdbc.schemas.jdbc.JdbcSchema;
 import org.unipop.jdbc.utils.JdbcPredicatesTranslator;
 import org.unipop.query.predicates.PredicateQuery;
@@ -55,7 +54,9 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
 
     @Override
     public Select getSearch(SearchQuery<E> query, PredicatesHolder predicatesHolder, DSLContext context) {
-        if (predicatesHolder.isAborted()) return null;
+        if (predicatesHolder.isAborted()) {
+            return null;
+        }
 
         Condition conditions = new JdbcPredicatesTranslator().translate(predicatesHolder);
         int finalLimit = query.getLimit() < 0 ? Integer.MAX_VALUE : query.getLimit();

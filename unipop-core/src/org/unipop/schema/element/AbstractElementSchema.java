@@ -9,7 +9,9 @@ import org.unipop.structure.UniElement;
 import org.unipop.structure.UniGraph;
 import org.unipop.util.ConversionUtils;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public abstract class AbstractElementSchema<E extends Element> extends AbstractPropertyContainer implements ElementSchema<E> {
@@ -69,6 +71,21 @@ public abstract class AbstractElementSchema<E extends Element> extends AbstractP
                 .map(schema -> schema.toPredicates(predicatesHolder))
                 .filter(holder -> holder != null)
                 .collect(Collectors.toSet());
+
+        if (predicatesHolder.hasChildren() || predicatesHolder.hasPredicates()) {
+            if (!predicates.stream()
+                    .filter(PredicatesHolder::hasChildren).findAny().isPresent() &&
+                    !predicates.stream()
+                            .filter(PredicatesHolder::hasPredicates).findAny().isPresent()) {
+                return PredicatesHolderFactory.abort();
+            }
+        }
+//
+//        if (predicates.stream()
+//                .filter(pr -> !pr.hasPredicates() || !pr.hasChildren()).findAny().isPresent() &&
+//                (!predicatesHolder.hasPredicates() || !predicatesHolder.hasChildren())) {
+//            return PredicatesHolderFactory.abort();
+//        }
 
         return PredicatesHolderFactory.create(predicatesHolder.getClause(), predicates);
     }

@@ -18,7 +18,7 @@
       "label": "software",
       "properties": {
         "name": "@name",
-        "lang": "lang"
+        "lang": "@lang"
       }
     }
   ],

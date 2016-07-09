@@ -4,14 +4,26 @@
   "addresses": ["http://localhost:9200"],
   "vertices": [
     {
-      "index": "vertex",
+      "index": "person",
+      "type": "person",
       "id": "@_id",
-      "label": "@_type",
+      "label": "person",
+      "properties": {
+        "gremlin.partitionGraphStrategy.partition": "@partition"
+      },
+      "dynamicProperties": true
+    },
+    {
+      "index": "software",
+      "type": "software",
+      "id": "@_id",
+      "label": "software",
       "properties": {
         "gremlin.partitionGraphStrategy.partition": "@partition"
       },
       "dynamicProperties": true
     }
+
   ],
   "edges": [
     {
