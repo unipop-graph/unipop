@@ -27,7 +27,6 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
 
     @Override
     public Condition translate(PredicatesHolder predicatesHolder) {
-
         Set<Condition> predicateFilters = predicatesHolder.getPredicates().stream()
                 .map(this::extractCondition).collect(Collectors.toSet());
         Set<Condition> childFilters = predicatesHolder.getChildren().stream()
@@ -51,10 +50,9 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
             Object value = hasContainer.getValue();
 
             BiPredicate<?, ?> predicate = hasContainer.getBiPredicate();
+//5
 
-        if (key.equals(T.label.toString())) return DSL.trueCondition();
-
-            if (key.equals("~id"))
+        if (key.equals("~id"))
                 return field(T.id.toString()).in(value.getClass().isArray() ? (Object[]) value : new Object[]{value});
             if (key.equals("~label"))
                 return field(T.label.toString()).in(value.getClass().isArray() ? (Object[]) value : new Object[]{value});
