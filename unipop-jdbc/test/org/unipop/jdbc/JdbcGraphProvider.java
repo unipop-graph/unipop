@@ -183,6 +183,6 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
                 case GRATEFUL: return GratefulConfiguration;
             }
         }
-        return BasicConfiguration;
+        return ModernConfiguration;
     }
 }

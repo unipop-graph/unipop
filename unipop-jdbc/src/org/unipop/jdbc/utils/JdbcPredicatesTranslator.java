@@ -2,8 +2,8 @@ package org.unipop.jdbc.utils;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
-import org.apache.tinkerpop.gremlin.structure.T;
 import org.jooq.Condition;
 import org.jooq.Field;
 import org.jooq.impl.DSL;
@@ -33,77 +33,65 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
                 .map(this::translate).collect(Collectors.toSet());
         predicateFilters.addAll(childFilters);
 
-        if(predicateFilters.size() == 0) return DSL.trueCondition();
-        if(predicateFilters.size() == 1) return predicateFilters.iterator().next();
+        if (predicateFilters.size() == 0) return DSL.trueCondition();
+        if (predicateFilters.size() == 1) return predicateFilters.iterator().next();
 
-        if(predicatesHolder.getClause().equals(PredicatesHolder.Clause.And)){
+        if (predicatesHolder.getClause().equals(PredicatesHolder.Clause.And)) {
             return predicateFilters.stream().reduce(Condition::and).get();
-        }
-        else if(predicatesHolder.getClause().equals(PredicatesHolder.Clause.Or)){
+        } else if (predicatesHolder.getClause().equals(PredicatesHolder.Clause.Or)) {
             return predicateFilters.stream().reduce(Condition::or).get();
-        }
-        else throw new IllegalArgumentException("Unexpected clause in predicatesHolder: " + predicatesHolder);
+        } else throw new IllegalArgumentException("Unexpected clause in predicatesHolder: " + predicatesHolder);
     }
 
     private Condition extractCondition(HasContainer hasContainer) {
-            String key = hasContainer.getKey();
-            Object value = hasContainer.getValue();
+        String key = hasContainer.getKey();
+        P predicate = hasContainer.getPredicate();
+        Object value = predicate.getValue();
 
-            BiPredicate<?, ?> predicate = hasContainer.getBiPredicate();
-//5
+        BiPredicate<?, ?> biPredicate = predicate.getBiPredicate();
 
-        if (key.equals("~id"))
-                return field(T.id.toString()).in(value.getClass().isArray() ? (Object[]) value : new Object[]{value});
-            if (key.equals("~label"))
-                return field(T.label.toString()).in(value.getClass().isArray() ? (Object[]) value : new Object[]{value});
-            Field<Object> field = field(key);
-            if (predicate instanceof Compare) {
-                String predicateString = predicate.toString();
-                switch (predicateString) {
-                    case ("eq"):
-                        return field.eq(value);
-                    case ("neq"):
-                        return field.notEqual(value);
-                    case ("gt"):
-                        return field.greaterThan(value);
-                    case ("gte"):
-                        return field.greaterOrEqual(value);
-
-                    case ("lt"):
-                        return field.lessThan(value);
-                    case ("lte"):
-                        return field.lessOrEqual(value);
-                    case ("inside"):
-                        List items = (List) value;
-                        Object firstItem = items.get(0);
-                        Object secondItem = items.get(1);
-
-                        return field.between(firstItem, secondItem);
-                    default:
-                        throw new IllegalArgumentException("predicate not supported in has step: " + predicate.toString());
-                }
-            } else if (predicate instanceof Contains) {
-                if (predicate == Contains.without) {
-                    return field.isNull();
-                } else if (predicate == Contains.within) {
-                    if (value == null) return field.isNotNull();
-                    else {
-                        return field.in(((Collection) value).toArray());
-                    }
-                }
-            } else if (predicate instanceof ExistsP) {
-                return field.isNotNull();
+        Field<Object> field = field(key);
+        if (biPredicate instanceof Compare) {
+            String predicateString = biPredicate.toString();
+            switch (predicateString) {
+                case ("eq"):
+                    return field.eq(value);
+                case ("neq"):
+                    return field.notEqual(value);
+                case ("gt"):
+                    return field.greaterThan(value);
+                case ("gte"):
+                    return field.greaterOrEqual(value);
+                case ("lt"):
+                    return field.lessThan(value);
+                case ("lte"):
+                    return field.lessOrEqual(value);
+                case ("inside"):
+                    List items = (List) value;
+                    Object firstItem = items.get(0);
+                    Object secondItem = items.get(1);
+                    return field.between(firstItem, secondItem);
+                default:
+                    throw new IllegalArgumentException("predicate not supported in has step: " + biPredicate.toString());
             }
-
-        throw new IllegalArgumentException("Predicate not supported in JDBC");
-    }
-
-    private Condition appendCondition(Condition initialCondition, Condition appendingCondition, PredicatesHolder.Clause clause) {
-        switch (clause) {
-            case And: return initialCondition.and(appendingCondition);
-            case Or: return initialCondition.or(appendingCondition);
-            default: return initialCondition;
+        } else if (biPredicate instanceof Contains) {
+            if (biPredicate == Contains.without) {
+                if (value == null) {
+                    return field.isNull();
+                } else {
+                    return field.notIn(value);
+                }
+            } else if (biPredicate == Contains.within) {
+                if (value == null) {
+                    return field.isNotNull();
+                } else {
+                    return field.in(((Collection) value).toArray());
+                }
+            }
+        } else if (predicate instanceof ExistsP) {
+            return field.isNotNull();
         }
 
+        throw new IllegalArgumentException("Predicate not supported in JDBC");
     }
 }
