@@ -1,12 +1,12 @@
-package org.unipop.integration.suite;
+package org.unipop.ninteg.suite;
 
 import org.apache.tinkerpop.gremlin.GraphProviderClass;
-import org.apache.tinkerpop.gremlin.structure.StructureStandardSuite;
 import org.junit.runner.RunWith;
 import org.unipop.ninteg.IntegGraphProvider;
 import org.unipop.structure.UniGraph;
+import org.unipop.test.UnipopProcessSuite;
 
-@RunWith(StructureStandardSuite.class)
+@RunWith(UnipopProcessSuite.class)
 @GraphProviderClass(provider = IntegGraphProvider.class, graph = UniGraph.class)
-public class IntegrationStructureSuite {
+public class IntegProcessSuite {
 }

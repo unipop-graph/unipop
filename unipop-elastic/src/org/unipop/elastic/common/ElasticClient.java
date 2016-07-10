@@ -85,7 +85,7 @@ public class ElasticClient {
         try {
             T result = client.execute(action);
             if (!result.isSucceeded())
-                System.out.println(result.getErrorMessage());
+                logger.warn(result.getErrorMessage());
             return result;
         } catch (IOException e) {
             logger.error("failed executing action: {}, error", action, e);

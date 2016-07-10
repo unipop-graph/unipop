@@ -1,0 +1,68 @@
+{
+  "class": "org.unipop.jdbc.JdbcSourceProvider",
+  "address": "jdbc:sqlite:test.sqlite",
+  "sqlDialect": "SQLITE",
+  "vertices": [
+    {
+      "table": "PERSON_CREW",
+      "id": "@id",
+      "label": "person",
+      "properties": {
+        "name": "@name",
+        "location": "@location"
+      }
+    },
+    {
+      "table": "SOFTWARE_CREW",
+      "id": "@id",
+      "label": "software",
+      "properties": {
+        "name": "@name"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "table": "DEVELOPS_CREW",
+      "id": "@id",
+      "label": "develops",
+      "properties": {
+        "since": "@since"
+      },
+      "dynamicProperties": false,
+      "outVertex": {
+        "ref": "true",
+        "id": "@outId",
+        "label": "@outLabel",
+        "properties": {}
+      },
+      "inVertex": {
+        "ref": "true",
+        "id": "@inId",
+        "label": "@inLabel",
+        "properties": {}
+      }
+    },
+    {
+      "table": "USES_CREW",
+      "id": "@id",
+      "label": "uses",
+      "properties": {
+        "skill": "@skill"
+      },
+      "dynamicProperties": false,
+      "outVertex": {
+        "ref": "true",
+        "id": "@outId",
+        "label": "@outLabel",
+        "properties": {}
+      },
+      "inVertex": {
+        "ref": "true",
+        "id": "@inId",
+        "label": "@inLabel",
+        "properties": {}
+      }
+    }
+  ]
+}

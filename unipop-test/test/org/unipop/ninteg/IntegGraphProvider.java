@@ -1,8 +1,9 @@
-package org.unipop.jdbc;
+package org.unipop.ninteg;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.elasticsearch.client.Client;
 import org.unipop.test.UnipopGraphProvider;
 
 import java.io.File;
@@ -14,45 +15,46 @@ import java.util.Map;
 
 /**
  * @author Gur Ronen
- * @since 6/20/2016
+ * @since 7/10/16
  */
-public class JdbcGraphProvider extends UnipopGraphProvider {
-    private static final String BasicConfiguration = "basic.json";
-    private static final String AdvancedConfiguration = "advanced.json";
-    private static final String InnerEdgeConfiguration = "innerEdge.json";
-    private static final String FullConfiguration = "full.json";
+public class IntegGraphProvider extends UnipopGraphProvider {
+    private Connection jdbcConnection;
+    private ElasticLocalNode localNode;
 
-    private static final String ModernConfiguration = "modern.json";
-    private static final String CrewConfiguration = "crew.json";
-    private static final String GratefulConfiguration = "grateful.json";
+    private final File dataPath;
 
-    private final Connection jdbcConnection;
+    public IntegGraphProvider() throws Exception {
+        System.setProperty("build.dir", System.getProperty("user.dir") + "\\build");
 
-    public JdbcGraphProvider() throws SQLException, ClassNotFoundException {
-        new File("test.sqlite").delete();
+        String path = new java.io.File( "." ).getCanonicalPath() + "\\data";
+        this.dataPath = new File(path);
 
         Class.forName("org.sqlite.JDBC");
         this.jdbcConnection = DriverManager.getConnection("jdbc:sqlite:test.sqlite");
+
+        createTables();
     }
 
     @Override
     public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName, LoadGraphWith.GraphData loadGraphWith) {
         Map<String, Object> baseConfiguration = super.getBaseConfiguration(graphName, test, testMethodName, loadGraphWith);
         String configurationFile = getSchemaConfiguration(loadGraphWith);
-        URL url = this.getClass().getResource("/configuration/" + configurationFile);
-        baseConfiguration.put("providers", new String[]{url.getFile()});
 
-        new File("test.sqlite").delete();
+        URL jdbcUrl = this.getClass().getResource("/configuration/jdbc/" + configurationFile);
+        URL elasticUrl = this.getClass().getResource("/configuration/elastic/" + configurationFile);
 
-        try {
-            createTables();
-
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        baseConfiguration.put("providers", new String[]{jdbcUrl.getFile(), elasticUrl.getFile()});
 
         return baseConfiguration;
+    }
+
+    @Override
+    public void clear(Graph g, Configuration configuration) throws Exception {
+        super.clear(g, configuration);
+
+        clearJdbc();
+        clearElastic();
+
     }
 
     private void createTables() throws SQLException {
@@ -141,8 +143,24 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
         //endregion
     }
 
-    @Override
-    public void clear(Graph graph, Configuration configuration) throws Exception {
+    public String getSchemaConfiguration(LoadGraphWith.GraphData loadGraphWith) {
+        if (loadGraphWith != null) {
+            switch (loadGraphWith) {
+                case MODERN: return "modern.json";
+//                case CREW: return CrewConfiguration;
+//                case GRATEFUL: return GratefulConfiguration;
+            }
+        }
+        return "modern.json";
+    }
+
+    private void clearElastic() {
+        if(localNode != null) {
+            localNode.deleteIndices();
+        }
+    }
+
+    private void clearJdbc() throws SQLException {
         this.jdbcConnection.createStatement().execute("DROP TABLE PERSON_MODERN");
         this.jdbcConnection.createStatement().execute("DROP TABLE SOFTWARE_MODERN");
 
@@ -160,14 +178,7 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
         createTables();
     }
 
-    public String getSchemaConfiguration(LoadGraphWith.GraphData loadGraphWith) {
-        if (loadGraphWith != null) {
-            switch (loadGraphWith) {
-                case MODERN: return ModernConfiguration;
-                case CREW: return CrewConfiguration;
-                case GRATEFUL: return GratefulConfiguration;
-            }
-        }
-        return ModernConfiguration;
+    public Client getClient() {
+        return localNode.getClient();
     }
 }
