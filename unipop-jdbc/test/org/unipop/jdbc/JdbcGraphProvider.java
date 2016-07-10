@@ -3,6 +3,9 @@ package org.unipop.jdbc;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.jooq.SQLDialect;
+import org.jooq.conf.Settings;
+import org.jooq.impl.DSL;
 import org.unipop.test.UnipopGraphProvider;
 
 import java.io.File;
@@ -29,10 +32,10 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
     private final Connection jdbcConnection;
 
     public JdbcGraphProvider() throws SQLException, ClassNotFoundException {
-        new File("test.sqlite").delete();
+        //new File("test.sqlite").delete();
 
-        Class.forName("org.sqlite.JDBC");
-        this.jdbcConnection = DriverManager.getConnection("jdbc:sqlite:test.sqlite");
+        Class.forName("org.h2.Driver");
+        this.jdbcConnection = DriverManager.getConnection("jdbc:h2:mem:");
     }
 
     @Override
@@ -42,7 +45,7 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
         URL url = this.getClass().getResource("/configuration/" + configurationFile);
         baseConfiguration.put("providers", new String[]{url.getFile()});
 
-        new File("test.sqlite").delete();
+//        new File("test.sqlite").delete();
 
         try {
             createTables();

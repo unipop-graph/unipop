@@ -1,8 +1,6 @@
 package org.unipop.jdbc.controller.simple;
 
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.keyvalue.DefaultMapEntry;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -12,31 +10,25 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
-import org.javatuples.Tuple;
 import org.jooq.*;
-import org.jooq.impl.DSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unipop.common.util.PredicatesTranslator;
-import org.unipop.jdbc.controller.simple.results.ElementMapper;
 import org.unipop.jdbc.schemas.RowEdgeSchema;
 import org.unipop.jdbc.schemas.RowVertexSchema;
 import org.unipop.jdbc.schemas.jdbc.JdbcEdgeSchema;
 import org.unipop.jdbc.schemas.jdbc.JdbcSchema;
 import org.unipop.jdbc.schemas.jdbc.JdbcVertexSchema;
-import org.unipop.query.StepDescriptor;
 import org.unipop.query.controller.SimpleController;
 import org.unipop.query.mutation.AddEdgeQuery;
 import org.unipop.query.mutation.AddVertexQuery;
 import org.unipop.query.mutation.PropertyQuery;
 import org.unipop.query.mutation.RemoveQuery;
 import org.unipop.query.predicates.PredicatesHolder;
-import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.query.search.SearchQuery;
 import org.unipop.query.search.SearchVertexQuery;
 import org.unipop.schema.element.ElementSchema;
-import org.unipop.schema.element.SchemaSet;
 import org.unipop.schema.reference.DeferredVertex;
 import org.unipop.structure.UniEdge;
 import org.unipop.structure.UniElement;
@@ -46,7 +38,6 @@ import org.unipop.structure.UniVertex;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.table;
@@ -70,11 +61,7 @@ public class RowController implements SimpleController {
         this.graph = graph;
         this.dslContext = context;
 
-//        this.vertexSchemas = schemaSet.get(RowVertexSchema.class, true);
-//        this.edgeSchemas = schemaSet.get(RowEdgeSchema.class, true);
-
         extractRowSchemas(schemaSet);
-
         this.predicatesTranslator = predicatesTranslator;
     }
 
@@ -85,6 +72,32 @@ public class RowController implements SimpleController {
         Function<JdbcSchema<E>, PredicatesHolder> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery.getPredicates());
 
         return this.search(toPredicatesFunction, schemas, uniQuery);
+    }
+
+    @Override
+    public void fetchProperties(DeferredVertexQuery uniQuery) {
+        Function<JdbcVertexSchema, PredicatesHolder> toPredicatesFunction = (schema) ->
+                schema.toPredicates(uniQuery.getVertices());
+        Iterator<Vertex> searchIterator = this.search(toPredicatesFunction, vertexSchemas, uniQuery);
+
+        Map<Object, DeferredVertex> vertexMap =
+                uniQuery.getVertices().stream().collect(Collectors.toMap(UniElement::id, Function.identity(), (a, b) -> a));
+        searchIterator.forEachRemaining(newVertex -> {
+            DeferredVertex deferredVertex = vertexMap.get(newVertex.id());
+            if (deferredVertex != null) {
+                deferredVertex.loadProperties(newVertex);
+            }
+        });
+    }
+
+    @Override
+    public Iterator<Edge> search(SearchVertexQuery uniQuery) {
+        Function<JdbcEdgeSchema, PredicatesHolder> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery.getVertices(), uniQuery.getDirection(), uniQuery.getPredicates());
+        return this.search(
+                toPredicatesFunction,
+                this.edgeSchemas,
+                uniQuery
+        );
     }
 
     @Override
@@ -119,79 +132,20 @@ public class RowController implements SimpleController {
 
     @Override
     public <E extends Element> void remove(RemoveQuery<E> uniQuery) {
-        logger.debug("executing removal query, RemoveQuery: {}", uniQuery);
         uniQuery.getElements().forEach(el -> {
             Set<? extends JdbcSchema<E>> schemas = this.getSchemas(el.getClass());
-            logger.debug("removing element from all schemas, element: {}, schemas: {}", el, schemas);
 
             for (JdbcSchema<E> schema : schemas) {
-                logger.debug("removing element from schema. element: {}, schema: {}", el, schema);
+
                 DeleteWhereStep deleteStep = this.getDslContext().delete(table(schema.getTable()));
 
                 Condition conditions = this.translateElementsToConditions(schema, Collections.singletonList(el));
                 Delete step = deleteStep.where(conditions);
 
-                logger.info("Created and executing delete step with conditions, step: {}", step);
                 step.execute();
+                logger.debug("removed element. element: {}, schema: {}, command: {}", el, schema, step);
             }
         });
-    }
-
-    @Override
-    public void fetchProperties(DeferredVertexQuery uniQuery) {
-        Function<JdbcVertexSchema, PredicatesHolder> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery.getVertices());
-
-        Iterator<Vertex> searchIterator = this.search(toPredicatesFunction, vertexSchemas, uniQuery);
-
-        Map<Object, DeferredVertex> vertexMap = uniQuery.getVertices().stream().collect(Collectors.toMap(UniElement::id, Function.identity(), (a, b) -> a));
-        logger.debug(
-                "mapping between search results and deferred vertices, deferred vertexMap: {}, searchIterator: {}",
-                vertexMap,
-                searchIterator);
-
-        searchIterator.forEachRemaining(newVertex -> {
-            DeferredVertex deferredVertex = vertexMap.get(newVertex.id());
-            logger.debug("mapping deferred vertex with new vertex, deferred: {}, new vertex: {}", deferredVertex, newVertex);
-            if (deferredVertex != null) {
-                deferredVertex.loadProperties(newVertex);
-            }
-        });
-    }
-
-    @Override
-    public Iterator<Edge> search(SearchVertexQuery uniQuery) {
-        Function<JdbcEdgeSchema, PredicatesHolder> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery.getVertices(), uniQuery.getDirection(), uniQuery.getPredicates());
-        return this.search(
-                toPredicatesFunction,
-                this.edgeSchemas,
-                uniQuery
-        );
-    }
-
-    @SuppressWarnings("unchecked")
-    private <E extends Element, S extends JdbcSchema<E>> Iterator<E> search(Function<S, PredicatesHolder> toSearchFunction, Set<? extends S> allSchemas, SearchQuery<E> query) {
-        logger.debug("executing search with parameters: allPredicates: {}, schemas: {}, query: {}", toSearchFunction, allSchemas, query);
-
-        Map<S, Select> schemas = allSchemas.stream()
-                .map(schema -> Pair.of(schema, toSearchFunction.apply(schema)))
-                .filter(pair -> pair.getRight() != null)
-                .map(pair -> Pair.of(pair.getLeft(), pair.getLeft().getSearch(query, pair.getRight(), this.getDslContext())))
-                .filter(pair -> pair.getRight() != null)
-                .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
-
-
-        logger.debug("mapped schemas for search, schemas: {}", schemas);
-        if(schemas.size() == 0) {
-            logger.warn("schemas are empty, returning empty iterator");
-            return EmptyIterator.instance();
-        }
-
-        Iterator<S> schemaIterator = schemas.keySet().iterator();
-
-        return schemas.values().stream()
-                .map(Select::fetch)
-                .flatMap(res -> schemaIterator.next().parseResults(res, query).stream())
-                .distinct().iterator();
     }
 
     @SuppressWarnings("unchecked")
@@ -203,57 +157,56 @@ public class RowController implements SimpleController {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    private <E extends Element, S extends JdbcSchema<E>> Iterator<E> search(Function<S, PredicatesHolder> toSearchFunction, Set<? extends S> allSchemas, SearchQuery<E> query) {
+        Map<S, Select> schemas = allSchemas.stream()
+                .map(schema -> Pair.of(schema, toSearchFunction.apply(schema)))
+                .filter(pair -> pair.getRight() != null)
+                .map(pair -> Pair.of(pair.getLeft(), pair.getLeft().getSearch(query, pair.getRight(), this.getDslContext())))
+                .filter(pair -> pair.getRight() != null)
+                .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
+
+
+        logger.info("mapped schemas for search, schemas: {}", schemas);
+        if(schemas.size() == 0) return EmptyIterator.instance();
+
+        Iterator<S> schemaIterator = schemas.keySet().iterator();
+        Set<E> collect = schemas.values().stream()
+                .map(Select::fetch)
+                .flatMap(res -> schemaIterator.next().parseResults(res, query).stream())
+                .distinct().collect(Collectors.toSet());
+        logger.info("results: {}", collect);
+        return collect.iterator();
+    }
+
     private <E extends Element> void insert(Set<? extends JdbcSchema<E>> schemas, E element) {
-        logger.debug("executing insertion of element, schemas: {}, element: {}", schemas, element);
         for (JdbcSchema<E> schema : schemas) {
-            logger.debug("executing insertion for specific schema, schema: {}", schema);
-            JdbcSchema.Row row = schema.toRow(element);
-            logger.debug("formed row out of schema and element, row: {}", row);
+            Query query = schema.getInsertStatement(element);
+            if (query == null) continue;
 
-            if (row == null) {
-                logger.debug("row formed out of schema is null, continuing to next schema");
-                continue;
-            }
-
-            Insert step = this.getDslContext().insertInto(table(
-                    schema.getTable()),
-                    CollectionUtils.collect(
-                            row.getFields().keySet(),
-                            DSL::field))
-                    .values(row.getFields().values())
-                    .onDuplicateKeyIgnore();
-
-            logger.info("executing insertion, step: {}", step);
-            int changeSetCount = step.execute();
-            logger.debug("changeSet out of executed step: {}", changeSetCount);
+            int changeSetCount = dslContext.execute(query);
+            if(logger.isDebugEnabled())
+                logger.debug("executed insertion, query: {}", dslContext.render(query));
             if (changeSetCount == 0) {
-                logger.warn("change set == 0, invalid insertion. throwing IllegalArgumentException, rowId: {}", row.getId());
-                throw new IllegalArgumentException("element with same key already exists:" + row.getId());
+                logger.error("no rows changed on insertion. query: {}, element: {}", dslContext.render(query), element);
             }
         }
     }
 
     private <E extends Element> void update(Set<? extends JdbcSchema<E>> schemas, E element) {
-        logger.debug("executing update of element, schemas: {}, element: {}", schemas, element);
         for (JdbcSchema<E> schema : schemas) {
-            logger.debug("executing update for specific schema: {}", schema);
             JdbcSchema.Row row = schema.toRow(element);
-            logger.debug("formed row out of schema and element, row: {}", row);
 
-            if (row == null) {
-                continue;
-            }
+            if (row == null) continue;
 
             Map<Field<?>, Object> fieldMap = Maps.newHashMap();
             row.getFields().entrySet().stream().map(this::mapSet).forEach(en -> fieldMap.put(en.getKey(), en.getValue()));
             fieldMap.remove(row.getIdField());
-            logger.debug("formed fieldMap to update, fieldMap: {}", fieldMap);
 
             Update step = this.getDslContext().update(table(schema.getTable()))
-                    .set(fieldMap)
-                    .where(field(row.getIdField()).eq(row.getId()));
-            logger.info("executing update statement with following parameters, step: {}, element: {}, schema: {}", step, element, schema);
+                    .set(fieldMap).where(field(row.getIdField()).eq(row.getId()));
             step.execute();
+            logger.info("executed update statement with following parameters, step: {}, element: {}, schema: {}", step, element, schema);
         }
     }
 

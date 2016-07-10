@@ -1,4 +1,4 @@
-package org.unipop.ninteg;
+package org.unipop.integration;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
@@ -29,8 +29,10 @@ public class IntegGraphProvider extends UnipopGraphProvider {
         String path = new java.io.File( "." ).getCanonicalPath() + "\\data";
         this.dataPath = new File(path);
 
-        Class.forName("org.sqlite.JDBC");
-        this.jdbcConnection = DriverManager.getConnection("jdbc:sqlite:test.sqlite");
+        this.localNode = new ElasticLocalNode(dataPath);
+
+        Class.forName("org.h2.Driver");
+        this.jdbcConnection = DriverManager.getConnection("jdbc:h2:gremlin;WRITE_DELAY=0;LOCK_MODE=3;");
 
         createTables();
     }
@@ -51,10 +53,8 @@ public class IntegGraphProvider extends UnipopGraphProvider {
     @Override
     public void clear(Graph g, Configuration configuration) throws Exception {
         super.clear(g, configuration);
-
         clearJdbc();
         clearElastic();
-
     }
 
     private void createTables() throws SQLException {

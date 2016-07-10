@@ -1,4 +1,4 @@
-package org.unipop.ninteg;
+package org.unipop.integration;
 
 import org.apache.commons.io.FileUtils;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;

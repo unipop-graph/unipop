@@ -77,11 +77,13 @@ public class JdbcSourceProvider implements SourceProvider {
         return Sets.newHashSet(rowController);
     }
 
-    private Connection getConnection(JSONObject configuration) throws SQLException {
+    private Connection getConnection(JSONObject configuration) throws SQLException, ClassNotFoundException {
         String url = configuration.getString("address");
+        String driver = configuration.getString("driver");
         String user = configuration.optString("user");
         String password = configuration.optString("password");
 
+        Class.forName(driver);
         if (user.isEmpty() && password.isEmpty()) {
             return DriverManager.getConnection(url);
         }

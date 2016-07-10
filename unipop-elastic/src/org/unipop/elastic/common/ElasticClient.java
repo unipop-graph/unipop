@@ -1,5 +1,6 @@
 package org.unipop.elastic.common;
 
+import com.google.gson.Gson;
 import io.searchbox.action.Action;
 import io.searchbox.action.BulkableAction;
 import io.searchbox.client.JestClient;
@@ -21,6 +22,7 @@ import java.util.List;
 
 public class ElasticClient {
 
+    Gson gson = new Gson();
     private final static Logger logger = LoggerFactory.getLogger(ElasticClient.class);
 
     private List<BulkableAction> bulk;
@@ -71,10 +73,8 @@ public class ElasticClient {
 
     public void refresh() {
         if(bulk != null) {
-            logger.info("refreshing elasticsearch indices: {}", this);
             Bulk bulkAction = new Bulk.Builder().addAction(this.bulk).refresh(true).build();
             JestResult res = execute(bulkAction);
-            logger.info("executed bulk on client, bulk : {}, bulkAction, JestResult: {}", res);
             bulk = null;
         }
 //        Refresh refresh = new Refresh.Builder().refresh(true).allowNoIndices(true).build();
@@ -83,12 +83,13 @@ public class ElasticClient {
 
     public <T extends JestResult> T execute(Action<T> action) {
         try {
+            logger.debug("executing action: {}, payload: {}", action, action.getData(gson));
             T result = client.execute(action);
             if (!result.isSucceeded())
                 logger.warn(result.getErrorMessage());
             return result;
         } catch (IOException e) {
-            logger.error("failed executing action: {}, error", action, e);
+            logger.error("failed executing error: {}, action: {}, payload: {}", e, action, action.getData(gson));
             return null;
         }
     }

@@ -147,10 +147,7 @@ public class DocumentController implements SimpleController {
         MultiSearch multiSearch = new MultiSearch.Builder(schemas.values()).build();
         if(logger.isDebugEnabled()) logger.debug("created query: {}", multiSearch.getData(null));
         MultiSearchResult results = client.execute(multiSearch);
-        if(results == null || !results.isSucceeded()) {
-            logger.warn("failed to execute query: {}", results);
-            return EmptyIterator.instance();
-        }
+        if(results == null || !results.isSucceeded()) return EmptyIterator.instance();
         logger.debug("Executed query, results: {}", results);
         Iterator<S> schemaIterator = schemas.keySet().iterator();
         return results.getResponses().stream().filter(this::valid).flatMap(result ->

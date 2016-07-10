@@ -1,5 +1,6 @@
 package org.unipop.jdbc.schemas;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.jooq.*;
 import org.jooq.impl.DSL;
@@ -15,6 +16,8 @@ import org.unipop.structure.UniGraph;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static org.jooq.impl.DSL.table;
 
 /**
  * @author Gur Ronen
@@ -36,6 +39,16 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
     @Override
     public Object getId(E element) {
         return element.id();
+    }
+
+    @Override
+    public Query getInsertStatement(E element) {
+        JdbcSchema.Row row = toRow(element);
+        if (row == null) return null;
+
+        return DSL.insertInto(table(getTable()),
+                    CollectionUtils.collect(row.getFields().keySet(), DSL::field))
+                    .values(row.getFields().values());
     }
 
     @Override

@@ -1,37 +1,38 @@
 {
   "class": "org.unipop.jdbc.JdbcSourceProvider",
-  "address": "jdbc:sqlite:test.sqlite",
-  "sqlDialect": "SQLITE",
+  "driver": "org.h2.Driver",
+  "address": "jdbc:h2:gremlin;WRITE_DELAY=0;LOCK_MODE=3;",
+  "sqlDialect": "H2",
   "vertices": [
     {
       "table": "SOFTWARE_MODERN",
-      "id": "@id",
+      "id": "@ID",
       "label": "software",
       "properties": {
-        "name": "@name",
-        "lang": "@lang"
+        "name": "@NAME",
+        "lang": "@LANG"
       }
     }
   ],
   "edges": [
     {
       "table": "MODERN_EDGES",
-      "id": "@id",
-      "label": "@label",
+      "id": "@ID",
+      "label": "@LABEL",
       "properties": {
-        "weight": "@weight"
+        "weight": "@WEIGHT"
       },
       "dynamicProperties": false,
       "outVertex": {
         "ref": "true",
-        "id": "@outId",
-        "label": "@outLabel",
+        "id": "@OUTID",
+        "label": "@OUTLABEL",
         "properties": {}
       },
       "inVertex": {
         "ref": "true",
-        "id": "@inId",
-        "label": "@inLabel",
+        "id": "@INID",
+        "label": "@INLABEL",
         "properties": {}
       }
     }

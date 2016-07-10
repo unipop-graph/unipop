@@ -72,21 +72,6 @@ public abstract class AbstractElementSchema<E extends Element> extends AbstractP
                 .filter(holder -> holder != null)
                 .collect(Collectors.toSet());
 
-        if (predicatesHolder.hasChildren() || predicatesHolder.hasPredicates()) {
-            if (!predicates.stream()
-                    .filter(PredicatesHolder::hasChildren).findAny().isPresent() &&
-                    !predicates.stream()
-                            .filter(PredicatesHolder::hasPredicates).findAny().isPresent()) {
-                return PredicatesHolderFactory.abort();
-            }
-        }
-//
-//        if (predicates.stream()
-//                .filter(pr -> !pr.hasPredicates() || !pr.hasChildren()).findAny().isPresent() &&
-//                (!predicatesHolder.hasPredicates() || !predicatesHolder.hasChildren())) {
-//            return PredicatesHolderFactory.abort();
-//        }
-
         return PredicatesHolderFactory.create(predicatesHolder.getClause(), predicates);
     }
 
