@@ -13,6 +13,4 @@ import org.unipop.test.UnipopProcessSuite;
 @RunWith(UnipopProcessSuite.class)
 @GraphProviderClass(provider = JdbcGraphProvider.class, graph = UniGraph.class)
 public class JdbcProcessSuite {
-
-
 }

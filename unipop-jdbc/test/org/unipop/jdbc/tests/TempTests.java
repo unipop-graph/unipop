@@ -24,9 +24,11 @@ public class TempTests extends AbstractGremlinTest {
     @LoadGraphWith(LoadGraphWith.GraphData.MODERN)
     @Test
     public void testA() {
+        System.out.println(g.V().has("age", P.gt(30)).toList());
         Traversal t = g.V().has("age", P.gt(30));
 
-        t.forEachRemaining(System.out::println);
+        System.out.println(TinkerFactory.createModern().traversal().V().has("age", P.gt(30)).toList().equals(t.toList()));
 
+        int x = 6;
     }
 }
