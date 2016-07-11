@@ -1,7 +1,8 @@
 {
   "class": "org.unipop.jdbc.JdbcSourceProvider",
-  "address": "jdbc:sqlite:test.sqlite",
-  "sqlDialect": "SQLITE",
+  "driver": "org.h2.Driver",
+  "address": "jdbc:h2:gremlin;WRITE_DELAY=0;LOCK_MODE=0;",
+  "sqlDialect": "H2",
   "vertices": [
     {
       "table": "ARTIST_GRATEFUL_DEAD",

@@ -6,7 +6,7 @@ import org.unipop.integration.IntegGraphProvider;
 import org.unipop.structure.UniGraph;
 import org.unipop.test.UnipopProcessSuite;
 
-@RunWith(UnipopProcessSuite.class)
+@RunWith(ExtendedProcessSuite.class)
 @GraphProviderClass(provider = IntegGraphProvider.class, graph = UniGraph.class)
 public class IntegProcessSuite {
 }

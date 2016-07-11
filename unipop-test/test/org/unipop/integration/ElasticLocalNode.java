@@ -36,7 +36,7 @@ public class ElasticLocalNode {
         this.node = NodeBuilder.nodeBuilder()
                 .local(true)
                 .settings(elasticsearchSettings.build())
-                .node();
+                .node().start();
 
 
         this.client = node.client();

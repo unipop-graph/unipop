@@ -21,20 +21,22 @@ public class IntegGraphProvider extends UnipopGraphProvider {
     private Connection jdbcConnection;
     private ElasticLocalNode localNode;
 
-    private final File dataPath;
+//    private final File dataPath;
 
     public IntegGraphProvider() throws Exception {
-        System.setProperty("build.dir", System.getProperty("user.dir") + "\\build");
-
-        String path = new java.io.File( "." ).getCanonicalPath() + "\\data";
-        this.dataPath = new File(path);
-
-        this.localNode = new ElasticLocalNode(dataPath);
 
         Class.forName("org.h2.Driver");
-        this.jdbcConnection = DriverManager.getConnection("jdbc:h2:gremlin;WRITE_DELAY=0;LOCK_MODE=3;");
+        this.jdbcConnection = DriverManager.getConnection("jdbc:h2:mem:gremlin;WRITE_DELAY=0;LOCK_MODE=0;");
 
+        
         createTables();
+//
+//        System.setProperty("build.dir", System.getProperty("user.dir") + "/build");
+//
+//        String path = new java.io.File( "." ).getCanonicalPath() + "/data";
+//        this.dataPath = new File(path);
+//
+//        this.localNode = new ElasticLocalNode(dataPath);
     }
 
     @Override
@@ -43,9 +45,9 @@ public class IntegGraphProvider extends UnipopGraphProvider {
         String configurationFile = getSchemaConfiguration(loadGraphWith);
 
         URL jdbcUrl = this.getClass().getResource("/configuration/jdbc/" + configurationFile);
-        URL elasticUrl = this.getClass().getResource("/configuration/elastic/" + configurationFile);
+//        URL elasticUrl = this.getClass().getResource("/configuration/elastic/" + configurationFile);
 
-        baseConfiguration.put("providers", new String[]{jdbcUrl.getFile(), elasticUrl.getFile()});
+        baseConfiguration.put("providers", new String[]{jdbcUrl.getFile()});//, elasticUrl.getFile()});
 
         return baseConfiguration;
     }
@@ -54,7 +56,7 @@ public class IntegGraphProvider extends UnipopGraphProvider {
     public void clear(Graph g, Configuration configuration) throws Exception {
         super.clear(g, configuration);
         clearJdbc();
-        clearElastic();
+//        clearElastic();
     }
 
     private void createTables() throws SQLException {
@@ -68,8 +70,10 @@ public class IntegGraphProvider extends UnipopGraphProvider {
         this.jdbcConnection.createStatement().execute(
                 "CREATE TABLE IF NOT EXISTS SOFTWARE_MODERN(" +
                         "id VARCHAR(100) NOT NULL PRIMARY KEY, " +
+                        "label VARCHAR(100) NOT NULL, " +
                         "name varchar(100), " +
-                        "lang VARCHAR(100))");
+                        "lang VARCHAR(100)," +
+                        "age int)");
 
         this.jdbcConnection.createStatement().execute(
                 "CREATE TABLE IF NOT EXISTS MODERN_EDGES(" +
@@ -139,6 +143,8 @@ public class IntegGraphProvider extends UnipopGraphProvider {
                         "inLabel VARCHAR(100)," +
                         "weight DOUBLE)"
         );
+
+        this.jdbcConnection.commit();
 
         //endregion
     }

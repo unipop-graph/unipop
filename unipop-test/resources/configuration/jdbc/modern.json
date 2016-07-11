@@ -1,16 +1,17 @@
 {
   "class": "org.unipop.jdbc.JdbcSourceProvider",
   "driver": "org.h2.Driver",
-  "address": "jdbc:h2:gremlin;WRITE_DELAY=0;LOCK_MODE=3;",
+  "address": "jdbc:h2:mem:gremlin;WRITE_DELAY=0;LOCK_MODE=0;",
   "sqlDialect": "H2",
   "vertices": [
     {
       "table": "SOFTWARE_MODERN",
       "id": "@ID",
-      "label": "software",
+      "label": "@LABEL",
       "properties": {
         "name": "@NAME",
-        "lang": "@LANG"
+        "lang": "@LANG",
+        "age": "@AGE"
       }
     }
   ],

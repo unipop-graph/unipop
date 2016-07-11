@@ -11,15 +11,20 @@ import org.unipop.integration.IntegGraphProvider;
 import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
 
 public class Misc extends AbstractGremlinTest {
+    @LoadGraphWith(MODERN)
+    @Test
+    public void test1() throws Exception {
+        Traversal t = g.V();
+        check(t);
 
-    public Misc() throws Exception {
-        GraphManager.setGraphProvider(new IntegGraphProvider());
+        Traversal t2 = g.V();
+        check(t2);
     }
 
     @LoadGraphWith(MODERN)
     @Test
-    public void tests() throws Exception {
-        Traversal t = g.V().out().out();
+    public void test2() throws Exception {
+        Traversal t = g.V();
         check(t);
     }
 
