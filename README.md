@@ -2,51 +2,49 @@ _**`This project is in active development. A stable version will be released soo
 
 # <img src="https://raw.githubusercontent.com/rmagen/unipop/master/docs/images/unipop-logo.png" width=70 style="vertical-align:middle;"> <span style="vertical-align:middle;">Unipop</span>
 
-Unipop aims to simplify and improve Data Analytics and Business Intelligence.
-- **Data Federation** - Analyze different sources of data together. No data migration is needed.
-- **Data Virtualization** - Map data in different formats to a unified graph schema. No data restructuring is needed.
-- **Graph Data Model** -  Unleash the power of Graphs using the
-[Gremlin](http://tinkerpop.apache.org/gremlin.html) query language.
-([SQL](https://github.com/twilmes/sql-gremlin) and
-[SPARQL](https://github.com/dkuppitz/sparql-gremlin) are also available).
+> Analyze data from **multiple sources** using the [power of
+**graphs**](https://academy.datastax.com/resources/getting-started-graph-databases).
+
+**Unipop** is a data [Federation](https://en.wikipedia.org/wiki/Federated_database_system)
+and [Virtualization](https://en.wikipedia.org/wiki/Data_virtualization)
+engine that models your data as a "virtual" graph,
+exposing a querying API using the [Gremlin](http://tinkerpop.apache.org/gremlin.html) GQL
+([Sql](https://github.com/twilmes/sql-gremlin)
+and [SPARQL](https://github.com/dkuppitz/sparql-gremlin) are also available.)
+
+This means you get the benefits of a graph data model without migrating/replicating/restructuring
+your data, whether its stored in a ***RDBMS***, **_NoSql Store_**,
+or any other data source (see "Customize and Extend" below.)
 
 
-## Background
-Most organisations have their data spread out in multiple Data Stores: RDBMS, Document Stores, Key-Value Stores,
-Column-Family Store, Filesystems, Enterprise tools & services, etc. There are different reasons for this:
-- Different projects
-- SOA Architecture
-- NoSql "Hybrid" solutions
-- Legacy Databases
-- Multiple version support
+### Why Graphs?
 
-Unfortunately, the myriad of disparate **data stores**, coupled with different and always changing **schemas**, make it hard
-to properly analyze **interconnected** data and get meaningful and useful information out of it.
+Graphs provide a very "natural" way to analyze your data.
+The simple Vertex/Edge structure makes it very easy to model complex and varied data,
+and then analyze it by exploring the connections/relationships in it.
 
-Unipop aims to mitigate these difficulties.
+This is especially relevant for a data Federation / Virtualization platform,
+which integrates a large variety of different data sources, structures, and schemas.
 
 
-## Why Gremlin?
-**SQL**, the industry standard, is a fine tool for many use cases. However it does have its down sides:
-- **Data Schema** - Structured. Tables and their fields need to be explicitly defined.
-- **Data Connections** - Joining Relational tables requires explicit knowledge of all relationships (PK/FK),
-and can become [quite complicated](http://sql2gremlin.com/#_recommendation). This inhibits exploration of your data.
-- **Flexibility** - The exclusively Declarative nature of SQL confines it to very specific query structures.
-- **Usability** - Queries are loosely-typed "free text", often requiring complicated ORMs.
+Our chosen GQL is **Gremlin**, which comes as part of the
+[**Apache Tinkerpop**](http://tinkerpop.incubator.apache.org/) framework.
+Let's compare Gremlin to _**SQL**_, the industry standard:
 
-**Gremlin** can better handle varied, interconnected, frequently changing data:
-- **Data Schema** - Unstructured. It's not necessary to pre-define types and their properties. Graphs only have two types: Vertex & Edge.
-- **Data Connections** - In a graph Edges are "First-class citizens". This allows free exploration of your data.
-- **Flexibility** - Gremlin queries are written in a functional, pipeline-structured style,
-providing considerable flexibility.
-- **Usability** - Host Language embedding. Easier to read, write, find errors, and reuse queries.
+|           | Schema   | Relationships   | Flexibility   | Usability   |
+|:---------:|----------|-----------------|---------------|-------------|
+| SQL       | _Structured_ - Tables and their fields need to be explicitly defined. | Joins require knowledge of all relationships (PK/FK), and can become [quite complicated](http://sql2gremlin.com/#_recommendation). | Sql's syntax requires very specific, rigid structures. | Queries are loosely-typed "free text", often requiring complicated ORMs. |
+| Gremlin   | _Unstructured_ - Different structures can be created on the fly. | Connections (i.e edges) are "First-class citizens", enabling easy exploration of your data. | Queries are written in a pipelined ("functional") syntax, providing considerable flexibility. | Host Language embedding. Easier to read, write, find errors, and reuse queries. |
 
-**Apache Tinkerpop**, the Gremlin framework, also provides other useful features:
-- **Query Planner** - extensible optimization mechanism (`TraversalStrategy`).
+
+The Tinkerpop framework also provides us with other useful features "out of the box":
+- **Traversal Strategies** - an extensible query optimization mechanism.
+Unipop utilizes this to implement different performance optimizations.
 - **Console & Server** - production grade tooling.
 - **Language Drivers** - JavaScript, TypeScript, PHP, Python, Java, Scala, .Net, Go.
 - **Extensible Query Languages** - [Gremlin](http://tinkerpop.apache.org/gremlin.html),
 [SQL](https://github.com/twilmes/sql-gremlin), [SPARQL](https://github.com/dkuppitz/sparql-gremlin)
+- **DSL support**
 - **Testing Framework**
 
 
