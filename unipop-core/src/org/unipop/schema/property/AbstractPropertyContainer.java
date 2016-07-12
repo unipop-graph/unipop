@@ -38,8 +38,9 @@ public abstract class AbstractPropertyContainer {
             this.dynamicProperties = new DynamicPropertySchema(propertySchemas);
         else if(dynamicPropertiesConfig instanceof JSONObject)
             this.dynamicProperties = new DynamicPropertySchema(propertySchemas, (JSONObject) dynamicPropertiesConfig);
+        else this.dynamicProperties = new NonDynamicPropertySchema(propertySchemas);
 
-        if(this.dynamicProperties != null) propertySchemas.add(this.dynamicProperties);
+        propertySchemas.add(this.dynamicProperties);
     }
 
     protected void addPropertySchema(String key, Object value, boolean nullable) {

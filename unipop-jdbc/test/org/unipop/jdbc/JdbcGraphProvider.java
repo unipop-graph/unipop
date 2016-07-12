@@ -5,7 +5,6 @@ import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.unipop.test.UnipopGraphProvider;
 
-import java.io.File;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -17,120 +16,29 @@ import java.util.Map;
  * @since 6/20/2016
  */
 public class JdbcGraphProvider extends UnipopGraphProvider {
-    private static String BasicConfiguration = "basic.json";
-    private static String AdvancedConfiguration = "advanced.json";
-    private static String InnerEdgeConfiguration = "innerEdge.json";
-
-
-    private Connection jdbcConnection;
+    private static final String DefaultConfiguration = "default.json";
+    private static final String ModernConfiguration = "modern.json";
+    private static final String CrewConfiguration = "crew.json";
+    private static final String GratefulConfiguration = "grateful.json";
+    private final Connection jdbcConnection;
 
     public JdbcGraphProvider() throws SQLException, ClassNotFoundException {
-        new File("test.sqlite").delete();
+        Class.forName("org.h2.Driver");
+        this.jdbcConnection = DriverManager.getConnection("jdbc:h2:mem:gremlin;");
 
-        Class.forName("org.sqlite.JDBC");
-        this.jdbcConnection = DriverManager.getConnection("jdbc:sqlite:test.sqlite");
-
-
-//        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS PERSON(id int , name varchar(100), age int, knows int, edgeid int, weight DOUBLE , created int);");
-//        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS animal(id int NOT NULL PRIMARY KEY, name varchar(100), age int);");
-//        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS SOFTWARE(id int , name varchar(100), lang VARCHAR(100), created int, edgeid int, weight DOUBLE);");
-//        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS ARTIST(id int NOT NULL PRIMARY KEY, name varchar(100));");
-//        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS SONG(id int NOT NULL PRIMARY KEY, name varchar(100), songType VARCHAR(100), performances int);");
-//        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS KNOWS(id VARCHAR(100) NOT NULL PRIMARY KEY, weight DOUBLE , inid int, inlabel VARCHAR(100), outid int, outlabel VARCHAR(100));");
-//        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS CREATED(id VARCHAR(100) NOT NULL PRIMARY KEY, weight DOUBLE, inid int, inlabel VARCHAR(100), outid int, outlabel VARCHAR(100));");
-//        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS FOLLOWEDBY(id VARCHAR(100) NOT NULL PRIMARY KEY, weight DOUBLE, inid int, inlabel VARCHAR(100), outid int, outlabel VARCHAR(100));");
-//        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS SUNGBY(id VARCHAR(100) NOT NULL PRIMARY KEY, weight DOUBLE, inid int, inlabel VARCHAR(100), outid int, outlabel VARCHAR(100));");
-//        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS WRITTERBY(id VARCHAR(100) NOT NULL PRIMARY KEY, weight DOUBLE, inid int, inlabel VARCHAR(100), outid int, outlabel VARCHAR(100));");
-//        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS createdBy(id VARCHAR(100) NOT NULL PRIMARY KEY, acl VARCHAR(100) ,weight DOUBLE, inid int, inlabel VARCHAR(100), outid int, outlabel VARCHAR(100));");
-//        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS codeveloper(id VARCHAR(100) NOT NULL PRIMARY KEY, year int, weight DOUBLE, inid int, inlabel VARCHAR(100), outid int, outlabel VARCHAR(100));");
-//        this.jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS existsWith(id VARCHAR(100) NOT NULL PRIMARY KEY, time VARCHAR(100), weight DOUBLE, inid int, inlabel VARCHAR(100), outid int, outlabel VARCHAR(100));");
+        createTables();
     }
 
     @Override
     public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName, LoadGraphWith.GraphData loadGraphWith) {
         Map<String, Object> baseConfiguration = super.getBaseConfiguration(graphName, test, testMethodName, loadGraphWith);
         String configurationFile = getSchemaConfiguration(loadGraphWith);
-        URL url = this.getClass().getResource("/configuration/" + configurationFile);
-        baseConfiguration.put("providers", new String[]{url.getFile()});
-
-        new File("test.sqlite").delete();
-
-        try {
-            createTables();
-
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
+        URL url = this.getClass().getResource("/configuration/standard/" + configurationFile);
+        baseConfiguration.put("providers", url.getFile());
         return baseConfiguration;
     }
 
     private void createTables() throws SQLException {
-        this.jdbcConnection = DriverManager.getConnection("jdbc:sqlite:test.sqlite");
-
-        //region modern tables
-        this.jdbcConnection.createStatement().execute(
-                "CREATE TABLE IF NOT EXISTS vertices_modern(" +
-                        "ID VARCHAR(100) NOT NULL PRIMARY KEY, " +
-                        "LABEL VARCHAR(100) NOT NULL," +
-                        "name varchar(100), " +
-                        "age int, " +
-                        "lang VARCHAR(100))");
-
-        this.jdbcConnection.createStatement().execute(
-                "CREATE TABLE IF NOT EXISTS edges_modern(" +
-                        "ID VARCHAR(100) NOT NULL PRIMARY KEY, " +
-                        "LABEL NOT NULL, " +
-                        "outId VARCHAR(100), " +
-                        "outLabel VARCHAR(100), " +
-                        "inId VARCHAR(100), " +
-                        "inLabel VARCHAR(100)," +
-                        "weight DOUBLE)");
-        //endregion
-
-        //region inner modern tables
-        this.jdbcConnection.createStatement().execute(
-                "CREATE TABLE IF NOT EXISTS vertex_inner(" +
-                        "ID VARCHAR(100) NOT NULL, " +
-                        "LABEL VARCHAR(100)," +
-                        "name varchar(100), " +
-                        "age int, " +
-                        "lang VARCHAR(100), " +
-                        "outId VARCHAR(100), " +
-                        "outLabel VARCHAR(100), " +
-                        "inId VARCHAR(100), " +
-                        "inLabel VARCHAR(100)," +
-                        "edgeWeight DOUBLE," +
-                        "edgeName VARCHAR(100)," +
-                        "knownBy VARCHAR(100)," +
-                        "edgeId VARCHAR(100))");
-        //endregion
-
-
-        //region crew tables
-        this.jdbcConnection.createStatement().execute(
-                "CREATE TABLE IF NOT EXISTS vertices_crew(" +
-                        "ID VARCHAR(100) NOT NULL PRIMARY KEY, " +
-                        "LABEL VARCHAR(100) NOT NULL," +
-                        "name VARCHAR(100)," +
-                        "age int," +
-                        "location VARCHAR(100)," +
-                        "lang VARCHAR(100))");
-
-
-        this.jdbcConnection.createStatement().execute(
-                "CREATE TABLE IF NOT EXISTS edges_crew(" +
-                        "ID VARCHAR(100) NOT NULL PRIMARY KEY," +
-                        "LABEL VARCHAR(100) NOT NULL," +
-                        "outId VARCHAR(100), " +
-                        "outLabel VARCHAR(100), " +
-                        "inId VARCHAR(100), " +
-                        "inLabel VARCHAR(100)," +
-                        "since VARCHAR(100)," +
-                        "skill int)");
-        //endregion
-
         //region dull tables
         this.jdbcConnection.createStatement().execute(
                 "CREATE TABLE IF NOT EXISTS vertices(" +
@@ -140,43 +48,140 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
                         "age int, " +
                         "location VARCHAR(100)," +
                         "status VARCHAR(100)," +
+                        "oid int," +
+                        "test VARCHAR(100)," +
+                        "communityIndex int," +
+                        "data VARCHAR(100)," +
                         "lang VARCHAR(100))");
 
         this.jdbcConnection.createStatement().execute(
                 "CREATE TABLE IF NOT EXISTS edges(" +
                         "ID VARCHAR(100) NOT NULL PRIMARY KEY, " +
-                        "LABEL NOT NULL, " +
+                        "LABEL VARCHAR(100) NOT NULL, " +
                         "outId VARCHAR(100), " +
                         "outLabel VARCHAR(100), " +
                         "inId VARCHAR(100), " +
                         "inLabel VARCHAR(100)," +
                         "year VARCHAR(100)," +
+                        "location VARCHAR(100)," +
+                        "data VARCHAR(100)," +
                         "weight DOUBLE)");
+        //endregion
+        //region modern tables
+        this.jdbcConnection.createStatement().execute(
+                "CREATE TABLE IF NOT EXISTS PERSON_MODERN(" +
+                        "id VARCHAR(100) NOT NULL, " +
+                        "name varchar(100), " +
+                        "age int)");
+
+        this.jdbcConnection.createStatement().execute(
+                "CREATE TABLE IF NOT EXISTS SOFTWARE_MODERN(" +
+                        "id VARCHAR(100) NOT NULL, " +
+                        "name varchar(100), " +
+                        "lang VARCHAR(100))");
+
+        this.jdbcConnection.createStatement().execute(
+                "CREATE TABLE IF NOT EXISTS MODERN_EDGES(" +
+                        "id VARCHAR(100) NOT NULL, " +
+                        "label VARCHAR(100) NOT NULL, " +
+                        "outId VARCHAR(100), " +
+                        "outLabel VARCHAR(100), " +
+                        "inId VARCHAR(100), " +
+                        "inLabel VARCHAR(100)," +
+                        "year int," +
+                        "weight DOUBLE)");
+        //endregion
+
+        //region crew tables
+        this.jdbcConnection.createStatement().execute(
+                "CREATE TABLE IF NOT EXISTS PERSON_CREW(" +
+                        "id VARCHAR(100) NOT NULL, " +
+                        "name VARCHAR(100)," +
+                        "location VARCHAR(100)," +
+                        "lang VARCHAR(100))");
+
+        this.jdbcConnection.createStatement().execute(
+                "CREATE TABLE IF NOT EXISTS SOFTWARE_CREW(" +
+                        "id VARCHAR(100) NOT NULL, " +
+                        "name VARCHAR(100))");
+
+        this.jdbcConnection.createStatement().execute(
+                "CREATE TABLE IF NOT EXISTS DEVELOPS_CREW(" +
+                        "id VARCHAR(100) NOT NULL, " +
+                        "outId VARCHAR(100), " +
+                        "outLabel VARCHAR(100), " +
+                        "inId VARCHAR(100), " +
+                        "inLabel VARCHAR(100)," +
+                        "since int)");
+
+        this.jdbcConnection.createStatement().execute(
+                "CREATE TABLE IF NOT EXISTS USES_CREW(" +
+                        "id VARCHAR(100) NOT NULL, " +
+                        "outId VARCHAR(100), " +
+                        "outLabel VARCHAR(100), " +
+                        "inId VARCHAR(100), " +
+                        "inLabel VARCHAR(100)," +
+                        "skill int)");
+        //endregion
+
+        //region grateful dead
+        this.jdbcConnection.createStatement().execute(
+                "CREATE TABLE IF NOT EXISTS ARTIST_GRATEFUL_DEAD(" +
+                        "id VARCHAR(100) NOT NULL, " +
+                        "name VARCHAR(100))"
+        );
+
+        this.jdbcConnection.createStatement().execute(
+                "CREATE TABLE IF NOT EXISTS SONG_GRATEFUL_DEAD(" +
+                        "id VARCHAR(100) NOT NULL, " +
+                        "name VARCHAR(100)," +
+                        "songType VARCHAR(100)," +
+                        "performances int)"
+        );
+
+        this.jdbcConnection.createStatement().execute(
+                "CREATE TABLE IF NOT EXISTS GRATEFUL_DEAD_EDGES(" +
+                        "id VARCHAR(100) NOT NULL, " +
+                        "label VARCHAR(100) NOT NULL," +
+                        "outId VARCHAR(100), " +
+                        "outLabel VARCHAR(100), " +
+                        "inId VARCHAR(100), " +
+                        "inLabel VARCHAR(100)," +
+                        "weight DOUBLE)"
+        );
         //endregion
     }
 
     @Override
     public void clear(Graph graph, Configuration configuration) throws Exception {
-        this.jdbcConnection.createStatement().execute("DROP TABLE vertices_modern");
-        this.jdbcConnection.createStatement().execute("DROP TABLE edges_modern");
+        super.clear(graph, configuration);
 
-        this.jdbcConnection.createStatement().execute("DROP TABLE vertices_crew");
-        this.jdbcConnection.createStatement().execute("DROP TABLE edges_crew");
+        this.jdbcConnection.createStatement().execute("TRUNCATE TABLE vertices");
+        this.jdbcConnection.createStatement().execute("TRUNCATE TABLE edges");
 
-        this.jdbcConnection.createStatement().execute("DROP TABLE vertices");
-        this.jdbcConnection.createStatement().execute("DROP TABLE edges");
+        this.jdbcConnection.createStatement().execute("TRUNCATE TABLE PERSON_MODERN");
+        this.jdbcConnection.createStatement().execute("TRUNCATE TABLE SOFTWARE_MODERN");
 
-        this.jdbcConnection.createStatement().execute("DROP TABLE vertex_inner");
+        this.jdbcConnection.createStatement().execute("TRUNCATE TABLE PERSON_CREW");
+        this.jdbcConnection.createStatement().execute("TRUNCATE TABLE SOFTWARE_CREW");
 
-        createTables();
+        this.jdbcConnection.createStatement().execute("TRUNCATE TABLE ARTIST_GRATEFUL_DEAD");
+        this.jdbcConnection.createStatement().execute("TRUNCATE TABLE SONG_GRATEFUL_DEAD");
+
+        this.jdbcConnection.createStatement().execute("TRUNCATE TABLE MODERN_EDGES");
+        this.jdbcConnection.createStatement().execute("TRUNCATE TABLE DEVELOPS_CREW");
+        this.jdbcConnection.createStatement().execute("TRUNCATE TABLE USES_CREW");
+        this.jdbcConnection.createStatement().execute("TRUNCATE TABLE GRATEFUL_DEAD_EDGES");
     }
 
     public String getSchemaConfiguration(LoadGraphWith.GraphData loadGraphWith) {
-        if(loadGraphWith != null && (loadGraphWith.equals(LoadGraphWith.GraphData.MODERN) || loadGraphWith.equals(LoadGraphWith.GraphData.CREW
-        ))) {
-            return InnerEdgeConfiguration;
-//            return AdvancedConfiguration;
+        if (loadGraphWith != null) {
+            switch (loadGraphWith) {
+                case MODERN: return ModernConfiguration;
+                case CREW: return CrewConfiguration;
+                case GRATEFUL: return GratefulConfiguration;
+            }
         }
-        return BasicConfiguration;
+        return DefaultConfiguration;
     }
 }

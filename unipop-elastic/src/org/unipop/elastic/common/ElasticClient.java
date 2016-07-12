@@ -1,5 +1,6 @@
 package org.unipop.elastic.common;
 
+import com.google.gson.Gson;
 import io.searchbox.action.Action;
 import io.searchbox.action.BulkableAction;
 import io.searchbox.client.JestClient;
@@ -21,6 +22,7 @@ import java.util.List;
 
 public class ElasticClient {
 
+    Gson gson = new Gson();
     private final static Logger logger = LoggerFactory.getLogger(ElasticClient.class);
 
     private List<BulkableAction> bulk;
@@ -71,10 +73,8 @@ public class ElasticClient {
 
     public void refresh() {
         if(bulk != null) {
-            logger.info("refreshing elasticsearch indices: {}", this);
             Bulk bulkAction = new Bulk.Builder().addAction(this.bulk).refresh(true).build();
             JestResult res = execute(bulkAction);
-            logger.info("executed bulk on client, bulk : {}, bulkAction, JestResult: {}", res);
             bulk = null;
         }
 //        Refresh refresh = new Refresh.Builder().refresh(true).allowNoIndices(true).build();
@@ -83,12 +83,13 @@ public class ElasticClient {
 
     public <T extends JestResult> T execute(Action<T> action) {
         try {
+            logger.debug("executing action: {}, payload: {}", action, action.getData(gson));
             T result = client.execute(action);
             if (!result.isSucceeded())
-                System.out.println(result.getErrorMessage());
+                logger.error(result.getErrorMessage());
             return result;
         } catch (IOException e) {
-            logger.error("failed executing action: {}, error", action, e);
+            logger.error("failed executing action: {},  error: {}, payload: {}", action, e, action.getData(gson));
             return null;
         }
     }
@@ -96,35 +97,5 @@ public class ElasticClient {
     public void close() {
         logger.info("shutting down client, client: {}", client);
         client.shutdownClient();
-    }
-
-    class DocumentIdentifier {
-        private final String id;
-        private final String type;
-        private final String index;
-
-        public DocumentIdentifier(String id, String type, String index) {
-            this.id = id;
-            this.type = type;
-            this.index = index;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            DocumentIdentifier that = (DocumentIdentifier) o;
-
-            if (!id.equals(that.id)) return false;
-            if (!type.equals(that.type)) return false;
-            return index.equals(that.index);
-
-        }
-
-        @Override
-        public int hashCode() {
-            return id.hashCode();
-        }
     }
 }

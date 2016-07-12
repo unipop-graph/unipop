@@ -53,6 +53,14 @@ public class TemporaryTests extends AbstractGremlinTest {
     }
 
     @Test
+    @LoadGraphWith(MODERN)
+    public void test_a() {
+        Traversal t = g.V().has("age", P.gt(30));
+
+        check(t);
+    }
+
+    @Test
     public void nullProperty() {
         graph.addVertex("abc", null);
     }
