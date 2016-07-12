@@ -1,0 +1,19 @@
+{
+  "class": "org.unipop.elastic.ElasticSourceProvider",
+  "clusterName": "unipop",
+  "addresses": [
+    "http://localhost:9200"
+  ],
+  "vertices": [
+    {
+      "index": "person",
+      "type": "person",
+      "id": "@_id",
+      "label": "person",
+      "properties": {
+        "gremlin.partitionGraphStrategy.partition": "@partition"
+      },
+      "dynamicProperties": true
+    }
+  ]
+}

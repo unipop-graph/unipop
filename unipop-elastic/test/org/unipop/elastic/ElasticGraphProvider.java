@@ -27,11 +27,11 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
 
         String path = new java.io.File( "." ).getCanonicalPath() + "\\data";
         this.dataPath = new File(path);
+        this.node = new LocalNode(dataPath);
     }
 
     @Override
     public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName, LoadGraphWith.GraphData loadGraphWith) {
-        if(this.node == null) this.node = new LocalNode(dataPath);
         Map<String, Object> baseConfiguration = super.getBaseConfiguration(graphName, test, testMethodName, loadGraphWith);
         String configurationFile = getSchemaConfiguration(loadGraphWith);
         URL url = this.getClass().getResource("/configuration/" + configurationFile);

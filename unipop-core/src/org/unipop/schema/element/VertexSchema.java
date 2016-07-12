@@ -15,7 +15,9 @@ public interface VertexSchema extends ElementSchema<Vertex> {
 
     @Override
     default Collection<Vertex> fromFields(Map<String, Object> fields) {
-        return Collections.singleton(createElement(fields));
+        Vertex element = createElement(fields);
+        if(element == null) return null;
+        return Collections.singleton(element);
     }
 
     Vertex createElement(Map<String, Object> fields);

@@ -1,0 +1,51 @@
+{
+  "class": "org.unipop.jdbc.JdbcSourceProvider",
+  "driver": "org.h2.Driver",
+  "address": "jdbc:h2:mem:gremlin;",
+  "sqlDialect": "H2",
+  "vertices": [
+    {
+      "table": "vertices",
+      "id": "@ID",
+      "label": "@LABEL",
+      "properties": {
+        "name": "@NAME",
+        "age": "@AGE",
+        "location": "@LOCATION",
+        "status": "@STATUS",
+        "lang": "@LANG",
+        "oid": "@OID",
+        "test": "@DATA",
+        "communityIndex": "@COMMUNITYINDEX"
+      },
+      "dynamicProperties": false
+    }
+  ],
+  "edges": [
+    {
+      "table": "edges",
+      "id": "@ID",
+      "label": "@LABEL",
+      "properties": {
+        "year": "@YEAR",
+        "weight": "@WEIGHT",
+        "data": "@DATA",
+        "location": "@LOCATION"
+      },
+      "dynamicProperties": false,
+      "outVertex": {
+        "ref": "true",
+        "id": "@OUTID",
+        "label": "@OUTLABEL",
+        "properties": {}
+      },
+      "inVertex": {
+        "ref": "true",
+        "id": "@INID",
+        "label": "@INLABEL",
+        "properties": {}
+      }
+
+    }
+  ]
+}

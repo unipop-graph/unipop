@@ -1,37 +1,34 @@
 {
   "class": "org.unipop.jdbc.JdbcSourceProvider",
-  "address": "jdbc:sqlite:test.sqlite",
-  "sqlDialect": "SQLITE",
+  "driver": "org.h2.Driver",
+  "address": "jdbc:h2:mem:gremlin;",
+  "sqlDialect": "H2",
   "vertices": [
     {
-      "table": "vertices_modern",
-      "id": "@ID",
-      "label": "@LABEL",
-      "properties": {
-        "name": "@name",
-        "age": "@age",
-        "lang": "@lang"
-      },
-      "dynamicProperties": false
-    },
-    {
-      "table": "vertices_crew",
-      "id": "@ID",
-      "label": "@LABEL",
+      "table": "PERSON_CREW",
+      "id": "@id",
+      "label": "person",
       "properties": {
         "name": "@name",
         "location": "@location"
-      },
-      "dynamicProperties": false
+      }
+    },
+    {
+      "table": "SOFTWARE_CREW",
+      "id": "@id",
+      "label": "software",
+      "properties": {
+        "name": "@name"
+      }
     }
   ],
   "edges": [
     {
-      "table": "edges_modern",
-      "id": "@ID",
-      "label": "@LABEL",
+      "table": "DEVELOPS_CREW",
+      "id": "@id",
+      "label": "develops",
       "properties": {
-        "weight": "@weight"
+        "since": "@since"
       },
       "dynamicProperties": false,
       "outVertex": {
@@ -48,11 +45,10 @@
       }
     },
     {
-      "table": "edges_crew",
-      "id": "@ID",
-      "label": "@LABEL",
+      "table": "USES_CREW",
+      "id": "@id",
+      "label": "uses",
       "properties": {
-        "since": "@since",
         "skill": "@skill"
       },
       "dynamicProperties": false,
@@ -69,6 +65,5 @@
         "properties": {}
       }
     }
-
   ]
 }

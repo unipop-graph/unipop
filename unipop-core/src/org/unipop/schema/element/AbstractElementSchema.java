@@ -9,7 +9,9 @@ import org.unipop.structure.UniElement;
 import org.unipop.structure.UniGraph;
 import org.unipop.util.ConversionUtils;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public abstract class AbstractElementSchema<E extends Element> extends AbstractPropertyContainer implements ElementSchema<E> {
