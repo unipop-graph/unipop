@@ -17,7 +17,6 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
     private static String InnerEdgeConfiguration = "innerEdge.json";
     private static String NestedEdgeConfiguration = "nestedEdge.json";
     private static String NestedRefEdgeConfiguration = "nestedRefEdge.json";
-    private final File dataPath;
     private LocalNode node;
 
     public ElasticGraphProvider() throws Exception{
@@ -25,12 +24,11 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
         System.setProperty("build.dir", System.getProperty("user.dir") + "\\build");
 
         String path = new java.io.File( "." ).getCanonicalPath() + "\\data";
-        this.dataPath = new File(path);
+        this.node = new LocalNode(new File(path));
     }
 
     @Override
     public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName, LoadGraphWith.GraphData loadGraphWith) {
-        if(this.node == null) this.node = new LocalNode(dataPath);
         Map<String, Object> baseConfiguration = super.getBaseConfiguration(graphName, test, testMethodName, loadGraphWith);
         String configurationFile = getSchemaConfiguration(loadGraphWith);
         URL url = this.getClass().getResource("/configuration/" + configurationFile);
@@ -55,9 +53,7 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
     @Override
     public void clear(Graph g, Configuration configuration) throws Exception {
         super.clear(g, configuration);
-        if(node != null) {
-            node.deleteIndices();
-        }
+        node.clear();
     }
 
     @Override

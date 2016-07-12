@@ -14,10 +14,14 @@ import java.io.File;
 import java.io.IOException;
 
 public class LocalNode {
-    private final Node node;
-    private final Client client;
+    private Node node;
+    private Client client;
 
     public LocalNode(File dataPath) {
+        createNode(dataPath);
+    }
+
+    private void createNode(File dataPath) {
         try {
             FileUtils.deleteDirectory(dataPath);
         } catch (IOException e) {
@@ -27,23 +31,20 @@ public class LocalNode {
         Settings.Builder elasticsearchSettings = Settings.settingsBuilder()
                 .put("path.data", dataPath)
                 .put("path.home", "./data/")
-                .put("path.home", "./data/")
+                .put("index.number_of_shards", "1")
+                .put("index.number_of_replicas", "0")
+                .put("discovery.zen.ping.multicast.enabled", "false")
                 .put("script.inline", "true")
                 .put("script.indexed", "true")
                 .put("script.update", "true")
                 .put("script.groovy.sandbox.enabled", "true");
 
-        this.node = NodeBuilder.nodeBuilder()
-                .local(true)
-                .settings(elasticsearchSettings.build())
-                .node();
-
-
+        this.node = NodeBuilder.nodeBuilder().local(true).settings(elasticsearchSettings.build()).node();
         this.client = node.client();
         checkHealth();
     }
 
-    public void checkHealth() {
+    private void checkHealth() {
         final ClusterHealthRequest clusterHealthRequest = new ClusterHealthRequest().timeout(TimeValue.timeValueSeconds(10)).waitForYellowStatus();
         final ClusterHealthResponse clusterHealth = client.admin().cluster().health(clusterHealthRequest).actionGet();
         if (clusterHealth.isTimedOut()) {
@@ -53,15 +54,11 @@ public class LocalNode {
         }
     }
 
-    public DeleteIndexResponse deleteIndices() {
+    public DeleteIndexResponse clear() {
         return client.admin().indices().prepareDelete("*").execute().actionGet();
     }
 
     public Client getClient() {
         return client;
-    }
-
-    public Node getNode() {
-        return node;
     }
 }
