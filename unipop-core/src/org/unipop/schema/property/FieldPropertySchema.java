@@ -30,31 +30,31 @@ public class FieldPropertySchema implements PropertySchema {
         this.key = key;
         this.nullable = nullable;
         this.field = config.getString("field");
-        JSONArray include = config.optJSONArray("include");
-        if(include != null) this.include = ConversionUtils.toSet(include);
-        JSONArray exclude = config.optJSONArray("exclude");
-        if(exclude != null) this.exclude = ConversionUtils.toSet(exclude);
+        Set<Object> include = ConversionUtils.toSet(config, "include");
+        this.include = include.isEmpty() ? null : include;
+        Set<Object> exclude = ConversionUtils.toSet(config, "exclude");
+        this.exclude = exclude.isEmpty() ? null : exclude;
     }
 
     @Override
     public Map<String, Object> toProperties(Map<String, Object> source) {
         Object value = source.get(this.field);
-        if(value == null && nullable) return Collections.emptyMap();
-        if(value == null || !test(P.eq(value))) return null;
+        if (value == null && nullable) return Collections.emptyMap();
+        if (value == null || !test(P.eq(value))) return null;
         return Collections.singletonMap(this.key, value);
     }
 
     @Override
     public Map<String, Object> toFields(Map<String, Object> properties) {
         Object value = properties.get(this.key);
-        if(value == null && nullable) return Collections.emptyMap();
-        if(value == null || !test(P.eq(value))) return null;
+        if (value == null && nullable) return Collections.emptyMap();
+        if (value == null || !test(P.eq(value))) return null;
         return Collections.singletonMap(this.field, value);
     }
 
     @Override
     public Set<String> toFields(Set<String> keys) {
-        if(keys.contains(this.key) || !nullable) return Collections.singleton(field);
+        if (keys.contains(this.key) || !nullable) return Collections.singleton(field);
         return Collections.emptySet();
     }
 
@@ -94,16 +94,16 @@ public class FieldPropertySchema implements PropertySchema {
     private boolean test(P predicate) {
 
 
-        if(this.include != null){
-            for(Object include : this.include) {
-                if(predicate.test(include)) return true;
+        if (this.include != null) {
+            for (Object include : this.include) {
+                if (predicate.test(include)) return true;
             }
             return false;
         }
 
-        if(predicate.getBiPredicate() instanceof  Contains) return true; //TODO: make this smarter.
+        if (predicate.getBiPredicate() instanceof Contains) return true; //TODO: make this smarter.
 
-        if(this.exclude != null) {
+        if (this.exclude != null) {
             for (Object exclude : this.exclude) {
                 if (predicate.test(exclude))
                     return false;

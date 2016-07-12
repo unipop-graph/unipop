@@ -1,7 +1,6 @@
 package org.unipop.schema.property;
 
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
-import org.json.JSONArray;
 import org.json.JSONObject;
 import org.unipop.util.ConversionUtils;
 import org.unipop.query.predicates.PredicatesHolder;
@@ -22,12 +21,8 @@ public class DynamicPropertySchema implements PropertySchema {
 
     public DynamicPropertySchema(ArrayList<PropertySchema> otherSchemas, JSONObject config) {
         this(otherSchemas);
-
-        JSONArray excludeFieldsJson = config.optJSONArray("excludeFields");
-        if(excludeFieldsJson != null) this.excludeFields.addAll(ConversionUtils.toSet(excludeFieldsJson));
-
-        JSONArray excludePropertiesJson = config.optJSONArray("excludeProperties");
-        if(excludePropertiesJson != null) this.excludeProperties.addAll(ConversionUtils.toSet(excludePropertiesJson));
+        this.excludeFields.addAll(ConversionUtils.toSet(config, "excludeFields"));
+        this.excludeProperties.addAll(ConversionUtils.toSet(config, "excludeProperties"));
     }
 
     @Override

@@ -1,11 +1,10 @@
-package org.unipop.elastic;
+package org.unipop.elastic.test;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.elasticsearch.client.Client;
-import org.junit.AssumptionViolatedException;
 import org.unipop.test.UnipopGraphProvider;
 
 import java.io.File;
@@ -27,11 +26,11 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
 
         String path = new java.io.File( "." ).getCanonicalPath() + "\\data";
         this.dataPath = new File(path);
-        this.node = new LocalNode(dataPath);
     }
 
     @Override
     public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName, LoadGraphWith.GraphData loadGraphWith) {
+        if(this.node == null) this.node = new LocalNode(dataPath);
         Map<String, Object> baseConfiguration = super.getBaseConfiguration(graphName, test, testMethodName, loadGraphWith);
         String configurationFile = getSchemaConfiguration(loadGraphWith);
         URL url = this.getClass().getResource("/configuration/" + configurationFile);
