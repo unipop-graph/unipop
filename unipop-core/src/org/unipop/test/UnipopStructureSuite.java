@@ -8,6 +8,7 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.io.*;
 import org.apache.tinkerpop.gremlin.structure.util.detached.*;
 import org.apache.tinkerpop.gremlin.structure.util.reference.*;
+import org.apache.tinkerpop.gremlin.structure.util.star.StarGraphTest;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.RunnerBuilder;
 
@@ -49,8 +50,8 @@ public class UnipopStructureSuite extends AbstractGremlinSuite {
             DistributionGeneratorTest.class,
 
             //Ignored tests
-//            StarGraphTest.class,
-//            TransactionTest.class,
-//            VariablesTest.class,
+            StarGraphTest.class,
+            TransactionTest.class,
+            VariablesTest.class,
     };
 }
