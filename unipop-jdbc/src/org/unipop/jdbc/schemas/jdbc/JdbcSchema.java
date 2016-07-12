@@ -2,6 +2,7 @@ package org.unipop.jdbc.schemas.jdbc;
 
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.jooq.DSLContext;
+import org.jooq.Query;
 import org.jooq.Result;
 import org.jooq.Select;
 import org.unipop.query.predicates.PredicateQuery;
@@ -41,6 +42,8 @@ public interface JdbcSchema<E extends Element> extends ElementSchema<E> {
 
         return new JdbcSchema.Row(table, id, fields);
     }
+
+    Query getInsertStatement(E element);
 
     class Row {
         private final String table;

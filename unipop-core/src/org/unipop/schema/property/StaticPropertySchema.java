@@ -38,7 +38,9 @@ public class StaticPropertySchema implements PropertySchema {
     @Override
     public PredicatesHolder toPredicates(PredicatesHolder predicatesHolder) {
         Set<PredicatesHolder> predicates = predicatesHolder.findKey(this.key).map(has -> {
-            if (has != null && !test(has.getPredicate())) return PredicatesHolderFactory.abort();
+            if (has != null && !test(has.getPredicate())) {
+                return PredicatesHolderFactory.abort();
+            }
             return PredicatesHolderFactory.empty();
         }).collect(Collectors.toSet());
 
@@ -52,5 +54,13 @@ public class StaticPropertySchema implements PropertySchema {
 
     private boolean test(P predicate) {
         return predicate.test(this.value);
+    }
+
+    @Override
+    public String toString() {
+        return "StaticPropertySchema{" +
+                "key='" + key + '\'' +
+                ", value='" + value + '\'' +
+                '}';
     }
 }

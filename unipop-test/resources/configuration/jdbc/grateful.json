@@ -1,29 +1,34 @@
 {
   "class": "org.unipop.jdbc.JdbcSourceProvider",
-  "address": "jdbc:sqlite:test.sqlite",
-  "sqlDialect": "SQLITE",
+  "driver": "org.h2.Driver",
+  "address": "jdbc:h2:mem:gremlin;",
+  "sqlDialect": "H2",
   "vertices": [
     {
-      "table": "vertices",
-      "id": "@ID",
-      "label": "@LABEL",
+      "table": "ARTIST_GRATEFUL_DEAD",
+      "id": "@id",
+      "label": "Artist",
+      "properties": {
+        "name": "@name"
+      }
+    },
+    {
+      "table": "SONG_GRATEFUL_DEAD",
+      "id": "@id",
+      "label": "Song",
       "properties": {
         "name": "@name",
-        "age": "@age",
-        "location": "@location",
-        "status": "@status",
-        "lang": "@lang"
-      },
-      "dynamicProperties": false
+        "songType": "@songType",
+        "performances": "@performances"
+      }
     }
   ],
   "edges": [
     {
-      "table": "edges",
-      "id": "@ID",
-      "label": "@LABEL",
+      "table": "GRATEFUL_DEAD_EDGES",
+      "id": "@id",
+      "label": "@label",
       "properties": {
-        "year": "@year",
         "weight": "@weight"
       },
       "dynamicProperties": false,
@@ -39,7 +44,6 @@
         "label": "@inLabel",
         "properties": {}
       }
-
     }
   ]
 }

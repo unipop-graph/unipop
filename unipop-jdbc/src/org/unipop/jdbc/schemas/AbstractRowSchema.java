@@ -1,10 +1,10 @@
 package org.unipop.jdbc.schemas;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.jooq.*;
 import org.jooq.impl.DSL;
 import org.json.JSONObject;
-import org.unipop.jdbc.controller.simple.results.ElementMapper;
 import org.unipop.jdbc.schemas.jdbc.JdbcSchema;
 import org.unipop.jdbc.utils.JdbcPredicatesTranslator;
 import org.unipop.query.predicates.PredicateQuery;
@@ -16,6 +16,8 @@ import org.unipop.structure.UniGraph;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static org.jooq.impl.DSL.table;
 
 /**
  * @author Gur Ronen
@@ -40,6 +42,16 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
     }
 
     @Override
+    public Query getInsertStatement(E element) {
+        JdbcSchema.Row row = toRow(element);
+        if (row == null) return null;
+
+        return DSL.insertInto(table(getTable()),
+                    CollectionUtils.collect(row.getFields().keySet(), DSL::field))
+                    .values(row.getFields().values());
+    }
+
+    @Override
     public List<E> parseResults(Result result, PredicateQuery query) {
         List<Map<String, Object>> maps = result.intoMaps();
         List<E> elements = maps.stream()
@@ -55,7 +67,9 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
 
     @Override
     public Select getSearch(SearchQuery<E> query, PredicatesHolder predicatesHolder, DSLContext context) {
-        if (predicatesHolder.isAborted()) return null;
+        if (predicatesHolder.isAborted()) {
+            return null;
+        }
 
         Condition conditions = new JdbcPredicatesTranslator().translate(predicatesHolder);
         int finalLimit = query.getLimit() < 0 ? Integer.MAX_VALUE : query.getLimit();
