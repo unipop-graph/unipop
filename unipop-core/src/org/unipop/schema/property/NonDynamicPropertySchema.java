@@ -14,6 +14,11 @@ public class NonDynamicPropertySchema extends DynamicPropertySchema {
     }
 
     @Override
+    public Map<String, Object> toProperties(Map<String, Object> source) {
+        return Collections.emptyMap();
+    }
+
+    @Override
     public Map<String, Object> toFields(Map<String, Object> properties) {
         return Collections.emptyMap();
     }

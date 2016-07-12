@@ -11,6 +11,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.jooq.*;
+import org.jooq.exception.DataAccessException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unipop.common.util.PredicatesTranslator;
@@ -105,7 +106,7 @@ public class RowController implements SimpleController {
         UniEdge edge = new UniEdge(uniQuery.getProperties(), uniQuery.getOutVertex(), uniQuery.getInVertex(), this.graph);
         try {
             this.insert(edgeSchemas, edge);
-        } catch (IllegalArgumentException ex) {
+        } catch (DataAccessException ex) {
             throw Graph.Exceptions.edgeWithIdAlreadyExists(edge.id());
         }
 
@@ -117,7 +118,7 @@ public class RowController implements SimpleController {
         UniVertex vertex = new UniVertex(uniQuery.getProperties(), this.graph);
         try {
             this.insert(this.vertexSchemas, vertex);
-        } catch (IllegalArgumentException ex) {
+        } catch (DataAccessException ex) {
             throw Graph.Exceptions.vertexWithIdAlreadyExists(vertex.id());
         }
 
@@ -201,12 +202,13 @@ public class RowController implements SimpleController {
 
             Map<Field<?>, Object> fieldMap = Maps.newHashMap();
             row.getFields().entrySet().stream().map(this::mapSet).forEach(en -> fieldMap.put(en.getKey(), en.getValue()));
-            fieldMap.remove(row.getIdField());
+            fieldMap.remove(field(row.getIdField()));
 
             Update step = this.getDslContext().update(table(schema.getTable()))
                     .set(fieldMap).where(field(row.getIdField()).eq(row.getId()));
             step.execute();
             logger.info("executed update statement with following parameters, step: {}, element: {}, schema: {}", step, element, schema);
+            dslContext.execute("commit;");
         }
     }
 

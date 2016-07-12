@@ -1,7 +1,8 @@
 {
   "class": "org.unipop.jdbc.JdbcSourceProvider",
-  "address": "jdbc:sqlite:test.sqlite",
-  "sqlDialect": "SQLITE",
+  "driver": "org.h2.Driver",
+  "address": "jdbc:h2:mem:gremlin;",
+  "sqlDialect": "H2",
   "vertices": [
     {
       "table": "vertex_inner",

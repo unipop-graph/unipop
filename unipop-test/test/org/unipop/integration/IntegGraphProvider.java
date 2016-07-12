@@ -26,7 +26,7 @@ public class IntegGraphProvider extends UnipopGraphProvider {
     public IntegGraphProvider() throws Exception {
 
         Class.forName("org.h2.Driver");
-        this.jdbcConnection = DriverManager.getConnection("jdbc:h2:mem:gremlin;WRITE_DELAY=0;LOCK_MODE=0;");
+        this.jdbcConnection = DriverManager.getConnection("jdbc:h2:mem:gremlin;");
 
         
         createTables();
@@ -47,7 +47,7 @@ public class IntegGraphProvider extends UnipopGraphProvider {
         URL jdbcUrl = this.getClass().getResource("/configuration/jdbc/" + configurationFile);
 //        URL elasticUrl = this.getClass().getResource("/configuration/elastic/" + configurationFile);
 
-        baseConfiguration.put("providers", new String[]{jdbcUrl.getFile()});//, elasticUrl.getFile()});
+        baseConfiguration.put("providers", jdbcUrl.getFile());//+ ";" + elasticUrl.getFile());
 
         return baseConfiguration;
     }

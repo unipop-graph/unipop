@@ -1,18 +1,22 @@
 {
   "class": "org.unipop.jdbc.JdbcSourceProvider",
-  "address": "jdbc:sqlite:test.sqlite",
-  "sqlDialect": "SQLITE",
+  "driver": "org.h2.Driver",
+  "address": "jdbc:h2:mem:gremlin;",
+  "sqlDialect": "H2",
   "vertices": [
     {
       "table": "vertices",
       "id": "@ID",
       "label": "@LABEL",
       "properties": {
-        "name": "@name",
-        "age": "@age",
-        "location": "@location",
-        "status": "@status",
-        "lang": "@lang"
+        "name": "@NAME",
+        "age": "@AGE",
+        "location": "@LOCATION",
+        "status": "@STATUS",
+        "lang": "@LANG",
+        "oid": "@OID",
+        "test": "@DATA",
+        "communityIndex": "@COMMUNITYINDEX"
       },
       "dynamicProperties": false
     }
@@ -23,20 +27,22 @@
       "id": "@ID",
       "label": "@LABEL",
       "properties": {
-        "year": "@year",
-        "weight": "@weight"
+        "year": "@YEAR",
+        "weight": "@WEIGHT",
+        "data": "@DATA",
+        "location": "@LOCATION"
       },
       "dynamicProperties": false,
       "outVertex": {
         "ref": "true",
-        "id": "@outId",
-        "label": "@outLabel",
+        "id": "@OUTID",
+        "label": "@OUTLABEL",
         "properties": {}
       },
       "inVertex": {
         "ref": "true",
-        "id": "@inId",
-        "label": "@inLabel",
+        "id": "@INID",
+        "label": "@INLABEL",
         "properties": {}
       }
 

@@ -5,19 +5,27 @@
   "sqlDialect": "H2",
   "vertices": [
     {
-      "table": "SOFTWARE_MODERN",
+      "table": "ARTIST_GRATEFUL_DEAD",
       "id": "@ID",
-      "label": "@LABEL",
+      "label": "artist",
+      "properties": {
+        "name": "@NAME"
+      }
+    },
+    {
+      "table": "SONG_GRATEFUL_DEAD",
+      "id": "@ID",
+      "label": "song",
       "properties": {
         "name": "@NAME",
-        "lang": "@LANG",
-        "age": "@AGE"
+        "songType": "@SONGTYPE",
+        "performances": "@PERFORMANCES"
       }
     }
   ],
   "edges": [
     {
-      "table": "MODERN_EDGES",
+      "table": "GRATEFUL_DEAD_EDGES",
       "id": "@ID",
       "label": "@LABEL",
       "properties": {
@@ -25,13 +33,13 @@
       },
       "dynamicProperties": false,
       "outVertex": {
-        "ref": "true",
+        "ref": true,
         "id": "@OUTID",
         "label": "@OUTLABEL",
         "properties": {}
       },
       "inVertex": {
-        "ref": "true",
+        "ref": true,
         "id": "@INID",
         "label": "@INLABEL",
         "properties": {}

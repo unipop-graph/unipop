@@ -5,8 +5,6 @@ import org.apache.tinkerpop.gremlin.GraphManager;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerFactory;
 import org.junit.Test;
 import org.unipop.jdbc.JdbcGraphProvider;
 
@@ -24,11 +22,22 @@ public class TempTests extends AbstractGremlinTest {
     @LoadGraphWith(LoadGraphWith.GraphData.MODERN)
     @Test
     public void testA() {
-        System.out.println(g.V().has("age", P.gt(30)).toList());
-        Traversal t = g.V().has("age", P.gt(30));
+        Traversal t = g.E().valueMap(true);
+        check(t);
+    }
 
-        System.out.println(TinkerFactory.createModern().traversal().V().has("age", P.gt(30)).toList().equals(t.toList()));
 
-        int x = 6;
+    private void check(Traversal traversal) {
+//        traversal.profile();
+        System.out.println("pre-strategy:" + traversal);
+        traversal.hasNext();
+        System.out.println("post-strategy:" + traversal);
+
+        int count = 0;
+        while(traversal.hasNext()) {
+            System.out.println(traversal.next());
+            count ++;
+        }
+        System.out.println(count);
     }
 }
