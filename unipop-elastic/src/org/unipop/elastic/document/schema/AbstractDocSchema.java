@@ -106,15 +106,15 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
     }
 
     @Override
-    public BulkableAction<DocumentResult> addElement(E element) {
+    public BulkableAction<DocumentResult> addElement(E element, boolean create) {
         Document document = toDocument(element);
         if (document == null) return null;
-        return new Index.Builder(document.getFields())
+        Index.Builder builder = new Index.Builder(document.getFields())
                 .index(document.getIndex())
                 .type(document.getType())
-                .id(document.getId())
-                //.setParameter("op_type", "create")
-                .build();
+                .id(document.getId());
+        if(create) builder.setParameter("op_type", "create");
+        return builder.build();
     }
 
     @Override

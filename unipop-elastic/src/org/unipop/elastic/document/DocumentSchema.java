@@ -19,6 +19,6 @@ public interface DocumentSchema<E extends Element> extends ElementSchema<E>{
     Search getSearch(SearchQuery<E> query, PredicatesHolder predicatesHolder);
     List<E> parseResults(String result, PredicateQuery query);
 
-    BulkableAction<DocumentResult> addElement(E element);
+    BulkableAction<DocumentResult> addElement(E element, boolean create);
     Delete.Builder delete(E element);
 }

@@ -2,9 +2,7 @@ package org.unipop.elastic.document.schema.nested;
 
 import io.searchbox.action.BulkableAction;
 import io.searchbox.core.DocumentResult;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
-import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -16,7 +14,6 @@ import org.unipop.elastic.common.FilterHelper;
 import org.unipop.elastic.document.DocumentVertexSchema;
 import org.unipop.elastic.document.schema.AbstractDocSchema;
 import org.unipop.query.predicates.PredicatesHolder;
-import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.structure.UniElement;
 import org.unipop.structure.UniGraph;
 import org.unipop.structure.UniVertex;
@@ -78,7 +75,7 @@ public class NestedVertexSchema extends AbstractDocSchema<Vertex> implements Doc
     }
 
     @Override
-    public BulkableAction<DocumentResult> addElement(Vertex element) {
+    public BulkableAction<DocumentResult> addElement(Vertex element, boolean create) {
         return null;
     }
 

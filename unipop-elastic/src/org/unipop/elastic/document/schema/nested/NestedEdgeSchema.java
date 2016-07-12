@@ -24,7 +24,6 @@ import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.schema.element.ElementSchema;
 import org.unipop.schema.element.VertexSchema;
-import org.unipop.schema.reference.ReferenceVertexSchema;
 import org.unipop.structure.UniEdge;
 import org.unipop.structure.UniGraph;
 import org.unipop.util.ConversionUtils;
@@ -157,7 +156,8 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
     }
 
     @Override
-    public BulkableAction<DocumentResult> addElement(Edge edge) {
+    public BulkableAction<DocumentResult> addElement(Edge edge, boolean create) {
+        //TODO: use the 'create' parameter to differentiate between add and update
         Document document = toDocument(edge);
         if (document == null) return null;
         Map<String, Object> edgeFields = getFields(edge);

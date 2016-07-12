@@ -85,7 +85,7 @@ public class DocumentController implements SimpleController {
     public Edge addEdge(AddEdgeQuery uniQuery) {
         UniEdge edge = new UniEdge(uniQuery.getProperties(), uniQuery.getOutVertex(), uniQuery.getInVertex(), graph);
         try {
-            index(this.edgeSchemas, edge);
+            index(this.edgeSchemas, edge, true);
         }
         catch(DocumentAlreadyExistsException ex) {
             logger.warn("Document already exists in elastic", ex);
@@ -98,7 +98,7 @@ public class DocumentController implements SimpleController {
     public Vertex addVertex(AddVertexQuery uniQuery) {
         UniVertex vertex = new UniVertex(uniQuery.getProperties(), graph);
         try {
-            index(this.vertexSchemas, vertex);
+            index(this.vertexSchemas, vertex, true);
         }
         catch(DocumentAlreadyExistsException ex){
             logger.warn("Document already exists in elastic", ex);
@@ -111,7 +111,7 @@ public class DocumentController implements SimpleController {
     public <E extends Element> void property(PropertyQuery<E> uniQuery) {
         Set<? extends DocumentSchema<E>> schemas = getSchemas(uniQuery.getElement().getClass());
         //updates
-        index(schemas, uniQuery.getElement());
+        index(schemas, uniQuery.getElement(), false);
     }
 
     @Override
@@ -162,9 +162,9 @@ public class DocumentController implements SimpleController {
         return true;
     }
 
-    private <E extends Element> void index(Set<? extends DocumentSchema<E>> schemas, E element) {
+    private <E extends Element> void index(Set<? extends DocumentSchema<E>> schemas, E element, boolean create) {
         for(DocumentSchema<E> schema : schemas) {
-            BulkableAction<DocumentResult> index = schema.addElement(element);
+            BulkableAction<DocumentResult> index = schema.addElement(element, create);
             if(index != null) {
                 logger.debug("indexing element with schema: {}, element: {}, index: {}, client: {}", schema, element, index, client);
                 client.bulk(index);
