@@ -93,7 +93,8 @@ public class RowController implements SimpleController {
 
     @Override
     public Iterator<Edge> search(SearchVertexQuery uniQuery) {
-        Function<JdbcEdgeSchema, PredicatesHolder> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery.getVertices(), uniQuery.getDirection(), uniQuery.getPredicates());
+        Function<JdbcEdgeSchema, PredicatesHolder> toPredicatesFunction = (schema) -> schema.toPredicates(
+                uniQuery.getVertices(), uniQuery.getDirection(), uniQuery.getPredicates());
         return this.search(
                 toPredicatesFunction,
                 this.edgeSchemas,
