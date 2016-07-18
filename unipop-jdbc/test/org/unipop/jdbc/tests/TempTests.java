@@ -3,10 +3,9 @@ package org.unipop.jdbc.tests;
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.GraphManager;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.junit.Test;
-import org.unipop.jdbc.JdbcGraphProvider;
+import test.JdbcGraphProvider;
 
 import java.sql.SQLException;
 

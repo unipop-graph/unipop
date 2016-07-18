@@ -7,7 +7,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Before;
 import org.junit.Test;
-import org.unipop.elastic.ElasticGraphProvider;
+import test.ElasticGraphProvider;
 import org.unipop.test.UnipopGraphProvider;
 
 import java.util.Iterator;

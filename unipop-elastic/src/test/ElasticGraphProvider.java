@@ -1,11 +1,10 @@
-package org.unipop.elastic;
+package test;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.elasticsearch.client.Client;
-import org.junit.AssumptionViolatedException;
 import org.unipop.test.UnipopGraphProvider;
 
 import java.io.File;

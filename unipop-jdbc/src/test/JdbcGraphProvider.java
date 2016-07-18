@@ -1,4 +1,4 @@
-package org.unipop.jdbc;
+package test;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
@@ -38,6 +38,23 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
         return baseConfiguration;
     }
 
+    private String getSchemaConfiguration(LoadGraphWith.GraphData loadGraphWith) {
+        if (loadGraphWith != null) {
+            switch (loadGraphWith) {
+                case MODERN: return ModernConfiguration;
+                case CREW: return CrewConfiguration;
+                case GRATEFUL: return GratefulConfiguration;
+            }
+        }
+        return DefaultConfiguration;
+    }
+
+    @Override
+    public void clear(Graph graph, Configuration configuration) throws Exception {
+        super.clear(graph, configuration);
+        truncateTables();
+    }
+
     private void createTables() throws SQLException {
         //region dull tables
         this.jdbcConnection.createStatement().execute(
@@ -67,6 +84,7 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
                         "data VARCHAR(100)," +
                         "weight DOUBLE)");
         //endregion
+
         //region modern tables
         this.jdbcConnection.createStatement().execute(
                 "CREATE TABLE IF NOT EXISTS PERSON_MODERN(" +
@@ -152,10 +170,7 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
         //endregion
     }
 
-    @Override
-    public void clear(Graph graph, Configuration configuration) throws Exception {
-        super.clear(graph, configuration);
-
+    public void truncateTables() throws SQLException {
         this.jdbcConnection.createStatement().execute("TRUNCATE TABLE vertices");
         this.jdbcConnection.createStatement().execute("TRUNCATE TABLE edges");
 
@@ -172,16 +187,5 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
         this.jdbcConnection.createStatement().execute("TRUNCATE TABLE DEVELOPS_CREW");
         this.jdbcConnection.createStatement().execute("TRUNCATE TABLE USES_CREW");
         this.jdbcConnection.createStatement().execute("TRUNCATE TABLE GRATEFUL_DEAD_EDGES");
-    }
-
-    public String getSchemaConfiguration(LoadGraphWith.GraphData loadGraphWith) {
-        if (loadGraphWith != null) {
-            switch (loadGraphWith) {
-                case MODERN: return ModernConfiguration;
-                case CREW: return CrewConfiguration;
-                case GRATEFUL: return GratefulConfiguration;
-            }
-        }
-        return DefaultConfiguration;
     }
 }

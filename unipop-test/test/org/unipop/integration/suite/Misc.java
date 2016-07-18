@@ -1,12 +1,10 @@
 package org.unipop.integration.suite;
 
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
-import org.apache.tinkerpop.gremlin.GraphManager;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.elasticsearch.common.StopWatch;
 import org.junit.Test;
-import org.unipop.integration.IntegGraphProvider;
 
 import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
 

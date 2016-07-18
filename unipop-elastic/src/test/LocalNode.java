@@ -1,4 +1,4 @@
-package org.unipop.integration;
+package test;
 
 import org.apache.commons.io.FileUtils;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
@@ -13,11 +13,11 @@ import org.elasticsearch.node.NodeBuilder;
 import java.io.File;
 import java.io.IOException;
 
-public class ElasticLocalNode {
+public class LocalNode {
     private final Node node;
     private final Client client;
 
-    public ElasticLocalNode(File dataPath) {
+    public LocalNode(File dataPath) {
         try {
             FileUtils.deleteDirectory(dataPath);
         } catch (IOException e) {
@@ -27,7 +27,9 @@ public class ElasticLocalNode {
         Settings.Builder elasticsearchSettings = Settings.settingsBuilder()
                 .put("path.data", dataPath)
                 .put("path.home", "./data/")
-                .put("path.home", "./data/")
+                .put("index.number_of_shards", "1")
+                .put("index.number_of_replicas", "0")
+                .put("discovery.zen.ping.multicast.enabled", "false")
                 .put("script.inline", "true")
                 .put("script.indexed", "true")
                 .put("script.update", "true")
@@ -36,7 +38,7 @@ public class ElasticLocalNode {
         this.node = NodeBuilder.nodeBuilder()
                 .local(true)
                 .settings(elasticsearchSettings.build())
-                .node().start();
+                .node();
 
 
         this.client = node.client();

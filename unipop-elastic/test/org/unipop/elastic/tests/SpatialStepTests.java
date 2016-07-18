@@ -14,7 +14,7 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.junit.Before;
 import org.junit.Test;
-import org.unipop.elastic.ElasticGraphProvider;
+import test.ElasticGraphProvider;
 import org.unipop.elastic.common.Geo;
 
 import java.io.IOException;
