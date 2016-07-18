@@ -50,4 +50,12 @@ public class DynamicPropertySchema implements PropertySchema {
 
         return PredicatesHolderFactory.createFromPredicates(predicatesHolder.getClause(), hasContainers);
     }
+
+    @Override
+    public String toString() {
+        return "DynamicPropertySchema{" +
+                "excludeFields=" + excludeFields +
+                ", excludeProperties=" + excludeProperties +
+                '}';
+    }
 }

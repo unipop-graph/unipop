@@ -1,12 +1,16 @@
 package org.unipop.elastic.document.schema;
 
+import io.searchbox.core.Search;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.unipop.elastic.common.ElasticClient;
 import org.unipop.elastic.document.DocumentVertexSchema;
 import org.unipop.elastic.document.schema.nested.NestedEdgeSchema;
+import org.unipop.query.predicates.PredicatesHolder;
+import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.schema.element.EdgeSchema;
 import org.unipop.schema.element.ElementSchema;
 import org.unipop.structure.UniGraph;
@@ -36,6 +40,13 @@ public class DocVertexSchema extends AbstractDocSchema<Vertex> implements Docume
 
         if(path == null) return new InnerEdgeSchema(this, direction, index, type, edgeJson, client, graph);
         return new NestedEdgeSchema(this, direction, index, type, path, edgeJson, client, graph);
+    }
+
+    @Override
+    public Search getSearch(DeferredVertexQuery query) {
+        PredicatesHolder predicatesHolder = this.toPredicates(query.getVertices());
+        QueryBuilder queryBuilder = createQueryBuilder(predicatesHolder);
+        return createSearch(query, queryBuilder);
     }
 
     @Override

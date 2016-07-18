@@ -2,6 +2,7 @@ package org.unipop.elastic.document.schema.nested;
 
 import io.searchbox.action.BulkableAction;
 import io.searchbox.core.DocumentResult;
+import io.searchbox.core.Search;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -14,6 +15,7 @@ import org.unipop.elastic.common.FilterHelper;
 import org.unipop.elastic.document.DocumentVertexSchema;
 import org.unipop.elastic.document.schema.AbstractDocSchema;
 import org.unipop.query.predicates.PredicatesHolder;
+import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.structure.UniElement;
 import org.unipop.structure.UniGraph;
 import org.unipop.structure.UniVertex;
@@ -81,15 +83,20 @@ public class NestedVertexSchema extends AbstractDocSchema<Vertex> implements Doc
 
     @Override
     public QueryBuilder createQueryBuilder(PredicatesHolder predicatesHolder) {
-        QueryBuilder queryBuilder = FilterHelper.createFilterBuilder(predicatesHolder);
-        queryBuilder = QueryBuilders.nestedQuery(this.path, queryBuilder).innerHit(new QueryInnerHitBuilder().setFetchSource(false));
-        queryBuilder = QueryBuilders.indicesQuery(queryBuilder, index).noMatchQuery("none");
-        queryBuilder = QueryBuilders.constantScoreQuery(queryBuilder);
-        return queryBuilder;
+        QueryBuilder queryBuilder = super.createQueryBuilder(predicatesHolder);
+        if(queryBuilder == null) return null;
+        return QueryBuilders.nestedQuery(this.path, queryBuilder);
     }
 
     @Override
     public PredicatesHolder toPredicates(PredicatesHolder predicatesHolder) {
         return super.toPredicates(predicatesHolder).map(has -> new HasContainer(path + "." + has.getKey(), has.getPredicate()));
+    }
+
+    @Override
+    public Search getSearch(DeferredVertexQuery query) {
+        PredicatesHolder predicatesHolder = this.toPredicates(query.getVertices());
+        QueryBuilder queryBuilder = createQueryBuilder(predicatesHolder);
+        return createSearch(query, queryBuilder);
     }
 }

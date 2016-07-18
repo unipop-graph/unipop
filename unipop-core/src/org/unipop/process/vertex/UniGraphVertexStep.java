@@ -1,6 +1,8 @@
 package org.unipop.process.vertex;
 
 import org.apache.tinkerpop.gremlin.structure.util.Attachable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.unipop.process.UniPredicatesStep;
 import org.unipop.query.StepDescriptor;
 import org.unipop.process.predicate.ReceivesPredicatesHolder;
@@ -26,6 +28,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Vertex, E> implements ReceivesPredicatesHolder<Vertex, E>{
+    private static final Logger logger = LoggerFactory.getLogger(UniGraphVertexStep.class);
+
     private final boolean returnsVertex;
     private final Direction direction;
     private Class<E> returnClass;
@@ -68,6 +72,7 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
             vertices.add(vertex);
         });
         SearchVertexQuery vertexQuery = new SearchVertexQuery(Edge.class, vertices, direction, predicates, limit, propertyKeys, stepDescriptor);
+        logger.debug("Executing query: ", vertexQuery);
         Iterator<Traverser.Admin<E>> traversersIterator = controllers.stream().<Iterator<Edge>>map(controller -> controller.search(vertexQuery))
                 .<Edge>flatMap(ConversionUtils::asStream)
                 .<Traverser.Admin<E>>flatMap(edge -> toTraversers(edge, idToTraverser)).iterator();

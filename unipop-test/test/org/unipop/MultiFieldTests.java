@@ -11,7 +11,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.Test;
-import org.unipop.elastic.test.ElasticGraphProvider;
+import org.unipop.elastic.ElasticGraphProvider;
 
 import java.util.HashMap;
 import java.util.Iterator;

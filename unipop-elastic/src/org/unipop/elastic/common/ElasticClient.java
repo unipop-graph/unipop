@@ -10,22 +10,23 @@ import io.searchbox.client.config.HttpClientConfig;
 import io.searchbox.core.Bulk;
 import io.searchbox.indices.CreateIndex;
 import io.searchbox.indices.IndicesExists;
-import io.searchbox.indices.Refresh;
 import io.searchbox.indices.mapping.PutMapping;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.elasticsearch.common.settings.Settings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ElasticClient {
 
     Gson gson = new Gson();
     private final static Logger logger = LoggerFactory.getLogger(ElasticClient.class);
 
-    private List<BulkableAction> bulk;
+    private Map<DocumentIdentifier, BulkableAction> bulk;
     String STRING_NOT_ANALYZED = "{\"dynamic_templates\" : [{\"not_analyzed\" : {\"match\" : \"*\",\"match_mapping_type\" : \"string\", \"mapping\" : {\"type\" : \"string\",\"index\" : \"not_analyzed\"}}}]}";
 
     private final JestClient client;
@@ -43,7 +44,10 @@ public class ElasticClient {
             JestResult existsResult = client.execute(indicesExistsRequest);
             logger.debug("indexExistsRequests result: {}", existsResult);
             if (!existsResult.isSucceeded()) {
-                Settings settings = Settings.settingsBuilder().put("index.analysis.analyzer.default.type", "keyword").build();
+                Settings settings = Settings.settingsBuilder()
+                        .put("index.analysis.analyzer.default.type", "keyword")
+                        .put("index.store.type", "mmapfs")
+                        .build();
                 CreateIndex createIndexRequest = new CreateIndex.Builder(indexName).settings(settings).build();
                 execute(createIndexRequest);
                 //TODO: Make this work. Using the above "keyword" configuration in the meantime.
@@ -66,14 +70,16 @@ public class ElasticClient {
         return execute(putMapping);
     }
 
-    public void bulk(BulkableAction action) {
+    public void bulk(Element element, BulkableAction action) {
         if(bulk != null && bulk.size() >= 500) refresh();
-        if(bulk == null) bulk = new ArrayList<>();
-        bulk.add(action);    }
+        if(bulk == null) bulk = new HashMap<>();
+        DocumentIdentifier documentIdentifier = new DocumentIdentifier(element, action.getId(), action.getType(), action.getIndex());
+        bulk.put(documentIdentifier, action);
+    }
 
     public void refresh() {
         if(bulk != null) {
-            Bulk bulkAction = new Bulk.Builder().addAction(this.bulk).refresh(true).build();
+            Bulk bulkAction = new Bulk.Builder().addAction(this.bulk.values()).refresh(true).build();
             JestResult res = execute(bulkAction);
             bulk = null;
         }
@@ -97,5 +103,39 @@ public class ElasticClient {
     public void close() {
         logger.info("shutting down client, client: {}", client);
         client.shutdownClient();
+    }
+
+
+    public class DocumentIdentifier {
+        private Element element;
+        private final String id;
+        private final String type;
+        private final String index;
+
+        public DocumentIdentifier(Element element, String id, String type, String index) {
+            this.element = element;
+            this.id = id;
+            this.type = type;
+            this.index = index;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            DocumentIdentifier that = (DocumentIdentifier) o;
+
+            if (!element.equals(that.element)) return false;
+            if (!id.equals(that.id)) return false;
+            if (!type.equals(that.type)) return false;
+            return index.equals(that.index);
+
+        }
+
+        @Override
+        public int hashCode() {
+            return id.hashCode();
+        }
     }
 }

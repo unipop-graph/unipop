@@ -17,6 +17,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.unipop.elastic.common.ElasticClient;
 import org.unipop.elastic.common.FilterHelper;
+import org.unipop.elastic.document.Document;
 import org.unipop.elastic.document.DocumentSchema;
 import org.unipop.query.predicates.PredicateQuery;
 import org.unipop.query.predicates.PredicatesHolder;
@@ -49,26 +50,18 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
     }
 
     @Override
-    public Search getSearch(SearchQuery<E> query, PredicatesHolder predicatesHolder) {
-        if (predicatesHolder.isAborted()) return null;
-
-        if (predicatesHolder.findKey("_type") == null && this.type != null) {
-            PredicatesHolder type = PredicatesHolderFactory.predicate(new HasContainer("_type", P.eq(this.type)));
-            predicatesHolder = PredicatesHolderFactory.and(predicatesHolder, type);
-        }
-
+    public Search getSearch(SearchQuery<E> query) {
+        PredicatesHolder predicatesHolder = this.toPredicates(query.getPredicates());
         QueryBuilder queryBuilder = createQueryBuilder(predicatesHolder);
-        return createSearch(query, queryBuilder).build();
+        return createSearch(query, queryBuilder);
     }
 
     protected QueryBuilder createQueryBuilder(PredicatesHolder predicatesHolder) {
-        QueryBuilder queryBuilder = FilterHelper.createFilterBuilder(predicatesHolder);
-        queryBuilder = QueryBuilders.constantScoreQuery(queryBuilder);
-        queryBuilder = QueryBuilders.indicesQuery(queryBuilder, index).noMatchQuery("none");
-        return queryBuilder;
+        return FilterHelper.createFilterBuilder(predicatesHolder);
     }
 
-    protected Search.Builder createSearch(SearchQuery<E> query, QueryBuilder queryBuilder) {
+    protected Search createSearch(SearchQuery<E> query, QueryBuilder queryBuilder) {
+        if(queryBuilder == null) return null;
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(queryBuilder)
                 .size(query.getLimit() == -1 ? 10000 : query.getLimit());
 
@@ -79,7 +72,9 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
             else searchSourceBuilder.fetchSource(fields.toArray(new String[fields.size()]), null);
         }
 
-        return new Search.Builder(searchSourceBuilder.toString().replace("\n", ""));
+        Search.Builder builder = new Search.Builder(searchSourceBuilder.toString().replace("\n", ""))
+                .addIndex(index);
+        return builder.build();
     }
 
     @Override
@@ -124,7 +119,7 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
         return new Delete.Builder(document.getId()).index(document.getIndex()).type(document.getType());
     }
 
-    protected Document toDocument(E element) {
+    public Document toDocument(E element) {
         Map<String, Object> fields = this.toFields(element);
         if(fields == null) return null;
         String type = ObjectUtils.firstNonNull(fields.remove("_type"), this.type).toString();
@@ -150,33 +145,4 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
         return type != null && (this.type == null || this.type.equals(type));
     }
 
-    public class Document {
-        private final String index;
-        private final String type;
-        private final String id;
-        private final Map<String, Object> fields;
-
-        public Document(String index, String type, String id, Map<String, Object> fields) {
-            this.index = index;
-            this.type = type;
-            this.id = id;
-            this.fields = fields;
-        }
-
-        public String getIndex() {
-            return index;
-        }
-
-        public String getType() {
-            return type;
-        }
-
-        public String getId() {
-            return id;
-        }
-
-        public Map<String, Object> getFields() {
-            return fields;
-        }
-    }
 }

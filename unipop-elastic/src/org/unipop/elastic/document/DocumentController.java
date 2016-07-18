@@ -7,11 +7,9 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
-import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.elastic.common.ElasticClient;
 import org.unipop.query.controller.SimpleController;
 import org.unipop.query.mutation.AddEdgeQuery;
@@ -29,10 +27,12 @@ import org.unipop.structure.UniGraph;
 import org.unipop.structure.UniVertex;
 
 import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
-
-import static org.unipop.common.util.LogHelper.formatCollection;
 
 public class DocumentController implements SimpleController {
     private static final Logger logger = LoggerFactory.getLogger(DocumentController.class);
@@ -46,32 +46,60 @@ public class DocumentController implements SimpleController {
     public DocumentController(Set<DocumentSchema> schemas, ElasticClient client, UniGraph graph) {
         this.client = client;
         this.graph = graph;
-        logger.debug("instantiated logger with ElasticClient: {}, UniGraph: {}. Schemas: {}",
-                this.client,
-                this.graph,
-                formatCollection(schemas));
 
-        extractDocumentSchemas(schemas);
+        Set<DocumentSchema> documentSchemas = collectSchemas(schemas);
+        this.vertexSchemas = documentSchemas.stream().filter(schema -> schema instanceof DocumentVertexSchema)
+                .map(schema -> ((DocumentVertexSchema)schema)).collect(Collectors.toSet());
+        this.edgeSchemas = documentSchemas.stream().filter(schema -> schema instanceof DocumentEdgeSchema)
+                .map(schema -> ((DocumentEdgeSchema)schema)).collect(Collectors.toSet());
+
+        logger.debug("Instantiated DocumentController: {}", this);
+    }
+
+    private Set<DocumentSchema> collectSchemas(Set<? extends ElementSchema> schemas) {
+        Set<DocumentSchema> docSchemas = new HashSet<>();
+
+        schemas.forEach(schema -> {
+            if(schema instanceof DocumentSchema) {
+                docSchemas.add((DocumentSchema) schema);
+                Set<DocumentSchema> childSchemas = collectSchemas(schema.getChildSchemas());
+                docSchemas.addAll(childSchemas);
+            }
+        });
+        return docSchemas;
+    }
+
+    @Override
+    public String toString() {
+        return "DocumentController{" +
+                "client=" + client +
+                ", vertexSchemas=" + vertexSchemas +
+                ", edgeSchemas=" + edgeSchemas +
+                '}';
     }
 
     //region Query Controller
+
     @Override
     public <E extends Element>  Iterator<E> search(SearchQuery<E> uniQuery) {
         Set<? extends DocumentSchema<E>> schemas = getSchemas(uniQuery.getReturnType());
-        Function<DocumentSchema<E>, PredicatesHolder> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery.getPredicates());
-        return search(schemas, uniQuery, toPredicatesFunction);
+        Map<DocumentSchema<E>, Search> searches = schemas.stream()
+                .collect(new SearchCollector<>((schema) -> schema.getSearch(uniQuery)));
+        return search(uniQuery, searches);
     }
 
     @Override
     public Iterator<Edge> search(SearchVertexQuery uniQuery) {
-        Function<DocumentEdgeSchema, PredicatesHolder> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery.getVertices(), uniQuery.getDirection(), uniQuery.getPredicates());
-        return search(edgeSchemas, uniQuery, toPredicatesFunction);
+        Map<DocumentEdgeSchema, Search> schemas = edgeSchemas.stream()
+                .collect(new SearchCollector<>((schema) -> schema.getSearch(uniQuery)));
+        return search(uniQuery, schemas);
     }
 
     @Override
     public void fetchProperties(DeferredVertexQuery uniQuery) {
-        Function<DocumentVertexSchema, PredicatesHolder> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery.getVertices());
-        Iterator<Vertex> search = search(vertexSchemas, uniQuery, toPredicatesFunction);
+        Map<DocumentVertexSchema, Search> schemas = vertexSchemas.stream()
+                .collect(new SearchCollector<>((schema) -> schema.getSearch(uniQuery)));
+        Iterator<Vertex> search = search(uniQuery, schemas);
 
         Map<Object, DeferredVertex> vertexMap = uniQuery.getVertices().stream()
                 .collect(Collectors.toMap(UniElement::id, Function.identity(), (a, b) -> a));
@@ -127,28 +155,19 @@ public class DocumentController implements SimpleController {
             return (Set<? extends DocumentSchema<E>>) vertexSchemas;
         else return (Set<? extends DocumentSchema<E>>) edgeSchemas;
     }
+
     //endregion
 
     //region Elastic Queries
 
-    private <E extends Element, S extends DocumentSchema<E>> Iterator<E> search(Set<? extends S> allSchemas,
-                                                                                   SearchQuery<E> query,
-                                                                                   Function<S, PredicatesHolder> toSearchFunction) {
-        Map<S, Search> schemas = allSchemas.stream()
-                .map(schema -> Tuple.tuple(schema, toSearchFunction.apply(schema)))
-                .filter(tuple -> tuple.v2() != null)
-                .map(tuple -> Tuple.tuple(tuple.v1(), tuple.v1().getSearch(query, tuple.v2())))
-                .filter(tuple -> tuple.v2() != null)
-                .collect(Collectors.toMap(Tuple::v1, Tuple::v2));
-        logger.debug("Preparing search, query: {}, schemas: {}", query, schemas);
+    private <E extends Element, S extends DocumentSchema<E>> Iterator<E> search(SearchQuery<E> query, Map<S, Search> schemas) {
         if(schemas.size() == 0) return EmptyIterator.instance();
+        logger.debug("Preparing search. Schemas: {}", schemas);
 
         client.refresh();
         MultiSearch multiSearch = new MultiSearch.Builder(schemas.values()).build();
-        if(logger.isDebugEnabled()) logger.debug("created query: {}", multiSearch.getData(null));
         MultiSearchResult results = client.execute(multiSearch);
         if(results == null || !results.isSucceeded()) return EmptyIterator.instance();
-        logger.debug("Executed query, results: {}", results);
         Iterator<S> schemaIterator = schemas.keySet().iterator();
         return results.getResponses().stream().filter(this::valid).flatMap(result ->
                 schemaIterator.next().parseResults(result.searchResult.getJsonString(), query).stream()).iterator();
@@ -164,10 +183,10 @@ public class DocumentController implements SimpleController {
 
     private <E extends Element> void index(Set<? extends DocumentSchema<E>> schemas, E element, boolean create) {
         for(DocumentSchema<E> schema : schemas) {
-            BulkableAction<DocumentResult> index = schema.addElement(element, create);
-            if(index != null) {
-                logger.debug("indexing element with schema: {}, element: {}, index: {}, client: {}", schema, element, index, client);
-                client.bulk(index);
+            BulkableAction<DocumentResult> action = schema.addElement(element, create);
+            if(action != null) {
+                logger.debug("indexing element with schema: {}, element: {}, index: {}, client: {}", schema, element, action, client);
+                client.bulk(element, action);
             }
         }
     }
@@ -177,35 +196,50 @@ public class DocumentController implements SimpleController {
             Delete.Builder delete = schema.delete(element);
             if(delete != null) {
                 logger.debug("deleting element with schema: {}, element: {}, client: {}", schema, element, client);
-                client.bulk(delete.build());
+                client.bulk(element, delete.build());
             }
         }
     }
 
     //endregion
 
-    //region private helpers
-    private void extractDocumentSchemas(Set<DocumentSchema> schemas) {
-        logger.debug("extracting document schemas to element schemas, DocumentSchemas: {}", schemas);
-        Set<DocumentSchema> documentSchemas = collectSchemas(schemas);
-        this.vertexSchemas = documentSchemas.stream().filter(schema -> schema instanceof DocumentVertexSchema)
-                .map(schema -> ((DocumentVertexSchema)schema)).collect(Collectors.toSet());
-        this.edgeSchemas = documentSchemas.stream().filter(schema -> schema instanceof DocumentEdgeSchema)
-                .map(schema -> ((DocumentEdgeSchema)schema)).collect(Collectors.toSet());
-        logger.info("extraced document schemas, vertexSchemas: {}, edgeSchemas: {}", this.vertexSchemas, this.edgeSchemas);
-    }
+    public class SearchCollector<K, V> implements Collector<K, Map<K, V>, Map<K, V>> {
 
-    private Set<DocumentSchema> collectSchemas(Set<? extends ElementSchema> schemas) {
-        Set<DocumentSchema> docSchemas = new HashSet<>();
+        private final Function<? super K,? extends V> valueMapper;
 
-        schemas.forEach(schema -> {
-            if(schema instanceof DocumentSchema) {
-                docSchemas.add((DocumentSchema) schema);
-                Set<DocumentSchema> childSchemas = collectSchemas(schema.getChildSchemas());
-                docSchemas.addAll(childSchemas);
-            }
-        });
-        return docSchemas;
+        private SearchCollector(Function<? super K,? extends V> valueMapper) {
+            this.valueMapper = valueMapper;
+        }
+
+        @Override
+        public Supplier<Map<K, V>> supplier() {
+            return HashMap<K, V>::new;
+        }
+
+        @Override
+        public BiConsumer<Map<K, V>, K> accumulator() {
+            return (map, t) -> {
+                V value = valueMapper.apply(t);
+                if(value != null) map.put(t, value);
+            };
+        }
+
+        @Override
+        public BinaryOperator<Map<K, V>> combiner() {
+            return (map1, map2) -> {
+                map1.putAll(map2);
+                return map1;
+            };
+        }
+
+        @Override
+        public Function<Map<K, V>, Map<K, V>> finisher() {
+            return m -> m;
+        }
+
+        @Override
+        public Set<Collector.Characteristics> characteristics() {
+            return EnumSet.of(Collector.Characteristics.IDENTITY_FINISH);
+        }
     }
-    //endregion
 }

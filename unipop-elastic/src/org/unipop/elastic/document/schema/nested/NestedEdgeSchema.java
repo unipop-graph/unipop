@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import io.searchbox.action.BulkableAction;
 import io.searchbox.core.DocumentResult;
+import io.searchbox.core.Search;
 import io.searchbox.core.Update;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -11,17 +12,20 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.shaded.jackson.core.JsonProcessingException;
+import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.support.QueryInnerHitBuilder;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.unipop.elastic.common.ElasticClient;
-import org.unipop.elastic.common.FilterHelper;
+import org.unipop.elastic.document.Document;
 import org.unipop.elastic.document.DocumentEdgeSchema;
 import org.unipop.elastic.document.schema.AbstractDocSchema;
+import org.unipop.elastic.document.schema.DocVertexSchema;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
+import org.unipop.query.search.SearchQuery;
+import org.unipop.query.search.SearchVertexQuery;
 import org.unipop.schema.element.ElementSchema;
 import org.unipop.schema.element.VertexSchema;
 import org.unipop.structure.UniEdge;
@@ -33,11 +37,11 @@ import java.util.stream.Collectors;
 
 public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements DocumentEdgeSchema {
     private String path;
-    private final VertexSchema parentVertexSchema;
+    private final DocVertexSchema parentVertexSchema;
     private final VertexSchema childVertexSchema;
     private final Direction parentDirection;
 
-    public NestedEdgeSchema(VertexSchema parentVertexSchema, Direction parentDirection, String index, String type, String path, JSONObject configuration, ElasticClient client, UniGraph graph) throws JSONException {
+    public NestedEdgeSchema(DocVertexSchema parentVertexSchema, Direction parentDirection, String index, String type, String path, JSONObject configuration, ElasticClient client, UniGraph graph) throws JSONException {
         super(configuration, client, graph);
         this.index = index;
         this.type = type;
@@ -132,34 +136,57 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
     }
 
     @Override
-    public PredicatesHolder toPredicates(List<Vertex> vertices, Direction direction, PredicatesHolder predicates) {
-        PredicatesHolder edgePredicates = this.toPredicates(predicates);
-        PredicatesHolder vertexPredicates = this.getVertexPredicates(vertices, direction);
-        return PredicatesHolderFactory.and(edgePredicates, vertexPredicates);
-    }
-
-    protected PredicatesHolder getVertexPredicates(List<Vertex> vertices, Direction direction) {
-        PredicatesHolder parentPredicates = parentVertexSchema.toPredicates(vertices);
-        PredicatesHolder childPredicates = childVertexSchema.toPredicates(vertices);
-        if (direction.equals(parentDirection)) return parentPredicates;
-        if (direction.equals(parentDirection.opposite())) return childPredicates;
-        return PredicatesHolderFactory.or(parentPredicates, childPredicates); //Direction.BOTH
+    public Search getSearch(SearchQuery<Edge> query) {
+        PredicatesHolder predicatesHolder = this.toPredicates(query.getPredicates());
+        QueryBuilder queryBuilder = createQueryBuilder(predicatesHolder);
+        if(queryBuilder == null)  return null;
+        NestedQueryBuilder nestedQuery = QueryBuilders.nestedQuery(this.path, queryBuilder);
+        return createSearch(query, nestedQuery);
     }
 
     @Override
-    public QueryBuilder createQueryBuilder(PredicatesHolder predicatesHolder) {
-        QueryBuilder queryBuilder = FilterHelper.createFilterBuilder(predicatesHolder);
-        queryBuilder = QueryBuilders.nestedQuery(this.path, queryBuilder).innerHit(new QueryInnerHitBuilder().setFetchSource(false));
-        queryBuilder = QueryBuilders.indicesQuery(queryBuilder, index).noMatchQuery("none");
-        queryBuilder = QueryBuilders.constantScoreQuery(queryBuilder);
-        return queryBuilder;
+    public Search getSearch(SearchVertexQuery query) {
+        QueryBuilder queryBuilder = createQueryBuilder(query);
+        return createSearch(query, queryBuilder);
+    }
+
+    public QueryBuilder createQueryBuilder(SearchVertexQuery query) {
+        PredicatesHolder edgePredicates = this.toPredicates(query.getPredicates());
+        if(edgePredicates.isAborted()) return  null;
+
+        PredicatesHolder childPredicates = childVertexSchema.toPredicates(query.getVertices());
+        childPredicates = PredicatesHolderFactory.and(edgePredicates, childPredicates);
+        QueryBuilder childQuery = createNestedQueryBuilder(childPredicates);
+        if(query.getDirection().equals(parentDirection.opposite())) return childQuery;
+
+        PredicatesHolder parentPredicates = parentVertexSchema.toPredicates(query.getVertices());
+        QueryBuilder parentQuery = createQueryBuilder(parentPredicates);
+        if(parentQuery != null) {
+            QueryBuilder edgeQuery = createNestedQueryBuilder(edgePredicates);
+            if (edgeQuery != null) {
+                parentQuery = QueryBuilders.andQuery(parentQuery, edgeQuery);
+            }
+        }
+        if(query.getDirection().equals(parentDirection)) return parentQuery;
+
+        if(childQuery == null) return parentQuery;
+        if(parentQuery == null) return childQuery;
+        return QueryBuilders.orQuery(parentQuery, childQuery);
+
+    }
+
+    private QueryBuilder createNestedQueryBuilder(PredicatesHolder nestedPredicates) {
+        QueryBuilder nestedQuery = createQueryBuilder(nestedPredicates);
+        if(nestedQuery == null)  return null;
+        return QueryBuilders.nestedQuery(this.path, nestedQuery);
     }
 
     @Override
     public BulkableAction<DocumentResult> addElement(Edge edge, boolean create) {
         //TODO: use the 'create' parameter to differentiate between add and update
-        Document document = toDocument(edge);
-        if (document == null) return null;
+        Vertex parentVertex = parentDirection.equals(Direction.OUT) ? edge.outVertex() : edge.inVertex();
+        Document parentDoc = parentVertexSchema.toDocument(parentVertex);
+        if (parentDoc == null) return null;
         Map<String, Object> edgeFields = getFields(edge);
         Map<String, Object> childFields = getVertexFields(edge, parentDirection.opposite());
         Map<String, Object> nestedFields = ConversionUtils.merge(Lists.newArrayList(edgeFields, childFields), this::mergeFields, false);
@@ -175,9 +202,8 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
             HashMap<String, Object> docMap = new HashMap<>();
             docMap.put("params", params);
             docMap.put("script", UPDATE_SCRIPT);
-            docMap.put("upsert", document.getFields());
             String json = mapper.writeValueAsString(docMap);
-            return new Update.Builder(json).index(document.getIndex()).type(document.getType()).id(document.getId()).build();
+            return new Update.Builder(json).index(parentDoc.getIndex()).type(parentDoc.getType()).id(parentDoc.getId()).build();
         } catch (JsonProcessingException e) {
             e.printStackTrace();
             return null;
@@ -187,4 +213,5 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
     static String UPDATE_SCRIPT = "if (!ctx._source.containsKey(path)) {ctx._source[path] = [nestedDoc]}; " +
             "else { items_to_remove = []; ctx._source[path].each { item -> if (item[idField] == edgeId) { items_to_remove.add(item); } };" +
             "items_to_remove.each { item -> ctx._source[path].remove(item) }; ctx._source[path] += nestedDoc;}";
+
 }

@@ -2,15 +2,18 @@ package org.unipop.elastic.document.schema;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import io.searchbox.core.Search;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.unipop.elastic.common.ElasticClient;
 import org.unipop.elastic.document.DocumentEdgeSchema;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
+import org.unipop.query.search.SearchVertexQuery;
 import org.unipop.schema.element.ElementSchema;
 import org.unipop.schema.element.VertexSchema;
 import org.unipop.schema.reference.ReferenceVertexSchema;
@@ -73,10 +76,12 @@ public class DocEdgeSchema extends AbstractDocSchema<Edge> implements DocumentEd
     }
 
     @Override
-    public PredicatesHolder toPredicates(List<Vertex> vertices, Direction direction, PredicatesHolder predicates) {
-        PredicatesHolder edgePredicates = this.toPredicates(predicates);
-        PredicatesHolder vertexPredicates = this.getVertexPredicates(vertices, direction);
-        return PredicatesHolderFactory.and(edgePredicates, vertexPredicates);
+    public Search getSearch(SearchVertexQuery query) {
+        PredicatesHolder edgePredicates = this.toPredicates(query.getPredicates());
+        PredicatesHolder vertexPredicates = this.getVertexPredicates(query.getVertices(), query.getDirection());
+        PredicatesHolder predicatesHolder = PredicatesHolderFactory.and(edgePredicates, vertexPredicates);
+        QueryBuilder queryBuilder = createQueryBuilder(predicatesHolder);
+        return createSearch(query, queryBuilder);
     }
 
     protected PredicatesHolder getVertexPredicates(List<Vertex> vertices, Direction direction) {
@@ -94,4 +99,5 @@ public class DocEdgeSchema extends AbstractDocSchema<Edge> implements DocumentEd
                 ", type='" + type + '\'' +
                 '}';
     }
+
 }

@@ -54,7 +54,6 @@ public abstract class AbstractPropertyContainer {
         return "AbstractPropertyContainer{" +
                 "dynamicProperties=" + dynamicProperties +
                 ", graph=" + graph +
-                ", json=" + json +
                 ", propertySchemas=" + propertySchemas +
                 '}';
     }

@@ -5,12 +5,18 @@ import org.apache.tinkerpop.gremlin.GraphManager;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.unipop.elastic.test.ElasticGraphProvider;
+import org.unipop.elastic.ElasticGraphProvider;
 
 import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.out;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class TemporaryTests extends AbstractGremlinTest {
 
@@ -33,9 +39,11 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void test_a() {
-        Traversal t = g.V().has("age", P.gt(30));
-
-        check(t);
+        final Traversal<Object, Vertex> traversal = out().out();
+        assertFalse(traversal.hasNext());
+        traversal.asAdmin().addStarts(traversal.asAdmin().getTraverserGenerator().generateIterator(g.V(), traversal.asAdmin().getSteps().get(0), 1l));
+        assertTrue(traversal.hasNext());
+        assertEquals(2, IteratorUtils.count(traversal));
     }
 
     @Test
