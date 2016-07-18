@@ -61,11 +61,6 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
     }
 
     @Override
-    public Graph openTestGraph(Configuration config) {
-        return super.openTestGraph(config);
-    }
-
-    @Override
     public Object convertId(Object id, Class<? extends Element> c) {
         return id.toString();
     }
