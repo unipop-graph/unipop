@@ -28,12 +28,6 @@
             <groupId>org.apache.tinkerpop</groupId>
             <artifactId>gremlin-test</artifactId>
             <version>${tinkerpop.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.h2database</groupId>
-                    <artifactId>h2</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

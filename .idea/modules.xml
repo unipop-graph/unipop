@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/unipop.iml" filepath="$PROJECT_DIR$/unipop.iml" />
+      <module fileurl="file://$PROJECT_DIR$/unipop-core/unipop-core.iml" filepath="$PROJECT_DIR$/unipop-core/unipop-core.iml" />
+      <module fileurl="file://$PROJECT_DIR$/unipop-elastic/unipop-elastic.iml" filepath="$PROJECT_DIR$/unipop-elastic/unipop-elastic.iml" />
+      <module fileurl="file://$PROJECT_DIR$/unipop-jdbc/unipop-jdbc.iml" filepath="$PROJECT_DIR$/unipop-jdbc/unipop-jdbc.iml" />
+      <module fileurl="file://$PROJECT_DIR$/unipop-test/unipop-test.iml" filepath="$PROJECT_DIR$/unipop-test/unipop-test.iml" />
+    </modules>
+  </component>
+</project>
