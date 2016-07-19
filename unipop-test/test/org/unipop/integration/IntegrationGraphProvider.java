@@ -29,9 +29,12 @@ public class IntegrationGraphProvider extends UnipopGraphProvider {
         baseConfiguration.put("bulk.multiplier", 10);
 
         String configurationFile = getSchemaConfiguration(loadGraphWith);
-        URL jdbcUrl = this.getClass().getResource("/configuration/jdbc/" + configurationFile);
-//        URL elasticUrl = this.getClass().getResource("/configuration/elastic/" + configurationFile);
-        baseConfiguration.put("providers", jdbcUrl.getFile());//+ ";" + elasticUrl.getFile());
+        if(configurationFile != null) {
+            URL jdbcUrl = this.getClass().getResource("/configuration/jdbc/" + configurationFile);
+            URL elasticUrl = this.getClass().getResource("/configuration/elastic/" + configurationFile);
+            baseConfiguration.put("providers", jdbcUrl.getFile() + ";" + elasticUrl.getFile());
+        }
+        else baseConfiguration.put("providers", "/configuration/basic.json");
 
         return baseConfiguration;
     }
@@ -39,12 +42,13 @@ public class IntegrationGraphProvider extends UnipopGraphProvider {
     public String getSchemaConfiguration(LoadGraphWith.GraphData loadGraphWith) {
         if (loadGraphWith != null) {
             switch (loadGraphWith) {
-                case MODERN: return "modern.json";
+                case MODERN:
+                    return "modern.json";
 //                case CREW: return CrewConfiguration;
 //                case GRATEFUL: return GratefulConfiguration;
             }
         }
-        return "modern.json";
+        return null;
     }
 
     @Override

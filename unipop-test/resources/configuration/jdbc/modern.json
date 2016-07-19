@@ -7,7 +7,7 @@
     {
       "table": "SOFTWARE_MODERN",
       "id": "@ID",
-      "label": "@LABEL",
+      "label": "software",
       "properties": {
         "name": "@NAME",
         "lang": "@LANG",
