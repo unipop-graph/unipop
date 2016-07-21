@@ -21,3 +21,4 @@ target/
 build/
 
 */test.sqlite*
+.idea/dictionaries/
