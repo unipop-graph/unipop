@@ -185,7 +185,8 @@ public class UniGraph implements Graph {
         if (labelValue.isPresent()) ElementHelper.validateLabel(labelValue.get());
         Map<String, Object> stringObjectMap = ConversionUtils.asMap(keyValues);
         return controllerManager.getControllers(AddVertexQuery.AddVertexController.class).stream()
-                .map(controller -> controller.addVertex(new AddVertexQuery(stringObjectMap, null)))
+                .map(controller -> controller.addVertex(new AddVertexQuery(ConversionUtils.asMap(keyValues), null)))
+                .filter(v -> v != null)
                 .findFirst().get();
     }
 

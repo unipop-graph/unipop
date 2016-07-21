@@ -113,26 +113,26 @@ public class DocumentController implements SimpleController {
     public Edge addEdge(AddEdgeQuery uniQuery) {
         UniEdge edge = new UniEdge(uniQuery.getProperties(), uniQuery.getOutVertex(), uniQuery.getInVertex(), graph);
         try {
-            index(this.edgeSchemas, edge, true);
+            if(index(this.edgeSchemas, edge, true)) return edge;
         }
         catch(DocumentAlreadyExistsException ex) {
             logger.warn("Document already exists in elastic", ex);
             throw Graph.Exceptions.edgeWithIdAlreadyExists(edge.id());
         }
-        return edge;
+        return null;
     }
 
     @Override
     public Vertex addVertex(AddVertexQuery uniQuery) {
         UniVertex vertex = new UniVertex(uniQuery.getProperties(), graph);
         try {
-            index(this.vertexSchemas, vertex, true);
+            if(index(this.vertexSchemas, vertex, true)) return vertex;
         }
         catch(DocumentAlreadyExistsException ex){
             logger.warn("Document already exists in elastic", ex);
             throw Graph.Exceptions.vertexWithIdAlreadyExists(vertex.id());
         }
-        return vertex;
+        return null;
     }
 
     @Override
@@ -181,14 +181,17 @@ public class DocumentController implements SimpleController {
         return true;
     }
 
-    private <E extends Element> void index(Set<? extends DocumentSchema<E>> schemas, E element, boolean create) {
+    private <E extends Element> boolean index(Set<? extends DocumentSchema<E>> schemas, E element, boolean create) {
         for(DocumentSchema<E> schema : schemas) {
             BulkableAction<DocumentResult> action = schema.addElement(element, create);
             if(action != null) {
                 logger.debug("indexing element with schema: {}, element: {}, index: {}, client: {}", schema, element, action, client);
                 client.bulk(element, action);
+                return true;
             }
         }
+        return false
+                ;
     }
 
     private <E extends Element> void delete(Set<? extends DocumentSchema<E>> schemas, E element) {

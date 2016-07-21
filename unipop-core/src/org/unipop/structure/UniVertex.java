@@ -13,6 +13,7 @@ import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.SearchVertexQuery;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -101,9 +102,9 @@ public class UniVertex extends UniElement implements Vertex {
         ElementHelper.validateLabel(label);
         Map<String, Object> stringObjectMap = ConversionUtils.asMap(keyValues);
         stringObjectMap.put(T.label.toString(), label);
-        AddEdgeQuery addEdgeQuery = new AddEdgeQuery(this, vertex, stringObjectMap, null);
         return graph.getControllerManager().getControllers(AddEdgeQuery.AddEdgeController.class).stream()
-                .map(controller -> controller.addEdge(addEdgeQuery))
+                .map(controller -> controller.addEdge(new AddEdgeQuery(this, vertex, new HashMap<>(stringObjectMap), null)))
+                .filter(e -> e != null)
                 .findFirst().get();
     }
 

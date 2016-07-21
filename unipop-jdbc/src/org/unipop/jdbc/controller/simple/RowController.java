@@ -106,24 +106,24 @@ public class RowController implements SimpleController {
     public Edge addEdge(AddEdgeQuery uniQuery) {
         UniEdge edge = new UniEdge(uniQuery.getProperties(), uniQuery.getOutVertex(), uniQuery.getInVertex(), this.graph);
         try {
-            this.insert(edgeSchemas, edge);
+            if(this.insert(edgeSchemas, edge)) return edge;
         } catch (DataAccessException ex) {
             throw Graph.Exceptions.edgeWithIdAlreadyExists(edge.id());
         }
 
-        return edge;
+        return null;
     }
 
     @Override
     public Vertex addVertex(AddVertexQuery uniQuery) {
         UniVertex vertex = new UniVertex(uniQuery.getProperties(), this.graph);
         try {
-            this.insert(this.vertexSchemas, vertex);
+            if(this.insert(this.vertexSchemas, vertex)) return vertex;
         } catch (DataAccessException ex) {
             throw Graph.Exceptions.vertexWithIdAlreadyExists(vertex.id());
         }
 
-        return vertex;
+        return null;
     }
 
     @Override
@@ -181,7 +181,7 @@ public class RowController implements SimpleController {
         return collect.iterator();
     }
 
-    private <E extends Element> void insert(Set<? extends JdbcSchema<E>> schemas, E element) {
+    private <E extends Element> boolean insert(Set<? extends JdbcSchema<E>> schemas, E element) {
         for (JdbcSchema<E> schema : schemas) {
             Query query = schema.getInsertStatement(element);
             if (query == null) continue;
@@ -192,7 +192,9 @@ public class RowController implements SimpleController {
             if (changeSetCount == 0) {
                 logger.error("no rows changed on insertion. query: {}, element: {}", dslContext.render(query), element);
             }
+            return true;
         }
+        return false;
     }
 
     private <E extends Element> void update(Set<? extends JdbcSchema<E>> schemas, E element) {
