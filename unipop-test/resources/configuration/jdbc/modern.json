@@ -10,8 +10,7 @@
       "label": "software",
       "properties": {
         "name": "@NAME",
-        "lang": "@LANG",
-        "age": "@AGE"
+        "lang": "@LANG"
       }
     }
   ],
@@ -21,7 +20,8 @@
       "id": "@ID",
       "label": "@LABEL",
       "properties": {
-        "weight": "@WEIGHT"
+        "weight": "@WEIGHT",
+        "year": "@YEAR"
       },
       "dynamicProperties": false,
       "outVertex": {

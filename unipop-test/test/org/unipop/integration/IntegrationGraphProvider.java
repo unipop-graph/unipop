@@ -34,7 +34,10 @@ public class IntegrationGraphProvider extends UnipopGraphProvider {
             URL elasticUrl = this.getClass().getResource("/configuration/elastic/" + configurationFile);
             baseConfiguration.put("providers", jdbcUrl.getFile() + ";" + elasticUrl.getFile());
         }
-        else baseConfiguration.put("providers", "/configuration/basic.json");
+        else {
+            URL defaultSchema = this.getClass().getResource("/configuration/basic.json");
+            baseConfiguration.put("providers", defaultSchema.getFile());
+        }
 
         return baseConfiguration;
     }
