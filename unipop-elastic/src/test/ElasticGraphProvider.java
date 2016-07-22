@@ -22,9 +22,9 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
 
     public ElasticGraphProvider() throws Exception{
         //patch for failing IO tests that write to disk
-        System.setProperty("build.dir", System.getProperty("user.dir") + "\\build");
+        System.setProperty("build.dir", System.getProperty("user.dir") + "/build");
 
-        String path = new java.io.File( "." ).getCanonicalPath() + "\\data";
+        String path = new java.io.File( "." ).getCanonicalPath() + "/data";
         this.dataPath = new File(path);
         this.node = new LocalNode(dataPath);
     }
