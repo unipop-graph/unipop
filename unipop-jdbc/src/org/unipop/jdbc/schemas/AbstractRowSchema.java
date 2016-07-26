@@ -24,7 +24,7 @@ import static org.jooq.impl.DSL.table;
  * @since 3/7/2016
  */
 public abstract class AbstractRowSchema<E extends Element> extends AbstractElementSchema<E> implements JdbcSchema<E> {
-    private final String table;
+    protected String table;
 
     public AbstractRowSchema(JSONObject configuration, UniGraph graph) {
         super(configuration, graph);
