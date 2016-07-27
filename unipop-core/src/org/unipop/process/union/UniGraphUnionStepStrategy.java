@@ -46,8 +46,8 @@ public class UniGraphUnionStepStrategy extends AbstractTraversalStrategy<Travers
             Traversal.Admin[] traversals = (Traversal.Admin[]) unionStep.getGlobalChildren().toArray(new Traversal.Admin[0]);
             for (Traversal.Admin admin : traversals) {
                 if (TraversalHelper.getLastStepOfAssignableClass(ReducingBarrierStep.class, admin).isPresent() ||
-                        TraversalHelper.getLastStepOfAssignableClass(SelectOneStep.class, admin).isPresent() ||
-                        TraversalHelper.getLastStepOfAssignableClass(SelectStep.class, admin).isPresent() ||
+//                        TraversalHelper.getLastStepOfAssignableClass(SelectOneStep.class, admin).isPresent() ||
+//                        TraversalHelper.getLastStepOfAssignableClass(SelectStep.class, admin).isPresent() ||
                         traversal.getParent() instanceof RepeatStep)
                     return;
             }

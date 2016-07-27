@@ -4,6 +4,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
+import org.apache.tinkerpop.gremlin.structure.util.Attachable;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.unipop.process.UniBulkStep;
@@ -38,12 +39,19 @@ public class UniGraphUnionStep<S,E> extends UniBulkStep<S,E> implements Traversa
 
     @Override
     protected Iterator<Traverser.Admin<E>> process(List<Traverser.Admin<S>> traversers) {
+        List<Traverser.Admin<S>> bulkedTraversers = traversers.stream().collect(Collectors.groupingBy(Attachable::get)).entrySet().stream().map(entry -> {
+            Traverser.Admin<S> sAdmin = entry.getValue().get(0);
+            sAdmin.setBulk(entry.getValue().size());
+            return sAdmin;
+        }).collect(Collectors.toList());
+
         List<Traverser.Admin<E>> results = new ArrayList<>();
         this.unionTraversals.forEach(t->{
-            traversers.forEach(((Traversal.Admin<S, E>) t)::addStart);
+            bulkedTraversers.forEach(((Traversal.Admin<S, E>) t)::addStart);
             while(t.hasNext())
                 results.add((Traverser.Admin<E>) t.next());
         });
+        results.forEach(t -> t.setBulk(1));
         return results.iterator();
     }
 
