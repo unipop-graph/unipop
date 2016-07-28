@@ -62,7 +62,9 @@ public class MultiFieldPropertySchema implements PropertySchema {
 
     @Override
     public Set<String> toFields(Set<String> propertyKeys) {
-        return propertyKeys.contains(key) ? new HashSet<>(fields) : Collections.emptySet();
+        return propertyKeys.contains(key) ? fields.stream()
+                .filter(s -> s.startsWith("@")).map(s -> s.substring(1)).collect(Collectors.toSet()) :
+                Collections.emptySet();
     }
 
     @Override

@@ -7,11 +7,13 @@ import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.unipop.query.mutation.PropertyQuery;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
 public class UniEdge extends UniElement implements Edge {
 
+    protected Map<String, Property> properties;
     protected Vertex inVertex;
     protected Vertex outVertex;
 
@@ -20,6 +22,13 @@ public class UniEdge extends UniElement implements Edge {
 
         this.outVertex = outV;
         this.inVertex = inV;
+        this.properties = new HashMap<>();
+        keyValues.forEach(this::addPropertyLocal);
+    }
+
+    @Override
+    protected Map<String, Property> getPropertiesMap() {
+        return properties;
     }
 
     @Override

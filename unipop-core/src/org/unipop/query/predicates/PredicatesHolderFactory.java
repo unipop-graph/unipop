@@ -50,6 +50,10 @@ public class PredicatesHolderFactory {
         return new PredicatesHolder(PredicatesHolder.Clause.And, predicates, children);
     }
 
+    public static PredicatesHolder or(HasContainer... predicates){
+        return new PredicatesHolder(PredicatesHolder.Clause.Or, Arrays.asList(predicates), null);
+    }
+
     public static PredicatesHolder or(PredicatesHolder... predicatesHolders) {
         return or(Sets.newHashSet(predicatesHolders));
     }

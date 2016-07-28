@@ -9,8 +9,7 @@ import org.unipop.query.mutation.RemoveQuery;
 
 import java.util.*;
 
-public abstract class UniElement implements Element{
-    protected HashMap<String, Property> properties = new HashMap<>();
+public abstract class UniElement implements Element {
     protected String id;
     protected String label;
     protected UniGraph graph;
@@ -29,16 +28,16 @@ public abstract class UniElement implements Element{
                 properties.remove(T.label.toString()),
                 getDefaultLabel())
                 .toString();
-
-        properties.forEach(this::addPropertyLocal);
     }
+
+    protected abstract Map<String, Property> getPropertiesMap();
 
     protected abstract String getDefaultLabel();
 
     protected Property addPropertyLocal(String key, Object value) {
         ElementHelper.validateProperty(key, value);
         Property property = createProperty(key, value);
-        properties.put(key, property);
+        getPropertiesMap().put(key, property);
         return property;
     }
 
@@ -59,12 +58,12 @@ public abstract class UniElement implements Element{
 
     @Override
     public Set<String> keys() {
-        return this.properties.keySet();
+        return this.getPropertiesMap().keySet();
     }
 
     @Override
     public <V> Property<V> property(final String key) {
-        return this.properties.containsKey(key) ? this.properties.get(key) : Property.<V>empty();
+        return this.getPropertiesMap().containsKey(key) ? this.getPropertiesMap().get(key) : Property.<V>empty();
     }
 
     @Override
@@ -79,7 +78,7 @@ public abstract class UniElement implements Element{
     }
 
     protected Iterator propertyIterator(String[] propertyKeys) {
-        HashMap<String, Property> properties = (HashMap<String, Property>) this.properties.clone();
+        Map<String, Property> properties = this.getPropertiesMap();
 
         if (propertyKeys.length > 0)
             return properties.entrySet().stream().filter(entry -> ElementHelper.keyExists(entry.getKey(), propertyKeys)).map(x -> x.getValue()).iterator();
@@ -88,7 +87,7 @@ public abstract class UniElement implements Element{
     }
 
     public void removeProperty(Property property) {
-        properties.remove(property.key());
+        getPropertiesMap().remove(property.key());
         PropertyQuery<UniElement> propertyQuery = new PropertyQuery<>(this, property, PropertyQuery.Action.Remove, null);
         this.graph.getControllerManager().getControllers(PropertyQuery.PropertyController.class).forEach(controller ->
                 controller.property(propertyQuery));
@@ -116,13 +115,14 @@ public abstract class UniElement implements Element{
         properties.put(T.id.getAccessor(), element.id());
         properties.put(T.label.getAccessor(), element.label());
         element.properties().forEachRemaining(property -> properties.put(property.key(), property.value()));
-        return properties;
-    }
+
+    return properties;
+}
 
     @Override
     public String toString() {
         return "UniElement{" +
-                "properties=" + properties +
+                "properties=" + getPropertiesMap() +
                 ", id='" + id + '\'' +
                 ", label='" + label + '\'' +
                 ", graph=" + graph +

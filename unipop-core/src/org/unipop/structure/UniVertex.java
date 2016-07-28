@@ -1,5 +1,6 @@
 package org.unipop.structure;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
@@ -12,15 +13,21 @@ import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.SearchVertexQuery;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 public class UniVertex extends UniElement implements Vertex {
 
+    protected Map<String, List<VertexProperty>> properties;
+
     public UniVertex(Map<String, Object> keyValues, UniGraph graph) {
         super(keyValues, graph);
+        this.properties = new HashMap<>();
+        keyValues.forEach(this::addPropertyLocal);
+    }
+
+    @Override
+    protected Map<String, Property> getPropertiesMap() {
+        throw new NotImplementedException();
     }
 
     @Override
@@ -34,10 +41,27 @@ public class UniVertex extends UniElement implements Vertex {
     }
 
     @Override
+    protected Property addPropertyLocal(String key, Object value) {
+        ElementHelper.validateProperty(key, value);
+        UniVertexProperty property = (UniVertexProperty) createProperty(key, value);
+        properties.put(key, new ArrayList<VertexProperty>(){{add(property);}});
+        return property;
+    }
+
+    @Override
     public <V> VertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value, final Object... keyValues) {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
-        if (keyValues != null && keyValues.length > 0) throw VertexProperty.Exceptions.metaPropertiesNotSupported();
-        return this.property(key, value);
+        final Optional<VertexProperty<V>> optionalVertexProperty = ElementHelper.stageVertexProperty(this, cardinality, key, value, keyValues);
+        if (optionalVertexProperty.isPresent()) return optionalVertexProperty.get();
+
+        final VertexProperty<V> vertexProperty = new UniVertexProperty<V>(this, key, value);
+
+        if (null == this.properties) this.properties = new HashMap<>();
+        final ArrayList<VertexProperty> list = (ArrayList<VertexProperty>) this.properties.getOrDefault(key, new ArrayList<>());
+        list.add(vertexProperty);
+        this.properties.put(key, list);
+        ElementHelper.attachProperties(vertexProperty, keyValues);
+        return vertexProperty;
     }
 
     @Override
@@ -67,11 +91,11 @@ public class UniVertex extends UniElement implements Vertex {
             case BOTH:
                 Vertex outV = edge.outVertex();
                 Vertex inV = edge.inVertex();
-                if(outV.id().equals(inV.id()))
+                if (outV.id().equals(inV.id()))
                     return outV; //points to self
-                if(source.id().equals(inV.id()))
+                if (source.id().equals(inV.id()))
                     return outV;
-                if(source.id().equals(outV.id()))
+                if (source.id().equals(outV.id()))
                     return inV;
             default:
                 throw new IllegalArgumentException(direction.toString());
@@ -121,7 +145,10 @@ public class UniVertex extends UniElement implements Vertex {
 
     @Override
     public <V> Iterator<VertexProperty<V>> properties(final String... propertyKeys) {
-        return propertyIterator(propertyKeys);
+        if (propertyKeys.length == 0)
+            return properties.values().stream().flatMap(l -> l.stream()).map(p -> ((VertexProperty<V>) p)).iterator();
+        List<String> keys = Arrays.asList(propertyKeys);
+        return properties.values().stream().flatMap(l -> l.stream()).map(p -> ((VertexProperty<V>) p)).filter(v -> keys.contains(v.key())).iterator();
     }
 
 }

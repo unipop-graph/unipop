@@ -182,7 +182,7 @@ public class UniFeatures implements Graph.Features {
 
         @Override
         public boolean supportsMultiProperties() {
-            return false;
+            return true;
         }
 
         @Override
@@ -229,7 +229,7 @@ public class UniFeatures implements Graph.Features {
 
         @Override
         public boolean supportsNumericIds() {
-            return false;
+            return true;
         }
 
         @Override

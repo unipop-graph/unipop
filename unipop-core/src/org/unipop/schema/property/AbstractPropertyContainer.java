@@ -77,9 +77,18 @@ public abstract class AbstractPropertyContainer {
             else throw new IllegalArgumentException("Unrecognized field: " + field + ", property: " + key + " - " + value);
         }
         else if(value instanceof JSONArray) {
-            return getMultiFieldProperty(key, (JSONArray) value, "_", nullable);
+            return getArrayProperty(key, (JSONArray) value, nullable);
         }
         else throw new IllegalArgumentException("Unrecognized property: " + key + " - " + value);
+    }
+
+    protected PropertySchema getArrayProperty(String key, JSONArray fieldsArray, boolean nullable){
+        List<String> fields = new ArrayList<>();
+        for(int i = 0; i < fieldsArray.length(); i++){
+            String field = fieldsArray.getString(i);
+            fields.add(field);
+        }
+        return new ArrayPropertySchema(key, fields);
     }
 
     protected PropertySchema getMultiFieldProperty(String key, JSONArray fieldsArray, String delimiter, boolean nullable) {
