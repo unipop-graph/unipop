@@ -92,9 +92,8 @@ public class MultiFieldPropertySchema implements PropertySchema {
                 P p = new P(predicate.getBiPredicate(), currentValue);
                 if (keys[i].startsWith("@"))
                     predicates.add(new HasContainer(keys[i].substring(1), p));
-                else
-                    if(!p.test(keys[i]))
-                        return PredicatesHolderFactory.abort();
+                else if (!p.test(keys[i]))
+                    return PredicatesHolderFactory.abort();
             }
         } else if (value instanceof Collection) {
             Collection values = (Collection) value;
@@ -105,7 +104,17 @@ public class MultiFieldPropertySchema implements PropertySchema {
                     addToList(predicatesValues, keys[i], split[i]);
                 }
             });
-            predicatesValues.entrySet().forEach(kv -> predicates.add(new HasContainer(kv.getKey(), new P(has.getBiPredicate(), kv.getValue()))));
+            final boolean[] abort = {false};
+            predicatesValues.entrySet().forEach(kv -> {
+                if (kv.getKey().startsWith("@"))
+                    predicates.add(new HasContainer(kv.getKey().substring(1), new P(has.getBiPredicate(), kv.getValue())));
+                else if (!new P(has.getBiPredicate(), kv.getValue()).test(kv.getKey())) {
+                    abort[0] = true;
+                    return;
+                }
+            });
+            if (abort[0])
+                return PredicatesHolderFactory.abort();
         }
         return PredicatesHolderFactory.and(predicates.toArray(new HasContainer[predicates.size()]));
     }
