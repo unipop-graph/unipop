@@ -21,7 +21,7 @@ import java.util.stream.Stream;
 public class UniGraphStartStep<S,E extends Element> extends GraphStep<S,E> implements ReceivesPredicatesHolder<S, E>, PropertyFetcher{
     private static final Logger logger = LoggerFactory.getLogger(UniGraphStartStep.class);
     private final StepDescriptor stepDescriptor;
-    List<SearchQuery.SearchController>  controllers;
+    private List<SearchQuery.SearchController>  controllers;
     private PredicatesHolder predicates = PredicatesHolderFactory.empty();
     private Set<String> propertyKeys;
     private int limit;

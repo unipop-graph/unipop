@@ -29,8 +29,9 @@ public class InnerRowEdgeSchema extends RowEdgeSchema {
     private final VertexSchema childVertexSchema;
 
 
-    public InnerRowEdgeSchema(JdbcVertexSchema parentVertexSchema, Direction parentDirection, JSONObject edgeJson, UniGraph graph) {
+    public InnerRowEdgeSchema(JdbcVertexSchema parentVertexSchema, Direction parentDirection, JSONObject edgeJson, String table, UniGraph graph) {
         super(edgeJson, graph);
+        this.table = table;
         this.parentVertexSchema = parentVertexSchema;
         this.childVertexSchema = createVertexSchema("vertex");
 

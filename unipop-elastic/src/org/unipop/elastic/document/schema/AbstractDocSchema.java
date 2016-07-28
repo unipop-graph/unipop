@@ -52,6 +52,7 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
     @Override
     public Search getSearch(SearchQuery<E> query) {
         PredicatesHolder predicatesHolder = this.toPredicates(query.getPredicates());
+        if (predicatesHolder.getClause().equals(PredicatesHolder.Clause.Abort)) return null;
         QueryBuilder queryBuilder = createQueryBuilder(predicatesHolder);
         return createSearch(query, queryBuilder);
     }
