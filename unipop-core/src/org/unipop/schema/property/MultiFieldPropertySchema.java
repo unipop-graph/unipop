@@ -25,7 +25,11 @@ public class MultiFieldPropertySchema implements PropertySchema {
     public Map<String, Object> toProperties(Map<String, Object> source) {
         String finalValue = null;
         for (String field : fields) {
-            Object value = source.get(field);
+            Object value;
+            if (field.startsWith("@"))
+                value = source.get(field.substring(1));
+            else
+                value = field;
             if (value == null) return Collections.emptyMap();
             finalValue = finalValue == null ? value.toString() : finalValue + delimiter + value.toString();
         }
@@ -86,7 +90,11 @@ public class MultiFieldPropertySchema implements PropertySchema {
                 P predicate = has.getPredicate().clone();
                 final Object currentValue = values[i];
                 P p = new P(predicate.getBiPredicate(), currentValue);
-                predicates.add(new HasContainer(keys[i], p));
+                if (keys[i].startsWith("@"))
+                    predicates.add(new HasContainer(keys[i].substring(1), p));
+                else
+                    if(!p.test(keys[i]))
+                        return PredicatesHolderFactory.abort();
             }
         } else if (value instanceof Collection) {
             Collection values = (Collection) value;
