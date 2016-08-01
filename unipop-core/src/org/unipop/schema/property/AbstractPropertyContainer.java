@@ -88,7 +88,7 @@ public abstract class AbstractPropertyContainer {
             String field = fieldsArray.getString(i);
             fields.add(field);
         }
-        return new ArrayPropertySchema(key, fields);
+        return new MultiFieldPropertySchema(key, fields);
     }
 
     protected PropertySchema getMultiFieldProperty(String key, JSONArray fieldsArray, String delimiter, boolean nullable) {
@@ -97,6 +97,6 @@ public abstract class AbstractPropertyContainer {
             String field = fieldsArray.getString(i);
             fields.add(field);
         }
-        return new MultiFieldPropertySchema(key, fields, delimiter, nullable);
+        return new ConcatenateFieldPropertySchema(key, fields, delimiter, nullable);
     }
 }

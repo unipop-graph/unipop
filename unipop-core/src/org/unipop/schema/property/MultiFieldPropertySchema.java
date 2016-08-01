@@ -1,5 +1,6 @@
 package org.unipop.schema.property;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.unipop.query.predicates.PredicatesHolder;
@@ -9,31 +10,28 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-
+/**
+ * Created by sbarzilay on 7/28/16.
+ */
 public class MultiFieldPropertySchema implements PropertySchema {
-    private final String key;
-    private final List<String> fields;
-    private String delimiter;
+    private String key;
+    private List<String> fields;
 
-    public MultiFieldPropertySchema(String key, List<String> fields, String delimiter, boolean nullable) {
+    public MultiFieldPropertySchema(String key, List<String> fields) {
         this.key = key;
         this.fields = fields;
-        this.delimiter = delimiter;
     }
 
     @Override
     public Map<String, Object> toProperties(Map<String, Object> source) {
-        String finalValue = null;
-        for (String field : fields) {
-            Object value;
+        List<Object> value = new ArrayList<>();
+        fields.forEach(field -> {
             if (field.startsWith("@"))
-                value = source.get(field.substring(1));
+                value.add(source.get(field.substring(1)));
             else
-                value = field;
-            if (value == null) return Collections.emptyMap();
-            finalValue = finalValue == null ? value.toString() : finalValue + delimiter + value.toString();
-        }
-        return Collections.singletonMap(key, finalValue);
+                value.add(field);
+        });
+        return Collections.singletonMap(key, value);
     }
 
     @Override
@@ -48,15 +46,6 @@ public class MultiFieldPropertySchema implements PropertySchema {
 
     @Override
     public Map<String, Object> toFields(Map<String, Object> properties) {
-//        Object value = properties.get(this.key);
-//        if (value == null) return Collections.emptyMap();
-//        Map<String, Object> result = new HashMap<>(fields.size());
-//        String[] values = value.toString().split(delimiter);
-//            //TODO: what if values.length != fields.length ??? o_O
-//            for (int i = 0; i < fields.size(); i++) {
-//                result.put(fields.get(i), values[i]);
-//            }
-//        return result;
         return Collections.emptyMap();
     }
 
@@ -75,49 +64,39 @@ public class MultiFieldPropertySchema implements PropertySchema {
         return PredicatesHolderFactory.create(predicatesHolder.getClause(), predicateHolders);
     }
 
-    private void addToList(Map<String, List> map, String key, Object value) {
-        if (!map.containsKey(key))
-            map.put(key, new ArrayList());
-        map.get(key).add(value);
-    }
-
-    private PredicatesHolder toPredicate(HasContainer has) {
-        String[] keys = fields.toArray(new String[fields.size()]);
-        Object value = has.getValue();
+    private PredicatesHolder toPredicate(HasContainer hasContainer) {
+        Object value = hasContainer.getValue();
         Set<HasContainer> predicates = new HashSet<>();
-        if (value instanceof String) {
-            String valueString = value.toString();
-            String[] values = valueString.split(delimiter);
-            for (int i = 0; i < keys.length; i++) {
-                P predicate = has.getPredicate().clone();
-                final Object currentValue = values[i];
-                P p = new P(predicate.getBiPredicate(), currentValue);
-                if (keys[i].startsWith("@"))
-                    predicates.add(new HasContainer(keys[i].substring(1), p));
-                else if (!p.test(keys[i]))
-                    return PredicatesHolderFactory.abort();
-            }
-        } else if (value instanceof Collection) {
-            Collection values = (Collection) value;
-            Map<String, List> predicatesValues = new HashMap<>();
-            values.forEach(v -> {
-                String[] split = v.toString().split(delimiter);
-                for (int i = 0; i < keys.length; i++) {
-                    addToList(predicatesValues, keys[i], split[i]);
+        if (value instanceof Collection) {
+            for (String field : fields) {
+                if (field.startsWith("@")) {
+                    for (Object v : ((Collection) value)) {
+                        HasContainer clone = new HasContainer(field.substring(1), new P(hasContainer.getBiPredicate(), v));
+                        predicates.add(clone);
+                    }
+                } else {
+                    if (new P(hasContainer.getBiPredicate(), hasContainer.getValue()).test(field)) {
+                        return PredicatesHolderFactory.empty();
+                    }
                 }
-            });
+            }
+        } else {
             final boolean[] abort = {false};
-            predicatesValues.entrySet().forEach(kv -> {
-                if (kv.getKey().startsWith("@"))
-                    predicates.add(new HasContainer(kv.getKey().substring(1), new P(has.getBiPredicate(), kv.getValue())));
-                else if (!new P(has.getBiPredicate(), kv.getValue()).test(kv.getKey())) {
-                    abort[0] = true;
-                    return;
+            fields.forEach(field -> {
+                if (field.startsWith("@")) {
+                    HasContainer clone = hasContainer.clone();
+                    clone.setKey(field.substring(1));
+                    predicates.add(clone);
+                } else {
+                    if (new P(hasContainer.getBiPredicate(), hasContainer.getValue()).test(field)) {
+                        abort[0] = true;
+                        return;
+                    }
                 }
             });
             if (abort[0])
-                return PredicatesHolderFactory.abort();
+                return PredicatesHolderFactory.empty();
         }
-        return PredicatesHolderFactory.and(predicates.toArray(new HasContainer[predicates.size()]));
+        return PredicatesHolderFactory.or(predicates.toArray(new HasContainer[predicates.size()]));
     }
 }
