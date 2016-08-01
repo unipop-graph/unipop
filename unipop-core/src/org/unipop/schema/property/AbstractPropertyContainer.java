@@ -68,6 +68,9 @@ public abstract class AbstractPropertyContainer {
             JSONObject config = (JSONObject) value;
             Object field = config.get("field");
             if(field != null && field instanceof String) {
+                Object format = config.opt("sourceFormat");
+                if (format != null && format instanceof String)
+                    return new DatePropertySchema(key, config, nullable);
                 return new FieldPropertySchema(key, config, nullable);
             }
             else if(field instanceof JSONArray) {
