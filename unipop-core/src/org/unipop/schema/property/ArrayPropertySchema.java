@@ -68,8 +68,18 @@ public class ArrayPropertySchema implements PropertySchema {
         Object value = hasContainer.getValue();
         Set<HasContainer> predicates = new HashSet<>();
         if (value instanceof Collection) {
-            // TODO: implement
-            throw new NotImplementedException("to be implemented");
+            for (String field : fields) {
+                if (field.startsWith("@")) {
+                    for (Object v : ((Collection) value)) {
+                        HasContainer clone = new HasContainer(field.substring(1), new P(hasContainer.getBiPredicate(), v));
+                        predicates.add(clone);
+                    }
+                } else {
+                    if (new P(hasContainer.getBiPredicate(), hasContainer.getValue()).test(field)) {
+                        return PredicatesHolderFactory.empty();
+                    }
+                }
+            }
         } else {
             final boolean[] abort = {false};
             fields.forEach(field -> {
@@ -85,7 +95,7 @@ public class ArrayPropertySchema implements PropertySchema {
                 }
             });
             if (abort[0])
-                return PredicatesHolderFactory.abort();
+                return PredicatesHolderFactory.empty();
         }
         return PredicatesHolderFactory.or(predicates.toArray(new HasContainer[predicates.size()]));
     }

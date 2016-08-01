@@ -8,8 +8,7 @@
       "id": "@_id",
       "label": "@_type",
       "properties": {
-        "gremlin.partitionGraphStrategy.partition": "@partition",
-        "test": ["@name", "test"]
+        "gremlin.partitionGraphStrategy.partition": "@partition"
       },
       "dynamicProperties": true
     }

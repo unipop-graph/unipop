@@ -14,6 +14,7 @@ import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.SearchVertexQuery;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class UniVertex extends UniElement implements Vertex {
 
@@ -22,12 +23,30 @@ public class UniVertex extends UniElement implements Vertex {
     public UniVertex(Map<String, Object> keyValues, UniGraph graph) {
         super(keyValues, graph);
         this.properties = new HashMap<>();
-        keyValues.forEach(this::addPropertyLocal);
+        keyValues.forEach((key, value) -> {
+            List<VertexProperty> props;
+            if (value instanceof Collection){
+                props = ((Collection<Object>) value).stream().map(v -> new UniVertexProperty<>(this, key, v)).collect(Collectors.toList());
+            }
+            else{
+                 props = Collections.singletonList(new UniVertexProperty<>(this, key, value));
+            }
+            properties.put(key, props);
+        });
+//        keyValues.forEach(this::addPropertyLocal);
     }
 
     @Override
     protected Map<String, Property> getPropertiesMap() {
         throw new NotImplementedException();
+    }
+
+    @Override
+    public void removeProperty(Property property) {
+        properties.remove(property.key());
+        PropertyQuery<UniElement> propertyQuery = new PropertyQuery<>(this, property, PropertyQuery.Action.Remove, null);
+        this.graph.getControllerManager().getControllers(PropertyQuery.PropertyController.class).forEach(controller ->
+                controller.property(propertyQuery));
     }
 
     @Override
@@ -51,17 +70,8 @@ public class UniVertex extends UniElement implements Vertex {
     @Override
     public <V> VertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value, final Object... keyValues) {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
-        final Optional<VertexProperty<V>> optionalVertexProperty = ElementHelper.stageVertexProperty(this, cardinality, key, value, keyValues);
-        if (optionalVertexProperty.isPresent()) return optionalVertexProperty.get();
-
-        final VertexProperty<V> vertexProperty = new UniVertexProperty<V>(this, key, value);
-
-        if (null == this.properties) this.properties = new HashMap<>();
-        final ArrayList<VertexProperty> list = (ArrayList<VertexProperty>) this.properties.getOrDefault(key, new ArrayList<>());
-        list.add(vertexProperty);
-        this.properties.put(key, list);
-        ElementHelper.attachProperties(vertexProperty, keyValues);
-        return vertexProperty;
+        if (keyValues != null && keyValues.length > 0) throw VertexProperty.Exceptions.metaPropertiesNotSupported();
+        return this.property(key, value);
     }
 
     @Override
@@ -115,7 +125,7 @@ public class UniVertex extends UniElement implements Vertex {
     @Override
     public <V> VertexProperty<V> property(final String key) {
         if (this.properties.containsKey(key)) {
-            return (VertexProperty<V>) this.properties.get(key);
+            return (VertexProperty<V>) this.properties.get(key).get(0);
         } else return VertexProperty.<V>empty();
     }
 
