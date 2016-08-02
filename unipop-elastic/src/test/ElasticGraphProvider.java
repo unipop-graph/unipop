@@ -48,7 +48,6 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
 //             return NestedEdgeConfiguration;
 //             return NestedRefEdgeConfiguration;
 //             throw new AssumptionViolatedException("test");
-             return "date.json";
          }
          return BasicConfiguration;
     }

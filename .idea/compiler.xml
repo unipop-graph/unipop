@@ -2,58 +2,11 @@
 <project version="4">
   <component name="CompilerConfiguration">
     <resourceExtensions />
-    <wildcardResourcePatterns>
-      <entry name="!?*.java" />
-      <entry name="!?*.form" />
-      <entry name="!?*.class" />
-      <entry name="!?*.groovy" />
-      <entry name="!?*.scala" />
-      <entry name="!?*.flex" />
-      <entry name="!?*.kt" />
-      <entry name="!?*.clj" />
-      <entry name="!?*.aj" />
-    </wildcardResourcePatterns>
+    <wildcardResourcePatterns />
     <annotationProcessing>
       <profile default="true" name="Default" enabled="false">
         <processorPath useClasspath="true" />
       </profile>
-      <profile default="false" name="Annotation profile for unipop-test" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="true" />
-        <module name="unipop-test" />
-      </profile>
-      <profile default="false" name="Annotation profile for unipop-core" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="true" />
-        <module name="unipop-core" />
-      </profile>
-      <profile default="false" name="Annotation profile for unipop-elastic" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="true" />
-        <module name="unipop-elastic" />
-      </profile>
-      <profile default="false" name="Annotation profile for unipop-jdbc" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="true" />
-        <module name="unipop-jdbc" />
-      </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
-      <module name="unipop" target="1.8" />
-      <module name="unipop-core" target="1.8" />
-      <module name="unipop-elastic" target="1.8" />
-      <module name="unipop-elastic2" target="1.8" />
-      <module name="unipop-jdbc" target="1.8" />
-      <module name="unipop-managers" target="1.8" />
-      <module name="unipop-test" target="1.8" />
-    </bytecodeTargetLevel>
   </component>
 </project>
