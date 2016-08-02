@@ -2,6 +2,8 @@ package org.unipop.schema.property;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 
@@ -119,5 +121,23 @@ public class ConcatenateFieldPropertySchema implements PropertySchema {
                 return PredicatesHolderFactory.abort();
         }
         return PredicatesHolderFactory.and(predicates.toArray(new HasContainer[predicates.size()]));
+    }
+
+    public static class Builder implements PropertySchemaBuilder {
+        @Override
+        public PropertySchema build(String key, Object conf) {
+            if (!(conf instanceof JSONObject)) return null;
+            JSONObject config = (JSONObject) conf;
+            Object obj = config.opt("field");
+            String delimiter = config.optString("delimiter", "_");
+            if (obj == null || !(obj instanceof JSONArray)) return null;
+            JSONArray fieldsArray = (JSONArray) obj;
+            List<String> fields = new ArrayList<>();
+            for (int i = 0; i < fieldsArray.length(); i++) {
+                String field = fieldsArray.getString(i);
+                fields.add(field);
+            }
+            return new ConcatenateFieldPropertySchema(key, fields, delimiter, config.optBoolean("nullable", true));
+        }
     }
 }

@@ -63,4 +63,14 @@ public class StaticPropertySchema implements PropertySchema {
                 ", value='" + value + '\'' +
                 '}';
     }
+
+    public static class Builder implements PropertySchemaBuilder {
+        @Override
+        public PropertySchema build(String key, Object conf) {
+            if (!(conf instanceof  String)) return null;
+            String value = conf.toString();
+            if (value.startsWith("@")) return null;
+            return new StaticPropertySchema(key, value);
+        }
+    }
 }

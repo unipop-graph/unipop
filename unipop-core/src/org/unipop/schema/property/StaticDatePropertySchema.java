@@ -30,12 +30,7 @@ public class StaticDatePropertySchema extends StaticPropertySchema implements Da
 
     @Override
     public Map<String, Object> toFields(Map<String, Object> prop) {
-        Object o = prop.get(this.key);
-        if (o == null) return Collections.emptyMap();
-        Date date = fromDisplay(o.toString());
-        String sourceDate = toSource(date);
-        if(sourceDate == null || sourceDate.equals(this.value)) return Collections.emptyMap();
-        return null;
+        return Collections.emptyMap();
     }
 
     @Override
@@ -51,5 +46,18 @@ public class StaticDatePropertySchema extends StaticPropertySchema implements Da
     @Override
     public DateFormat getDisplayDateFormat() {
         return displayFormat;
+    }
+
+    public static class Builder implements PropertySchemaBuilder {
+        @Override
+        public PropertySchema build(String key, Object conf) {
+            if (!(conf instanceof JSONObject)) return null;
+            JSONObject config = (JSONObject) conf;
+            Object value = config.opt("value");
+            Object format = config.opt("sourceFormat");
+            if (value == null || format == null) return null;
+            return new StaticDatePropertySchema(key, value.toString(), config);
+
+        }
     }
 }

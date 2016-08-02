@@ -1,5 +1,6 @@
 package org.unipop.schema.property;
 
+import org.json.JSONObject;
 import org.unipop.query.predicates.PredicatesHolder;
 
 import java.util.Collections;
@@ -14,4 +15,8 @@ public interface PropertySchema {
 
     default Set<String> excludeDynamicFields() { return Collections.emptySet(); }
     default Set<String> excludeDynamicProperties() { return Collections.emptySet(); }
+
+    interface PropertySchemaBuilder {
+        PropertySchema build(String key, Object conf);
+    }
 }

@@ -3,6 +3,8 @@ package org.unipop.schema.property;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 
@@ -98,5 +100,19 @@ public class MultiFieldPropertySchema implements PropertySchema {
                 return PredicatesHolderFactory.empty();
         }
         return PredicatesHolderFactory.or(predicates.toArray(new HasContainer[predicates.size()]));
+    }
+
+    public static class Builder implements PropertySchemaBuilder {
+        @Override
+        public PropertySchema build(String key, Object conf) {
+            if (!(conf instanceof JSONArray)) return null;
+            JSONArray fieldsArray = (JSONArray) conf;
+            List<String> fields = new ArrayList<>();
+            for (int i = 0; i < fieldsArray.length(); i++) {
+                String field = fieldsArray.getString(i);
+                fields.add(field);
+            }
+            return new MultiFieldPropertySchema(key, fields);
+        }
     }
 }

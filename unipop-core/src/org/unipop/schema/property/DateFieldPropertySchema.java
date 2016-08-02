@@ -68,4 +68,16 @@ public class DateFieldPropertySchema extends FieldPropertySchema implements Date
     public DateFormat getDisplayDateFormat() {
         return displayFormat;
     }
+
+    public static class Builder implements PropertySchemaBuilder {
+        @Override
+        public PropertySchema build(String key, Object conf) {
+            if (!(conf instanceof JSONObject)) return null;
+            JSONObject config = (JSONObject) conf;
+            Object field = config.opt("field");
+            Object format = config.opt("sourceFormat");
+            if (field == null || format == null) return null;
+            return new DateFieldPropertySchema(key, config, config.optBoolean("nullable", true));
+        }
+    }
 }

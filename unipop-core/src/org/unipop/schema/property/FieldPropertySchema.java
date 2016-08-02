@@ -123,4 +123,20 @@ public class FieldPropertySchema implements PropertySchema {
                 ", include=" + include +
                 '}';
     }
+
+    public static class Builder implements PropertySchemaBuilder{
+        @Override
+        public PropertySchema build(String key, Object conf) {
+            if (conf instanceof String){
+                String field = conf.toString();
+                if (!field.startsWith("@")) return null;
+                return new FieldPropertySchema(key, field.substring(1), true);
+            }
+            if (!(conf instanceof JSONObject)) return null;
+            JSONObject config = (JSONObject) conf;
+            Object field = config.opt("field");
+            if (field == null) return null;
+            return new FieldPropertySchema(key, config, config.optBoolean("nullable", true));
+        }
+    }
 }
