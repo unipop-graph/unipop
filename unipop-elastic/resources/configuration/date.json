@@ -16,6 +16,10 @@
         "date": {
           "field": "age",
           "sourceFormat": "yy"
+        },
+        "date2": {
+          "value": "12/3/85",
+          "sourceFormat": "dd/MM/yy"
         }
       },
       "dynamicProperties": true

@@ -29,14 +29,14 @@ public abstract class AbstractPropertyContainer {
         addPropertySchema(T.label.getAccessor(), json.get(T.label.toString()), false);
 
         JSONObject properties = json.optJSONObject("properties");
-        if(properties != null) {
+        if (properties != null) {
             properties.keys().forEachRemaining(key -> addPropertySchema(key, properties.get(key), true));
         }
 
         Object dynamicPropertiesConfig = json.opt("dynamicProperties");
-        if(dynamicPropertiesConfig instanceof Boolean && (boolean)dynamicPropertiesConfig)
+        if (dynamicPropertiesConfig instanceof Boolean && (boolean) dynamicPropertiesConfig)
             this.dynamicProperties = new DynamicPropertySchema(propertySchemas);
-        else if(dynamicPropertiesConfig instanceof JSONObject)
+        else if (dynamicPropertiesConfig instanceof JSONObject)
             this.dynamicProperties = new DynamicPropertySchema(propertySchemas, (JSONObject) dynamicPropertiesConfig);
         else this.dynamicProperties = new NonDynamicPropertySchema(propertySchemas);
 
@@ -59,35 +59,43 @@ public abstract class AbstractPropertyContainer {
     }
 
     protected PropertySchema createPropertySchema(String key, Object value, boolean nullable) {
-        if(value instanceof String) {
+        if (value instanceof String) {
             if (value.toString().startsWith("@"))
                 return new FieldPropertySchema(key, value.toString().substring(1), nullable);
             else return new StaticPropertySchema(key, value.toString());
-        }
-        else if(value instanceof JSONObject) {
+        } else if (value instanceof JSONObject) {
             JSONObject config = (JSONObject) value;
-            Object field = config.get("field");
-            if(field != null && field instanceof String) {
+            Object field = config.opt("field");
+            Object constValue = config.opt("value");
+            if (field != null) {
+                if (field instanceof String) {
+                    Object format = config.opt("sourceFormat");
+                    if (format != null && format instanceof String)
+                        return new DateFieldPropertySchema(key, config, nullable);
+                    return new FieldPropertySchema(key, config, nullable);
+                } else if (field instanceof JSONArray) {
+                    String delimiter = config.optString("delimiter", "_");
+                    return getMultiFieldProperty(key, (JSONArray) field, delimiter, nullable);
+                } else {
+                    throw new IllegalArgumentException("Unrecognized field: " + field + ", property: " + key + " - " + value);
+                }
+            } else if (constValue != null) {
                 Object format = config.opt("sourceFormat");
                 if (format != null && format instanceof String)
-                    return new DatePropertySchema(key, config, nullable);
-                return new FieldPropertySchema(key, config, nullable);
-            }
-            else if(field instanceof JSONArray) {
-                String delimiter = config.optString("delimiter", "_");
-                return getMultiFieldProperty(key, (JSONArray) field, delimiter, nullable);
-            }
-            else throw new IllegalArgumentException("Unrecognized field: " + field + ", property: " + key + " - " + value);
-        }
-        else if(value instanceof JSONArray) {
+                    return new StaticDatePropertySchema(key, constValue.toString(), config);
+                else {
+                    throw new IllegalArgumentException("Unrecognized field: " + field + ", property: " + key + " - " + value);
+                }
+            } else
+                throw new IllegalArgumentException("Unrecognized field: " + field + ", property: " + key + " - " + value);
+        } else if (value instanceof JSONArray) {
             return getArrayProperty(key, (JSONArray) value, nullable);
-        }
-        else throw new IllegalArgumentException("Unrecognized property: " + key + " - " + value);
+        } else throw new IllegalArgumentException("Unrecognized property: " + key + " - " + value);
     }
 
-    protected PropertySchema getArrayProperty(String key, JSONArray fieldsArray, boolean nullable){
+    protected PropertySchema getArrayProperty(String key, JSONArray fieldsArray, boolean nullable) {
         List<String> fields = new ArrayList<>();
-        for(int i = 0; i < fieldsArray.length(); i++){
+        for (int i = 0; i < fieldsArray.length(); i++) {
             String field = fieldsArray.getString(i);
             fields.add(field);
         }
@@ -96,7 +104,7 @@ public abstract class AbstractPropertyContainer {
 
     protected PropertySchema getMultiFieldProperty(String key, JSONArray fieldsArray, String delimiter, boolean nullable) {
         List<String> fields = new ArrayList<>();
-        for(int i = 0; i < fieldsArray.length(); i++){
+        for (int i = 0; i < fieldsArray.length(); i++) {
             String field = fieldsArray.getString(i);
             fields.add(field);
         }

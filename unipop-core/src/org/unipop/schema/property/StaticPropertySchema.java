@@ -10,8 +10,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class StaticPropertySchema implements PropertySchema {
-    private final String key;
-    private final String value;
+    protected final String key;
+    protected final String value;
 
     public StaticPropertySchema(String key, String value) {
         this.key = key;
@@ -52,7 +52,7 @@ public class StaticPropertySchema implements PropertySchema {
         return Collections.singleton(this.key);
     }
 
-    private boolean test(P predicate) {
+    protected boolean test(P predicate) {
         return predicate.test(this.value);
     }
 
