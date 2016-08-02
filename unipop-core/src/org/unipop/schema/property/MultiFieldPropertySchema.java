@@ -1,21 +1,17 @@
 package org.unipop.schema.property;
 
-import org.apache.commons.lang.NotImplementedException;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.json.JSONArray;
-import org.json.JSONObject;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Created by sbarzilay on 7/28/16.
  */
-public class MultiFieldPropertySchema implements PropertySchema {
+public class MultiFieldPropertySchema implements ParentSchemaProperty {
     private String key;
     private List<PropertySchema> schemas;
 
@@ -25,12 +21,22 @@ public class MultiFieldPropertySchema implements PropertySchema {
     }
 
     @Override
+    public String getKey() {
+        return key;
+    }
+
+    @Override
     public Map<String, Object> toProperties(Map<String, Object> source) {
         List<Object> value = new ArrayList<>();
         schemas.forEach(schema -> {
             schema.toProperties(source).values().forEach(value::add);
         });
         return Collections.singletonMap(key, value);
+    }
+
+    @Override
+    public Collection<PropertySchema> getChildren() {
+        return schemas;
     }
 
     @Override
@@ -58,14 +64,7 @@ public class MultiFieldPropertySchema implements PropertySchema {
     }
 
     @Override
-    public PredicatesHolder toPredicates(PredicatesHolder predicatesHolder) {
-        Stream<HasContainer> hasContainers = predicatesHolder.findKey(this.key);
-
-        Set<PredicatesHolder> predicateHolders = hasContainers.map(this::toPredicate).collect(Collectors.toSet());
-        return PredicatesHolderFactory.create(predicatesHolder.getClause(), predicateHolders);
-    }
-
-    private PredicatesHolder toPredicate(HasContainer hasContainer) {
+    public PredicatesHolder toPredicate(HasContainer hasContainer) {
         Set<PredicatesHolder> predicates = new HashSet<>();
         for (PropertySchema schema : schemas) {
             PredicatesHolder predicatesHolder = schema.toPredicates(PredicatesHolderFactory.predicate(hasContainer));

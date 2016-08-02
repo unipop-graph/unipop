@@ -50,7 +50,7 @@ public class DateFieldPropertySchema extends FieldPropertySchema implements Date
     }
 
     @Override
-    protected PredicatesHolder toPredicate(HasContainer has) {
+    public PredicatesHolder toPredicate(HasContainer has) {
         Object dateValue = has.getValue();
         Date parsedDate = fromDisplay(dateValue.toString());
         String formattedDate = toSource(parsedDate);

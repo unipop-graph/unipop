@@ -3,15 +3,14 @@ package org.unipop.schema.property;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
-import org.json.JSONArray;
 import org.json.JSONObject;
-import org.unipop.util.ConversionUtils;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
+import org.unipop.util.ConversionUtils;
 
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
 
 public class FieldPropertySchema implements PropertySchema {
     protected String key;
@@ -37,6 +36,11 @@ public class FieldPropertySchema implements PropertySchema {
     }
 
     @Override
+    public String getKey() {
+        return key;
+    }
+
+    @Override
     public Map<String, Object> toProperties(Map<String, Object> source) {
         Object value = source.get(this.field);
         if (value == null && nullable) return Collections.emptyMap();
@@ -59,13 +63,7 @@ public class FieldPropertySchema implements PropertySchema {
     }
 
     @Override
-    public PredicatesHolder toPredicates(PredicatesHolder predicatesHolder) {
-        Stream<HasContainer> hasContainers = predicatesHolder.findKey(this.key);
-        Set<PredicatesHolder> predicateHolders = hasContainers.map(this::toPredicate).collect(Collectors.toSet());
-        return PredicatesHolderFactory.create(predicatesHolder.getClause(), predicateHolders);
-    }
-
-    protected PredicatesHolder toPredicate(HasContainer has) {
+    public PredicatesHolder toPredicate(HasContainer has) {
         P predicate;
         if (has != null && !test(has.getPredicate())) {
             return PredicatesHolderFactory.abort();

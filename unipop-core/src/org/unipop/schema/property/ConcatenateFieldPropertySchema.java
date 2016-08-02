@@ -9,10 +9,9 @@ import org.unipop.query.predicates.PredicatesHolderFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 
-public class ConcatenateFieldPropertySchema implements PropertySchema {
+public class ConcatenateFieldPropertySchema implements ParentSchemaProperty {
     private final String key;
     private final List<PropertySchema> schemas;
     private String delimiter;
@@ -24,12 +23,22 @@ public class ConcatenateFieldPropertySchema implements PropertySchema {
     }
 
     @Override
+    public String getKey() {
+        return key;
+    }
+
+    @Override
     public Map<String, Object> toProperties(Map<String, Object> source) {
         StringJoiner values = new StringJoiner(delimiter);
         for (PropertySchema schema : schemas) {
             schema.toProperties(source).values().stream().map(Object::toString).forEach(values::add);
         }
         return Collections.singletonMap(key, values.toString());
+    }
+
+    @Override
+    public Collection<PropertySchema> getChildren() {
+        return schemas;
     }
 
     @Override
@@ -65,20 +74,6 @@ public class ConcatenateFieldPropertySchema implements PropertySchema {
                 Collections.emptySet();
     }
 
-    @Override
-    public PredicatesHolder toPredicates(PredicatesHolder predicatesHolder) {
-        Stream<HasContainer> hasContainers = predicatesHolder.findKey(this.key);
-
-        Set<PredicatesHolder> predicateHolders = hasContainers.map(this::toPredicate).collect(Collectors.toSet());
-        return PredicatesHolderFactory.create(predicatesHolder.getClause(), predicateHolders);
-    }
-
-    private void addToList(Map<String, List> map, String key, Object value) {
-        if (!map.containsKey(key))
-            map.put(key, new ArrayList());
-        map.get(key).add(value);
-    }
-
     private PredicatesHolder stringValueToPredicate(String value, HasContainer has, boolean collection) {
         String[] values = value.split(delimiter);
         if (values.length < schemas.size()) return PredicatesHolderFactory.abort();
@@ -93,7 +88,8 @@ public class ConcatenateFieldPropertySchema implements PropertySchema {
         return PredicatesHolderFactory.and(predicates);
     }
 
-    private PredicatesHolder toPredicate(HasContainer has) {
+    @Override
+    public PredicatesHolder toPredicate(HasContainer has) {
         Object value = has.getValue();
         Set<PredicatesHolder> predicates = new HashSet<>();
         if (value instanceof String) {

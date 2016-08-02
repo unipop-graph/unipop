@@ -27,6 +27,7 @@ import org.unipop.structure.UniEdge;
 import org.unipop.structure.UniElement;
 import org.unipop.structure.UniGraph;
 import org.unipop.structure.UniVertex;
+import org.unipop.util.MetricsRunner;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -163,13 +164,18 @@ public class DocumentController implements SimpleController {
 
     //region Elastic Queries
 
+    private void fillChildren(List<MutableMetrics> childMetrics, List<MultiSearchResult.MultiSearchResponse> responses) {
+        for (int i = 0; i < responses.size(); i++) {
+            MutableMetrics child = childMetrics.get(i);
+            MultiSearchResult.MultiSearchResponse response = responses.get(i);
+            child.setCount(TraversalMetrics.ELEMENT_COUNT_ID, response.searchResult.getTotal());
+            child.setDuration(Long.parseLong(response.searchResult.getJsonObject().get("took").toString()), TimeUnit.MILLISECONDS   );
+        }
+    }
+
     private <E extends Element, S extends DocumentSchema<E>> Iterator<E> search(SearchQuery<E> query, Map<S, Search> schemas) {
-        Optional<MutableMetrics> metrics = query.getStepDescriptor().getMetrics();
-        MutableMetrics controllerMetric = new MutableMetrics(query.getStepDescriptor().getId() + this.toString(), this.toString());
-        metrics.ifPresent(metric -> metric.addNested(controllerMetric));
-        controllerMetric.start();
-        List<MutableMetrics> childMetrics = schemas.keySet().stream().map((schema) -> new MutableMetrics(query.getStepDescriptor().getId(), schema.toString())).collect(Collectors.toList());
-        childMetrics.forEach(controllerMetric::addNested);
+        MetricsRunner metrics = new MetricsRunner(this, query,
+                schemas.keySet().stream().map(s-> ((ElementSchema) s)).collect(Collectors.toList()));
 
         if(schemas.size() == 0) return EmptyIterator.instance();
         logger.debug("Preparing search. Schemas: {}", schemas);
@@ -178,18 +184,10 @@ public class DocumentController implements SimpleController {
         MultiSearch multiSearch = new MultiSearch.Builder(schemas.values()).build();
         MultiSearchResult results = client.execute(multiSearch);
         List<MultiSearchResult.MultiSearchResponse> responses = results.getResponses();
-        for (int i = 0; i < responses.size(); i++) {
-            MutableMetrics child = childMetrics.get(i);
-            MultiSearchResult.MultiSearchResponse response = responses.get(i);
-            child.setCount(TraversalMetrics.ELEMENT_COUNT_ID, response.searchResult.getTotal());
-            child.setDuration(Long.parseLong(response.searchResult.getJsonObject().get("took").toString()), TimeUnit.MILLISECONDS   );
-        }
+        metrics.stop((children) -> fillChildren(children, responses));
+
         if(results == null || !results.isSucceeded()) return EmptyIterator.instance();
         Iterator<S> schemaIterator = schemas.keySet().iterator();
-        controllerMetric.stop();
-        controllerMetric.setCount(TraversalMetrics.ELEMENT_COUNT_ID,
-                controllerMetric.getNested().stream()
-                        .mapToLong(n -> n.getCount(TraversalMetrics.ELEMENT_COUNT_ID)).sum());
 
         return responses.stream().filter(this::valid).flatMap(result ->
                 schemaIterator.next().parseResults(result.searchResult.getJsonString(), query).stream()).iterator();

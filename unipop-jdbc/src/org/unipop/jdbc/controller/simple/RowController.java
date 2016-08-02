@@ -39,6 +39,7 @@ import org.unipop.structure.UniEdge;
 import org.unipop.structure.UniElement;
 import org.unipop.structure.UniGraph;
 import org.unipop.structure.UniVertex;
+import org.unipop.util.MetricsRunner;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -164,12 +165,20 @@ public class RowController implements SimpleController {
         }
     }
 
+    private <E extends Element, S extends JdbcSchema<E>> void fillChildren(List<MutableMetrics> children, Map<S, Select> schemas){
+        Map<String, org.javatuples.Pair<StopWatch, Integer>> timing = TimingExecuterListener.timing;
+        List<Map.Entry<S, Select>> sqls = schemas.entrySet().stream().collect(Collectors.toList());
+        for (int i = 0; i < sqls.size(); i++) {
+            org.javatuples.Pair<StopWatch, Integer> timingCount = timing.get(sqls.get(i).getValue().getSQL());
+            MutableMetrics child = children.get(i);
+            child.setCount(TraversalMetrics.ELEMENT_COUNT_ID, timingCount.getValue1());
+            child.setDuration(timingCount.getValue0().getNanoTime(), TimeUnit.NANOSECONDS);
+            timing.remove(sqls.get(i).getValue().getSQL());
+        }
+    }
+
     @SuppressWarnings("unchecked")
     private <E extends Element, S extends JdbcSchema<E>> Iterator<E> search(Function<S, PredicatesHolder> toSearchFunction, Set<? extends S> allSchemas, SearchQuery<E> query) {
-        Optional<MutableMetrics> metrics = query.getStepDescriptor().getMetrics();
-        MutableMetrics controllerMetric = new MutableMetrics(query.getStepDescriptor().getId() + this.toString(), this.toString());
-        metrics.ifPresent(metric -> metric.addNested(controllerMetric));
-        controllerMetric.start();
         Map<S, Select> schemas = allSchemas.stream()
                 .map(schema -> Pair.of(schema, toSearchFunction.apply(schema)))
                 .filter(pair -> pair.getRight() != null)
@@ -177,6 +186,8 @@ public class RowController implements SimpleController {
                 .filter(pair -> pair.getRight() != null)
                 .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
 
+        MetricsRunner metrics = new MetricsRunner(this, query,
+                schemas.keySet().stream().map(s-> ((ElementSchema) s)).collect(Collectors.toList()));
 
         logger.info("mapped schemas for search, schemas: {}", schemas);
         if(schemas.size() == 0) return EmptyIterator.instance();
@@ -187,20 +198,9 @@ public class RowController implements SimpleController {
                 .flatMap(res -> schemaIterator.next().parseResults(res, query).stream())
                 .distinct().collect(Collectors.toSet());
 
-        Map<String, org.javatuples.Pair<StopWatch, Integer>> timing = TimingExecuterListener.timing;
-        List<Map.Entry<S, Select>> sqls = schemas.entrySet().stream().collect(Collectors.toList());
-        sqls.forEach(sql -> {
-            org.javatuples.Pair<StopWatch, Integer> timingCount = timing.get(sql.getValue().getSQL());
-            MutableMetrics child = new MutableMetrics(query.getStepDescriptor().getId(), sql.getKey().toString());
-            child.setCount(TraversalMetrics.ELEMENT_COUNT_ID, timingCount.getValue1());
-            child.setDuration(timingCount.getValue0().getNanoTime(), TimeUnit.NANOSECONDS);
-            controllerMetric.addNested(child);
-            timing.remove(sql.getValue().getSQL());
-        });
-        controllerMetric.stop();
-        controllerMetric.setCount(TraversalMetrics.ELEMENT_COUNT_ID,
-                controllerMetric.getNested().stream()
-                        .mapToLong(n -> n.getCount(TraversalMetrics.ELEMENT_COUNT_ID)).sum());
+
+
+        metrics.stop((children) -> fillChildren(children, schemas));
 
         logger.info("results: {}", collect);
         return collect.iterator();
