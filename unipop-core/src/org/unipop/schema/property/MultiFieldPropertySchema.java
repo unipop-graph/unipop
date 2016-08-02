@@ -17,28 +17,27 @@ import java.util.stream.Stream;
  */
 public class MultiFieldPropertySchema implements PropertySchema {
     private String key;
-    private List<String> fields;
+    private List<PropertySchema> schemas;
 
-    public MultiFieldPropertySchema(String key, List<String> fields) {
+    public MultiFieldPropertySchema(String key, List<PropertySchema> schemas) {
         this.key = key;
-        this.fields = fields;
+        this.schemas = schemas;
     }
 
     @Override
     public Map<String, Object> toProperties(Map<String, Object> source) {
         List<Object> value = new ArrayList<>();
-        fields.forEach(field -> {
-            if (field.startsWith("@"))
-                value.add(source.get(field.substring(1)));
-            else
-                value.add(field);
+        schemas.forEach(schema -> {
+            schema.toProperties(source).values().forEach(value::add);
         });
         return Collections.singletonMap(key, value);
     }
 
     @Override
     public Set<String> excludeDynamicFields() {
-        return new HashSet<>(this.fields);
+        return schemas.stream()
+                .map(PropertySchema::excludeDynamicFields)
+                .flatMap(Collection::stream).collect(Collectors.toSet());
     }
 
     @Override
@@ -53,8 +52,8 @@ public class MultiFieldPropertySchema implements PropertySchema {
 
     @Override
     public Set<String> toFields(Set<String> propertyKeys) {
-        return propertyKeys.contains(key) ? fields.stream()
-                .filter(s -> s.startsWith("@")).map(s -> s.substring(1)).collect(Collectors.toSet()) :
+        return propertyKeys.contains(key) ? schemas.stream()
+                .flatMap(s -> s.toFields(propertyKeys).stream()).collect(Collectors.toSet()) :
                 Collections.emptySet();
     }
 
@@ -67,39 +66,15 @@ public class MultiFieldPropertySchema implements PropertySchema {
     }
 
     private PredicatesHolder toPredicate(HasContainer hasContainer) {
-        Object value = hasContainer.getValue();
-        Set<HasContainer> predicates = new HashSet<>();
-        if (value instanceof Collection) {
-            for (String field : fields) {
-                if (field.startsWith("@")) {
-                    for (Object v : ((Collection) value)) {
-                        HasContainer clone = new HasContainer(field.substring(1), new P(hasContainer.getBiPredicate(), v));
-                        predicates.add(clone);
-                    }
-                } else {
-                    if (new P(hasContainer.getBiPredicate(), hasContainer.getValue()).test(field)) {
-                        return PredicatesHolderFactory.empty();
-                    }
-                }
-            }
-        } else {
-            final boolean[] abort = {false};
-            fields.forEach(field -> {
-                if (field.startsWith("@")) {
-                    HasContainer clone = hasContainer.clone();
-                    clone.setKey(field.substring(1));
-                    predicates.add(clone);
-                } else {
-                    if (new P(hasContainer.getBiPredicate(), hasContainer.getValue()).test(field)) {
-                        abort[0] = true;
-                        return;
-                    }
-                }
-            });
-            if (abort[0])
-                return PredicatesHolderFactory.empty();
+        Set<PredicatesHolder> predicates = new HashSet<>();
+        for (PropertySchema schema : schemas) {
+            PredicatesHolder predicatesHolder = schema.toPredicates(PredicatesHolderFactory.predicate(hasContainer));
+            if (predicatesHolder.equals(PredicatesHolderFactory.empty()))
+                return predicatesHolder;
+            if (!predicatesHolder.equals(PredicatesHolderFactory.abort()))
+                predicates.add(predicatesHolder);
         }
-        return PredicatesHolderFactory.or(predicates.toArray(new HasContainer[predicates.size()]));
+        return PredicatesHolderFactory.or(predicates);
     }
 
     public static class Builder implements PropertySchemaBuilder {
@@ -107,12 +82,11 @@ public class MultiFieldPropertySchema implements PropertySchema {
         public PropertySchema build(String key, Object conf) {
             if (!(conf instanceof JSONArray)) return null;
             JSONArray fieldsArray = (JSONArray) conf;
-            List<String> fields = new ArrayList<>();
+            List<PropertySchema> schemas = new ArrayList<>();
             for (int i = 0; i < fieldsArray.length(); i++) {
-                String field = fieldsArray.getString(i);
-                fields.add(field);
+                schemas.add(AbstractPropertyContainer.createPropertySchema(key, fieldsArray.get(i), true));
             }
-            return new MultiFieldPropertySchema(key, fields);
+            return new MultiFieldPropertySchema(key, schemas);
         }
     }
 }
