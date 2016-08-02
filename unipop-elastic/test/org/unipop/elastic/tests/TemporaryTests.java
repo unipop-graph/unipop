@@ -34,7 +34,7 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void test() {
-        Traversal t = g.V().valueMap();//.has("name", "marko");//.valueMap();
+        Traversal t = g.V().has("concat", P.within("lop_java_test", "ripple_java_test")).valueMap();//.has("name", "marko");//.valueMap();
 
         check(t);
     }
@@ -61,9 +61,9 @@ public class TemporaryTests extends AbstractGremlinTest {
         System.out.println("post-strategy:" + traversal);
 
         int count = 0;
-        while(traversal.hasNext()) {
+        while (traversal.hasNext()) {
             System.out.println(traversal.next());
-            count ++;
+            count++;
         }
         System.out.println(count);
     }

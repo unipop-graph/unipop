@@ -14,33 +14,29 @@ import java.util.stream.Stream;
 
 public class ConcatenateFieldPropertySchema implements PropertySchema {
     private final String key;
-    private final List<String> fields;
+    private final List<PropertySchema> schemas;
     private String delimiter;
 
-    public ConcatenateFieldPropertySchema(String key, List<String> fields, String delimiter, boolean nullable) {
+    public ConcatenateFieldPropertySchema(String key, List<PropertySchema> schemas, String delimiter, boolean nullable) {
         this.key = key;
-        this.fields = fields;
+        this.schemas = schemas;
         this.delimiter = delimiter;
     }
 
     @Override
     public Map<String, Object> toProperties(Map<String, Object> source) {
-        String finalValue = null;
-        for (String field : fields) {
-            Object value;
-            if (field.startsWith("@"))
-                value = source.get(field.substring(1));
-            else
-                value = field;
-            if (value == null) return Collections.emptyMap();
-            finalValue = finalValue == null ? value.toString() : finalValue + delimiter + value.toString();
+        StringJoiner values = new StringJoiner(delimiter);
+        for (PropertySchema schema : schemas) {
+            schema.toProperties(source).values().stream().map(Object::toString).forEach(values::add);
         }
-        return Collections.singletonMap(key, finalValue);
+        return Collections.singletonMap(key, values.toString());
     }
 
     @Override
     public Set<String> excludeDynamicFields() {
-        return new HashSet<>(this.fields);
+        return schemas.stream()
+                .map(PropertySchema::excludeDynamicFields)
+                .flatMap(Collection::stream).collect(Collectors.toSet());
     }
 
     @Override
@@ -64,8 +60,8 @@ public class ConcatenateFieldPropertySchema implements PropertySchema {
 
     @Override
     public Set<String> toFields(Set<String> propertyKeys) {
-        return propertyKeys.contains(key) ? fields.stream()
-                .filter(s -> s.startsWith("@")).map(s -> s.substring(1)).collect(Collectors.toSet()) :
+        return propertyKeys.contains(key) ? schemas.stream()
+                .flatMap(s -> s.toFields(propertyKeys).stream()).collect(Collectors.toSet()) :
                 Collections.emptySet();
     }
 
@@ -83,44 +79,39 @@ public class ConcatenateFieldPropertySchema implements PropertySchema {
         map.get(key).add(value);
     }
 
+    private PredicatesHolder stringValueToPredicate(String value, HasContainer has, boolean collection) {
+        String[] values = value.split(delimiter);
+        if (values.length < schemas.size()) return PredicatesHolderFactory.abort();
+        Set<PredicatesHolder> predicates = new HashSet<>();
+        for (int i = 0; i < schemas.size(); i++) {
+            P predicate = has.getPredicate().clone();
+            final Object currentValue = values[i];
+            P p = new P(predicate.getBiPredicate(), collection ? Arrays.asList(currentValue) : currentValue);
+            PredicatesHolder predicatesHolder = schemas.get(i).toPredicates(PredicatesHolderFactory.predicate(new HasContainer(has.getKey(), p)));
+            predicates.add(predicatesHolder);
+        }
+        return PredicatesHolderFactory.and(predicates);
+    }
+
     private PredicatesHolder toPredicate(HasContainer has) {
-        String[] keys = fields.toArray(new String[fields.size()]);
         Object value = has.getValue();
-        Set<HasContainer> predicates = new HashSet<>();
+        Set<PredicatesHolder> predicates = new HashSet<>();
         if (value instanceof String) {
             String valueString = value.toString();
-            String[] values = valueString.split(delimiter);
-            for (int i = 0; i < keys.length; i++) {
-                P predicate = has.getPredicate().clone();
-                final Object currentValue = values[i];
-                P p = new P(predicate.getBiPredicate(), currentValue);
-                if (keys[i].startsWith("@"))
-                    predicates.add(new HasContainer(keys[i].substring(1), p));
-                else if (!p.test(keys[i]))
-                    return PredicatesHolderFactory.abort();
-            }
+            predicates.add(stringValueToPredicate(valueString, has, false));
         } else if (value instanceof Collection) {
-            Collection values = (Collection) value;
-            Map<String, List> predicatesValues = new HashMap<>();
-            values.forEach(v -> {
-                String[] split = v.toString().split(delimiter);
-                for (int i = 0; i < keys.length; i++) {
-                    addToList(predicatesValues, keys[i], split[i]);
-                }
+            Collection collection = (Collection) value;
+            collection.forEach(v -> predicates.add(stringValueToPredicate(v.toString(), has, true)));
+            Map<String, List<HasContainer>> collect = predicates.stream().flatMap(p -> p.getPredicates().stream()).collect(Collectors.groupingBy(p -> p.getKey()));
+            predicates.clear();
+            collect.forEach((key, hasContainers) -> {
+                List<Object> values = hasContainers.stream().map(HasContainer::getValue)
+                        .map(l -> ((Collection) l).iterator().next()).collect(Collectors.toList());
+                predicates.add(PredicatesHolderFactory.predicate(new HasContainer(key,
+                        new P(has.getBiPredicate(), values))));
             });
-            final boolean[] abort = {false};
-            predicatesValues.entrySet().forEach(kv -> {
-                if (kv.getKey().startsWith("@"))
-                    predicates.add(new HasContainer(kv.getKey().substring(1), new P(has.getBiPredicate(), kv.getValue())));
-                else if (!new P(has.getBiPredicate(), kv.getValue()).test(kv.getKey())) {
-                    abort[0] = true;
-                    return;
-                }
-            });
-            if (abort[0])
-                return PredicatesHolderFactory.abort();
         }
-        return PredicatesHolderFactory.and(predicates.toArray(new HasContainer[predicates.size()]));
+        return PredicatesHolderFactory.and(predicates);
     }
 
     public static class Builder implements PropertySchemaBuilder {
@@ -132,12 +123,12 @@ public class ConcatenateFieldPropertySchema implements PropertySchema {
             String delimiter = config.optString("delimiter", "_");
             if (obj == null || !(obj instanceof JSONArray)) return null;
             JSONArray fieldsArray = (JSONArray) obj;
-            List<String> fields = new ArrayList<>();
+            List<PropertySchema> schemas = new ArrayList<>();
             for (int i = 0; i < fieldsArray.length(); i++) {
-                String field = fieldsArray.getString(i);
-                fields.add(field);
+                Object field = fieldsArray.get(i);
+                schemas.add(AbstractPropertyContainer.createPropertySchema(key, field, true));
             }
-            return new ConcatenateFieldPropertySchema(key, fields, delimiter, config.optBoolean("nullable", true));
+            return new ConcatenateFieldPropertySchema(key, schemas, delimiter, config.optBoolean("nullable", true));
         }
     }
 }

@@ -32,7 +32,9 @@
         "include": "software"
       },
       "properties": {
-        "gremlin.partitionGraphStrategy.partition": "@partition"
+        "concat": {
+          "field":["@name", "@lang", "test"]
+        }
       },
       "dynamicProperties": true
     }

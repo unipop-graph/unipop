@@ -15,12 +15,11 @@ public abstract class AbstractPropertyContainer {
     protected final JSONObject json;
     protected ArrayList<PropertySchema> propertySchemas = new ArrayList<>();
     protected DynamicPropertySchema dynamicProperties;
-    protected List<PropertySchema.PropertySchemaBuilder> builders;
+    public static List<PropertySchema.PropertySchemaBuilder> builders = new ArrayList<>();
 
     public AbstractPropertyContainer(JSONObject json, UniGraph graph) {
         this.json = json;
         this.graph = graph;
-        builders = new ArrayList<>();
         builders.add(new StaticPropertySchema.Builder());
         builders.add(new FieldPropertySchema.Builder());
         builders.add(new DateFieldPropertySchema.Builder());
@@ -69,7 +68,7 @@ public abstract class AbstractPropertyContainer {
                 '}';
     }
 
-    protected PropertySchema createPropertySchema(String key, Object value, boolean nullable) {
+    protected static PropertySchema createPropertySchema(String key, Object value, boolean nullable) {
         Optional<PropertySchema> first = builders.stream().map(builder -> builder.build(key, value)).filter(schema -> schema != null).findFirst();
         if (first.isPresent()) return first.get();
         throw new IllegalArgumentException("Unrecognized property: " + key + " - " + value);
