@@ -3,19 +3,18 @@ package org.unipop.schema.property;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
-import org.json.JSONArray;
 import org.json.JSONObject;
-import org.unipop.util.ConversionUtils;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
+import org.unipop.util.ConversionUtils;
 
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
 
 public class FieldPropertySchema implements PropertySchema {
-    private String key;
-    private String field = null;
+    protected String key;
+    protected String field = null;
     private boolean nullable;
     protected Set include;
     protected Set exclude;
@@ -34,6 +33,11 @@ public class FieldPropertySchema implements PropertySchema {
         this.include = include.isEmpty() ? null : include;
         Set<Object> exclude = ConversionUtils.toSet(config, "exclude");
         this.exclude = exclude.isEmpty() ? null : exclude;
+    }
+
+    @Override
+    public String getKey() {
+        return key;
     }
 
     @Override
@@ -59,13 +63,7 @@ public class FieldPropertySchema implements PropertySchema {
     }
 
     @Override
-    public PredicatesHolder toPredicates(PredicatesHolder predicatesHolder) {
-        Stream<HasContainer> hasContainers = predicatesHolder.findKey(this.key);
-        Set<PredicatesHolder> predicateHolders = hasContainers.map(this::toPredicate).collect(Collectors.toSet());
-        return PredicatesHolderFactory.create(predicatesHolder.getClause(), predicateHolders);
-    }
-
-    private PredicatesHolder toPredicate(HasContainer has) {
+    public PredicatesHolder toPredicate(HasContainer has) {
         P predicate;
         if (has != null && !test(has.getPredicate())) {
             return PredicatesHolderFactory.abort();
@@ -122,5 +120,21 @@ public class FieldPropertySchema implements PropertySchema {
                 ", nullable=" + nullable +
                 ", include=" + include +
                 '}';
+    }
+
+    public static class Builder implements PropertySchemaBuilder{
+        @Override
+        public PropertySchema build(String key, Object conf) {
+            if (conf instanceof String){
+                String field = conf.toString();
+                if (!field.startsWith("@")) return null;
+                return new FieldPropertySchema(key, field.substring(1), true);
+            }
+            if (!(conf instanceof JSONObject)) return null;
+            JSONObject config = (JSONObject) conf;
+            Object field = config.opt("field");
+            if (field == null) return null;
+            return new FieldPropertySchema(key, config, config.optBoolean("nullable", true));
+        }
     }
 }

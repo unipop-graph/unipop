@@ -10,12 +10,17 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class StaticPropertySchema implements PropertySchema {
-    private final String key;
-    private final String value;
+    protected final String key;
+    protected final String value;
 
     public StaticPropertySchema(String key, String value) {
         this.key = key;
         this.value = value;
+    }
+
+    @Override
+    public String getKey() {
+        return key;
     }
 
     @Override
@@ -52,7 +57,7 @@ public class StaticPropertySchema implements PropertySchema {
         return Collections.singleton(this.key);
     }
 
-    private boolean test(P predicate) {
+    protected boolean test(P predicate) {
         return predicate.test(this.value);
     }
 
@@ -62,5 +67,15 @@ public class StaticPropertySchema implements PropertySchema {
                 "key='" + key + '\'' +
                 ", value='" + value + '\'' +
                 '}';
+    }
+
+    public static class Builder implements PropertySchemaBuilder {
+        @Override
+        public PropertySchema build(String key, Object conf) {
+            if (!(conf instanceof  String)) return null;
+            String value = conf.toString();
+            if (value.startsWith("@")) return null;
+            return new StaticPropertySchema(key, value);
+        }
     }
 }

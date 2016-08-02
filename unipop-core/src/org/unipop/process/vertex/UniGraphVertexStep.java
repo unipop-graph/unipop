@@ -1,5 +1,7 @@
 package org.unipop.process.vertex;
 
+import org.apache.tinkerpop.gremlin.process.traversal.step.Profiling;
+import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.structure.util.Attachable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +29,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Vertex, E> implements ReceivesPredicatesHolder<Vertex, E>{
+public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Vertex, E> implements ReceivesPredicatesHolder<Vertex, E>, Profiling{
     private static final Logger logger = LoggerFactory.getLogger(UniGraphVertexStep.class);
 
     private final boolean returnsVertex;
@@ -36,7 +38,7 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
     private String[] edgeLabels = new String[0];
     private int limit;
     private PredicatesHolder predicates = PredicatesHolderFactory.empty();
-    private final StepDescriptor stepDescriptor;
+    private StepDescriptor stepDescriptor;
     private List<SearchVertexQuery.SearchVertexController> controllers;
     private List<DeferredVertexQuery.DeferredVertexController> deferredVertexControllers;
 
@@ -141,5 +143,10 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
     @Override
     public void setLimit(int limit) {
         this.limit = limit;
+    }
+
+    @Override
+    public void setMetrics(MutableMetrics metrics) {
+        this.stepDescriptor = new StepDescriptor(this, metrics);
     }
 }

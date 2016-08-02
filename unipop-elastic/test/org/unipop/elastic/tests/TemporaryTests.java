@@ -1,21 +1,27 @@
 package org.unipop.elastic.tests;
 
-import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
-import org.apache.tinkerpop.gremlin.GraphManager;
-import org.apache.tinkerpop.gremlin.LoadGraphWith;
+import org.apache.tinkerpop.gremlin.*;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import test.ElasticGraphProvider;
 
+import java.util.List;
+import java.util.UUID;
+
 import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.as;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.out;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.Matchers.hasItem;
+import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 
 public class TemporaryTests extends AbstractGremlinTest {
 
@@ -28,9 +34,7 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void test() {
-        Traversal t = g.V().valueMap();
-        // software=12
-        // person=20
+        Traversal t = g.V().has("concat", P.within("lop_java_test", "ripple_java_test")).valueMap();//.has("name", "marko");//.valueMap();
 
         check(t);
     }
@@ -57,9 +61,9 @@ public class TemporaryTests extends AbstractGremlinTest {
         System.out.println("post-strategy:" + traversal);
 
         int count = 0;
-        while(traversal.hasNext()) {
+        while (traversal.hasNext()) {
             System.out.println(traversal.next());
-            count ++;
+            count++;
         }
         System.out.println(count);
     }

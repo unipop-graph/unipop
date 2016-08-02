@@ -2,9 +2,12 @@ package org.unipop.jdbc.controller.simple;
 
 import com.google.common.collect.Maps;
 import org.apache.commons.collections4.keyvalue.DefaultMapEntry;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
+import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -20,6 +23,7 @@ import org.unipop.jdbc.schemas.RowVertexSchema;
 import org.unipop.jdbc.schemas.jdbc.JdbcEdgeSchema;
 import org.unipop.jdbc.schemas.jdbc.JdbcSchema;
 import org.unipop.jdbc.schemas.jdbc.JdbcVertexSchema;
+import org.unipop.jdbc.utils.TimingExecuterListener;
 import org.unipop.query.controller.SimpleController;
 import org.unipop.query.mutation.AddEdgeQuery;
 import org.unipop.query.mutation.AddVertexQuery;
@@ -35,8 +39,10 @@ import org.unipop.structure.UniEdge;
 import org.unipop.structure.UniElement;
 import org.unipop.structure.UniGraph;
 import org.unipop.structure.UniVertex;
+import org.unipop.util.MetricsRunner;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -159,6 +165,18 @@ public class RowController implements SimpleController {
         }
     }
 
+    private <E extends Element, S extends JdbcSchema<E>> void fillChildren(List<MutableMetrics> children, Map<S, Select> schemas){
+        Map<String, org.javatuples.Pair<StopWatch, Integer>> timing = TimingExecuterListener.timing;
+        List<Map.Entry<S, Select>> sqls = schemas.entrySet().stream().collect(Collectors.toList());
+        for (int i = 0; i < sqls.size(); i++) {
+            org.javatuples.Pair<StopWatch, Integer> timingCount = timing.get(sqls.get(i).getValue().getSQL());
+            MutableMetrics child = children.get(i);
+            child.setCount(TraversalMetrics.ELEMENT_COUNT_ID, timingCount.getValue1());
+            child.setDuration(timingCount.getValue0().getNanoTime(), TimeUnit.NANOSECONDS);
+            timing.remove(sqls.get(i).getValue().getSQL());
+        }
+    }
+
     @SuppressWarnings("unchecked")
     private <E extends Element, S extends JdbcSchema<E>> Iterator<E> search(Function<S, PredicatesHolder> toSearchFunction, Set<? extends S> allSchemas, SearchQuery<E> query) {
         Map<S, Select> schemas = allSchemas.stream()
@@ -168,6 +186,8 @@ public class RowController implements SimpleController {
                 .filter(pair -> pair.getRight() != null)
                 .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
 
+        MetricsRunner metrics = new MetricsRunner(this, query,
+                schemas.keySet().stream().map(s-> ((ElementSchema) s)).collect(Collectors.toList()));
 
         logger.info("mapped schemas for search, schemas: {}", schemas);
         if(schemas.size() == 0) return EmptyIterator.instance();
@@ -177,6 +197,11 @@ public class RowController implements SimpleController {
                 .map(Select::fetch)
                 .flatMap(res -> schemaIterator.next().parseResults(res, query).stream())
                 .distinct().collect(Collectors.toSet());
+
+
+
+        metrics.stop((children) -> fillChildren(children, schemas));
+
         logger.info("results: {}", collect);
         return collect.iterator();
     }

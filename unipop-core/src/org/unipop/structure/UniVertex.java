@@ -1,5 +1,6 @@
 package org.unipop.structure;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
@@ -12,15 +13,40 @@ import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.SearchVertexQuery;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class UniVertex extends UniElement implements Vertex {
 
+    protected Map<String, List<VertexProperty>> properties;
+
     public UniVertex(Map<String, Object> keyValues, UniGraph graph) {
         super(keyValues, graph);
+        this.properties = new HashMap<>();
+        keyValues.forEach((key, value) -> {
+            List<VertexProperty> props;
+            if (value instanceof Collection){
+                props = ((Collection<Object>) value).stream().map(v -> new UniVertexProperty<>(this, key, v)).collect(Collectors.toList());
+            }
+            else{
+                 props = Collections.singletonList(new UniVertexProperty<>(this, key, value));
+            }
+            properties.put(key, props);
+        });
+//        keyValues.forEach(this::addPropertyLocal);
+    }
+
+    @Override
+    protected Map<String, Property> getPropertiesMap() {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void removeProperty(Property property) {
+        properties.remove(property.key());
+        PropertyQuery<UniElement> propertyQuery = new PropertyQuery<>(this, property, PropertyQuery.Action.Remove, null);
+        this.graph.getControllerManager().getControllers(PropertyQuery.PropertyController.class).forEach(controller ->
+                controller.property(propertyQuery));
     }
 
     @Override
@@ -31,6 +57,14 @@ public class UniVertex extends UniElement implements Vertex {
     @Override
     protected Property createProperty(String key, Object value) {
         return new UniVertexProperty<>(this, key, value);
+    }
+
+    @Override
+    protected Property addPropertyLocal(String key, Object value) {
+        ElementHelper.validateProperty(key, value);
+        UniVertexProperty property = (UniVertexProperty) createProperty(key, value);
+        properties.put(key, new ArrayList<VertexProperty>(){{add(property);}});
+        return property;
     }
 
     @Override
@@ -67,11 +101,11 @@ public class UniVertex extends UniElement implements Vertex {
             case BOTH:
                 Vertex outV = edge.outVertex();
                 Vertex inV = edge.inVertex();
-                if(outV.id().equals(inV.id()))
+                if (outV.id().equals(inV.id()))
                     return outV; //points to self
-                if(source.id().equals(inV.id()))
+                if (source.id().equals(inV.id()))
                     return outV;
-                if(source.id().equals(outV.id()))
+                if (source.id().equals(outV.id()))
                     return inV;
             default:
                 throw new IllegalArgumentException(direction.toString());
@@ -91,7 +125,7 @@ public class UniVertex extends UniElement implements Vertex {
     @Override
     public <V> VertexProperty<V> property(final String key) {
         if (this.properties.containsKey(key)) {
-            return (VertexProperty<V>) this.properties.get(key);
+            return (VertexProperty<V>) this.properties.get(key).get(0);
         } else return VertexProperty.<V>empty();
     }
 
@@ -121,7 +155,10 @@ public class UniVertex extends UniElement implements Vertex {
 
     @Override
     public <V> Iterator<VertexProperty<V>> properties(final String... propertyKeys) {
-        return propertyIterator(propertyKeys);
+        if (propertyKeys.length == 0)
+            return properties.values().stream().flatMap(l -> l.stream()).map(p -> ((VertexProperty<V>) p)).iterator();
+        List<String> keys = Arrays.asList(propertyKeys);
+        return properties.values().stream().flatMap(l -> l.stream()).map(p -> ((VertexProperty<V>) p)).filter(v -> keys.contains(v.key())).iterator();
     }
 
 }

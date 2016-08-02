@@ -2,7 +2,9 @@ package org.unipop.process.edge;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
+import org.apache.tinkerpop.gremlin.process.traversal.step.Profiling;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
+import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -18,15 +20,17 @@ import org.unipop.structure.UniGraph;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class UniGraphEdgeVertexStep extends UniPredicatesStep<Edge, Vertex> {
+public class UniGraphEdgeVertexStep extends UniPredicatesStep<Edge, Vertex> implements Profiling {
 
     private Direction direction;
     private List<DeferredVertexQuery.DeferredVertexController> deferredVertexControllers;
+    private StepDescriptor stepDescriptor;
 
     public UniGraphEdgeVertexStep(Traversal.Admin traversal, Direction direction, UniGraph graph, ControllerManager controllerManager) {
         super(traversal, graph);
         this.direction = direction;
         this.deferredVertexControllers = controllerManager.getControllers(DeferredVertexQuery.DeferredVertexController.class);
+        this.stepDescriptor = new StepDescriptor(this);
     }
 
     @Override
@@ -43,7 +47,7 @@ public class UniGraphEdgeVertexStep extends UniPredicatesStep<Edge, Vertex> {
                     .filter(DeferredVertex::isDeferred)
                     .collect(Collectors.toList());
             if(v.size() > 0) {
-                DeferredVertexQuery query = new DeferredVertexQuery(v, propertyKeys, new StepDescriptor(this));
+                DeferredVertexQuery query = new DeferredVertexQuery(v, propertyKeys, this.stepDescriptor);
                 deferredVertexControllers.forEach(deferredVertexController -> deferredVertexController.fetchProperties(query));
             }
         }
@@ -59,5 +63,10 @@ public class UniGraphEdgeVertexStep extends UniPredicatesStep<Edge, Vertex> {
     @Override
     public String toString() {
         return StringFactory.stepString(this, this.direction);
+    }
+
+    @Override
+    public void setMetrics(MutableMetrics metrics) {
+        this.stepDescriptor = new StepDescriptor(this, metrics);
     }
 }
