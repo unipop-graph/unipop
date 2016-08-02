@@ -2,9 +2,12 @@ package org.unipop.jdbc;
 
 import com.google.common.collect.Sets;
 import org.jooq.Condition;
+import org.jooq.Configuration;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
+import org.jooq.impl.DefaultConfiguration;
+import org.jooq.impl.DefaultExecuteListenerProvider;
 import org.json.JSONObject;
 import org.unipop.common.util.PredicatesTranslator;
 import org.unipop.jdbc.controller.simple.RowController;
@@ -12,6 +15,7 @@ import org.unipop.jdbc.schemas.RowEdgeSchema;
 import org.unipop.jdbc.schemas.RowVertexSchema;
 import org.unipop.jdbc.schemas.jdbc.JdbcSchema;
 import org.unipop.jdbc.utils.JdbcPredicatesTranslator;
+import org.unipop.jdbc.utils.TimingExecuterListener;
 import org.unipop.query.controller.SourceProvider;
 import org.unipop.query.controller.UniQueryController;
 import org.unipop.schema.element.SchemaSet;
@@ -48,7 +52,11 @@ public class JdbcSourceProvider implements SourceProvider {
         Connection c = getConnection(configuration);
         SQLDialect dialect = SQLDialect.valueOf(configuration.getString("sqlDialect"));
 
-        this.context = DSL.using(c, dialect);
+        Configuration conf = new DefaultConfiguration().set(c).set(dialect)
+                .set(new DefaultExecuteListenerProvider(new TimingExecuterListener()));
+
+        this.context = DSL.using(conf);
+
         this.graph = graph;
 
         Set<JdbcSchema> schemas = Sets.newHashSet();

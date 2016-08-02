@@ -14,8 +14,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class FieldPropertySchema implements PropertySchema {
-    private String key;
-    private String field = null;
+    protected String key;
+    protected String field = null;
     private boolean nullable;
     protected Set include;
     protected Set exclude;
@@ -65,7 +65,7 @@ public class FieldPropertySchema implements PropertySchema {
         return PredicatesHolderFactory.create(predicatesHolder.getClause(), predicateHolders);
     }
 
-    private PredicatesHolder toPredicate(HasContainer has) {
+    protected PredicatesHolder toPredicate(HasContainer has) {
         P predicate;
         if (has != null && !test(has.getPredicate())) {
             return PredicatesHolderFactory.abort();

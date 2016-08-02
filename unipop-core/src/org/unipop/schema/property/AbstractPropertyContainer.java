@@ -68,6 +68,9 @@ public abstract class AbstractPropertyContainer {
             JSONObject config = (JSONObject) value;
             Object field = config.get("field");
             if(field != null && field instanceof String) {
+                Object format = config.opt("sourceFormat");
+                if (format != null && format instanceof String)
+                    return new DatePropertySchema(key, config, nullable);
                 return new FieldPropertySchema(key, config, nullable);
             }
             else if(field instanceof JSONArray) {
@@ -77,9 +80,18 @@ public abstract class AbstractPropertyContainer {
             else throw new IllegalArgumentException("Unrecognized field: " + field + ", property: " + key + " - " + value);
         }
         else if(value instanceof JSONArray) {
-            return getMultiFieldProperty(key, (JSONArray) value, "_", nullable);
+            return getArrayProperty(key, (JSONArray) value, nullable);
         }
         else throw new IllegalArgumentException("Unrecognized property: " + key + " - " + value);
+    }
+
+    protected PropertySchema getArrayProperty(String key, JSONArray fieldsArray, boolean nullable){
+        List<String> fields = new ArrayList<>();
+        for(int i = 0; i < fieldsArray.length(); i++){
+            String field = fieldsArray.getString(i);
+            fields.add(field);
+        }
+        return new MultiFieldPropertySchema(key, fields);
     }
 
     protected PropertySchema getMultiFieldProperty(String key, JSONArray fieldsArray, String delimiter, boolean nullable) {
@@ -88,6 +100,6 @@ public abstract class AbstractPropertyContainer {
             String field = fieldsArray.getString(i);
             fields.add(field);
         }
-        return new MultiFieldPropertySchema(key, fields, delimiter, nullable);
+        return new ConcatenateFieldPropertySchema(key, fields, delimiter, nullable);
     }
 }

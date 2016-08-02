@@ -1,7 +1,9 @@
 package org.unipop.process.start;
 
+import org.apache.tinkerpop.gremlin.process.traversal.step.Profiling;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
+import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,9 +20,9 @@ import org.unipop.structure.UniGraph;
 import java.util.*;
 import java.util.stream.Stream;
 
-public class UniGraphStartStep<S,E extends Element> extends GraphStep<S,E> implements ReceivesPredicatesHolder<S, E>, PropertyFetcher{
+public class UniGraphStartStep<S,E extends Element> extends GraphStep<S,E> implements ReceivesPredicatesHolder<S, E>, PropertyFetcher, Profiling{
     private static final Logger logger = LoggerFactory.getLogger(UniGraphStartStep.class);
-    private final StepDescriptor stepDescriptor;
+    private StepDescriptor stepDescriptor;
     private List<SearchQuery.SearchController>  controllers;
     private PredicatesHolder predicates = PredicatesHolderFactory.empty();
     private Set<String> propertyKeys;
@@ -81,5 +83,10 @@ public class UniGraphStartStep<S,E extends Element> extends GraphStep<S,E> imple
     @Override
     public Set<String> getKeys() {
         return propertyKeys;
+    }
+
+    @Override
+    public void setMetrics(MutableMetrics metrics) {
+        this.stepDescriptor = new StepDescriptor(this, metrics);
     }
 }
