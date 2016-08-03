@@ -84,7 +84,7 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
         try {
             JsonNode hits = mapper.readTree(result).get("hits").get("hits");
             for (JsonNode hit : hits) {
-                Map<String, Object> source = mapper.readValue(hit.get("_source").toString(), Map.class);
+                Map<String, Object> source = hit.has("_source") ? mapper.readValue(hit.get("_source").toString(), Map.class) : new HashMap<>();
                 Document document = new Document(hit.get("_index").asText(), hit.get("_type").asText(), hit.get("_id").asText(), source);
                 Collection<E> elements = fromDocument(document);
                 if(elements != null) {

@@ -170,9 +170,11 @@ public class RowController implements SimpleController {
         List<Map.Entry<S, Select>> sqls = schemas.entrySet().stream().collect(Collectors.toList());
         for (int i = 0; i < sqls.size(); i++) {
             org.javatuples.Pair<StopWatch, Integer> timingCount = timing.get(sqls.get(i).getValue().getSQL());
-            MutableMetrics child = children.get(i);
-            child.setCount(TraversalMetrics.ELEMENT_COUNT_ID, timingCount.getValue1());
-            child.setDuration(timingCount.getValue0().getNanoTime(), TimeUnit.NANOSECONDS);
+            if (i < children.size()) {
+                MutableMetrics child = children.get(i);
+                child.setCount(TraversalMetrics.ELEMENT_COUNT_ID, timingCount.getValue1());
+                child.setDuration(timingCount.getValue0().getNanoTime(), TimeUnit.NANOSECONDS);
+            }
             timing.remove(sqls.get(i).getValue().getSQL());
         }
     }
