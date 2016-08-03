@@ -13,18 +13,14 @@ import java.util.Map;
 
 public class ElasticGraphProvider extends UnipopGraphProvider {
 
-    private static String BasicConfiguration = "basic.json";
-    private static String InnerEdgeConfiguration = "innerEdge.json";
-    private static String NestedEdgeConfiguration = "nestedEdge.json";
-    private static String NestedRefEdgeConfiguration = "nestedRefEdge.json";
     private final File dataPath;
     private LocalNode node;
 
-    public ElasticGraphProvider() throws Exception{
+    public ElasticGraphProvider() throws Exception {
         //patch for failing IO tests that write to disk
         System.setProperty("build.dir", System.getProperty("user.dir") + "/build");
 
-        String path = new java.io.File( "." ).getCanonicalPath() + "/data";
+        String path = new java.io.File(".").getCanonicalPath() + "/data";
         this.dataPath = new File(path);
         this.node = new LocalNode(dataPath);
     }
@@ -33,7 +29,7 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
     public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName, LoadGraphWith.GraphData loadGraphWith) {
         Map<String, Object> baseConfiguration = super.getBaseConfiguration(graphName, test, testMethodName, loadGraphWith);
         String configurationFile = getSchemaConfiguration(loadGraphWith);
-        URL url = this.getClass().getResource("/configuration/" + configurationFile);
+        URL url = this.getClass().getResource(configurationFile);
         baseConfiguration.put("providers", new String[]{url.getFile()});
         baseConfiguration.put("bulk.max", 1000);
         baseConfiguration.put("bulk.start", 10);
@@ -43,19 +39,23 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
     }
 
     public String getSchemaConfiguration(LoadGraphWith.GraphData loadGraphWith) {
-         if(loadGraphWith != null && loadGraphWith.equals(LoadGraphWith.GraphData.MODERN)) {
-//            return InnerEdgeConfiguration;
-//             return NestedEdgeConfiguration;
-//             return NestedRefEdgeConfiguration;
-//             throw new AssumptionViolatedException("test");
-         }
-         return BasicConfiguration;
+        String confDirectory = "/configuration/" + System.getenv("conf") + "/";
+        if (loadGraphWith != null)
+            switch (loadGraphWith) {
+                case MODERN:
+                    return confDirectory + "modern.json";
+                case GRATEFUL:
+                    return confDirectory + "grateful.json";
+                default:
+                    return "/configuration/basic/default.json";
+            }
+        return "/configuration/basic/default.json";
     }
 
     @Override
     public void clear(Graph g, Configuration configuration) throws Exception {
         super.clear(g, configuration);
-        if(node != null) {
+        if (node != null) {
             node.deleteIndices();
         }
     }

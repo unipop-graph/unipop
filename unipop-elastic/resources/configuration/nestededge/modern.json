@@ -7,6 +7,17 @@
   "vertices": [
     {
       "index": "vertex",
+      "type": "animal",
+      "id": "@_id",
+      "label": "animal",
+      "dynamicProperties": {
+        "excludeFields":[
+          "_type"
+        ]
+      }
+    },
+    {
+      "index": "vertex",
       "type": "person",
       "id": "@_id",
       "label": "person",
@@ -27,23 +38,16 @@
             "name": "@name"
           },
           "vertex": {
-            "ref": true,
+            "ref": false,
             "id": "@softwareId",
-            "label": "software"
+            "label": "software",
+            "properties": {
+              "name": "@name",
+              "lang": "@lang"
+            }
           }
         }
       ]
-    },
-    {
-      "index": "vertex",
-      "type": "software",
-      "id": "@_id",
-      "label": "software",
-      "dynamicProperties": {
-        "excludeFields": [
-          "_type"
-        ]
-      }
     }
   ],
   "edges": [

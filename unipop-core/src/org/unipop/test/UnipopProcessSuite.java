@@ -38,7 +38,7 @@ public class UnipopProcessSuite extends ProcessStandardSuite {
             CoinTest.Traversals.class,
             CyclicPathTest.Traversals.class,
             DedupTest.Traversals.class,
-            DropTest.Traversals.class,
+//            DropTest.Traversals.class,
             FilterTest.Traversals.class,
             IsTest.Traversals.class,
             OrTest.Traversals.class,

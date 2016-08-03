@@ -40,6 +40,8 @@ import java.util.stream.Stream;
         reason = "Need to investigate.")
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.SubgraphTest", method = "g_V_withSideEffectXsgX_outEXknowsX_subgraphXsgX_name_capXsgX",
         reason = "Need to investigate.")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.AddVertexTest", method = "g_addVXpersonX_propertyXsingle_name_stephenX_propertyXsingle_name_stephenm_since_2010X",
+        reason = "Missing feature requirement")
 @Graph.OptIn(UnipopGraphProvider.OptIn.UnipopStructureSuite)
 @Graph.OptIn(UnipopGraphProvider.OptIn.UnipopProcessSuite)
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_STANDARD)

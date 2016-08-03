@@ -7,7 +7,12 @@
     {
       "table": "vertex_inner",
       "id": "@ID",
-      "label": "person",
+      "label": {
+        "field": "LABEL",
+        "include": [
+          "person"
+        ]
+      },
       "dynamicProperties": {
         "excludeFields": [
           "edgeId",
@@ -21,14 +26,17 @@
         {
           "id": "@edgeId",
           "label": "knows",
-          "direction": "IN",
+          "direction": "OUT",
           "properties": {
             "weight": "@edgeWeight",
             "name": "@edgeName"
           },
           "vertex": {
             "ref": true,
-            "id": "@knownBy",
+            "id": {
+              "field":"knownBy",
+              "nullable":false
+            },
             "label": "person"
           }
         }
