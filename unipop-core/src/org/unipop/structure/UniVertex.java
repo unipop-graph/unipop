@@ -14,6 +14,7 @@ import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.SearchVertexQuery;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class UniVertex extends UniElement implements Vertex {
@@ -22,14 +23,15 @@ public class UniVertex extends UniElement implements Vertex {
 
     public UniVertex(Map<String, Object> keyValues, UniGraph graph) {
         super(keyValues, graph);
-        this.properties = new HashMap<>();
+        this.properties = new ConcurrentHashMap<>();
         keyValues.forEach((key, value) -> {
             List<VertexProperty> props;
             if (value instanceof Collection){
                 props = ((Collection<Object>) value).stream().map(v -> new UniVertexProperty<>(this, key, v)).collect(Collectors.toList());
             }
             else{
-                 props = Collections.singletonList(new UniVertexProperty<>(this, key, value));
+                props = new ArrayList<>();
+                props.add(new UniVertexProperty<>(this, key, value));
             }
             properties.put(key, props);
         });
@@ -43,7 +45,10 @@ public class UniVertex extends UniElement implements Vertex {
 
     @Override
     public void removeProperty(Property property) {
-        properties.remove(property.key());
+        List<VertexProperty> props = this.properties.get(property.key());
+        props.remove(props.indexOf(property));
+        if (props.size() == 0)
+            this.properties.remove(property.key());
         PropertyQuery<UniElement> propertyQuery = new PropertyQuery<>(this, property, PropertyQuery.Action.Remove, null);
         this.graph.getControllerManager().getControllers(PropertyQuery.PropertyController.class).forEach(controller ->
                 controller.property(propertyQuery));
@@ -63,7 +68,10 @@ public class UniVertex extends UniElement implements Vertex {
     protected Property addPropertyLocal(String key, Object value) {
         ElementHelper.validateProperty(key, value);
         UniVertexProperty property = (UniVertexProperty) createProperty(key, value);
-        properties.put(key, new ArrayList<VertexProperty>(){{add(property);}});
+        List<VertexProperty> props = this.properties.containsKey(key) ? this.properties.get(key) : new ArrayList<VertexProperty>();
+        props.add(property);
+        if (props.size() == 1)
+            properties.put(key, props);
         return property;
     }
 

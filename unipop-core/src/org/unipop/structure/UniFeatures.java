@@ -182,7 +182,7 @@ public class UniFeatures implements Graph.Features {
 
         @Override
         public boolean supportsMultiProperties() {
-            return false;
+            return true;
         }
 
         @Override

@@ -41,6 +41,12 @@ public class ConversionUtils {
                 String key = keyValues[i].toString();
                 Object value = keyValues[i + 1];
                 ElementHelper.validateProperty(key,value);
+                if (map.containsKey(key)){
+                    Object o = map.get(key);
+                    List list = o instanceof List ? ((List) o) : new ArrayList<Object>(){{add(o);}};
+                    list.add(value);
+                    value = list;
+                }
                 map.put(key, value);
             }
         }
