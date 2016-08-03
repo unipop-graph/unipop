@@ -21,11 +21,17 @@ public class MetricsRunner {
 
     public MetricsRunner(SimpleController controller, UniQuery query,
                          Collection<ElementSchema> schemas) {
-        this.metrics = query.getStepDescriptor().getMetrics();
-        this.controllerMetrics = new MutableMetrics(query.getStepDescriptor().getId() + controller.toString(), controller.toString());
+        if (query.getStepDescriptor() != null) {
+            this.metrics = query.getStepDescriptor().getMetrics();
+            this.controllerMetrics = new MutableMetrics(query.getStepDescriptor().getId() + controller.toString(), controller.toString());
+        }
+        else {
+            this.metrics = Optional.empty();
+            this.controllerMetrics = new MutableMetrics(controller.toString(), controller.toString());
+        }
         metrics.ifPresent(metric -> metric.addNested(controllerMetrics));
         controllerMetrics.start();
-        List<MutableMetrics> childMetrics = schemas.stream().map((schema) -> new MutableMetrics(query.getStepDescriptor().getId(), schema.toString())).collect(Collectors.toList());
+        List<MutableMetrics> childMetrics = schemas.stream().map((schema) -> new MutableMetrics(controllerMetrics.getId(), schema.toString())).collect(Collectors.toList());
         childMetrics.forEach(controllerMetrics::addNested);
     }
 
