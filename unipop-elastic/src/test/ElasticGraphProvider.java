@@ -13,10 +13,6 @@ import java.util.Map;
 
 public class ElasticGraphProvider extends UnipopGraphProvider {
 
-    private static String BasicConfiguration = "basic.json";
-    private static String InnerEdgeConfiguration = "innerEdge.json";
-    private static String NestedEdgeConfiguration = "nestedEdge.json";
-    private static String NestedRefEdgeConfiguration = "nestedRefEdge.json";
     private final File dataPath;
     private LocalNode node;
 

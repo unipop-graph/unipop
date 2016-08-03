@@ -16,10 +16,6 @@ import java.util.Map;
  * @since 6/20/2016
  */
 public class JdbcGraphProvider extends UnipopGraphProvider {
-    private static final String DefaultConfiguration = "default.json";
-    private static final String ModernConfiguration = "modern.json";
-    private static final String CrewConfiguration = "crew.json";
-    private static final String GratefulConfiguration = "grateful.json";
     private final Connection jdbcConnection;
 
     public JdbcGraphProvider() throws SQLException, ClassNotFoundException {
@@ -33,20 +29,23 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
     public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName, LoadGraphWith.GraphData loadGraphWith) {
         Map<String, Object> baseConfiguration = super.getBaseConfiguration(graphName, test, testMethodName, loadGraphWith);
         String configurationFile = getSchemaConfiguration(loadGraphWith);
-        URL url = this.getClass().getResource("/configuration/standard/" + configurationFile);
+        URL url = this.getClass().getResource(configurationFile);
         baseConfiguration.put("providers", url.getFile());
         return baseConfiguration;
     }
 
     private String getSchemaConfiguration(LoadGraphWith.GraphData loadGraphWith) {
-        if (loadGraphWith != null) {
+        String confDirectory = "/configuration/" + System.getenv("conf") + "/";
+        if (loadGraphWith != null)
             switch (loadGraphWith) {
-                case MODERN: return ModernConfiguration;
-                case CREW: return CrewConfiguration;
-                case GRATEFUL: return GratefulConfiguration;
+                case MODERN:
+                    return confDirectory + "modern.json";
+                case GRATEFUL:
+                    return confDirectory + "grateful.json";
+                default:
+                    return "/configuration/basic/default.json";
             }
-        }
-        return DefaultConfiguration;
+        return "/configuration/basic/default.json";
     }
 
     @Override
@@ -57,6 +56,19 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
 
     private void createTables() throws SQLException {
         //region dull tables
+        this.jdbcConnection.createStatement().execute(
+                "CREATE TABLE IF NOT EXISTS VERTEX_INNER(" +
+                        "ID VARCHAR (100) NOT NULL," +
+                        "LABEL VARCHAR(100) NOT NULL," +
+                        "NAME VARCHAR(100)," +
+                        "AGE INT," +
+                        "LANG VARCHAR (100)," +
+                        "KNOWNBY VARCHAR (100)," +
+                        "EDGEID VARCHAR (100)," +
+                        "EDGEWEIGHT DOUBLE," +
+                        "EDGENAME VARCHAR(100))"
+        );
+
         this.jdbcConnection.createStatement().execute(
                 "CREATE TABLE IF NOT EXISTS vertices(" +
                         "ID VARCHAR(100) NOT NULL PRIMARY KEY, " +
