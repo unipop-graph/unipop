@@ -35,7 +35,6 @@ public class UniVertex extends UniElement implements Vertex {
             }
             properties.put(key, props);
         });
-//        keyValues.forEach(this::addPropertyLocal);
     }
 
     @Override
@@ -79,6 +78,8 @@ public class UniVertex extends UniElement implements Vertex {
     public <V> VertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value, final Object... keyValues) {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         if (keyValues != null && keyValues.length > 0) throw VertexProperty.Exceptions.metaPropertiesNotSupported();
+        if (cardinality.equals(VertexProperty.Cardinality.single))
+            properties.remove(key);
         return this.property(key, value);
     }
 
