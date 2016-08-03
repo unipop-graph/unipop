@@ -34,9 +34,16 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void test() {
-        Traversal t = g.V().has("concat", P.within("lop_java_test", "ripple_java_test")).valueMap();//.has("name", "marko");//.valueMap();
+        final Traversal<Object, Vertex> traversal = out().out();
+        assertFalse(traversal.hasNext());
+        traversal.asAdmin().addStarts(traversal.asAdmin().getTraverserGenerator().generateIterator(g.V(), traversal.asAdmin().getSteps().get(0), 1l));
+        assertTrue(traversal.hasNext());
+        assertEquals(2, IteratorUtils.count(traversal));
 
-        check(t);
+        traversal.asAdmin().addStarts(traversal.asAdmin().getTraverserGenerator().generateIterator(g.V(), traversal.asAdmin().getSteps().get(0), 1l));
+        traversal.asAdmin().addStarts(traversal.asAdmin().getTraverserGenerator().generateIterator(g.V(), traversal.asAdmin().getSteps().get(0), 1l));
+        assertEquals(4, IteratorUtils.count(traversal));
+        assertFalse(traversal.hasNext());
     }
 
     @Test

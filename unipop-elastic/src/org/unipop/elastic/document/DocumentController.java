@@ -53,9 +53,9 @@ public class DocumentController implements SimpleController {
 
         Set<DocumentSchema> documentSchemas = collectSchemas(schemas);
         this.vertexSchemas = documentSchemas.stream().filter(schema -> schema instanceof DocumentVertexSchema)
-                .map(schema -> ((DocumentVertexSchema)schema)).collect(Collectors.toSet());
+                .map(schema -> ((DocumentVertexSchema) schema)).collect(Collectors.toSet());
         this.edgeSchemas = documentSchemas.stream().filter(schema -> schema instanceof DocumentEdgeSchema)
-                .map(schema -> ((DocumentEdgeSchema)schema)).collect(Collectors.toSet());
+                .map(schema -> ((DocumentEdgeSchema) schema)).collect(Collectors.toSet());
 
         logger.debug("Instantiated DocumentController: {}", this);
     }
@@ -64,7 +64,7 @@ public class DocumentController implements SimpleController {
         Set<DocumentSchema> docSchemas = new HashSet<>();
 
         schemas.forEach(schema -> {
-            if(schema instanceof DocumentSchema) {
+            if (schema instanceof DocumentSchema) {
                 docSchemas.add((DocumentSchema) schema);
                 Set<DocumentSchema> childSchemas = collectSchemas(schema.getChildSchemas());
                 docSchemas.addAll(childSchemas);
@@ -85,7 +85,7 @@ public class DocumentController implements SimpleController {
     //region Query Controller
 
     @Override
-    public <E extends Element>  Iterator<E> search(SearchQuery<E> uniQuery) {
+    public <E extends Element> Iterator<E> search(SearchQuery<E> uniQuery) {
         Set<? extends DocumentSchema<E>> schemas = getSchemas(uniQuery.getReturnType());
         Map<DocumentSchema<E>, Search> searches = schemas.stream()
                 .collect(new SearchCollector<>((schema) -> schema.getSearch(uniQuery)));
@@ -109,7 +109,7 @@ public class DocumentController implements SimpleController {
                 .collect(Collectors.toMap(UniElement::id, Function.identity(), (a, b) -> a));
         search.forEachRemaining(newVertex -> {
             DeferredVertex deferredVertex = vertexMap.get(newVertex.id());
-            if(deferredVertex != null) deferredVertex.loadProperties(newVertex);
+            if (deferredVertex != null) deferredVertex.loadProperties(newVertex);
         });
     }
 
@@ -117,9 +117,8 @@ public class DocumentController implements SimpleController {
     public Edge addEdge(AddEdgeQuery uniQuery) {
         UniEdge edge = new UniEdge(uniQuery.getProperties(), uniQuery.getOutVertex(), uniQuery.getInVertex(), graph);
         try {
-            if(index(this.edgeSchemas, edge, true)) return edge;
-        }
-        catch(DocumentAlreadyExistsException ex) {
+            if (index(this.edgeSchemas, edge, true)) return edge;
+        } catch (DocumentAlreadyExistsException ex) {
             logger.warn("Document already exists in elastic", ex);
             throw Graph.Exceptions.edgeWithIdAlreadyExists(edge.id());
         }
@@ -130,9 +129,8 @@ public class DocumentController implements SimpleController {
     public Vertex addVertex(AddVertexQuery uniQuery) {
         UniVertex vertex = new UniVertex(uniQuery.getProperties(), graph);
         try {
-            if(index(this.vertexSchemas, vertex, true)) return vertex;
-        }
-        catch(DocumentAlreadyExistsException ex){
+            if (index(this.vertexSchemas, vertex, true)) return vertex;
+        } catch (DocumentAlreadyExistsException ex) {
             logger.warn("Document already exists in elastic", ex);
             throw Graph.Exceptions.vertexWithIdAlreadyExists(vertex.id());
         }
@@ -155,7 +153,7 @@ public class DocumentController implements SimpleController {
     }
 
     private <E extends Element> Set<? extends DocumentSchema<E>> getSchemas(Class elementClass) {
-        if(Vertex.class.isAssignableFrom(elementClass))
+        if (Vertex.class.isAssignableFrom(elementClass))
             return (Set<? extends DocumentSchema<E>>) vertexSchemas;
         else return (Set<? extends DocumentSchema<E>>) edgeSchemas;
     }
@@ -166,18 +164,20 @@ public class DocumentController implements SimpleController {
 
     private void fillChildren(List<MutableMetrics> childMetrics, List<MultiSearchResult.MultiSearchResponse> responses) {
         for (int i = 0; i < responses.size(); i++) {
-            MutableMetrics child = childMetrics.get(i);
-            MultiSearchResult.MultiSearchResponse response = responses.get(i);
-            child.setCount(TraversalMetrics.ELEMENT_COUNT_ID, response.searchResult.getTotal());
-            child.setDuration(Long.parseLong(response.searchResult.getJsonObject().get("took").toString()), TimeUnit.MILLISECONDS   );
+            if (childMetrics.size() > i) {
+                MutableMetrics child = childMetrics.get(i);
+                MultiSearchResult.MultiSearchResponse response = responses.get(i);
+                child.setCount(TraversalMetrics.ELEMENT_COUNT_ID, response.searchResult.getTotal());
+                child.setDuration(Long.parseLong(response.searchResult.getJsonObject().get("took").toString()), TimeUnit.MILLISECONDS);
+            }
         }
     }
 
     private <E extends Element, S extends DocumentSchema<E>> Iterator<E> search(SearchQuery<E> query, Map<S, Search> schemas) {
         MetricsRunner metrics = new MetricsRunner(this, query,
-                schemas.keySet().stream().map(s-> ((ElementSchema) s)).collect(Collectors.toList()));
+                schemas.keySet().stream().map(s -> ((ElementSchema) s)).collect(Collectors.toList()));
 
-        if(schemas.size() == 0) return EmptyIterator.instance();
+        if (schemas.size() == 0) return EmptyIterator.instance();
         logger.debug("Preparing search. Schemas: {}", schemas);
 
         client.refresh();
@@ -186,7 +186,7 @@ public class DocumentController implements SimpleController {
         List<MultiSearchResult.MultiSearchResponse> responses = results.getResponses();
         metrics.stop((children) -> fillChildren(children, responses));
 
-        if(results == null || !results.isSucceeded()) return EmptyIterator.instance();
+        if (results == null || !results.isSucceeded()) return EmptyIterator.instance();
         Iterator<S> schemaIterator = schemas.keySet().iterator();
 
         return responses.stream().filter(this::valid).flatMap(result ->
@@ -194,7 +194,7 @@ public class DocumentController implements SimpleController {
     }
 
     private boolean valid(MultiSearchResult.MultiSearchResponse multiSearchResponse) {
-        if(multiSearchResponse.isError) {
+        if (multiSearchResponse.isError) {
             logger.error("failed to execute multiSearch: {}", multiSearchResponse);
             return false;
         }
@@ -202,9 +202,9 @@ public class DocumentController implements SimpleController {
     }
 
     private <E extends Element> boolean index(Set<? extends DocumentSchema<E>> schemas, E element, boolean create) {
-        for(DocumentSchema<E> schema : schemas) {
+        for (DocumentSchema<E> schema : schemas) {
             BulkableAction<DocumentResult> action = schema.addElement(element, create);
-            if(action != null) {
+            if (action != null) {
                 logger.debug("indexing element with schema: {}, element: {}, index: {}, client: {}", schema, element, action, client);
                 client.bulk(element, action);
                 return true;
@@ -215,9 +215,9 @@ public class DocumentController implements SimpleController {
     }
 
     private <E extends Element> void delete(Set<? extends DocumentSchema<E>> schemas, E element) {
-        for(DocumentSchema<E> schema : schemas) {
+        for (DocumentSchema<E> schema : schemas) {
             Delete.Builder delete = schema.delete(element);
-            if(delete != null) {
+            if (delete != null) {
                 logger.debug("deleting element with schema: {}, element: {}, client: {}", schema, element, client);
                 client.bulk(element, delete.build());
             }
@@ -228,9 +228,9 @@ public class DocumentController implements SimpleController {
 
     public class SearchCollector<K, V> implements Collector<K, Map<K, V>, Map<K, V>> {
 
-        private final Function<? super K,? extends V> valueMapper;
+        private final Function<? super K, ? extends V> valueMapper;
 
-        private SearchCollector(Function<? super K,? extends V> valueMapper) {
+        private SearchCollector(Function<? super K, ? extends V> valueMapper) {
             this.valueMapper = valueMapper;
         }
 
@@ -243,7 +243,7 @@ public class DocumentController implements SimpleController {
         public BiConsumer<Map<K, V>, K> accumulator() {
             return (map, t) -> {
                 V value = valueMapper.apply(t);
-                if(value != null) map.put(t, value);
+                if (value != null) map.put(t, value);
             };
         }
 

@@ -6,35 +6,9 @@
     {
       "index": "vertex",
       "id": "@_id",
-      "label": {
-        "field": "_type",
-        "include": "person"
-      },
+      "label": "@_type",
       "properties": {
-        "gremlin.partitionGraphStrategy.partition": "@partition",
-        "age": "@age",
-        "date": {
-          "field": "age",
-          "sourceFormat": "yy"
-        },
-        "date2": {
-          "value": "12/3/85",
-          "sourceFormat": "dd/MM/yy"
-        }
-      },
-      "dynamicProperties": true
-    },
-    {
-      "index": "vertex",
-      "id": "@_id",
-      "label": {
-        "field": "_type",
-        "include": "software"
-      },
-      "properties": {
-        "concat": {
-          "field":["@name", "@lang", "test"]
-        }
+        "gremlin.partitionGraphStrategy.partition": "@partition"
       },
       "dynamicProperties": true
     }
@@ -48,12 +22,7 @@
         "gremlin.partitionGraphStrategy.partition": "@partition"
       },
       "dynamicProperties": {
-        "excludeFields": [
-          "outId",
-          "inId",
-          "outLabel",
-          "inLabel"
-        ]
+        "excludeFields": ["outId", "inId", "outLabel", "inLabel"]
       },
       "outVertex": {
         "ref": true,
