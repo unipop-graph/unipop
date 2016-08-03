@@ -134,7 +134,7 @@ public class DocumentController implements SimpleController {
             logger.warn("Document already exists in elastic", ex);
             throw Graph.Exceptions.vertexWithIdAlreadyExists(vertex.id());
         }
-        return null;
+        return vertex;
     }
 
     @Override

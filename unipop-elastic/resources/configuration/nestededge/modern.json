@@ -7,6 +7,17 @@
   "vertices": [
     {
       "index": "vertex",
+      "type": "animal",
+      "id": "@_id",
+      "label": "animal",
+      "dynamicProperties": {
+        "excludeFields":[
+          "_type"
+        ]
+      }
+    },
+    {
+      "index": "vertex",
       "type": "person",
       "id": "@_id",
       "label": "person",
