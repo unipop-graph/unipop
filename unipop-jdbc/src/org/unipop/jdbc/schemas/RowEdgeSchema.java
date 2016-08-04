@@ -40,7 +40,7 @@ public class RowEdgeSchema extends AbstractRowSchema<Edge> implements JdbcEdgeSc
         JSONObject vertexConfiguration = this.json.optJSONObject(key);
         if(vertexConfiguration == null) return null;
         if(vertexConfiguration.optBoolean("ref", false)) return new ReferenceVertexSchema(vertexConfiguration, graph);
-        return new RowVertexSchema(vertexConfiguration, graph);
+        return new RowVertexSchema(vertexConfiguration, table, graph);
     }
 
     @Override

@@ -18,16 +18,16 @@ public class TimingExecuterListener extends DefaultExecuteListener {
     public void fetchEnd(ExecuteContext ctx) {
         super.fetchEnd(ctx);
 
-        Pair<StopWatch, Integer> stopWatchIntegerPair = timing.get(ctx.sql());
+        Pair<StopWatch, Integer> stopWatchIntegerPair = timing.get(ctx.query().toString());
         stopWatchIntegerPair.getValue0().stop();
-        timing.put(ctx.sql(),stopWatchIntegerPair.setAt1(ctx.result().size()));
+        timing.put(ctx.query().toString(),stopWatchIntegerPair.setAt1(ctx.result().size()));
     }
 
     @Override
     public void fetchStart(ExecuteContext ctx) {
         super.start(ctx);
         StopWatch stopWatch = new StopWatch();
-        timing.put(ctx.sql(), new Pair<>(stopWatch, 0));
+        timing.put(ctx.query().toString(), new Pair<>(stopWatch, 0));
         stopWatch.start();
     }
 }

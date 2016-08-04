@@ -31,7 +31,7 @@ public class MetricsRunner {
         }
         metrics.ifPresent(metric -> metric.addNested(controllerMetrics));
         controllerMetrics.start();
-        List<MutableMetrics> childMetrics = schemas.stream().map((schema) -> new MutableMetrics(controllerMetrics.getId(), schema.toString())).collect(Collectors.toList());
+        List<MutableMetrics> childMetrics = schemas.stream().map((schema) -> new MutableMetrics(controllerMetrics.getId() + schema.toString(), schema.toString())).collect(Collectors.toList());
         childMetrics.forEach(controllerMetrics::addNested);
     }
 
@@ -40,11 +40,13 @@ public class MetricsRunner {
         void fillChildren(List<MutableMetrics> children);
     }
 
-    public void stop(FillChildren fillChildren){
+    public void stop(FillChildren fillChildren) {
         controllerMetrics.stop();
-        fillChildren.fillChildren(controllerMetrics.getNested().stream().map(m -> ((MutableMetrics) m)).collect(Collectors.toList()));
-        controllerMetrics.setCount(TraversalMetrics.ELEMENT_COUNT_ID,
-                controllerMetrics.getNested().stream()
-                        .mapToLong(n -> n.getCount(TraversalMetrics.ELEMENT_COUNT_ID)).sum());
+        if (metrics.isPresent()) {
+            fillChildren.fillChildren(controllerMetrics.getNested().stream().map(m -> ((MutableMetrics) m)).collect(Collectors.toList()));
+            controllerMetrics.setCount(TraversalMetrics.ELEMENT_COUNT_ID,
+                    controllerMetrics.getNested().stream()
+                            .mapToLong(n -> n.getCount(TraversalMetrics.ELEMENT_COUNT_ID)).sum());
+        }
     }
 }

@@ -166,14 +166,16 @@ public class RowController implements SimpleController {
     }
 
     private <E extends Element, S extends JdbcSchema<E>> void fillChildren(List<MutableMetrics> children, Map<S, Select> schemas){
-        Map<String, org.javatuples.Pair<StopWatch, Integer>> timing = TimingExecuterListener.timing;
+        List<org.javatuples.Pair<StopWatch, Integer>> timing = TimingExecuterListener.timing.values().stream().collect(Collectors.toList());
         List<Map.Entry<S, Select>> sqls = schemas.entrySet().stream().collect(Collectors.toList());
         for (int i = 0; i < sqls.size(); i++) {
-            org.javatuples.Pair<StopWatch, Integer> timingCount = timing.get(sqls.get(i).getValue().getSQL());
+            org.javatuples.Pair<StopWatch, Integer> timingCount = timing.get(i);
             if (i < children.size()) {
                 MutableMetrics child = children.get(i);
-                child.setCount(TraversalMetrics.ELEMENT_COUNT_ID, timingCount.getValue1());
-                child.setDuration(timingCount.getValue0().getNanoTime(), TimeUnit.NANOSECONDS);
+                if (timingCount != null) {
+                    child.setCount(TraversalMetrics.ELEMENT_COUNT_ID, timingCount.getValue1());
+                    child.setDuration(timingCount.getValue0().getNanoTime(), TimeUnit.NANOSECONDS);
+                }
             }
             timing.remove(sqls.get(i).getValue().getSQL());
         }

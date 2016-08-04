@@ -157,7 +157,10 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
         PredicatesHolder childPredicates = childVertexSchema.toPredicates(query.getVertices());
         childPredicates = PredicatesHolderFactory.and(edgePredicates, childPredicates);
         QueryBuilder childQuery = createNestedQueryBuilder(childPredicates);
-        if(query.getDirection().equals(parentDirection.opposite())) return childQuery;
+        if(query.getDirection().equals(parentDirection.opposite())) {
+            if (childPredicates.isAborted()) return null;
+            return childQuery;
+        }
 
         PredicatesHolder parentPredicates = parentVertexSchema.toPredicates(query.getVertices());
         QueryBuilder parentQuery = createQueryBuilder(parentPredicates);

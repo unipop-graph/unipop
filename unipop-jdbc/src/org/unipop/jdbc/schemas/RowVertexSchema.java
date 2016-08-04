@@ -34,6 +34,17 @@ public class RowVertexSchema extends AbstractRowSchema<Vertex> implements JdbcVe
         }
     }
 
+    public RowVertexSchema(JSONObject configuration, String table, UniGraph graph) {
+        super(configuration, graph);
+
+        if (!table.isEmpty()) this.table = table;
+
+        for (JSONObject edgeJson : getList(json, "edges")) {
+            EdgeSchema docEdgeSchema = getEdgeSchema(edgeJson);
+            edgeSchemas.add(docEdgeSchema);
+        }
+    }
+
     @Override
     public Vertex createElement(Map<String, Object> fields) {
         Map<String, Object> properties = getProperties(fields);
