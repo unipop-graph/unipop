@@ -12,22 +12,22 @@ import java.util.Map;
  * Created by sbarzilay on 8/2/16.
  */
 public class TimingExecuterListener extends DefaultExecuteListener {
-    public static Map<String, Pair<StopWatch, Integer>> timing = new HashMap<>();
+    public static Map<String, Pair<Long, Integer>> timing = new HashMap<>();
 
     @Override
     public void fetchEnd(ExecuteContext ctx) {
         super.fetchEnd(ctx);
 
-        Pair<StopWatch, Integer> stopWatchIntegerPair = timing.get(ctx.query().toString());
-        stopWatchIntegerPair.getValue0().stop();
-        timing.put(ctx.query().toString(),stopWatchIntegerPair.setAt1(ctx.result().size()));
+        Pair<Long, Integer> stopWatchIntegerPair = timing.get(ctx.query().toString());
+        long duration = System.nanoTime() - stopWatchIntegerPair.getValue0();
+        timing.put(ctx.query().toString(), new Pair<>(duration, ctx.result().size()));
     }
 
     @Override
     public void fetchStart(ExecuteContext ctx) {
         super.start(ctx);
         StopWatch stopWatch = new StopWatch();
-        timing.put(ctx.query().toString(), new Pair<>(stopWatch, 0));
+        timing.put(ctx.query().toString(), new Pair<>(System.nanoTime(), 0));
         stopWatch.start();
     }
 }

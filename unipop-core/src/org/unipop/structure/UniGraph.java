@@ -10,6 +10,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
+import org.unipop.schema.property.PropertySchema;
 import org.unipop.test.UnipopGraphProvider;
 import org.unipop.util.ConversionUtils;
 import org.unipop.process.strategyregistrar.StandardStrategyProvider;
@@ -20,11 +21,9 @@ import org.unipop.query.mutation.AddVertexQuery;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.SearchQuery;
+import org.unipop.util.PropertySchemaFactory;
 
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -62,6 +61,17 @@ public class UniGraph implements Graph {
     public UniGraph(Configuration configuration) throws Exception {
         configuration.setProperty(Graph.GRAPH, UniGraph.class.getName());
         this.configuration = configuration;
+        List<PropertySchema.PropertySchemaBuilder> propertySchemaBuildersToRegister = new ArrayList<>();
+        if(configuration.containsKey("propertySchemas")){
+            Stream.of(configuration.getStringArray("propertiesSchemas")).map(classString -> {
+                try {
+                    return ((PropertySchema.PropertySchemaBuilder) Class.forName(classString).newInstance());
+                } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+                    throw new IllegalArgumentException("class: " + classString + " not found");
+                }
+            }).forEach(propertySchemaBuildersToRegister::add);
+        }
+        PropertySchemaFactory.build(propertySchemaBuildersToRegister);
 
         ConfigurationControllerManager configurationControllerManager = new ConfigurationControllerManager(this, configuration);
         StrategyProvider strategyProvider = determineStrategyProvider(configuration);

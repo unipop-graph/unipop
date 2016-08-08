@@ -6,6 +6,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
+import org.unipop.util.PropertySchemaFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -31,7 +32,9 @@ public class ConcatenateFieldPropertySchema implements ParentSchemaProperty {
     public Map<String, Object> toProperties(Map<String, Object> source) {
         StringJoiner values = new StringJoiner(delimiter);
         for (PropertySchema schema : schemas) {
-            schema.toProperties(source).values().stream().map(Object::toString).forEach(values::add);
+            Map<String, Object> props = schema.toProperties(source);
+            if (props != null) props.values().stream().map(Object::toString).forEach(values::add);
+            else values.add("null");
         }
         return Collections.singletonMap(key, values.toString());
     }
@@ -69,9 +72,7 @@ public class ConcatenateFieldPropertySchema implements ParentSchemaProperty {
 
     @Override
     public Set<String> toFields(Set<String> propertyKeys) {
-        return propertyKeys.contains(key) ? schemas.stream()
-                .flatMap(s -> s.toFields(propertyKeys).stream()).collect(Collectors.toSet()) :
-                Collections.emptySet();
+        return schemas.stream().flatMap(s -> s.toFields(propertyKeys).stream()).collect(Collectors.toSet());
     }
 
     private PredicatesHolder stringValueToPredicate(String value, HasContainer has, boolean collection) {
@@ -122,7 +123,7 @@ public class ConcatenateFieldPropertySchema implements ParentSchemaProperty {
             List<PropertySchema> schemas = new ArrayList<>();
             for (int i = 0; i < fieldsArray.length(); i++) {
                 Object field = fieldsArray.get(i);
-                schemas.add(AbstractPropertyContainer.createPropertySchema(key, field, true));
+                schemas.add(PropertySchemaFactory.createPropertySchema(key, field));
             }
             return new ConcatenateFieldPropertySchema(key, schemas, delimiter, config.optBoolean("nullable", true));
         }
