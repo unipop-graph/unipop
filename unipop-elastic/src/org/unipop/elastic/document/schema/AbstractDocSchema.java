@@ -139,6 +139,8 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
     }
 
     protected boolean checkIndex(String index) {
+        if (this.index.contains("*"))
+            return index.matches(this.index.replace("*", ".*"));
         return this.index.equals(index);
     }
 

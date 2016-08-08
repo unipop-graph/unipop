@@ -31,7 +31,9 @@ public class ConcatenateFieldPropertySchema implements ParentSchemaProperty {
     public Map<String, Object> toProperties(Map<String, Object> source) {
         StringJoiner values = new StringJoiner(delimiter);
         for (PropertySchema schema : schemas) {
-            schema.toProperties(source).values().stream().map(Object::toString).forEach(values::add);
+            Map<String, Object> props = schema.toProperties(source);
+            if (props != null) props.values().stream().map(Object::toString).forEach(values::add);
+            else values.add("null");
         }
         return Collections.singletonMap(key, values.toString());
     }
@@ -69,9 +71,7 @@ public class ConcatenateFieldPropertySchema implements ParentSchemaProperty {
 
     @Override
     public Set<String> toFields(Set<String> propertyKeys) {
-        return propertyKeys.contains(key) ? schemas.stream()
-                .flatMap(s -> s.toFields(propertyKeys).stream()).collect(Collectors.toSet()) :
-                Collections.emptySet();
+        return schemas.stream().flatMap(s -> s.toFields(propertyKeys).stream()).collect(Collectors.toSet());
     }
 
     private PredicatesHolder stringValueToPredicate(String value, HasContainer has, boolean collection) {

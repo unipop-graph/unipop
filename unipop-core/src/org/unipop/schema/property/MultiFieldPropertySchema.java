@@ -58,9 +58,7 @@ public class MultiFieldPropertySchema implements ParentSchemaProperty {
 
     @Override
     public Set<String> toFields(Set<String> propertyKeys) {
-        return propertyKeys.contains(key) ? schemas.stream()
-                .flatMap(s -> s.toFields(propertyKeys).stream()).collect(Collectors.toSet()) :
-                Collections.emptySet();
+        return schemas.stream().flatMap(s -> s.toFields(propertyKeys).stream()).collect(Collectors.toSet());
     }
 
     @Override
