@@ -1,6 +1,7 @@
 package org.unipop.process.predicate;
 
 import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import java.util.function.BiPredicate;
@@ -106,7 +107,10 @@ public class Text {
         FUZZY {
             @Override
             public boolean test(final Object first, final Object second) {
-                throw new NotImplementedException("Fuzzy search only implemented in elastic controllers");
+                int levenshteinDistance = StringUtils.getLevenshteinDistance(second.toString(), first.toString());
+                if (levenshteinDistance <= 3)
+                    return true;
+                return false;
             }
 
             /**
@@ -120,7 +124,7 @@ public class Text {
         UNFUZZY {
             @Override
             public boolean test(final Object first, final Object second) {
-                throw new NotImplementedException("Fuzzy search only implemented in elastic controllers");
+                return !negate().test(first, second);
             }
 
             /**
