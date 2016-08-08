@@ -19,9 +19,7 @@ public interface ParentSchemaProperty extends PropertySchema{
     }
 
     default Set<String> toFields(Set<String> propertyKeys) {
-        return propertyKeys.contains(getKey()) ? getChildren().stream()
-                .flatMap(s -> s.toFields(propertyKeys).stream()).collect(Collectors.toSet()) :
-                Collections.emptySet();
+        return getChildren().stream().flatMap(s -> s.toFields(propertyKeys).stream()).collect(Collectors.toSet());
     }
 
     default Map<String, Object> toFields(Map<String, Object> properties){

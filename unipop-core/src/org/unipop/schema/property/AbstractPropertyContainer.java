@@ -26,6 +26,7 @@ public abstract class AbstractPropertyContainer {
         builders.add(new StaticDatePropertySchema.Builder());
         builders.add(new MultiFieldPropertySchema.Builder());
         builders.add(new ConcatenateFieldPropertySchema.Builder());
+        builders.add(new CoalescePropertySchema.Builder());
         Collections.reverse(builders);
         createPropertySchemas();
     }

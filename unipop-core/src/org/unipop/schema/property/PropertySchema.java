@@ -24,7 +24,7 @@ public interface PropertySchema {
     default PredicatesHolder toPredicate(HasContainer hasContainer) { return null; }
 
     default Set<String> excludeDynamicFields() { return Collections.emptySet(); }
-    default Set<String> excludeDynamicProperties() { return Collections.emptySet(); }
+    default Set<String> excludeDynamicProperties() { return Collections.singleton(getKey()); }
 
     interface PropertySchemaBuilder {
         PropertySchema build(String key, Object conf);

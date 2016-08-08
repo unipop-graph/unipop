@@ -61,7 +61,7 @@ public class PredicatesHolderFactory {
         if(predicatesHolders.size() == 0) return empty();
 
         List<PredicatesHolder> filteredPredicateHolders = predicatesHolders.stream()
-                .filter(PredicatesHolder::notAborted).collect(Collectors.toList());
+                .filter(p -> p != null).filter(PredicatesHolder::notAborted).collect(Collectors.toList());
         if(filteredPredicateHolders.size() == 0) return abort();
         if(filteredPredicateHolders.size() == 1) return filteredPredicateHolders.iterator().next();
 
