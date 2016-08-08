@@ -1,33 +1,22 @@
 package org.unipop.schema.property;
 
 import org.apache.tinkerpop.gremlin.structure.T;
-import org.json.JSONArray;
 import org.json.JSONObject;
 import org.unipop.structure.UniGraph;
+import org.unipop.util.PropertySchemaFactory;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 public abstract class AbstractPropertyContainer {
     protected final UniGraph graph;
     protected final JSONObject json;
     protected ArrayList<PropertySchema> propertySchemas = new ArrayList<>();
     protected DynamicPropertySchema dynamicProperties;
-    public static List<PropertySchema.PropertySchemaBuilder> builders = new ArrayList<>();
 
     public AbstractPropertyContainer(JSONObject json, UniGraph graph) {
         this.json = json;
         this.graph = graph;
-        builders.add(new StaticPropertySchema.Builder());
-        builders.add(new FieldPropertySchema.Builder());
-        builders.add(new DateFieldPropertySchema.Builder());
-        builders.add(new StaticDatePropertySchema.Builder());
-        builders.add(new MultiFieldPropertySchema.Builder());
-        builders.add(new ConcatenateFieldPropertySchema.Builder());
-        builders.add(new CoalescePropertySchema.Builder());
-        Collections.reverse(builders);
         createPropertySchemas();
     }
 
@@ -36,12 +25,12 @@ public abstract class AbstractPropertyContainer {
     }
 
     protected void createPropertySchemas() {
-        addPropertySchema(T.id.getAccessor(), json.get(T.id.toString()), false);
-        addPropertySchema(T.label.getAccessor(), json.get(T.label.toString()), false);
+        addPropertySchema(T.id.getAccessor(), json.get(T.id.toString()));
+        addPropertySchema(T.label.getAccessor(), json.get(T.label.toString()));
 
         JSONObject properties = json.optJSONObject("properties");
         if (properties != null) {
-            properties.keys().forEachRemaining(key -> addPropertySchema(key, properties.get(key), true));
+            properties.keys().forEachRemaining(key -> addPropertySchema(key, properties.get(key)));
         }
 
         Object dynamicPropertiesConfig = json.opt("dynamicProperties");
@@ -54,8 +43,8 @@ public abstract class AbstractPropertyContainer {
         propertySchemas.add(this.dynamicProperties);
     }
 
-    protected void addPropertySchema(String key, Object value, boolean nullable) {
-        PropertySchema propertySchema = createPropertySchema(key, value, nullable);
+    protected void addPropertySchema(String key, Object value) {
+        PropertySchema propertySchema = PropertySchemaFactory.createPropertySchema(key, value);
         propertySchemas.add(propertySchema);
     }
 
@@ -67,11 +56,5 @@ public abstract class AbstractPropertyContainer {
                 ", graph=" + graph +
                 ", propertySchemas=" + propertySchemas +
                 '}';
-    }
-
-    protected static PropertySchema createPropertySchema(String key, Object value, boolean nullable) {
-        Optional<PropertySchema> first = builders.stream().map(builder -> builder.build(key, value)).filter(schema -> schema != null).findFirst();
-        if (first.isPresent()) return first.get();
-        throw new IllegalArgumentException("Unrecognized property: " + key + " - " + value);
     }
 }

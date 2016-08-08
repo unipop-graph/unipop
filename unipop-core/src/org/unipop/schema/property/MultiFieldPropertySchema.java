@@ -4,6 +4,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.json.JSONArray;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
+import org.unipop.util.PropertySchemaFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -81,7 +82,7 @@ public class MultiFieldPropertySchema implements ParentSchemaProperty {
             JSONArray fieldsArray = (JSONArray) conf;
             List<PropertySchema> schemas = new ArrayList<>();
             for (int i = 0; i < fieldsArray.length(); i++) {
-                schemas.add(AbstractPropertyContainer.createPropertySchema(key, fieldsArray.get(i), true));
+                schemas.add(PropertySchemaFactory.createPropertySchema(key, fieldsArray.get(i)));
             }
             return new MultiFieldPropertySchema(key, schemas);
         }

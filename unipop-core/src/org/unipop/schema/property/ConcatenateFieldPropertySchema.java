@@ -6,6 +6,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
+import org.unipop.util.PropertySchemaFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -122,7 +123,7 @@ public class ConcatenateFieldPropertySchema implements ParentSchemaProperty {
             List<PropertySchema> schemas = new ArrayList<>();
             for (int i = 0; i < fieldsArray.length(); i++) {
                 Object field = fieldsArray.get(i);
-                schemas.add(AbstractPropertyContainer.createPropertySchema(key, field, true));
+                schemas.add(PropertySchemaFactory.createPropertySchema(key, field));
             }
             return new ConcatenateFieldPropertySchema(key, schemas, delimiter, config.optBoolean("nullable", true));
         }
