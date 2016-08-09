@@ -58,6 +58,7 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
     }
 
     protected QueryBuilder createQueryBuilder(PredicatesHolder predicatesHolder) {
+        if (predicatesHolder.isAborted()) return null;
         return FilterHelper.createFilterBuilder(predicatesHolder);
     }
 

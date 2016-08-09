@@ -56,7 +56,7 @@
                                 <environmentVariables>
                                     <conf>basic</conf>
                                 </environmentVariables>
-                                <skip>false</skip>
+                                <skip>true</skip>
                                 <reportNameSuffix>BASIC</reportNameSuffix>
                             </configuration>
                         </execution>
@@ -72,7 +72,7 @@
                                 <environmentVariables>
                                     <conf>inneredge</conf>
                                 </environmentVariables>
-                                <skip>false</skip>
+                                <skip>true</skip>
                                 <reportNameSuffix>INNER</reportNameSuffix>
                             </configuration>
                         </execution>
