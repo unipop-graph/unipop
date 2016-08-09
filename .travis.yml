@@ -1,0 +1,13 @@
+language: java
+os:
+  - linux
+jdk:
+  - oraclejdk8
+sudo: required
+dist: trusty
+addons:
+  apt:
+    packages:
+      - oracle-java8-installer
+script: 
+- "mvn clean install -Dci"

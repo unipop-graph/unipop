@@ -160,23 +160,22 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
         if(query.getDirection().equals(parentDirection.opposite())) {
             if (childPredicates.isAborted()) return null;
             return childQuery;
-        }
+        } else if (!query.getDirection().equals(Direction.BOTH)) childQuery = null;
 
         PredicatesHolder parentPredicates = parentVertexSchema.toPredicates(query.getVertices());
         QueryBuilder parentQuery = createQueryBuilder(parentPredicates);
         if(parentQuery != null) {
-            if (parentPredicates.isAborted()) return null;
+//            if (parentPredicates.isAborted()) return null;
             QueryBuilder edgeQuery = createNestedQueryBuilder(edgePredicates);
             if (edgeQuery != null) {
                 parentQuery = QueryBuilders.andQuery(parentQuery, edgeQuery);
             }
         }
-        if(query.getDirection().equals(parentDirection)) return parentQuery;
-
-        if(childQuery == null) return parentQuery;
-        if(parentQuery == null) return childQuery;
-        return QueryBuilders.orQuery(parentQuery, childQuery);
-
+        if(query.getDirection().equals(parentDirection) && parentPredicates.notAborted()) return parentQuery;
+        else if(childQuery == null && parentPredicates.notAborted()) return parentQuery;
+        else if(parentQuery == null && childPredicates.notAborted()) return childQuery;
+        else if(parentPredicates.isAborted() && childPredicates.isAborted()) return null;
+        else return QueryBuilders.orQuery(parentQuery, childQuery);
     }
 
     private QueryBuilder createNestedQueryBuilder(PredicatesHolder nestedPredicates) {

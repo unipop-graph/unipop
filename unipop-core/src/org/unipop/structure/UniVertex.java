@@ -38,6 +38,11 @@ public class UniVertex extends UniElement implements Vertex {
     }
 
     @Override
+    public Set<String> keys() {
+        return properties.keySet();
+    }
+
+    @Override
     protected Map<String, Property> getPropertiesMap() {
         throw new NotImplementedException();
     }
