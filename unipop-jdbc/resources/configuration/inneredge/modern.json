@@ -13,28 +13,32 @@
           "person"
         ]
       },
+      "properties":{
+        "name": "@NAME",
+        "age": "@AGE"
+      },
       "dynamicProperties": {
         "excludeFields": [
-          "edgeId",
-          "knownBy",
-          "edgeWeight",
-          "edgeName",
+          "EDGEID",
+          "KNOWNID",
+          "EDGEWEIGHT",
+          "EDGENAME",
           "LABEL"
         ]
       },
       "edges": [
         {
-          "id": "@edgeId",
+          "id": "@EDGEID",
           "label": "knows",
           "direction": "OUT",
           "properties": {
-            "weight": "@edgeWeight",
-            "name": "@edgeName"
+            "weight": "@EDGEWEIGHT",
+            "name": "@EDGENAME"
           },
           "vertex": {
             "ref": true,
             "id": {
-              "field":"knownBy",
+              "field":"KNOWNBY",
               "nullable":false
             },
             "label": "person"
@@ -51,7 +55,10 @@
           "person"
         ]
       },
-      "properties": {},
+      "properties": {
+        "name": "@NAME",
+        "lang": "@LANG"
+      },
       "dynamicProperties": true
     }
   ],
@@ -65,26 +72,33 @@
           "knows"
         ]
       },
-      "properties": {},
+      "properties": {
+        "weight": "@WEIGHT"
+      },
       "dynamicProperties": {
+        "excludeProperties":[
+          "name", "age"
+        ],
         "excludeFields": [
-          "outId",
-          "inId",
-          "outLabel",
-          "inLabel"
+          "OUTID",
+          "INID",
+          "OUTLABEL",
+          "INLABEL"
         ]
       },
       "outVertex": {
         "ref": true,
-        "id": "@outId",
-        "label": "@outLabel",
-        "properties": {}
+        "id": "@OUTID",
+        "label": "@OUTLABEL",
+        "properties":{
+        }
       },
       "inVertex": {
         "ref": true,
-        "id": "@inId",
-        "label": "@inLabel",
-        "properties": {}
+        "id": "@INID",
+        "label": "@INLABEL",
+        "properties":{
+        }
       }
     }
   ]

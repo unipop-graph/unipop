@@ -12,6 +12,8 @@ import org.unipop.schema.element.ElementSchema;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author Gur Ronen
@@ -50,7 +52,7 @@ public interface JdbcSchema<E extends Element> extends ElementSchema<E> {
         private final Object id;
         private final Map<String, Object> fields;
 
-        private final String idField;
+        private final Set<String> idField;
 
 
         public Row(String table, Object id, Map<String, Object> fields) {
@@ -58,7 +60,7 @@ public interface JdbcSchema<E extends Element> extends ElementSchema<E> {
             this.id = id;
             this.fields = fields;
 
-            this.idField = this.fields.entrySet().stream().filter(en -> id.equals(en.getValue())).map(Map.Entry::getKey).findFirst().get();
+            this.idField = this.fields.entrySet().stream().filter(en -> id.equals(en.getValue())).map(Map.Entry::getKey).collect(Collectors.toSet());
         }
 
         public String getTable() {
@@ -73,7 +75,7 @@ public interface JdbcSchema<E extends Element> extends ElementSchema<E> {
             return fields;
         }
 
-        public String getIdField() {
+        public Set<String> getIdField() {
             return this.idField;
         }
 

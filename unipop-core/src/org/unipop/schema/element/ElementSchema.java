@@ -11,6 +11,7 @@ public interface ElementSchema<E extends Element> {
     Map<String, Object> toFields(E element);
     Set<String> toFields(Set<String> propertyKeys);
     PredicatesHolder toPredicates(PredicatesHolder predicatesHolder);
+    String getFieldByPropertyKey(String key);
 
     default Set<ElementSchema> getChildSchemas() { return Collections.emptySet(); }
 }
