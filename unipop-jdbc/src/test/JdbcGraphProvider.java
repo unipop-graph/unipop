@@ -30,7 +30,6 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
         Map<String, Object> baseConfiguration = super.getBaseConfiguration(graphName, test, testMethodName, loadGraphWith);
         String configurationFile = getSchemaConfiguration(loadGraphWith);
         URL url = this.getClass().getResource(configurationFile);
-        System.out.println(configurationFile);
         baseConfiguration.put("providers", url.getFile());
         return baseConfiguration;
     }
