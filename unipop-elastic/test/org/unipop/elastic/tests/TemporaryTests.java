@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import test.ElasticGraphProvider;
 
 import java.util.List;
+import java.util.Random;
 import java.util.UUID;
 
 import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
@@ -33,8 +34,34 @@ public class TemporaryTests extends AbstractGremlinTest {
 
     @Test
     @LoadGraphWith(MODERN)
+    public void shouldTraversalResetProperly() {
+        final Traversal<Object, Vertex> traversal = as("a").out().out().has("name", P.within("ripple", "lop")).as("b");
+        if (new Random().nextBoolean()) traversal.asAdmin().reset();
+        assertFalse(traversal.hasNext());
+        traversal.asAdmin().addStarts(traversal.asAdmin().getTraverserGenerator().generateIterator(g.V(), traversal.asAdmin().getSteps().get(0), 1l));
+        assertTrue(traversal.hasNext());
+        assertEquals(2, IteratorUtils.count(traversal));
+
+        if (new Random().nextBoolean()) traversal.asAdmin().reset();
+        traversal.asAdmin().addStarts(traversal.asAdmin().getTraverserGenerator().generateIterator(g.V(), traversal.asAdmin().getSteps().get(0), 1l));
+        assertTrue(traversal.hasNext());
+        traversal.next();
+        assertTrue(traversal.hasNext());
+        traversal.asAdmin().reset();
+        assertFalse(traversal.hasNext());
+
+        traversal.asAdmin().addStarts(traversal.asAdmin().getTraverserGenerator().generateIterator(g.V(), traversal.asAdmin().getSteps().get(0), 1l));
+        assertEquals(2, IteratorUtils.count(traversal));
+
+        assertFalse(traversal.hasNext());
+        if (new Random().nextBoolean()) traversal.asAdmin().reset();
+        assertFalse(traversal.hasNext());
+    }
+
+    @Test
+    @LoadGraphWith(MODERN)
     public void test() {
-        Traversal t = g.V().valueMap();
+        Traversal t = g.V().out().outE().inV().inE().inV().both();//.values("name");
         check(t);
     }
 
