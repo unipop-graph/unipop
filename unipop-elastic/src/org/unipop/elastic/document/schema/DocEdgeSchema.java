@@ -80,6 +80,7 @@ public class DocEdgeSchema extends AbstractDocSchema<Edge> implements DocumentEd
         PredicatesHolder edgePredicates = this.toPredicates(query.getPredicates());
         PredicatesHolder vertexPredicates = this.getVertexPredicates(query.getVertices(), query.getDirection());
         PredicatesHolder predicatesHolder = PredicatesHolderFactory.and(edgePredicates, vertexPredicates);
+        if (predicatesHolder.isAborted()) return null;
         QueryBuilder queryBuilder = createQueryBuilder(predicatesHolder);
         return createSearch(query, queryBuilder);
     }
@@ -87,9 +88,13 @@ public class DocEdgeSchema extends AbstractDocSchema<Edge> implements DocumentEd
     protected PredicatesHolder getVertexPredicates(List<Vertex> vertices, Direction direction) {
         PredicatesHolder outPredicates = this.outVertexSchema.toPredicates(vertices);
         PredicatesHolder inPredicates = this.inVertexSchema.toPredicates(vertices);
-        if(direction.equals(Direction.OUT)) return outPredicates;
-        if(direction.equals(Direction.IN)) return inPredicates;
-        return PredicatesHolderFactory.or(inPredicates, outPredicates);
+        if(direction.equals(Direction.OUT) && outPredicates.notAborted()) return outPredicates;
+        if(direction.equals(Direction.IN) && inPredicates.notAborted()) return inPredicates;
+        if (outPredicates.notAborted() && inPredicates.notAborted())
+            return PredicatesHolderFactory.or(inPredicates, outPredicates);
+        else if (outPredicates.isAborted()) return inPredicates;
+        else if (inPredicates.isAborted()) return outPredicates;
+        else return PredicatesHolderFactory.abort();
     }
 
     @Override

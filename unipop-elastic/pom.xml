@@ -69,7 +69,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <configuration>
-                        <testFailureIgnore>true</testFailureIgnore>
+                        <testFailureIgnore>false</testFailureIgnore>
                     </configuration>
                     <executions>
                         <execution>
@@ -79,7 +79,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
                             </goals>
                             <configuration>
                                 <includes>
-                                    <include>**/*Elastic*Suite*.java</include>
+                                    <include>**/*ElasticProcessSuite*.java</include>
                                 </includes>
                                 <environmentVariables>
                                     <conf>basic</conf>
@@ -95,7 +95,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
                             </goals>
                             <configuration>
                                 <includes>
-                                    <include>**/*Elastic*Suite*.java</include>
+                                    <include>**/*ElasticProcessSuite*.java</include>
                                 </includes>
                                 <environmentVariables>
                                     <conf>inner</conf>
@@ -111,7 +111,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
                             </goals>
                             <configuration>
                                 <includes>
-                                    <include>**/*Elastic*Suite*.java</include>
+                                    <include>**/*ElasticProcessSuite*.java</include>
                                 </includes>
                                 <environmentVariables>
                                     <conf>nestededge</conf>
@@ -127,7 +127,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
                             </goals>
                             <configuration>
                                 <includes>
-                                    <include>**/*Elastic*Suite*.java</include>
+                                    <include>**/*ElasticProcessSuite`*.java</include>
                                 </includes>
                                 <environmentVariables>
                                     <conf>nestededgeref</conf>
