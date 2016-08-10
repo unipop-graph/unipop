@@ -105,6 +105,12 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
                         "age int)");
 
         this.jdbcConnection.createStatement().execute(
+                "CREATE TABLE IF NOT EXISTS ANIMAL_MODERN(" +
+                        "id VARCHAR(100) NOT NULL, " +
+                        "name varchar(100), " +
+                        "age int)");
+
+        this.jdbcConnection.createStatement().execute(
                 "CREATE TABLE IF NOT EXISTS SOFTWARE_MODERN(" +
                         "id VARCHAR(100) NOT NULL, " +
                         "name varchar(100), " +
@@ -171,7 +177,7 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
 
         this.jdbcConnection.createStatement().execute(
                 "CREATE TABLE IF NOT EXISTS GRATEFUL_DEAD_EDGES(" +
-                        "id VARCHAR(100) NOT NULL, " +
+                        "id VARCHAR(100) NOT NULL PRIMARY KEY, " +
                         "label VARCHAR(100) NOT NULL," +
                         "outId VARCHAR(100), " +
                         "outLabel VARCHAR(100), " +
@@ -187,6 +193,7 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
         this.jdbcConnection.createStatement().execute("TRUNCATE TABLE edges");
 
         this.jdbcConnection.createStatement().execute("TRUNCATE TABLE PERSON_MODERN");
+        this.jdbcConnection.createStatement().execute("TRUNCATE TABLE ANIMAL_MODERN");
         this.jdbcConnection.createStatement().execute("TRUNCATE TABLE SOFTWARE_MODERN");
 
         this.jdbcConnection.createStatement().execute("TRUNCATE TABLE PERSON_CREW");

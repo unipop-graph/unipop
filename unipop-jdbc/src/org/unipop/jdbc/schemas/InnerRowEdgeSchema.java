@@ -3,6 +3,7 @@ package org.unipop.jdbc.schemas;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.jooq.Field;
 import org.jooq.Query;
 import org.jooq.impl.DSL;
@@ -63,7 +64,6 @@ public class InnerRowEdgeSchema extends RowEdgeSchema {
         if (row == null) return null;
         Map<Field<Object>, Object> fields = row.getFields().entrySet().stream()
                 .collect(Collectors.toMap((entry) -> field(entry.getKey()), Map.Entry::getValue));
-
-        return DSL.update(table(getTable())).set(fields).where(field(row.getIdField()).eq(row.getId()));
+        return DSL.update(table(getTable())).set(fields).where(field(this.getFieldByPropertyKey(T.id.getAccessor())).eq(row.getId()));
     }
 }
