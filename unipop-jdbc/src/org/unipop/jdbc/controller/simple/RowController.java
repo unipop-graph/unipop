@@ -8,10 +8,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.jooq.*;
 import org.jooq.exception.DataAccessException;
@@ -234,10 +231,10 @@ public class RowController implements SimpleController {
 
             Map<Field<?>, Object> fieldMap = Maps.newHashMap();
             row.getFields().entrySet().stream().map(this::mapSet).forEach(en -> fieldMap.put(en.getKey(), en.getValue()));
-            fieldMap.remove(field(row.getIdField()));
 
             Update step = this.getDslContext().update(table(schema.getTable()))
-                    .set(fieldMap).where(field(row.getIdField()).eq(row.getId()));
+                    .set(fieldMap).where(field(schema.getFieldByPropertyKey(T.id.getAccessor())).eq(row.getId()));
+
             step.execute();
             logger.info("executed update statement with following parameters, step: {}, element: {}, schema: {}", step, element, schema);
             dslContext.execute("commit;");

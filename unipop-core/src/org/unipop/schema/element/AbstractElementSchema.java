@@ -9,9 +9,7 @@ import org.unipop.structure.UniElement;
 import org.unipop.structure.UniGraph;
 import org.unipop.util.ConversionUtils;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public abstract class AbstractElementSchema<E extends Element> extends AbstractPropertyContainer implements ElementSchema<E> {
@@ -63,6 +61,13 @@ public abstract class AbstractElementSchema<E extends Element> extends AbstractP
     public Set<String> toFields(Set<String> propertyKeys) {
         return getPropertySchemas().stream().flatMap(propertySchema ->
                 propertySchema.toFields(propertyKeys).stream()).collect(Collectors.toSet());
+    }
+
+    @Override
+    public String getFieldByPropertyKey(String key){
+        Optional<String> first = propertySchemas.stream().flatMap(s -> s.toFields(Collections.singleton(key)).stream()).findFirst();
+        if (first.isPresent()) return first.get();
+        else return null;
     }
 
     @Override

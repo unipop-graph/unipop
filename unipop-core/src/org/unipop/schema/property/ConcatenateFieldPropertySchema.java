@@ -100,6 +100,7 @@ public class ConcatenateFieldPropertySchema implements ParentSchemaProperty {
             Collection collection = (Collection) value;
             collection.forEach(v -> predicates.add(stringValueToPredicate(v.toString(), has, true)));
             Map<String, List<HasContainer>> collect = predicates.stream().flatMap(p -> p.getPredicates().stream()).collect(Collectors.groupingBy(p -> p.getKey()));
+            if (collect.size() == 0) return PredicatesHolderFactory.abort();
             predicates.clear();
             collect.forEach((key, hasContainers) -> {
                 List<Object> values = hasContainers.stream().map(HasContainer::getValue)
