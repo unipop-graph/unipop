@@ -9,6 +9,7 @@ import org.jooq.Field;
 import org.jooq.impl.DSL;
 import org.unipop.common.util.PredicatesTranslator;
 import org.unipop.process.predicate.ExistsP;
+import org.unipop.process.predicate.Text;
 import org.unipop.query.predicates.PredicatesHolder;
 
 import java.util.Collection;
@@ -18,6 +19,7 @@ import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
 import static org.jooq.impl.DSL.field;
+import static org.jooq.impl.DSL.val;
 
 /**
  * @author Gur Ronen
@@ -90,6 +92,24 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
             }
         } else if (predicate instanceof ExistsP) {
             return field.isNotNull();
+        } else if (biPredicate instanceof Text.TextPredicate) {
+            String predicateString = biPredicate.toString();
+            switch (predicateString) {
+                case ("LIKE"):
+                    return field.like(value.toString().replace("*", "%"));
+                case ("UNLIKE"):
+                    return field.notLike(value.toString().replace("*", "%"));
+                case ("REGEXP"):
+                    return field.likeRegex(value.toString());
+                case ("UNREGEXP"):
+                    return field.notLikeRegex(value.toString());
+                case ("PREFIX"):
+                    return field.like(value.toString() + "%");
+                case ("UNPREFIX"):
+                    return field.notLike(value.toString() + "%");
+                default:
+                    throw new IllegalArgumentException("predicate not supported in has step: " + biPredicate.toString());
+            }
         }
 
         throw new IllegalArgumentException("Predicate not supported in JDBC");
