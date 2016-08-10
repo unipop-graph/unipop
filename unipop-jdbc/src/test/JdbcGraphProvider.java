@@ -61,6 +61,12 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
                         "ID VARCHAR (100) NOT NULL," +
                         "LABEL VARCHAR(100) NOT NULL," +
                         "NAME VARCHAR(100)," +
+                        "marko VARCHAR(100)," +
+                        "josh VARCHAR(100)," +
+                        "vadas VARCHAR(100)," +
+                        "ripple VARCHAR(100)," +
+                        "lop VARCHAR(100)," +
+                        "peter VARCHAR(100)," +
                         "AGE INT," +
                         "LANG VARCHAR (100)," +
                         "KNOWNBY VARCHAR (100)," +
@@ -92,6 +98,8 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
                         "inId VARCHAR(100), " +
                         "inLabel VARCHAR(100)," +
                         "year VARCHAR(100)," +
+                        "acl VARCHAR(100)," +
+                        "time VARCHAR(100)," +
                         "location VARCHAR(100)," +
                         "data VARCHAR(100)," +
                         "weight DOUBLE)");
@@ -191,6 +199,7 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
     public void truncateTables() throws SQLException {
         this.jdbcConnection.createStatement().execute("TRUNCATE TABLE vertices");
         this.jdbcConnection.createStatement().execute("TRUNCATE TABLE edges");
+        this.jdbcConnection.createStatement().execute("TRUNCATE TABLE vertex_inner");
 
         this.jdbcConnection.createStatement().execute("TRUNCATE TABLE PERSON_MODERN");
         this.jdbcConnection.createStatement().execute("TRUNCATE TABLE ANIMAL_MODERN");
