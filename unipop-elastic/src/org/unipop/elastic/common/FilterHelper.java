@@ -9,6 +9,7 @@ import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.index.query.*;
 import org.unipop.process.predicate.ExistsP;
+import org.unipop.process.predicate.Text;
 import org.unipop.query.predicates.PredicatesHolder;
 
 import java.util.Collection;
@@ -57,10 +58,27 @@ public class FilterHelper {
             if (biPredicate instanceof Compare) return getCompareFilter(key, value, biPredicate.toString());
             else if (biPredicate instanceof Contains) return getContainsFilter(key, value, biPredicate);
             else if (biPredicate instanceof Geo) return getGeoFilter(key, value, (Geo) biPredicate);
+            else if (biPredicate instanceof Text.TextPredicate) return getTextFilter(key, value, (Text.TextPredicate) biPredicate);
             else throw new IllegalArgumentException("predicate not supported by unipop: " + biPredicate.toString());
         }
         else if (predicate instanceof ExistsP) return QueryBuilders.existsQuery(key);
         else throw new IllegalArgumentException("HasContainer not supported by unipop");
+    }
+
+    private static QueryBuilder getTextFilter(String key, Object value, Text.TextPredicate biPredicate) {
+        String predicate = biPredicate.toString();
+        switch (predicate){
+            case "LIKE": return QueryBuilders.wildcardQuery(key, value.toString());
+            case "UNLIKE": return QueryBuilders.boolQuery().mustNot(QueryBuilders.wildcardQuery(key, value.toString()));
+            case "PREFIX": return QueryBuilders.prefixQuery(key, value.toString());
+            case "UNPREFIX": return QueryBuilders.boolQuery().mustNot(QueryBuilders.prefixQuery(key, value.toString()));
+            case "REGEXP": return QueryBuilders.regexpQuery(key, value.toString());
+            case "UNREGEXP": return QueryBuilders.boolQuery().mustNot(QueryBuilders.regexpQuery(key, value.toString()));
+            case "FUZZY": return QueryBuilders.fuzzyQuery(key, value.toString());
+            case "UNFUZZY": return QueryBuilders.boolQuery().mustNot(QueryBuilders.fuzzyQuery(key, value.toString()));
+            default:
+                throw new IllegalArgumentException("predicate not supported in has step: " + predicate);
+        }
     }
 
     private static QueryBuilder getTypeFilter(HasContainer has) {
