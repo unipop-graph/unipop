@@ -33,6 +33,10 @@ public class PropertySchemaFactory {
         throw new IllegalArgumentException("Unrecognized property: " + key + " - " + value);
     }
 
+    public static void addBuilder(PropertySchema.PropertySchemaBuilder builder){
+        if (!builders.contains(builder)) builders.add(0, builder);
+    }
+
     public static PropertySchemaFactory build(List<PropertySchema.PropertySchemaBuilder> toRegister){
         if (self == null) self = new PropertySchemaFactory(toRegister);
         return self;

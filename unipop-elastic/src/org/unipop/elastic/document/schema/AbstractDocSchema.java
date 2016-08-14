@@ -6,8 +6,6 @@ import io.searchbox.core.DocumentResult;
 import io.searchbox.core.Index;
 import io.searchbox.core.Search;
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.shaded.jackson.databind.JsonNode;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
@@ -19,12 +17,15 @@ import org.unipop.elastic.common.ElasticClient;
 import org.unipop.elastic.common.FilterHelper;
 import org.unipop.elastic.document.Document;
 import org.unipop.elastic.document.DocumentSchema;
+import org.unipop.elastic.document.schema.property.IndexPropertySchema;
 import org.unipop.query.predicates.PredicateQuery;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.SearchQuery;
 import org.unipop.schema.element.AbstractElementSchema;
+import org.unipop.structure.UniElement;
 import org.unipop.structure.UniGraph;
+import org.unipop.util.PropertySchemaFactory;
 
 import java.io.IOException;
 import java.util.*;
@@ -32,21 +33,21 @@ import java.util.*;
 public abstract class AbstractDocSchema<E extends Element> extends AbstractElementSchema<E> implements DocumentSchema<E> {
     protected final ElasticClient client;
     protected String type;
-    protected String index;
+    protected IndexPropertySchema index;
     protected ObjectMapper mapper = new ObjectMapper();
 
     public AbstractDocSchema(JSONObject configuration, ElasticClient client, UniGraph graph) throws JSONException {
         super(configuration, graph);
         this.client = client;
-        this.index = json.optString("index", null);
+        this.index = (IndexPropertySchema) PropertySchemaFactory.createPropertySchema("index", json.opt("index"));
         this.type = json.optString("type", null);
 
-        client.validateIndex(index);
+//        client.validateIndex(index);
     }
 
     @Override
     public String getIndex() {
-        return index;
+        return index.getIndex();
     }
 
     @Override
@@ -75,7 +76,7 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
         }
 
         Search.Builder builder = new Search.Builder(searchSourceBuilder.toString().replace("\n", ""))
-                .addIndex(index);
+                .addIndex(index.getIndex(query.getPredicates()));
         return builder.build();
     }
 
@@ -127,7 +128,7 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
         String type = ObjectUtils.firstNonNull(fields.remove("_type"), this.type).toString();
         if (!checkType(type)) return null;
         String id = ObjectUtils.firstNonNull(fields.remove("_id"), fields.remove("id"), element.id()).toString();
-        return new Document(index, type, id, fields);
+        return new Document(index.getIndex(fields), type, id, fields);
     }
 
     protected Collection<E> fromDocument(Document document){
@@ -140,8 +141,8 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
     }
 
     protected boolean checkIndex(String index) {
-        if (this.index.contains("*"))
-            return index.matches(this.index.replace("*", ".*"));
+        if (this.index.getIndex().contains("*"))
+            return index.matches(this.index.getIndex().replace("*", ".*"));
         return this.index.equals(index);
     }
 

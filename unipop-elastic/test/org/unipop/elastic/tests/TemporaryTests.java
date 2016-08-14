@@ -3,10 +3,7 @@ package org.unipop.elastic.tests;
 import org.apache.tinkerpop.gremlin.*;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.Property;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.VertexProperty;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -59,13 +56,10 @@ public class TemporaryTests extends AbstractGremlinTest {
     }
 
     @Test
-    @LoadGraphWith(MODERN)
     public void test() {
-        while(true) {
-            System.out.println("================================================================");
-            Traversal t = g.V().valueMap();
-            check(t);
-        }
+        graph.addVertex(T.label, "person", T.id, "1", "name", "marko");
+        Traversal t = g.V();
+        check(t);
     }
 
     @Test
