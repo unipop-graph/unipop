@@ -1,5 +1,7 @@
 package org.unipop.util;
 
+import org.apache.commons.configuration.Configuration;
+
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.Timer;
@@ -16,17 +18,18 @@ public class DirectoryWatcher {
     private OnFileChange onFileChange;
     private Timer timer;
     private TimerTask timerTask;
+    private int interval;
 
-    public DirectoryWatcher(Path path, OnFileChange onFileChange) {
+    public DirectoryWatcher(Path path, int interval, OnFileChange onFileChange) {
         watchDirectoryPath(path);
         this.onFileChange = onFileChange;
         timer = new Timer();
-
+        this.interval = interval;
     }
 
     public void start() {
         timer.scheduleAtFixedRate(timerTask, 0,
-                1000);
+                interval);
     }
 
     public void stop() throws IOException {

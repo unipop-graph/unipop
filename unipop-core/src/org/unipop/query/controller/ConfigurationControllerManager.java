@@ -25,7 +25,7 @@ public class ConfigurationControllerManager implements ControllerManager {
 
     public ConfigurationControllerManager(UniGraph graph, Configuration configuration) throws Exception {
         path = Paths.get(configuration.getString("providers"));
-        this.watcher = new DirectoryWatcher(path,
+        this.watcher = new DirectoryWatcher(path, configuration.getInt("controllerManager.interval", 10000),
                 (newPath) -> loadControllers());
         this.graph = graph;
         loadControllers();
