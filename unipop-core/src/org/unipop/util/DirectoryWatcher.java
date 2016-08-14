@@ -75,20 +75,8 @@ public class DirectoryWatcher {
                             kind = watchEvent.kind();
                             if (OVERFLOW == kind) {
                                 continue; // loop
-                            } else if (ENTRY_CREATE == kind) {
+                            } else if (ENTRY_CREATE == kind || ENTRY_MODIFY == kind || ENTRY_DELETE == kind) {
                                 // A new Path was created
-                                Path newPath = ((WatchEvent<Path>) watchEvent)
-                                        .context();
-                                if (notSwap(newPath))
-                                    onFileChange.onFileChange(newPath);
-                            } else if (ENTRY_MODIFY == kind) {
-                                // modified
-                                Path newPath = ((WatchEvent<Path>) watchEvent)
-                                        .context();
-                                if (notSwap(newPath))
-                                    onFileChange.onFileChange(newPath);
-                            } else if (ENTRY_DELETE == kind) {
-                                // A path was deleted
                                 Path newPath = ((WatchEvent<Path>) watchEvent)
                                         .context();
                                 if (notSwap(newPath))

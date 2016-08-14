@@ -30,17 +30,6 @@ public class ConfigurationControllerManager implements ControllerManager {
         this.graph = graph;
         loadControllers();
         this.watcher.start();
-//        String[] providers = configuration.getString("providers").split(";");
-//        if(providers.length == 0) throw new InstantiationException("No 'providers' configured for ConfigurationControllerManager");
-//        for(String provider : providers){
-//            String providerJson = readFile(provider);
-//            JSONObject providerConfig = new JSONObject(providerJson);
-//            String providerClass = providerConfig.getString("class");
-//            SourceProvider sourceProvider = Class.forName(providerClass).asSubclass(SourceProvider.class).newInstance();
-//            Set<UniQueryController> controllers = sourceProvider.init(graph, providerConfig);
-//            this.controllers.addAll(controllers);
-//            this.sourceProviders.add(sourceProvider);
-//        }
     }
 
     private void loadControllers() throws IOException {
