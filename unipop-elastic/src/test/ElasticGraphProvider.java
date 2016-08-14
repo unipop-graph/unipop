@@ -43,13 +43,13 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
         if (loadGraphWith != null)
             switch (loadGraphWith) {
                 case MODERN:
-                    return confDirectory + "modern.json";
+                    return confDirectory + "modern";
                 case GRATEFUL:
-                    return confDirectory + "grateful.json";
+                    return confDirectory + "grateful";
                 default:
-                    return "/configuration/basic/default.json";
+                    return "/configuration/basic/default";
             }
-        return "/configuration/basic/default.json";
+        return "/configuration/basic/default/";
     }
 
     @Override

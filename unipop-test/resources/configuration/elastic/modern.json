@@ -6,7 +6,10 @@
   ],
   "vertices": [
     {
-      "index": "person",
+      "index": {
+        "field": ["asdasd","@name"],
+        "default": "asdasd*"
+    },
       "type": "person",
       "id": "@_id",
       "label": "person",
