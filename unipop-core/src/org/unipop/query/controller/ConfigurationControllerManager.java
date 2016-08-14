@@ -3,9 +3,15 @@ package org.unipop.query.controller;
 import org.apache.commons.configuration.Configuration;
 import org.json.JSONObject;
 import org.unipop.structure.UniGraph;
+import org.unipop.util.DirectoryWatcher;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -13,19 +19,50 @@ public class ConfigurationControllerManager implements ControllerManager {
 
     protected Set<SourceProvider> sourceProviders = new HashSet<>();
     protected Set<UniQueryController> controllers = new HashSet<>();
+    protected DirectoryWatcher watcher;
+    protected Path path;
+    protected UniGraph graph;
 
     public ConfigurationControllerManager(UniGraph graph, Configuration configuration) throws Exception {
-        String[] providers = configuration.getString("providers").split(";");
-        if(providers.length == 0) throw new InstantiationException("No 'providers' configured for ConfigurationControllerManager");
-        for(String provider : providers){
-            String providerJson = readFile(provider);
-            JSONObject providerConfig = new JSONObject(providerJson);
-            String providerClass = providerConfig.getString("class");
-            SourceProvider sourceProvider = Class.forName(providerClass).asSubclass(SourceProvider.class).newInstance();
-            Set<UniQueryController> controllers = sourceProvider.init(graph, providerConfig);
-            this.controllers.addAll(controllers);
-            this.sourceProviders.add(sourceProvider);
-        }
+        path = Paths.get(configuration.getString("providers"));
+        this.watcher = new DirectoryWatcher(path,
+                (newPath) -> loadControllers());
+        this.graph = graph;
+        loadControllers();
+        this.watcher.start();
+//        String[] providers = configuration.getString("providers").split(";");
+//        if(providers.length == 0) throw new InstantiationException("No 'providers' configured for ConfigurationControllerManager");
+//        for(String provider : providers){
+//            String providerJson = readFile(provider);
+//            JSONObject providerConfig = new JSONObject(providerJson);
+//            String providerClass = providerConfig.getString("class");
+//            SourceProvider sourceProvider = Class.forName(providerClass).asSubclass(SourceProvider.class).newInstance();
+//            Set<UniQueryController> controllers = sourceProvider.init(graph, providerConfig);
+//            this.controllers.addAll(controllers);
+//            this.sourceProviders.add(sourceProvider);
+//        }
+    }
+
+    private void loadControllers() throws IOException {
+        controllers.clear();
+        sourceProviders.forEach(SourceProvider::close);
+        sourceProviders.clear();
+        Files.walk(path).forEach(filePath -> {
+            if (Files.isRegularFile(filePath)){
+                String providerJson = readFile(filePath.toAbsolutePath().toString());
+                JSONObject providerConfig = new JSONObject(providerJson);
+                String providerClass = providerConfig.getString("class");
+                SourceProvider sourceProvider = null;
+                try {
+                    sourceProvider = Class.forName(providerClass).asSubclass(SourceProvider.class).newInstance();
+                    Set<UniQueryController> controllers = sourceProvider.init(graph, providerConfig);
+                    this.controllers.addAll(controllers);
+                    this.sourceProviders.add(sourceProvider);
+                } catch (Exception e) {
+                    throw new RuntimeException("class: " + providerClass + " not found");
+                }
+            }
+        });
     }
 
     private static String readFile(String filename) {
@@ -39,6 +76,7 @@ public class ConfigurationControllerManager implements ControllerManager {
                 line = br.readLine();
             }
             result = sb.toString();
+            br.close();
         } catch(Exception e) {
             e.printStackTrace();
         }
@@ -53,6 +91,12 @@ public class ConfigurationControllerManager implements ControllerManager {
     @Override
     public void close() {
         sourceProviders.forEach(SourceProvider::close);
+
+        try {
+            watcher.stop();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
