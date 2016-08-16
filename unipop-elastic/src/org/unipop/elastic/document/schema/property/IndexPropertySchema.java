@@ -1,15 +1,18 @@
 package org.unipop.elastic.document.schema.property;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.json.JSONObject;
 import org.unipop.query.predicates.PredicatesHolder;
+import org.unipop.query.predicates.PredicatesHolderFactory;
+import org.unipop.schema.property.AbstractPropertyContainer;
 import org.unipop.schema.property.ParentSchemaProperty;
 import org.unipop.schema.property.PropertySchema;
+import org.unipop.schema.property.StaticPropertySchema;
 import org.unipop.util.PropertySchemaFactory;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -25,53 +28,91 @@ public class IndexPropertySchema implements ParentSchemaProperty {
     }
 
     @Override
+    public PredicatesHolder toPredicates(PredicatesHolder predicatesHolder) {
+        if (predicatesHolder.getClause().equals(PredicatesHolder.Clause.Abort))
+            return null;
+        Set<Object> values = schema.getValues(predicatesHolder);
+        Set<String> indices = values.size() > 0 ?
+                values.stream().map(Object::toString).collect(Collectors.toSet()) :
+                Collections.singleton(defaultIndex);
+        return PredicatesHolderFactory
+                .predicate(new HasContainer(getKey(), P.within(indices)));
+    }
+
+    @Override
+    public Set<String> toFields(Set<String> propertyKeys) {
+        return schema.toFields(propertyKeys);
+    }
+
+    @Override
+    public Set<Object> getValues(PredicatesHolder predicatesHolder) {
+        return null;
+    }
+
+    @Override
+    public Map<String, Object> toFields(Map<String, Object> properties) {
+        Map<String, Object> fields = schema.toProperties(properties);
+        return Collections.singletonMap(getKey(), fields.values().iterator().next());
+    }
+
+    @Override
     public Collection<PropertySchema> getChildren() {
         return Collections.singleton(schema);
     }
 
     @Override
     public String getKey() {
-        return "index";
+        return "_index";
     }
 
-    public String getIndex(PredicatesHolder predicatesHolder){
-        Map<String, Object> fields = predicatesToFields(predicatesHolder);
-        if (fields.size() == 0) return defaultIndex;
-        return schema.toProperties(fields).values().iterator().next().toString();
+    public List<String> getIndex(PredicatesHolder predicatesHolder) {
+        Set<String> indices = predicatesToIndices(predicatesHolder);
+        return new ArrayList<>(indices);
     }
 
-    private Map<String, Object> predicatesToFields(PredicatesHolder predicatesHolder) {
-         return predicatesHolder.getPredicates().stream()
-                 .map(has -> Pair.of(has.getKey(), has.getValue()))
-                 .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
+    private Set<String> predicatesToIndices(PredicatesHolder predicatesHolder) {
+        Set<Object> values = schema.getValues(predicatesHolder);
+        return values.size() > 0 ? values.stream().map(Object::toString).collect(Collectors.toSet())
+                : Collections.singleton(defaultIndex);
     }
 
-    public String getIndex(Map<String, Object> fields){
-        return schema.toProperties(fields).values().iterator().next().toString();
+    public String getIndex(Map<String, Object> fields) {
+        Object index = schema.toProperties(fields).values().iterator().next();
+        if (index instanceof List)
+            if (((List) index).size() > 0)
+                return ((List) index).get(0).toString();
+        return index.toString();
     }
 
-    public String getIndex(){
+    public String getIndex() {
         return defaultIndex;
+    }
+
+    public boolean validateIndex(String index) {
+        // TODO: validate index somehow
+//        if (this.index.getIndex().contains("*"))
+//            return index.matches(this.index.getIndex().replace("*", ".*"));
+//        return this.index.getIndex().equals(index);
+        return true;
     }
 
     @Override
     public Map<String, Object> toProperties(Map<String, Object> source) {
-        return null;
+        return Collections.emptyMap();
     }
 
-    public static class Builder implements PropertySchemaBuilder{
+    public static class Builder implements PropertySchemaBuilder {
         @Override
-        public PropertySchema build(String key, Object conf) {
-            if (key.equals("index") || key.equals("_index")){
+        public PropertySchema build(String key, Object conf, AbstractPropertyContainer container) {
+            if (key.equals("index")) {
                 if (conf instanceof JSONObject) {
                     JSONObject config = (JSONObject) conf;
                     Object schema = config.opt("schema");
-                    PropertySchema index = PropertySchemaFactory.createPropertySchema(key + "_schema", schema);
+                    PropertySchema index = PropertySchemaFactory.createPropertySchema("_" + key, schema, container);
                     String defaultIndex = config.optString("default", "*");
                     return new IndexPropertySchema(index, defaultIndex);
-                }
-                else {
-                    PropertySchema index = PropertySchemaFactory.createPropertySchema(key + "_schema", conf);
+                } else {
+                    PropertySchema index = PropertySchemaFactory.createPropertySchema("_" + key, conf, container);
                     return new IndexPropertySchema(index, "*");
                 }
             }

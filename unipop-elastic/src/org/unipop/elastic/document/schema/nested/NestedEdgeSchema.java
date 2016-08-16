@@ -44,7 +44,7 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
 
     public NestedEdgeSchema(DocVertexSchema parentVertexSchema, Direction parentDirection, IndexPropertySchema index, String type, String path, JSONObject configuration, ElasticClient client, UniGraph graph) throws JSONException {
         super(configuration, client, graph);
-        this.index = index;
+//        this.index = index;
         this.type = type;
         this.path = path;
         this.parentVertexSchema = parentVertexSchema;
@@ -58,7 +58,7 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
         JSONObject vertexConfiguration = this.json.optJSONObject(key);
         if (vertexConfiguration == null) return null;
         if (vertexConfiguration.optBoolean("ref", false)) return new NestedReferenceVertexSchema(vertexConfiguration, path, graph);
-        return new NestedVertexSchema(vertexConfiguration, path, index, type, client, graph);
+        return new NestedVertexSchema(vertexConfiguration, path, null, type, client, graph);
     }
 
     @Override

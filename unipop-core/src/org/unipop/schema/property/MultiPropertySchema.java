@@ -12,11 +12,11 @@ import java.util.stream.Collectors;
 /**
  * Created by sbarzilay on 7/28/16.
  */
-public class MultiFieldPropertySchema implements ParentSchemaProperty {
+public class MultiPropertySchema implements ParentSchemaProperty {
     private String key;
     private List<PropertySchema> schemas;
 
-    public MultiFieldPropertySchema(String key, List<PropertySchema> schemas) {
+    public MultiPropertySchema(String key, List<PropertySchema> schemas) {
         this.key = key;
         this.schemas = schemas;
     }
@@ -63,6 +63,11 @@ public class MultiFieldPropertySchema implements ParentSchemaProperty {
     }
 
     @Override
+    public Set<Object> getValues(PredicatesHolder predicatesHolder) {
+        return schemas.stream().map(schema -> schema.getValues(predicatesHolder)).flatMap(Collection::stream).collect(Collectors.toSet());
+    }
+
+    @Override
     public PredicatesHolder toPredicate(HasContainer hasContainer) {
         Set<PredicatesHolder> predicates = new HashSet<>();
         for (PropertySchema schema : schemas) {
@@ -77,14 +82,14 @@ public class MultiFieldPropertySchema implements ParentSchemaProperty {
 
     public static class Builder implements PropertySchemaBuilder {
         @Override
-        public PropertySchema build(String key, Object conf) {
+        public PropertySchema build(String key, Object conf, AbstractPropertyContainer container) {
             if (!(conf instanceof JSONArray)) return null;
             JSONArray fieldsArray = (JSONArray) conf;
             List<PropertySchema> schemas = new ArrayList<>();
             for (int i = 0; i < fieldsArray.length(); i++) {
-                schemas.add(PropertySchemaFactory.createPropertySchema(key, fieldsArray.get(i)));
+                schemas.add(PropertySchemaFactory.createPropertySchema(key, fieldsArray.get(i), container));
             }
-            return new MultiFieldPropertySchema(key, schemas);
+            return new MultiPropertySchema(key, schemas);
         }
     }
 }

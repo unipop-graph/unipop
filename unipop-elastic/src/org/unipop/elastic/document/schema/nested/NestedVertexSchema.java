@@ -31,7 +31,7 @@ public class NestedVertexSchema extends AbstractDocSchema<Vertex> implements Doc
     public NestedVertexSchema(JSONObject configuration, String path, IndexPropertySchema index, String type, ElasticClient client, UniGraph graph) throws JSONException {
         super(configuration, client, graph);
         this.path = path;
-        this.index = index;
+//        this.index = index;
         this.type = type;
     }
 

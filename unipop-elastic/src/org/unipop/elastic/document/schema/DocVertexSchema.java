@@ -38,8 +38,8 @@ public class DocVertexSchema extends AbstractDocSchema<Vertex> implements Docume
         String path = edgeJson.optString("path", null);
         Direction direction = Direction.valueOf(edgeJson.optString("direction"));
 
-        if(path == null) return new InnerEdgeSchema(this, direction, index, type, edgeJson, client, graph);
-        return new NestedEdgeSchema(this, direction, index, type, path, edgeJson, client, graph);
+        if(path == null) return new InnerEdgeSchema(this, direction, null, type, edgeJson, client, graph);
+        return new NestedEdgeSchema(this, direction, null, type, path, edgeJson, client, graph);
     }
 
     @Override
@@ -64,7 +64,7 @@ public class DocVertexSchema extends AbstractDocSchema<Vertex> implements Docume
     @Override
     public String toString() {
         return "DocVertexSchema{" +
-                "index='" + index + '\'' +
+                "index='" + null + '\'' +
                 ", type='" + type + '\'' +
                 '}';
     }

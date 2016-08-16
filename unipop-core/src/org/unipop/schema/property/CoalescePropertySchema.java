@@ -40,6 +40,11 @@ public class CoalescePropertySchema implements ParentSchemaProperty {
     }
 
     @Override
+    public Set<Object> getValues(PredicatesHolder predicatesHolder) {
+        return null;
+    }
+
+    @Override
     public PredicatesHolder toPredicate(HasContainer hasContainer) {
         Set<PredicatesHolder> predicates = new HashSet<>();
         children.forEach(schema -> predicates.add(schema.toPredicate(hasContainer)));
@@ -48,17 +53,17 @@ public class CoalescePropertySchema implements ParentSchemaProperty {
 
     public static class Builder implements PropertySchemaBuilder {
         @Override
-        public PropertySchema build(String key, Object conf) {
+        public PropertySchema build(String key, Object conf, AbstractPropertyContainer container) {
             if (!(conf instanceof JSONObject)) return null;
             JSONObject config = (JSONObject) conf;
-            Object obj = config.opt("field");
+            Object obj = config.opt("fields");
             if (obj == null || !(obj instanceof JSONArray)) return null;
             if (!config.optBoolean("coalesce", false)) return null;
             JSONArray fieldsArray = (JSONArray) obj;
             List<PropertySchema> schemas = new ArrayList<>();
             for (int i = 0; i < fieldsArray.length(); i++) {
                 Object field = fieldsArray.get(i);
-                schemas.add(PropertySchemaFactory.createPropertySchema(key, field));
+                schemas.add(PropertySchemaFactory.createPropertySchema(key, field, container));
             }
             return new CoalescePropertySchema(key, schemas);
         }

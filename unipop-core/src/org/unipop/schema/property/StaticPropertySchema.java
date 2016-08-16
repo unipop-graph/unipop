@@ -41,6 +41,11 @@ public class StaticPropertySchema implements PropertySchema {
     }
 
     @Override
+    public Set<Object> getValues(PredicatesHolder predicatesHolder) {
+        return Collections.singleton(value);
+    }
+
+    @Override
     public PredicatesHolder toPredicates(PredicatesHolder predicatesHolder) {
         Set<PredicatesHolder> predicates = predicatesHolder.findKey(this.key).map(has -> {
             if (has != null && !test(has.getPredicate())) {
@@ -71,7 +76,7 @@ public class StaticPropertySchema implements PropertySchema {
 
     public static class Builder implements PropertySchemaBuilder {
         @Override
-        public PropertySchema build(String key, Object conf) {
+        public PropertySchema build(String key, Object conf, AbstractPropertyContainer container) {
             if (!(conf instanceof  String)) return null;
             String value = conf.toString();
             if (value.startsWith("@")) return null;

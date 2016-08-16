@@ -39,15 +39,8 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
     public AbstractDocSchema(JSONObject configuration, ElasticClient client, UniGraph graph) throws JSONException {
         super(configuration, graph);
         this.client = client;
-        this.index = (IndexPropertySchema) PropertySchemaFactory.createPropertySchema("index", json.opt("index"));
+        this.index = (IndexPropertySchema) PropertySchemaFactory.createPropertySchema("index", json.opt("index"), this);
         this.type = json.optString("type", null);
-
-//        client.validateIndex(index);
-    }
-
-    @Override
-    public String getIndex() {
-        return index.getIndex();
     }
 
     @Override
@@ -76,7 +69,7 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
         }
 
         Search.Builder builder = new Search.Builder(searchSourceBuilder.toString().replace("\n", ""))
-                .addIndex(index.getIndex(query.getPredicates()));
+                .addIndex(index.getIndex(query.getPredicates())).ignoreUnavailable(true).allowNoIndices(true);
         return builder.build();
     }
 
@@ -141,9 +134,7 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
     }
 
     protected boolean checkIndex(String index) {
-        if (this.index.getIndex().contains("*"))
-            return index.matches(this.index.getIndex().replace("*", ".*"));
-        return this.index.equals(index);
+        return this.index.validateIndex(index);
     }
 
     protected boolean checkType(String type) {
