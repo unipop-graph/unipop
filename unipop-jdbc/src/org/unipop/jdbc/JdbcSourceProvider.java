@@ -19,12 +19,15 @@ import org.unipop.jdbc.utils.TimingExecuterListener;
 import org.unipop.query.controller.SourceProvider;
 import org.unipop.query.controller.UniQueryController;
 import org.unipop.schema.element.SchemaSet;
+import org.unipop.schema.property.PropertySchema;
 import org.unipop.structure.UniGraph;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 

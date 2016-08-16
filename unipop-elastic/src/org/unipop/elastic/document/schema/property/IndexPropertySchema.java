@@ -105,6 +105,7 @@ public class IndexPropertySchema implements ParentSchemaProperty {
         @Override
         public PropertySchema build(String key, Object conf, AbstractPropertyContainer container) {
             if (key.equals("index")) {
+                if (conf == null) return null;
                 if (conf instanceof JSONObject) {
                     JSONObject config = (JSONObject) conf;
                     Object schema = config.opt("schema");

@@ -95,7 +95,7 @@ public class UniGraph implements Graph {
     public UniGraph(Configuration configuration) throws Exception {
         configuration.setProperty(Graph.GRAPH, UniGraph.class.getName());
         this.configuration = configuration;
-        List<PropertySchema.PropertySchemaBuilder> propertySchemaBuildersToRegister = new ArrayList<>();
+        List<PropertySchema.PropertySchemaBuilder> thirdPartyPropertySchemas = new ArrayList<>();
         if(configuration.containsKey("propertySchemas")){
             Stream.of(configuration.getStringArray("propertiesSchemas")).map(classString -> {
                 try {
@@ -103,11 +103,10 @@ public class UniGraph implements Graph {
                 } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
                     throw new IllegalArgumentException("class: " + classString + " not found");
                 }
-            }).forEach(propertySchemaBuildersToRegister::add);
+            }).forEach(thirdPartyPropertySchemas::add);
         }
-        PropertySchemaFactory.build(propertySchemaBuildersToRegister);
 
-        ConfigurationControllerManager configurationControllerManager = new ConfigurationControllerManager(this, configuration);
+        ConfigurationControllerManager configurationControllerManager = new ConfigurationControllerManager(this, configuration, thirdPartyPropertySchemas);
         StrategyProvider strategyProvider = determineStrategyProvider(configuration);
 
         init(configurationControllerManager, strategyProvider);

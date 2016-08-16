@@ -2,17 +2,19 @@ package org.unipop.query.controller;
 
 import org.apache.commons.configuration.Configuration;
 import org.json.JSONObject;
+import org.unipop.schema.property.PropertySchema;
 import org.unipop.structure.UniGraph;
 import org.unipop.util.DirectoryWatcher;
+import org.unipop.util.PropertySchemaFactory;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class ConfigurationControllerManager implements ControllerManager {
@@ -22,9 +24,11 @@ public class ConfigurationControllerManager implements ControllerManager {
     protected DirectoryWatcher watcher;
     protected Path path;
     protected UniGraph graph;
+    protected List<PropertySchema.PropertySchemaBuilder> thirdPartyPropertySchemas;
 
-    public ConfigurationControllerManager(UniGraph graph, Configuration configuration) throws Exception {
+    public ConfigurationControllerManager(UniGraph graph, Configuration configuration, List<PropertySchema.PropertySchemaBuilder> thirdPartyPropertySchemas) throws Exception {
         path = Paths.get(configuration.getString("providers"));
+        this.thirdPartyPropertySchemas = thirdPartyPropertySchemas;
         this.watcher = new DirectoryWatcher(path, configuration.getInt("controllerManager.interval", 10000),
                 (newPath) -> loadControllers());
         this.graph = graph;
@@ -44,6 +48,7 @@ public class ConfigurationControllerManager implements ControllerManager {
                 SourceProvider sourceProvider = null;
                 try {
                     sourceProvider = Class.forName(providerClass).asSubclass(SourceProvider.class).newInstance();
+                    PropertySchemaFactory.build(sourceProvider.providerBuilders(), thirdPartyPropertySchemas);
                     Set<UniQueryController> controllers = sourceProvider.init(graph, providerConfig);
                     this.controllers.addAll(controllers);
                     this.sourceProviders.add(sourceProvider);

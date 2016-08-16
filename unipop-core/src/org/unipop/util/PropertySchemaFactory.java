@@ -14,7 +14,7 @@ public class PropertySchemaFactory {
     public static List<PropertySchema.PropertySchemaBuilder> builders;
     private static PropertySchemaFactory self;
 
-    private PropertySchemaFactory(List<PropertySchema.PropertySchemaBuilder> toRegister) {
+    private PropertySchemaFactory(List<PropertySchema.PropertySchemaBuilder> providers, List<PropertySchema.PropertySchemaBuilder> thirdParty) {
         builders = new ArrayList<>();
         builders.add(new StaticPropertySchema.Builder());
         builders.add(new FieldPropertySchema.Builder());
@@ -23,7 +23,8 @@ public class PropertySchemaFactory {
         builders.add(new MultiPropertySchema.Builder());
         builders.add(new ConcatenateFieldPropertySchema.Builder());
         builders.add(new CoalescePropertySchema.Builder());
-        toRegister.forEach(builders::add);
+        builders.addAll(providers);
+        builders.addAll(thirdParty);
         Collections.reverse(builders);
     }
 
@@ -39,15 +40,11 @@ public class PropertySchemaFactory {
         }
         Optional<PropertySchema> first = builders.stream().map(builder -> builder.build(key, value, container)).filter(schema -> schema != null).findFirst();
         if (first.isPresent()) return first.get();
-        throw new IllegalArgumentException("Unrecognized property: " + key + " - " + value);
+        else return null;
+//        throw new IllegalArgumentException("Unrecognized property: " + key + " - " + value);
     }
 
-    public static void addBuilder(PropertySchema.PropertySchemaBuilder builder){
-        if (!builders.contains(builder)) builders.add(0, builder);
-    }
-
-    public static PropertySchemaFactory build(List<PropertySchema.PropertySchemaBuilder> toRegister){
-        if (self == null) self = new PropertySchemaFactory(toRegister);
-        return self;
+    public static PropertySchemaFactory build(List<PropertySchema.PropertySchemaBuilder> providers, List<PropertySchema.PropertySchemaBuilder> thirdParty){
+        return new PropertySchemaFactory(providers, thirdParty);
     }
 }

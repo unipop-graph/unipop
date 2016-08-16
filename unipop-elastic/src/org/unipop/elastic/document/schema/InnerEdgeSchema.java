@@ -17,7 +17,7 @@ public class InnerEdgeSchema extends DocEdgeSchema {
 
     public InnerEdgeSchema(VertexSchema parentVertexSchema, Direction parentDirection, IndexPropertySchema index, String type, JSONObject edgeJson, ElasticClient client, UniGraph graph) throws JSONException {
         super(edgeJson, client, graph);
-//        this.index = index;
+        this.index = index;
         this.type = type;
 
         this.childVertexSchema = createVertexSchema("vertex");
