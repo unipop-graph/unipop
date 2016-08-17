@@ -40,6 +40,7 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
         super(configuration, graph);
         this.client = client;
         this.index = (IndexPropertySchema) PropertySchemaFactory.createPropertySchema("index", json.opt("index"), this);
+        if (index != null) index.addValidation(client::validateIndex);
         this.type = json.optString("type", null);
     }
 

@@ -1,15 +1,14 @@
 package org.unipop.elastic.document.schema.property;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.json.JSONObject;
+import org.unipop.elastic.common.ElasticClient;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.schema.property.AbstractPropertyContainer;
 import org.unipop.schema.property.ParentSchemaProperty;
 import org.unipop.schema.property.PropertySchema;
-import org.unipop.schema.property.StaticPropertySchema;
 import org.unipop.util.PropertySchemaFactory;
 
 import java.util.*;
@@ -21,10 +20,18 @@ import java.util.stream.Collectors;
 public class IndexPropertySchema implements ParentSchemaProperty {
     private PropertySchema schema;
     private String defaultIndex;
+    private Set<String> createdIndices;
+    private List<Validate> validations;
 
     public IndexPropertySchema(PropertySchema schema, String defaultIndex) {
         this.schema = schema;
         this.defaultIndex = defaultIndex;
+        createdIndices = new HashSet<>();
+        validations = new ArrayList<>();
+    }
+
+    public void addValidation(Validate validate){
+        validations.add(validate);
     }
 
     @Override
@@ -77,11 +84,10 @@ public class IndexPropertySchema implements ParentSchemaProperty {
     }
 
     public String getIndex(Map<String, Object> fields) {
-        Object index = schema.toProperties(fields).values().iterator().next();
-        if (index instanceof List)
-            if (((List) index).size() > 0)
-                return ((List) index).get(0).toString();
-        return index.toString();
+        String index = schema.toProperties(fields).values().iterator().next().toString();
+        if (!createdIndices.contains(index))
+            validations.forEach(v -> v.validate(index));
+        return index;
     }
 
     public String getIndex() {
@@ -119,5 +125,10 @@ public class IndexPropertySchema implements ParentSchemaProperty {
             }
             return null;
         }
+    }
+
+    @FunctionalInterface
+    public interface Validate{
+        void validate(String index);
     }
 }

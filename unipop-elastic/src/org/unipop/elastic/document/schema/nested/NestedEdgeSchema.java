@@ -50,8 +50,8 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
         this.parentVertexSchema = parentVertexSchema;
         this.parentDirection = parentDirection;
         this.childVertexSchema = createVertexSchema("vertex");
+        index.addValidation((indexName) -> client.validateNested(indexName, type, path));
 
-//        client.validateNested(index, type, path);
     }
 
     protected VertexSchema createVertexSchema(String key) throws JSONException {
