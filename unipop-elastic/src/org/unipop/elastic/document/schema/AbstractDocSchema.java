@@ -6,11 +6,14 @@ import io.searchbox.core.DocumentResult;
 import io.searchbox.core.Index;
 import io.searchbox.core.Search;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.shaded.jackson.databind.JsonNode;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.SortOrder;
+import org.javatuples.Pair;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.unipop.elastic.common.ElasticClient;
@@ -67,6 +70,22 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
             Set<String> fields = toFields(query.getPropertyKeys());
             if(fields.size() == 0) searchSourceBuilder.fetchSource(false);
             else searchSourceBuilder.fetchSource(fields.toArray(new String[fields.size()]), null);
+        }
+        List<Pair<String, Order>> orders = query.getOrders();
+        if (orders != null){
+            orders.forEach(order -> {
+                Order orderValue = order.getValue1();
+                switch (orderValue){
+                    case decr:
+                        searchSourceBuilder.sort(order.getValue0(), SortOrder.DESC);
+                        break;
+                    case incr:
+                        searchSourceBuilder.sort(order.getValue0(), SortOrder.ASC);
+                        break;
+                    case shuffle:
+                        break;
+                }
+            });
         }
 
         Search.Builder builder = new Search.Builder(searchSourceBuilder.toString().replace("\n", ""))

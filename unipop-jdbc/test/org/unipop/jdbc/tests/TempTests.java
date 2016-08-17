@@ -21,7 +21,7 @@ public class TempTests extends AbstractGremlinTest {
     @LoadGraphWith(LoadGraphWith.GraphData.MODERN)
     @Test
     public void testA() {
-        Traversal t = g.E().valueMap(true);
+        Traversal t = g.V().order().by("name");
         check(t);
     }
 

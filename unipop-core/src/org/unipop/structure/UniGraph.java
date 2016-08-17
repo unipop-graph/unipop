@@ -200,9 +200,10 @@ public class UniGraph implements Graph {
         return this.query(Edge.class, ids);
     }
 
-    private <E extends Element> Iterator<E> query(Class<E> returnType, Object[] ids) {
+    private <E extends Element, C extends Comparable> Iterator<E> query(Class<E> returnType, Object[] ids) {
         PredicatesHolder idPredicate = createIdPredicate(ids, returnType);
-        SearchQuery<E> uniQuery = new SearchQuery<>(returnType, idPredicate, -1, null, null);
+        // TODO: check order
+        SearchQuery<E> uniQuery = new SearchQuery<>(returnType, idPredicate, -1, null, null, null);
         return queryControllers.stream().<E>flatMap(controller -> ConversionUtils.asStream(controller.search(uniQuery))).iterator();
     }
 
