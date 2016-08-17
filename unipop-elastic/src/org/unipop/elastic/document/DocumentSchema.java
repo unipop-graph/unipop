@@ -15,7 +15,7 @@ import org.unipop.schema.element.ElementSchema;
 import java.util.List;
 
 public interface DocumentSchema<E extends Element> extends ElementSchema<E>{
-    String getIndex();
+//    String getIndex();
 
     Search getSearch(SearchQuery<E> query);
     List<E> parseResults(String result, PredicateQuery query);

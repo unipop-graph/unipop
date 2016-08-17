@@ -10,7 +10,9 @@ import org.unipop.util.ConversionUtils;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 public class FieldPropertySchema implements PropertySchema {
     protected String key;
@@ -60,6 +62,13 @@ public class FieldPropertySchema implements PropertySchema {
     public Set<String> toFields(Set<String> keys) {
         if (keys.contains(this.key) || !nullable) return Collections.singleton(field);
         return Collections.emptySet();
+    }
+
+    @Override
+    public Set<Object> getValues(PredicatesHolder predicatesHolder) {
+        Stream<HasContainer> predicates = predicatesHolder.findKey(this.key);
+        Optional<Object> value = predicates.map(HasContainer::getValue).findFirst();
+        return value.isPresent() ? Collections.singleton(value.get()) : null;
     }
 
     @Override
@@ -124,7 +133,7 @@ public class FieldPropertySchema implements PropertySchema {
 
     public static class Builder implements PropertySchemaBuilder{
         @Override
-        public PropertySchema build(String key, Object conf) {
+        public PropertySchema build(String key, Object conf, AbstractPropertyContainer container) {
             boolean nullable = !(key.equals("~id") || key.equals("~label"));
             if (conf instanceof String){
                 String field = conf.toString();

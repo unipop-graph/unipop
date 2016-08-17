@@ -14,6 +14,7 @@ import org.unipop.elastic.common.ElasticClient;
 import org.unipop.elastic.common.FilterHelper;
 import org.unipop.elastic.document.DocumentVertexSchema;
 import org.unipop.elastic.document.schema.AbstractDocSchema;
+import org.unipop.elastic.document.schema.property.IndexPropertySchema;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.structure.UniElement;
@@ -27,7 +28,7 @@ import java.util.stream.Collectors;
 public class NestedVertexSchema extends AbstractDocSchema<Vertex> implements DocumentVertexSchema {
     private String path;
 
-    public NestedVertexSchema(JSONObject configuration, String path, String index, String type, ElasticClient client, UniGraph graph) throws JSONException {
+    public NestedVertexSchema(JSONObject configuration, String path, IndexPropertySchema index, String type, ElasticClient client, UniGraph graph) throws JSONException {
         super(configuration, client, graph);
         this.path = path;
         this.index = index;

@@ -64,7 +64,7 @@ public class DocVertexSchema extends AbstractDocSchema<Vertex> implements Docume
     @Override
     public String toString() {
         return "DocVertexSchema{" +
-                "index='" + index + '\'' +
+                "index='" + null + '\'' +
                 ", type='" + type + '\'' +
                 '}';
     }

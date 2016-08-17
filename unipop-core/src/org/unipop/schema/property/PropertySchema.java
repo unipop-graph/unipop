@@ -15,6 +15,7 @@ public interface PropertySchema {
     Map<String, Object> toProperties(Map<String, Object> source);
     Map<String, Object> toFields(Map<String, Object> properties);
     Set<String> toFields(Set<String> propertyKeys);
+    Set<Object> getValues(PredicatesHolder predicatesHolder);
     default PredicatesHolder toPredicates(PredicatesHolder predicatesHolder){
         Stream<HasContainer> hasContainers = predicatesHolder.findKey(getKey());
 
@@ -27,6 +28,6 @@ public interface PropertySchema {
     default Set<String> excludeDynamicProperties() { return Collections.singleton(getKey()); }
 
     interface PropertySchemaBuilder {
-        PropertySchema build(String key, Object conf);
+        PropertySchema build(String key, Object conf, AbstractPropertyContainer container);
     }
 }

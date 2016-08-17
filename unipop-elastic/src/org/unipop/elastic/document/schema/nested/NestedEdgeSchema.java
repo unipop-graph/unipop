@@ -22,6 +22,7 @@ import org.unipop.elastic.document.Document;
 import org.unipop.elastic.document.DocumentEdgeSchema;
 import org.unipop.elastic.document.schema.AbstractDocSchema;
 import org.unipop.elastic.document.schema.DocVertexSchema;
+import org.unipop.elastic.document.schema.property.IndexPropertySchema;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.SearchQuery;
@@ -41,7 +42,7 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
     private final VertexSchema childVertexSchema;
     private final Direction parentDirection;
 
-    public NestedEdgeSchema(DocVertexSchema parentVertexSchema, Direction parentDirection, String index, String type, String path, JSONObject configuration, ElasticClient client, UniGraph graph) throws JSONException {
+    public NestedEdgeSchema(DocVertexSchema parentVertexSchema, Direction parentDirection, IndexPropertySchema index, String type, String path, JSONObject configuration, ElasticClient client, UniGraph graph) throws JSONException {
         super(configuration, client, graph);
         this.index = index;
         this.type = type;
@@ -49,8 +50,8 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
         this.parentVertexSchema = parentVertexSchema;
         this.parentDirection = parentDirection;
         this.childVertexSchema = createVertexSchema("vertex");
+        index.addValidation((indexName) -> client.validateNested(indexName, type, path));
 
-        client.validateNested(index, type, path);
     }
 
     protected VertexSchema createVertexSchema(String key) throws JSONException {

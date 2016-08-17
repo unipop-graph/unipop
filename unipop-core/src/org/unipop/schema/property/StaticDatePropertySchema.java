@@ -50,7 +50,7 @@ public class StaticDatePropertySchema extends StaticPropertySchema implements Da
 
     public static class Builder implements PropertySchemaBuilder {
         @Override
-        public PropertySchema build(String key, Object conf) {
+        public PropertySchema build(String key, Object conf, AbstractPropertyContainer container) {
             if (!(conf instanceof JSONObject)) return null;
             JSONObject config = (JSONObject) conf;
             Object value = config.opt("value");

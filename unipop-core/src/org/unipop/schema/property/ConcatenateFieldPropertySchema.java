@@ -33,6 +33,7 @@ public class ConcatenateFieldPropertySchema implements ParentSchemaProperty {
         StringJoiner values = new StringJoiner(delimiter);
         for (PropertySchema schema : schemas) {
             Map<String, Object> props = schema.toProperties(source);
+            if (props.size() == 0) return Collections.emptyMap();
             if (props != null) props.values().stream().map(Object::toString).forEach(values::add);
             else values.add("null");
         }
@@ -75,6 +76,17 @@ public class ConcatenateFieldPropertySchema implements ParentSchemaProperty {
         return schemas.stream().flatMap(s -> s.toFields(propertyKeys).stream()).collect(Collectors.toSet());
     }
 
+    @Override
+    public Set<Object> getValues(PredicatesHolder predicatesHolder) {
+        StringJoiner values = new StringJoiner(delimiter);
+        for (PropertySchema schema : schemas) {
+            Set<Object> schemaValues = schema.getValues(predicatesHolder);
+            if (schemaValues == null || schemaValues.size() == 0) return Collections.emptySet();
+            schemaValues.forEach(value -> values.add(value.toString()));
+        }
+        return Collections.singleton(values.toString());
+    }
+
     private PredicatesHolder stringValueToPredicate(String value, HasContainer has, boolean collection) {
         String[] values = value.split(delimiter);
         if (values.length < schemas.size()) return PredicatesHolderFactory.abort();
@@ -114,17 +126,17 @@ public class ConcatenateFieldPropertySchema implements ParentSchemaProperty {
 
     public static class Builder implements PropertySchemaBuilder {
         @Override
-        public PropertySchema build(String key, Object conf) {
+        public PropertySchema build(String key, Object conf, AbstractPropertyContainer container) {
             if (!(conf instanceof JSONObject)) return null;
             JSONObject config = (JSONObject) conf;
-            Object obj = config.opt("field");
+            Object obj = config.opt("fields");
             String delimiter = config.optString("delimiter", "_");
             if (obj == null || !(obj instanceof JSONArray)) return null;
             JSONArray fieldsArray = (JSONArray) obj;
             List<PropertySchema> schemas = new ArrayList<>();
             for (int i = 0; i < fieldsArray.length(); i++) {
                 Object field = fieldsArray.get(i);
-                schemas.add(PropertySchemaFactory.createPropertySchema(key, field));
+                schemas.add(PropertySchemaFactory.createPropertySchema(key, field, container));
             }
             return new ConcatenateFieldPropertySchema(key, schemas, delimiter, config.optBoolean("nullable", true));
         }

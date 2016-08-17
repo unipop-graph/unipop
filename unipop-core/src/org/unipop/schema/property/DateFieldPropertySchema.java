@@ -8,9 +8,10 @@ import org.unipop.query.predicates.PredicatesHolderFactory;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Map;
+import java.util.*;
+import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by sbarzilay on 8/1/16.
@@ -18,17 +19,76 @@ import java.util.Map;
 public class DateFieldPropertySchema extends FieldPropertySchema implements DatePropertySchema {
     protected final SimpleDateFormat sourceFormat;
     protected final SimpleDateFormat displayFormat;
+    protected long interval;
 
     public DateFieldPropertySchema(String key, String field, String format, boolean nullable) {
         super(key, field, nullable);
         this.sourceFormat = new SimpleDateFormat(format);
         this.displayFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS");
+        this.interval = 1000 * 60 * 60 *24;
     }
 
     public DateFieldPropertySchema(String key, JSONObject config, boolean nullable) {
         super(key, config, nullable);
         this.sourceFormat = new SimpleDateFormat(config.optString("sourceFormat"));
         this.displayFormat = new SimpleDateFormat(config.optString("displayFormat", "yyyy-MM-dd HH:mm:ss:SSS"));
+        String interval = config.optString("interval", "1d");
+        if (interval.matches("\\d+")){
+            this.interval = Long.parseLong(interval);
+        } else {
+            if (interval.endsWith("d")) {
+                this.interval = Long.parseLong(interval.substring(0, interval.length() - 1))
+                        * 1000 * 60 * 60 * 24;
+            } else if (interval.endsWith("h")) {
+                this.interval = Long.parseLong(interval.substring(0, interval.length() - 1))
+                        * 1000 * 60 * 60;
+            } else if (interval.endsWith("m")) {
+                this.interval = Long.parseLong(interval.substring(0, interval.length() - 1))
+                        * 1000 * 60;
+            } else if (interval.endsWith("s")) {
+                this.interval = Long.parseLong(interval.substring(0, interval.length() - 1))
+                        * 1000;
+            }
+        }
+    }
+
+    @Override
+    public Set<Object> getValues(PredicatesHolder predicatesHolder) {
+        Stream<HasContainer> predicates = predicatesHolder.findKey(this.key);
+        Map<String, Date> datePredicates = new HashMap<>();
+        predicates.forEach(has -> {
+            String biPredicate = has.getBiPredicate().toString();
+            Object value = has.getValue();
+            switch (biPredicate) {
+                case "eq":
+                    datePredicates.put("eq", fromDisplay(value.toString()));
+                    break;
+                case "gt":
+                    datePredicates.put("gt", fromDisplay(value.toString()));
+                    break;
+                case "lt":
+                    datePredicates.put("lt", fromDisplay(value.toString()));
+                    break;
+                default:
+                    throw new IllegalArgumentException("cant get value");
+            }
+        });
+        if (datePredicates.size() == 0) return Collections.emptySet();
+        if (datePredicates.containsKey("eq")) return Collections.singleton(toSource(datePredicates.get("eq")));
+        else if (datePredicates.containsKey("gt") && datePredicates.containsKey("lt")) {
+            Date from = datePredicates.get("gt");
+            Date to = datePredicates.get("lt");
+            List<Date> dates = new ArrayList<>();
+            long interval = this.interval;
+            long endTime = to.getTime();
+            long curTime = from.getTime();
+            while (curTime <= endTime) {
+                dates.add(new Date(curTime));
+                curTime += interval;
+            }
+            return dates.stream().map(this::toSource).collect(Collectors.toSet());
+        }
+        else throw new IllegalArgumentException("cant get only gt or lt value");
     }
 
     @Override
@@ -71,7 +131,7 @@ public class DateFieldPropertySchema extends FieldPropertySchema implements Date
 
     public static class Builder implements PropertySchemaBuilder {
         @Override
-        public PropertySchema build(String key, Object conf) {
+        public PropertySchema build(String key, Object conf, AbstractPropertyContainer container) {
             if (!(conf instanceof JSONObject)) return null;
             JSONObject config = (JSONObject) conf;
             Object field = config.opt("field");

@@ -20,7 +20,7 @@ public abstract class AbstractPropertyContainer {
         createPropertySchemas();
     }
 
-    protected List<PropertySchema> getPropertySchemas() {
+    public List<PropertySchema> getPropertySchemas() {
         return propertySchemas;
     }
 
@@ -44,7 +44,7 @@ public abstract class AbstractPropertyContainer {
     }
 
     protected void addPropertySchema(String key, Object value) {
-        PropertySchema propertySchema = PropertySchemaFactory.createPropertySchema(key, value);
+        PropertySchema propertySchema = PropertySchemaFactory.createPropertySchema(key, value, this);
         propertySchemas.add(propertySchema);
     }
 
