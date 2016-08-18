@@ -37,11 +37,13 @@ public class UniGraphOrderStrategy extends AbstractTraversalStrategy<TraversalSt
         TraversalHelper.getStepsOfAssignableClass(OrderGlobalStep.class, traversal).forEach(orderGlobalStep -> {
             List<Pair<Traversal.Admin, Comparator>> comparators = orderGlobalStep.getComparators();
             List<Pair<String, Order>> collect = comparators.stream()
+                    .filter(pair -> pair.getValue0() instanceof ElementValueTraversal)
+                    .filter(pair -> pair.getValue1() instanceof Order)
                     .map(pair -> Pair.with(((ElementValueTraversal) pair.getValue0()).getPropertyKey(),
                             ((Order) pair.getValue1())))
                     .collect(Collectors.toList());
             Collection<Orderable> orderableStepOf = getOrderableStepOf(orderGlobalStep, traversal);
-            if (orderableStepOf.size() == 1) {
+            if (orderableStepOf != null && orderableStepOf.size() == 1) {
                 orderableStepOf.iterator().next().setOrders(collect);
             }
         });
