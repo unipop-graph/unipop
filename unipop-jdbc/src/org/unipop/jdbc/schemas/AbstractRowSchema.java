@@ -84,10 +84,12 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
         List<Pair<String, Order>> orders = query.getOrders();
         if (orders != null){
             List<SortField<Object>> orderValues = orders.stream().filter(order -> !order.getValue1().equals(Order.shuffle))
+                    .filter(order -> getFieldByPropertyKey(order.getValue0()) != null)
                     .map(order -> order.getValue1().equals(Order.incr) ?
                             field(getFieldByPropertyKey(order.getValue0())).asc() :
                             field(getFieldByPropertyKey(order.getValue0())).desc()).collect(Collectors.toList());
-            return where.orderBy(orderValues).limit(finalLimit);
+            if (orderValues.size() > 0)
+                return where.orderBy(orderValues).limit(finalLimit);
         }
 
         return where.limit(finalLimit);

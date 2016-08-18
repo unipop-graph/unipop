@@ -3,6 +3,7 @@ package org.unipop.jdbc.tests;
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.GraphManager;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.junit.Test;
 import test.JdbcGraphProvider;
@@ -21,7 +22,7 @@ public class TempTests extends AbstractGremlinTest {
     @LoadGraphWith(LoadGraphWith.GraphData.MODERN)
     @Test
     public void testA() {
-        Traversal t = g.V().order().by("name");
+        Traversal t = g.V().both().hasLabel("person").order().by("age", Order.decr).limit(5).values("name");
         check(t);
     }
 
