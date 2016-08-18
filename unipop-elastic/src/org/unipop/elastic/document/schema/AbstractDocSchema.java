@@ -77,10 +77,10 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
                 Order orderValue = order.getValue1();
                 switch (orderValue){
                     case decr:
-                        searchSourceBuilder.sort(order.getValue0(), SortOrder.DESC);
+                        searchSourceBuilder.sort(getFieldByPropertyKey(order.getValue0()), SortOrder.DESC);
                         break;
                     case incr:
-                        searchSourceBuilder.sort(order.getValue0(), SortOrder.ASC);
+                        searchSourceBuilder.sort(getFieldByPropertyKey(order.getValue0()), SortOrder.ASC);
                         break;
                     case shuffle:
                         break;
