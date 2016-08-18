@@ -8,6 +8,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.ElementValueTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.DedupGlobalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.WhereTraversalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
@@ -15,6 +16,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversal
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.javatuples.Pair;
 import org.unipop.process.edge.EdgeStepsStrategy;
+import org.unipop.process.edge.UniGraphEdgeOtherVertexStep;
+import org.unipop.process.predicate.ReceivesPredicatesHolder;
 import org.unipop.process.repeat.UniGraphRepeatStepStrategy;
 import org.unipop.process.start.UniGraphStartStepStrategy;
 import org.unipop.process.vertex.UniGraphVertexStepStrategy;
@@ -44,7 +47,16 @@ public class UniGraphOrderStrategy extends AbstractTraversalStrategy<TraversalSt
                     .collect(Collectors.toList());
             Collection<Orderable> orderableStepOf = getOrderableStepOf(orderGlobalStep, traversal);
             if (orderableStepOf != null && orderableStepOf.size() == 1) {
-                orderableStepOf.iterator().next().setOrders(collect);
+                Orderable step = orderableStepOf.iterator().next();
+                step.setOrders(collect);
+                Step nextStep = orderGlobalStep.getNextStep();
+                if (nextStep instanceof RangeGlobalStep){
+                    if (step instanceof ReceivesPredicatesHolder) {
+                        RangeGlobalStep rangeGlobalStep = (RangeGlobalStep) nextStep;
+                        int limit = rangeGlobalStep.getHighRange() > Integer.MAX_VALUE ? -1 : (int) rangeGlobalStep.getHighRange();
+                        ((ReceivesPredicatesHolder) step).setLimit(limit);
+                    }
+                }
             }
         });
     }
