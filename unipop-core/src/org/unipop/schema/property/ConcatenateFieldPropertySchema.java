@@ -29,6 +29,11 @@ public class ConcatenateFieldPropertySchema implements ParentSchemaProperty {
     }
 
     @Override
+    public String getType() {
+        return PropertyType.concat;
+    }
+
+    @Override
     public Map<String, Object> toProperties(Map<String, Object> source) {
         StringJoiner values = new StringJoiner(delimiter);
         for (PropertySchema schema : schemas) {

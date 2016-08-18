@@ -32,6 +32,11 @@ public class CoalescePropertySchema implements ParentSchemaProperty {
     }
 
     @Override
+    public String getType() {
+        return PropertyType.coalesce;
+    }
+
+    @Override
     public Map<String, Object> toProperties(Map<String, Object> source) {
         Optional<Map<String, Object>> first = this.children.stream()
                 .map(schema -> schema.toProperties(source)).filter(prop -> !prop.equals(Collections.emptyMap())).findFirst();
@@ -58,7 +63,7 @@ public class CoalescePropertySchema implements ParentSchemaProperty {
             JSONObject config = (JSONObject) conf;
             Object obj = config.opt("fields");
             if (obj == null || !(obj instanceof JSONArray)) return null;
-            if (!config.optBoolean("coalesce", false)) return null;
+            if (!config.optString("type", "String").toUpperCase().equals(PropertyType.coalesce)) return null;
             JSONArray fieldsArray = (JSONArray) obj;
             List<PropertySchema> schemas = new ArrayList<>();
             for (int i = 0; i < fieldsArray.length(); i++) {

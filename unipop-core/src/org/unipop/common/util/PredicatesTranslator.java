@@ -12,6 +12,6 @@ import org.unipop.query.predicates.PredicatesHolder;
  */
 @FunctionalInterface
 public interface PredicatesTranslator<T> {
-    T translate(PredicatesHolder holder);
+    T translate(PredicatesHolder holder) ;
 
 }

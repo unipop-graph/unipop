@@ -27,6 +27,11 @@ public class MultiPropertySchema implements ParentSchemaProperty {
     }
 
     @Override
+    public String getType() {
+        return PropertyType.multi;
+    }
+
+    @Override
     public Map<String, Object> toProperties(Map<String, Object> source) {
         List<Object> value = new ArrayList<>();
         schemas.forEach(schema -> {

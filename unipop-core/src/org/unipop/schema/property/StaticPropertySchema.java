@@ -24,6 +24,11 @@ public class StaticPropertySchema implements PropertySchema {
     }
 
     @Override
+    public String getType() {
+        return PropertyType.string;
+    }
+
+    @Override
     public Map<String, Object> toProperties(Map<String, Object> source) {
         return Collections.singletonMap(key, this.value);
     }

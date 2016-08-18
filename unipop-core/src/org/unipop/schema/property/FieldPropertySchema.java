@@ -4,6 +4,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.json.JSONObject;
+import org.unipop.process.predicate.Date;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.util.ConversionUtils;
@@ -20,10 +21,12 @@ public class FieldPropertySchema implements PropertySchema {
     private boolean nullable;
     protected Set include;
     protected Set exclude;
+    protected String type;
 
     public FieldPropertySchema(String key, String field, boolean nullable) {
         this.key = key;
         this.field = field;
+        this.type = PropertyType.string;
         this.nullable = nullable;
     }
 
@@ -35,11 +38,23 @@ public class FieldPropertySchema implements PropertySchema {
         this.include = include.isEmpty() ? null : include;
         Set<Object> exclude = ConversionUtils.toSet(config, "exclude");
         this.exclude = exclude.isEmpty() ? null : exclude;
+        Optional<String> type = PropertyType.getTypes().stream()
+                .filter(typeName -> typeName.equals(config.optString("type", "STRING").toUpperCase()))
+                .findFirst();
+        if (type.isPresent())
+            this.type = type.get();
+        else
+            throw new IllegalArgumentException("type: " + config.optString("type", "STRING") + " not found.");
     }
 
     @Override
     public String getKey() {
         return key;
+    }
+
+    @Override
+    public String getType() {
+        return this.type;
     }
 
     @Override
@@ -73,6 +88,11 @@ public class FieldPropertySchema implements PropertySchema {
 
     @Override
     public PredicatesHolder toPredicate(HasContainer has) {
+        if (type.equals(PropertyType.date))
+        {
+            return PredicatesHolderFactory.predicate(new HasContainer(has.getKey(),
+                    Date.convert(has.getPredicate())));
+        }
         P predicate;
         if (has != null && !test(has.getPredicate())) {
             return PredicatesHolderFactory.abort();
