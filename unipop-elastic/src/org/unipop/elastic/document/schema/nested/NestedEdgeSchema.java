@@ -132,6 +132,13 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
     }
 
     @Override
+    public String getFieldByPropertyKey(String key) {
+        String field = super.getFieldByPropertyKey(key);
+        if (field == null) return field;
+        return path + "." + field;
+    }
+
+    @Override
     public PredicatesHolder toPredicates(PredicatesHolder predicatesHolder) {
         return super.toPredicates(predicatesHolder).map(has -> new HasContainer(path + "." + has.getKey(), has.getPredicate()));
     }
