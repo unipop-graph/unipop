@@ -3,9 +3,11 @@ package org.unipop.process.vertex;
 import org.apache.tinkerpop.gremlin.process.traversal.step.Profiling;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.structure.util.Attachable;
+import org.javatuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unipop.process.UniPredicatesStep;
+import org.unipop.process.order.Orderable;
 import org.unipop.query.StepDescriptor;
 import org.unipop.process.predicate.ReceivesPredicatesHolder;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
@@ -29,7 +31,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Vertex, E> implements ReceivesPredicatesHolder<Vertex, E>, Profiling{
+public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Vertex, E> implements ReceivesPredicatesHolder<Vertex, E>, Orderable, Profiling{
     private static final Logger logger = LoggerFactory.getLogger(UniGraphVertexStep.class);
 
     private final boolean returnsVertex;
@@ -41,6 +43,7 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
     private StepDescriptor stepDescriptor;
     private List<SearchVertexQuery.SearchVertexController> controllers;
     private List<DeferredVertexQuery.DeferredVertexController> deferredVertexControllers;
+    private List<Pair<String, Order>> orders;
 
     public UniGraphVertexStep(VertexStep<E> vertexStep, UniGraph graph, ControllerManager controllerManager) {
         super(vertexStep.getTraversal(), graph);
@@ -73,7 +76,11 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
             traverserList.add(traverser);
             vertices.add(vertex);
         });
-        SearchVertexQuery vertexQuery = new SearchVertexQuery(Edge.class, vertices, direction, predicates, limit, propertyKeys, stepDescriptor);
+        SearchVertexQuery vertexQuery;
+        if (!returnsVertex)
+            vertexQuery = new SearchVertexQuery(Edge.class, vertices, direction, predicates, limit, propertyKeys, orders, stepDescriptor);
+        else
+            vertexQuery = new SearchVertexQuery(Edge.class, vertices, direction, predicates, -1, propertyKeys, null, stepDescriptor);
         logger.debug("Executing query: ", vertexQuery);
         Iterator<Traverser.Admin<E>> traversersIterator = controllers.stream().<Iterator<Edge>>map(controller -> controller.search(vertexQuery))
                 .<Edge>flatMap(ConversionUtils::asStream)
@@ -91,7 +98,7 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
                 .filter(DeferredVertex::isDeferred)
                 .collect(Collectors.toList());
         if (deferredVertices.size() > 0) {
-            DeferredVertexQuery query = new DeferredVertexQuery(deferredVertices, propertyKeys, this.stepDescriptor);
+            DeferredVertexQuery query = new DeferredVertexQuery(deferredVertices, propertyKeys, orders, this.stepDescriptor);
             deferredVertexControllers.stream().forEach(controller -> controller.fetchProperties(query));
         }
         return copyTraversers.iterator();
@@ -148,5 +155,10 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
     @Override
     public void setMetrics(MutableMetrics metrics) {
         this.stepDescriptor = new StepDescriptor(this, metrics);
+    }
+
+    @Override
+    public void setOrders(List<Pair<String, Order>> orders) {
+        this.orders = orders;
     }
 }

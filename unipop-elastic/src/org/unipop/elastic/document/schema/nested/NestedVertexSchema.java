@@ -49,6 +49,13 @@ public class NestedVertexSchema extends AbstractDocSchema<Vertex> implements Doc
     }
 
     @Override
+    public String getFieldByPropertyKey(String key) {
+        String field = super.getFieldByPropertyKey(key);
+        if (field == null) return field;
+        return path + "." + field;
+    }
+
+    @Override
     public Collection<Vertex> fromFields(Map<String, Object> fields) {
         Object pathValue = fields.get(this.path);
         if (pathValue == null) return null;

@@ -5,6 +5,7 @@ import org.json.JSONObject;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.schema.property.AbstractPropertyContainer;
+import org.unipop.schema.property.NonDynamicPropertySchema;
 import org.unipop.structure.UniElement;
 import org.unipop.structure.UniGraph;
 import org.unipop.util.ConversionUtils;
@@ -65,9 +66,11 @@ public abstract class AbstractElementSchema<E extends Element> extends AbstractP
 
     @Override
     public String getFieldByPropertyKey(String key){
-        Optional<String> first = propertySchemas.stream().flatMap(s -> s.toFields(Collections.singleton(key)).stream()).findFirst();
+        Optional<String> first = propertySchemas.stream().filter(s -> s.getKey() != null).filter(s -> s.getKey().equals(key)).flatMap(s -> s.toFields(Collections.singleton(key)).stream()).findFirst();
         if (first.isPresent()) return first.get();
-        else return null;
+        else
+            if (dynamicProperties instanceof NonDynamicPropertySchema) return null;
+            else return key;
     }
 
     @Override

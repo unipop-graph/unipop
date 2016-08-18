@@ -1,7 +1,9 @@
 package org.unipop.jdbc.schemas;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.javatuples.Pair;
 import org.jooq.*;
 import org.jooq.impl.DSL;
 import org.json.JSONObject;
@@ -17,6 +19,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.jooq.impl.DSL.field;
+import static org.jooq.impl.DSL.or;
 import static org.jooq.impl.DSL.table;
 
 /**
@@ -74,9 +78,21 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
         Condition conditions = new JdbcPredicatesTranslator().translate(predicatesHolder);
         int finalLimit = query.getLimit() < 0 ? Integer.MAX_VALUE : query.getLimit();
 
-        return createSqlQuery(query.getPropertyKeys(), context)
-                .where(conditions)
-                .limit(finalLimit);
+        SelectConditionStep<Record> where = createSqlQuery(query.getPropertyKeys(), context)
+                .where(conditions);
+
+        List<Pair<String, Order>> orders = query.getOrders();
+        if (orders != null){
+            List<SortField<Object>> orderValues = orders.stream().filter(order -> !order.getValue1().equals(Order.shuffle))
+                    .filter(order -> getFieldByPropertyKey(order.getValue0()) != null)
+                    .map(order -> order.getValue1().equals(Order.incr) ?
+                            field(getFieldByPropertyKey(order.getValue0())).asc() :
+                            field(getFieldByPropertyKey(order.getValue0())).desc()).collect(Collectors.toList());
+            if (orderValues.size() > 0)
+                return where.orderBy(orderValues).limit(finalLimit);
+        }
+
+        return where.limit(finalLimit);
 
     }
 
@@ -88,7 +104,6 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
         }
 
         Set<String> props = this.toFields(columnsToRetrieve);
-
         return context
                 .select(props.stream().map(DSL::field).collect(Collectors.toList()))
                 .from(this.getTable());

@@ -84,6 +84,8 @@ public class DocumentController implements SimpleController {
 
     //region Query Controller
 
+
+
     @Override
     public <E extends Element> Iterator<E> search(SearchQuery<E> uniQuery) {
         Set<? extends DocumentSchema<E>> schemas = getSchemas(uniQuery.getReturnType());

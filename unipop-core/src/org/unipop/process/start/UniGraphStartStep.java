@@ -1,12 +1,16 @@
 package org.unipop.process.start;
 
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.Profiling;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.javatuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.unipop.process.order.Orderable;
 import org.unipop.util.ConversionUtils;
 import org.unipop.process.predicate.ReceivesPredicatesHolder;
 import org.unipop.process.properties.PropertyFetcher;
@@ -20,13 +24,14 @@ import org.unipop.structure.UniGraph;
 import java.util.*;
 import java.util.stream.Stream;
 
-public class UniGraphStartStep<S,E extends Element> extends GraphStep<S,E> implements ReceivesPredicatesHolder<S, E>, PropertyFetcher, Profiling{
+public class UniGraphStartStep<S,E extends Element> extends GraphStep<S,E> implements ReceivesPredicatesHolder<S, E>, PropertyFetcher, Orderable, Profiling{
     private static final Logger logger = LoggerFactory.getLogger(UniGraphStartStep.class);
     private StepDescriptor stepDescriptor;
     private List<SearchQuery.SearchController>  controllers;
     private PredicatesHolder predicates = PredicatesHolderFactory.empty();
     private Set<String> propertyKeys;
     private int limit;
+    private List<Pair<String, Order>> orders;
 
     public UniGraphStartStep(GraphStep<S, E> originalStep, ControllerManager controllerManager) {
         super(originalStep.getTraversal(), originalStep.getReturnClass(), originalStep.isStartStep(), originalStep.getIds());
@@ -47,7 +52,7 @@ public class UniGraphStartStep<S,E extends Element> extends GraphStep<S,E> imple
                         .flatMap(Collection::stream)
         ).map(HasContainer::getKey).forEach(this::addPropertyKey);
 
-        SearchQuery<E> searchQuery = new SearchQuery<>(returnClass, predicates, limit, propertyKeys, stepDescriptor);
+        SearchQuery<E> searchQuery = new SearchQuery<>(returnClass, predicates, limit, propertyKeys, orders, stepDescriptor);
         logger.debug("Executing query: ", searchQuery);
         return controllers.stream().<Iterator<E>>map(controller -> controller.search(searchQuery)).flatMap(ConversionUtils::asStream).distinct().iterator();
     }
@@ -88,5 +93,10 @@ public class UniGraphStartStep<S,E extends Element> extends GraphStep<S,E> imple
     @Override
     public void setMetrics(MutableMetrics metrics) {
         this.stepDescriptor = new StepDescriptor(this, metrics);
+    }
+
+    @Override
+    public void setOrders(List<Pair<String, Order>> orders) {
+        this.orders = orders;
     }
 }

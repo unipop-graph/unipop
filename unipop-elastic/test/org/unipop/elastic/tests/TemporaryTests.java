@@ -56,9 +56,9 @@ public class TemporaryTests extends AbstractGremlinTest {
     }
 
     @Test
+    @LoadGraphWith(MODERN)
     public void test() {
-        graph.addVertex(T.label, "person", T.id, "1", "name", "marko");
-        Traversal t = g.V();
+        Traversal t = g.V().order().by("name");
         check(t);
     }
 
