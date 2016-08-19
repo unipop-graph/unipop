@@ -7,7 +7,10 @@ import org.json.JSONObject;
 import org.unipop.process.predicate.Date;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
+import org.unipop.schema.property.type.PropertyType;
+import org.unipop.schema.property.type.TextType;
 import org.unipop.util.ConversionUtils;
+import org.unipop.util.PropertyTypeFactory;
 
 import java.util.Collections;
 import java.util.Map;
@@ -21,13 +24,17 @@ public class FieldPropertySchema implements PropertySchema {
     private boolean nullable;
     protected Set include;
     protected Set exclude;
-    protected String type;
+    protected PropertyType type;
 
     public FieldPropertySchema(String key, String field, boolean nullable) {
         this.key = key;
         this.field = field;
-        this.type = PropertyType.string;
         this.nullable = nullable;
+        try {
+            this.type = PropertyTypeFactory.getType("STRING");
+        } catch (IllegalAccessException | InstantiationException e) {
+            e.printStackTrace();
+        }
     }
 
     public FieldPropertySchema(String key, JSONObject config, boolean nullable) {
@@ -38,23 +45,17 @@ public class FieldPropertySchema implements PropertySchema {
         this.include = include.isEmpty() ? null : include;
         Set<Object> exclude = ConversionUtils.toSet(config, "exclude");
         this.exclude = exclude.isEmpty() ? null : exclude;
-        Optional<String> type = PropertyType.getTypes().stream()
-                .filter(typeName -> typeName.equals(config.optString("type", "STRING").toUpperCase()))
-                .findFirst();
-        if (type.isPresent())
-            this.type = type.get();
-        else
-            throw new IllegalArgumentException("type: " + config.optString("type", "STRING") + " not found.");
+        String typeName = config.optString("type", "STRING");
+        try {
+            this.type = PropertyTypeFactory.getType(typeName);
+        } catch (IllegalAccessException | InstantiationException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public String getKey() {
         return key;
-    }
-
-    @Override
-    public String getType() {
-        return this.type;
     }
 
     @Override
@@ -88,11 +89,6 @@ public class FieldPropertySchema implements PropertySchema {
 
     @Override
     public PredicatesHolder toPredicate(HasContainer has) {
-        if (type.equals(PropertyType.date))
-        {
-            return PredicatesHolderFactory.predicate(new HasContainer(has.getKey(),
-                    Date.convert(has.getPredicate())));
-        }
         P predicate;
         if (has != null && !test(has.getPredicate())) {
             return PredicatesHolderFactory.abort();
@@ -104,7 +100,9 @@ public class FieldPropertySchema implements PropertySchema {
             predicate = P.without(exclude);
         } else return PredicatesHolderFactory.empty();
 
-        HasContainer hasContainer = new HasContainer(this.field, predicate);
+        P translatedPredicate = type.translate(predicate);
+
+        HasContainer hasContainer = new HasContainer(this.field, translatedPredicate);
         return PredicatesHolderFactory.predicate(hasContainer);
     }
 

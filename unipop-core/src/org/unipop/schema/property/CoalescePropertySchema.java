@@ -5,6 +5,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
+import org.unipop.schema.property.type.PropertyType;
 import org.unipop.util.PropertySchemaFactory;
 
 import java.util.*;
@@ -29,11 +30,6 @@ public class CoalescePropertySchema implements ParentSchemaProperty {
     @Override
     public String getKey() {
         return key;
-    }
-
-    @Override
-    public String getType() {
-        return PropertyType.coalesce;
     }
 
     @Override
@@ -63,7 +59,7 @@ public class CoalescePropertySchema implements ParentSchemaProperty {
             JSONObject config = (JSONObject) conf;
             Object obj = config.opt("fields");
             if (obj == null || !(obj instanceof JSONArray)) return null;
-            if (!config.optString("type", "String").toUpperCase().equals(PropertyType.coalesce)) return null;
+            if (!config.optString("type", "String").toUpperCase().equals("COALESCE")) return null;
             JSONArray fieldsArray = (JSONArray) obj;
             List<PropertySchema> schemas = new ArrayList<>();
             for (int i = 0; i < fieldsArray.length(); i++) {

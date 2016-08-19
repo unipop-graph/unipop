@@ -6,6 +6,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
+import org.unipop.schema.property.type.PropertyType;
 import org.unipop.util.PropertySchemaFactory;
 
 import java.util.*;
@@ -26,11 +27,6 @@ public class ConcatenateFieldPropertySchema implements ParentSchemaProperty {
     @Override
     public String getKey() {
         return key;
-    }
-
-    @Override
-    public String getType() {
-        return PropertyType.concat;
     }
 
     @Override

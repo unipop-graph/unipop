@@ -12,7 +12,6 @@ import java.util.stream.Stream;
 
 public interface PropertySchema {
     String getKey();
-    String getType();
     Map<String, Object> toProperties(Map<String, Object> source);
     Map<String, Object> toFields(Map<String, Object> properties);
     Set<String> toFields(Set<String> propertyKeys);

@@ -28,31 +28,6 @@ public class Date {
         return new AndP<>(new P(DatePredicate.gte, first), new P(DatePredicate.lt, second));
     }
 
-    public static <V> P<V> convert(P<V> predicate){
-        BiPredicate<V, V> biPredicate = predicate.getBiPredicate();
-        if (biPredicate instanceof Compare){
-            String predicateString = biPredicate.toString();
-            V value = predicate.getValue();
-            switch (predicateString){
-                case "eq":
-                    return eq(value);
-                case "neq":
-                    return neq(value);
-                case "lt":
-                    return lt(value);
-                case "gt":
-                    return gt(value);
-                case "lte":
-                    return lte(value);
-                case "gte":
-                    return gte(value);
-                default:
-                    throw new IllegalArgumentException("cant convert '" + predicateString +"' to DatePredicate");
-            }
-        } else
-            throw new IllegalArgumentException("cant convert '" + biPredicate.toString() +"' to DatePredicate");
-    }
-
     public enum DatePredicate implements BiPredicate<Object, Object> {
         eq {
             @Override
