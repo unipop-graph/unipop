@@ -4,6 +4,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.json.JSONArray;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
+import org.unipop.schema.property.type.PropertyType;
 import org.unipop.util.PropertySchemaFactory;
 
 import java.util.*;

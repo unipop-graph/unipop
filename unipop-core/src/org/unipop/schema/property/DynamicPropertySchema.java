@@ -2,6 +2,7 @@ package org.unipop.schema.property;
 
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.json.JSONObject;
+import org.unipop.schema.property.type.PropertyType;
 import org.unipop.util.ConversionUtils;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;

@@ -12,7 +12,6 @@ import java.util.Optional;
  */
 public class PropertySchemaFactory {
     public static List<PropertySchema.PropertySchemaBuilder> builders;
-    private static PropertySchemaFactory self;
 
     private PropertySchemaFactory(List<PropertySchema.PropertySchemaBuilder> providers, List<PropertySchema.PropertySchemaBuilder> thirdParty) {
         builders = new ArrayList<>();

@@ -11,6 +11,9 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.unipop.schema.property.PropertySchema;
+import org.unipop.schema.property.type.DateType;
+import org.unipop.schema.property.type.NumberType;
+import org.unipop.schema.property.type.TextType;
 import org.unipop.test.UnipopGraphProvider;
 import org.unipop.util.ConversionUtils;
 import org.unipop.process.strategyregistrar.StandardStrategyProvider;
@@ -22,6 +25,7 @@ import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.SearchQuery;
 import org.unipop.util.PropertySchemaFactory;
+import org.unipop.util.PropertyTypeFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -95,6 +99,9 @@ public class UniGraph implements Graph {
     public UniGraph(Configuration configuration) throws Exception {
         configuration.setProperty(Graph.GRAPH, UniGraph.class.getName());
         this.configuration = configuration;
+        PropertyTypeFactory.init(Arrays.asList(TextType.class.getCanonicalName(),
+                DateType.class.getCanonicalName(),
+                NumberType.class.getCanonicalName()));
         List<PropertySchema.PropertySchemaBuilder> thirdPartyPropertySchemas = new ArrayList<>();
         if(configuration.containsKey("propertySchemas")){
             Stream.of(configuration.getStringArray("propertiesSchemas")).map(classString -> {
