@@ -2,9 +2,12 @@ package org.unipop.schema.property;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
+import org.unipop.util.ConversionUtils;
+import org.unipop.util.MultiDateFormat;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -18,20 +21,32 @@ import java.util.stream.Stream;
  */
 public class DateFieldPropertySchema extends FieldPropertySchema implements DatePropertySchema {
     protected final SimpleDateFormat sourceFormat;
-    protected final SimpleDateFormat displayFormat;
+    protected final MultiDateFormat displayFormat;
     protected long interval;
 
     public DateFieldPropertySchema(String key, String field, String format, boolean nullable) {
         super(key, field, nullable);
         this.sourceFormat = new SimpleDateFormat(format);
-        this.displayFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS");
+        this.displayFormat = new MultiDateFormat("yyyy-MM-dd HH:mm:ss:SSS");
         this.interval = 1000 * 60 * 60 *24;
     }
 
     public DateFieldPropertySchema(String key, JSONObject config, boolean nullable) {
         super(key, config, nullable);
         this.sourceFormat = new SimpleDateFormat(config.optString("sourceFormat"));
-        this.displayFormat = new SimpleDateFormat(config.optString("displayFormat", "yyyy-MM-dd HH:mm:ss:SSS"));
+        JSONArray displayFormats = config.optJSONArray("displayFormats");
+        if (displayFormats == null){
+            this.displayFormat = new MultiDateFormat("yyyy-MM-dd HH:mm:ss:SSS");
+        } else{
+            List<String> formats = ConversionUtils.asStream(displayFormats.iterator())
+                    .map(Object::toString).collect(Collectors.toList());
+            if (formats.size() > 1) {
+                this.displayFormat = new MultiDateFormat(formats.get(0),
+                        formats.subList(1, formats.size() - 1).toArray(new String[formats.size() - 2]));
+            } else {
+                this.displayFormat = new MultiDateFormat(formats.get(0));
+            }
+        }
         String interval = config.optString("interval", "1d");
         if (interval.matches("\\d+")){
             this.interval = Long.parseLong(interval);

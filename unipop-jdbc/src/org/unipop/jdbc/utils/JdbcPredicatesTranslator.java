@@ -12,9 +12,9 @@ import org.unipop.process.predicate.Date;
 import org.unipop.process.predicate.ExistsP;
 import org.unipop.process.predicate.Text;
 import org.unipop.query.predicates.PredicatesHolder;
+import org.unipop.util.MultiDateFormat;
 
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -22,7 +22,6 @@ import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
 import static org.jooq.impl.DSL.field;
-import static org.jooq.impl.DSL.val;
 
 /**
  * @author Gur Ronen
@@ -102,7 +101,8 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
     }
 
     private java.sql.Date convertToSqlDate(String dateString) throws ParseException {
-        long time = new SimpleDateFormat("dd//MM/yyyy").parse(dateString).getTime();
+        // TODO: make configurable
+        long time = new MultiDateFormat("dd/MM/yyyy HH:mm:ss", "dd/MM/yyyy").parse(dateString).getTime();
         return new java.sql.Date(time);
     }
 
