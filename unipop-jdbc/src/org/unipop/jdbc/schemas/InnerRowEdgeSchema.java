@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.jooq.*;
 import org.jooq.impl.DSL;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.unipop.jdbc.schemas.jdbc.JdbcSchema;
 import org.unipop.jdbc.schemas.jdbc.JdbcVertexSchema;
@@ -13,6 +14,7 @@ import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.search.SearchQuery;
 import org.unipop.schema.element.ElementSchema;
 import org.unipop.schema.element.VertexSchema;
+import org.unipop.schema.reference.ReferenceVertexSchema;
 import org.unipop.structure.UniGraph;
 
 import java.util.Map;
@@ -41,6 +43,13 @@ public class InnerRowEdgeSchema extends RowEdgeSchema {
         this.inVertexSchema = parentDirection.equals(Direction.IN) ? parentVertexSchema : childVertexSchema;
     }
 
+    @Override
+    protected VertexSchema createVertexSchema(String key) throws JSONException {
+        JSONObject vertexConfiguration = this.json.optJSONObject(key);
+        if(vertexConfiguration == null) return null;
+        if(vertexConfiguration.optBoolean("ref", false)) return new ReferenceVertexSchema(vertexConfiguration, graph);
+        return new InnerRowVertexSchema(vertexConfiguration, table, graph);
+    }
 
     @Override
     public Set<ElementSchema> getChildSchemas() {

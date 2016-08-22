@@ -70,7 +70,9 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
                         "AGE INT," +
                         "LANG VARCHAR (100)," +
                         "KNOWNBY VARCHAR (100)," +
+                        "CREATEDBY VARCHAR (100)," +
                         "EDGEID VARCHAR (100)," +
+                        "EDGELANG VARCHAR (100)," +
                         "EDGEWEIGHT DOUBLE," +
                         "EDGENAME VARCHAR(100))"
         );

@@ -121,12 +121,14 @@ public class RowController implements SimpleController {
     public Vertex addVertex(AddVertexQuery uniQuery) {
         UniVertex vertex = new UniVertex(uniQuery.getProperties(), this.graph);
         try {
-            if(this.insert(this.vertexSchemas, vertex)) return vertex;
+            if(this.insert(this.vertexSchemas, vertex)) {
+                return vertex;
+            }
         } catch (DataAccessException ex) {
             throw Graph.Exceptions.vertexWithIdAlreadyExists(vertex.id());
         }
 
-        return null;
+        return vertex;
     }
 
     @Override
@@ -211,7 +213,6 @@ public class RowController implements SimpleController {
         for (JdbcSchema<E> schema : schemas) {
             Query query = schema.getInsertStatement(element);
             if (query == null) continue;
-
             int changeSetCount = dslContext.execute(query);
             if(logger.isDebugEnabled())
                 logger.debug("executed insertion, query: {}", dslContext.render(query));
