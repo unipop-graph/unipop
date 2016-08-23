@@ -127,7 +127,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
                             </goals>
                             <configuration>
                                 <includes>
-                                    <include>**/*ElasticProcessSuite`*.java</include>
+                                    <include>**/*ElasticProcessSuite*.java</include>
                                 </includes>
                                 <environmentVariables>
                                     <conf>nestededgeref</conf>

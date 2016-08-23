@@ -5,6 +5,15 @@
   "sqlDialect": "H2",
   "vertices": [
     {
+      "table": "ANIMAL_MODERN",
+      "id": "@ID",
+      "label": "animal",
+      "properties": {
+        "name": "@NAME",
+        "age": "@AGE"
+      }
+    },
+    {
       "table": "vertex_inner",
       "id": "@ID",
       "label": {
@@ -65,7 +74,7 @@
       },
       "dynamicProperties": {
         "excludeProperties":[
-          "name", "lang"
+          "name", "lang", "age"
         ],
         "excludeFields": [
           "OUTID",
