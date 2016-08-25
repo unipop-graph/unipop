@@ -34,9 +34,9 @@ public class ConcatenateFieldPropertySchema implements ParentSchemaProperty {
         StringJoiner values = new StringJoiner(delimiter);
         for (PropertySchema schema : schemas) {
             Map<String, Object> props = schema.toProperties(source);
-            if (props.size() == 0) return Collections.emptyMap();
-            if (props != null) props.values().stream().map(Object::toString).forEach(values::add);
-            else values.add("null");
+            if (props == null) values.add("null");
+            else if (props.size() == 0) return Collections.emptyMap();
+            else props.values().stream().map(Object::toString).forEach(values::add);
         }
         return Collections.singletonMap(key, values.toString());
     }
