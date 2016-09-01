@@ -7,10 +7,12 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.unipop.elastic.common.ElasticClient;
 import org.unipop.elastic.document.DocumentEdgeSchema;
+import org.unipop.query.aggregation.ReduceVertexQuery;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.SearchVertexQuery;
@@ -83,6 +85,26 @@ public class DocEdgeSchema extends AbstractDocSchema<Edge> implements DocumentEd
         if (predicatesHolder.isAborted()) return null;
         QueryBuilder queryBuilder = createQueryBuilder(predicatesHolder);
         return createSearch(query, queryBuilder);
+    }
+
+    @Override
+    public Search getReduce(ReduceVertexQuery query) {
+        PredicatesHolder edgePredicates = this.toPredicates(query.getPredicates());
+        PredicatesHolder vertexPredicates = this.getVertexPredicates(query.getVertices(), query.getDirection());
+        PredicatesHolder predicatesHolder = PredicatesHolderFactory.and(edgePredicates, vertexPredicates);
+        if (predicatesHolder.isAborted()) return null;
+        QueryBuilder queryBuilder = createQueryBuilder(predicatesHolder);
+        SearchSourceBuilder searchBuilder = createSearchBuilder(query, queryBuilder);
+        createReduce(query, searchBuilder);
+        Search.Builder search = new Search.Builder(searchBuilder.toString().replace("\n", ""))
+                .addIndex(index.getIndex(query.getPredicates()))
+                .ignoreUnavailable(true)
+                .allowNoIndices(true);
+
+        if (type != null)
+            search.addType(type);
+
+        return search.build();
     }
 
     protected PredicatesHolder getVertexPredicates(List<Vertex> vertices, Direction direction) {

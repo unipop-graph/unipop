@@ -4,20 +4,22 @@ import io.searchbox.action.BulkableAction;
 import io.searchbox.core.*;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unipop.elastic.common.ElasticClient;
+import org.unipop.query.UniQuery;
+import org.unipop.query.aggregation.ReduceQuery;
+import org.unipop.query.aggregation.ReduceVertexQuery;
 import org.unipop.query.controller.SimpleController;
 import org.unipop.query.mutation.AddEdgeQuery;
 import org.unipop.query.mutation.AddVertexQuery;
 import org.unipop.query.mutation.PropertyQuery;
 import org.unipop.query.mutation.RemoveQuery;
+import org.unipop.query.predicates.PredicatesHolder;
+import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.query.search.SearchQuery;
 import org.unipop.query.search.SearchVertexQuery;
@@ -27,18 +29,16 @@ import org.unipop.structure.UniEdge;
 import org.unipop.structure.UniElement;
 import org.unipop.structure.UniGraph;
 import org.unipop.structure.UniVertex;
+import org.unipop.util.ConversionUtils;
 import org.unipop.util.MetricsRunner;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
-import java.util.function.BinaryOperator;
-import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.function.*;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
-public class DocumentController implements SimpleController {
+public class DocumentController implements SimpleController, ReduceQuery.ReduceController, ReduceVertexQuery.ReduceVertexController {
     private static final Logger logger = LoggerFactory.getLogger(DocumentController.class);
 
     private final ElasticClient client;
@@ -85,27 +85,29 @@ public class DocumentController implements SimpleController {
     //region Query Controller
 
 
-
     @Override
     public <E extends Element> Iterator<E> search(SearchQuery<E> uniQuery) {
         Set<? extends DocumentSchema<E>> schemas = getSchemas(uniQuery.getReturnType());
+        SearchCollector<DocumentSchema<E>, Search, E> collector = new SearchCollector<>((schema) -> schema.getSearch(uniQuery), (schema, results) -> schema.parseResults(results, uniQuery));
         Map<DocumentSchema<E>, Search> searches = schemas.stream()
-                .collect(new SearchCollector<>((schema) -> schema.getSearch(uniQuery)));
-        return search(uniQuery, searches);
+                .collect(collector);
+        return search(uniQuery, searches, collector);
     }
 
     @Override
     public Iterator<Edge> search(SearchVertexQuery uniQuery) {
+        SearchCollector<DocumentEdgeSchema, Search, Edge> collector = new SearchCollector<>((schema) -> schema.getSearch(uniQuery), (schema, results) -> schema.parseResults(results, uniQuery));
         Map<DocumentEdgeSchema, Search> schemas = edgeSchemas.stream()
-                .collect(new SearchCollector<>((schema) -> schema.getSearch(uniQuery)));
-        return search(uniQuery, schemas);
+                .collect(collector);
+        return search(uniQuery, schemas, collector);
     }
 
     @Override
     public void fetchProperties(DeferredVertexQuery uniQuery) {
+        SearchCollector<DocumentVertexSchema, Search, Vertex> collector = new SearchCollector<>((schema) -> schema.getSearch(uniQuery), (schema, results) -> schema.parseResults(results, uniQuery));
         Map<DocumentVertexSchema, Search> schemas = vertexSchemas.stream()
-                .collect(new SearchCollector<>((schema) -> schema.getSearch(uniQuery)));
-        Iterator<Vertex> search = search(uniQuery, schemas);
+                .collect(collector);
+        Iterator<Vertex> search = search(uniQuery, schemas, collector);
 
         Map<Object, DeferredVertex> vertexMap = uniQuery.getVertices().stream()
                 .collect(Collectors.toMap(UniElement::id, Function.identity(), (a, b) -> a));
@@ -113,6 +115,52 @@ public class DocumentController implements SimpleController {
             DeferredVertex deferredVertex = vertexMap.get(newVertex.id());
             if (deferredVertex != null) deferredVertex.loadProperties(newVertex);
         });
+    }
+
+    @Override
+    public Iterator<Object> reduce(ReduceQuery query) {
+        SearchCollector<DocumentSchema<Element>, Search, Object> collector = new SearchCollector<>((schema) -> schema.getReduce(query), (schema, results) -> schema.parseReduce(results, query));
+        Set<? extends DocumentSchema<Element>> schemas = getSchemas(query.getReturnType());
+        Map<DocumentSchema<Element>, Search> searches = schemas.stream().collect(collector);
+        Iterator<Object> search = search(query, searches, collector);
+        if (search.hasNext())
+            return search;
+        else
+            return null;
+    }
+
+
+    @Override
+    public Iterator<Object> reduce(ReduceVertexQuery query) {
+        if (!query.isReturnsVertex()){
+            SearchCollector<DocumentSchema<Edge>, Search, Object> collector = new SearchCollector<>((schema) -> schema.getReduce(query), (schema, results) -> schema.parseReduce(results, query));
+            Set<? extends DocumentSchema<Edge>> schemas = getSchemas(Edge.class);
+            Map<DocumentSchema<Edge>, Search> searches = schemas.stream().collect(collector);
+            Iterator<Object> search = search(query, searches, collector);
+            if (search.hasNext())
+                return search;
+        } else {
+            Iterator<Edge> search = search(new SearchVertexQuery(Edge.class, query.getVertices(), query.getDirection(),
+                    PredicatesHolderFactory.empty(), query.getLimit(),
+                    Collections.emptySet(), Collections.emptyList(), query.getStepDescriptor()));
+            List<Vertex> vertexList = ConversionUtils.asStream(search).flatMap(edge -> {
+                List<Vertex> vertices = new ArrayList<>();
+                if (query.getDirection().equals(Direction.OUT) || query.getDirection().equals(Direction.BOTH))
+                    vertices.add(edge.inVertex());
+                if (query.getDirection().equals(Direction.IN) || query.getDirection().equals(Direction.BOTH))
+                    vertices.add(edge.outVertex());
+                return vertices.stream();
+            }).collect(Collectors.toList());
+            Set<? extends DocumentSchema<Vertex>> schemas = getSchemas(Vertex.class);
+            SearchCollector<DocumentSchema<Vertex>, Search, Object> collector = new SearchCollector<>((schema) -> {
+                ReduceQuery reduceQuery = new ReduceQuery(vertexList, query.getPredicates(), query.getPropertyKeys(), query.getReduceOn(),
+                        query.getOp(), query.getReturnType(), query.getLimit(), query.getStepDescriptor());
+                return schema.getReduce(reduceQuery);
+            }, (schema, results) -> schema.parseReduce(results, query));
+            Map<DocumentSchema<Vertex>, Search> reduces = schemas.stream().collect(collector);
+            return search(query, reduces, collector);
+        }
+        return null;
     }
 
     @Override
@@ -175,7 +223,7 @@ public class DocumentController implements SimpleController {
         }
     }
 
-    private <E extends Element, S extends DocumentSchema<E>> Iterator<E> search(SearchQuery<E> query, Map<S, Search> schemas) {
+    private <E extends Element, S extends DocumentSchema<E>, R> Iterator<R> search(UniQuery query, Map<S, Search> schemas, SearchCollector<S, Search, R> collector) {
         MetricsRunner metrics = new MetricsRunner(this, query,
                 schemas.keySet().stream().map(s -> ((ElementSchema) s)).collect(Collectors.toList()));
 
@@ -192,7 +240,7 @@ public class DocumentController implements SimpleController {
         Iterator<S> schemaIterator = schemas.keySet().iterator();
 
         return responses.stream().filter(this::valid).flatMap(result ->
-                schemaIterator.next().parseResults(result.searchResult.getJsonString(), query).stream()).iterator();
+                collector.parse.apply(schemaIterator.next(), result.searchResult.getJsonString()).stream()).iterator();
     }
 
     private boolean valid(MultiSearchResult.MultiSearchResponse multiSearchResponse) {
@@ -228,12 +276,15 @@ public class DocumentController implements SimpleController {
 
     //endregion
 
-    public class SearchCollector<K, V> implements Collector<K, Map<K, V>, Map<K, V>> {
+    public class SearchCollector<K, V, R> implements Collector<K, Map<K, V>, Map<K, V>> {
 
         private final Function<? super K, ? extends V> valueMapper;
 
-        private SearchCollector(Function<? super K, ? extends V> valueMapper) {
+        private final BiFunction<? super K, String, ? extends Collection<R>> parse;
+
+        private SearchCollector(Function<? super K, ? extends V> valueMapper, BiFunction<? super K, String, Collection<R>> parse) {
             this.valueMapper = valueMapper;
+            this.parse = parse;
         }
 
         @Override

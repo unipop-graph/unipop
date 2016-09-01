@@ -7,6 +7,7 @@ import org.unipop.process.coalesce.UniGraphCoalesceStepStrategy;
 import org.unipop.process.edge.EdgeStepsStrategy;
 import org.unipop.process.order.UniGraphOrderStrategy;
 import org.unipop.process.properties.UniGraphPropertiesStrategy;
+import org.unipop.process.reduce.UniGraphReduceStrategy;
 import org.unipop.process.repeat.UniGraphRepeatStepStrategy;
 import org.unipop.process.start.UniGraphStartStepStrategy;
 import org.unipop.process.union.UniGraphUnionStepStrategy;
@@ -26,7 +27,8 @@ public class StandardStrategyProvider implements StrategyProvider {
                 new UniGraphWhereStepStrategy(),
                 new UniGraphUnionStepStrategy(),
                 new UniGraphRepeatStepStrategy(),
-                new UniGraphOrderStrategy());
+                new UniGraphOrderStrategy(),
+                new UniGraphReduceStrategy());
         TraversalStrategies.GlobalCache.getStrategies(Graph.class).toList().forEach(traversalStrategies::addStrategies);
         return traversalStrategies;
     }

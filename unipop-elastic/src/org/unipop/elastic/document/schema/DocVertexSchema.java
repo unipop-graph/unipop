@@ -9,16 +9,16 @@ import org.json.JSONObject;
 import org.unipop.elastic.common.ElasticClient;
 import org.unipop.elastic.document.DocumentVertexSchema;
 import org.unipop.elastic.document.schema.nested.NestedEdgeSchema;
+import org.unipop.query.aggregation.ReduceQuery;
 import org.unipop.query.predicates.PredicatesHolder;
+import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.schema.element.EdgeSchema;
 import org.unipop.schema.element.ElementSchema;
 import org.unipop.structure.UniGraph;
 import org.unipop.structure.UniVertex;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.unipop.util.ConversionUtils.getList;
 
@@ -47,6 +47,18 @@ public class DocVertexSchema extends AbstractDocSchema<Vertex> implements Docume
         PredicatesHolder predicatesHolder = this.toPredicates(query.getVertices());
         QueryBuilder queryBuilder = createQueryBuilder(predicatesHolder);
         return createSearch(query, queryBuilder);
+    }
+
+    @Override
+    protected PredicatesHolder getReducePredicates(ReduceQuery query) {
+        if (query.getVertices().equals(Collections.emptyList()))
+            return super.getReducePredicates(query);
+        return PredicatesHolderFactory.and(super.getReducePredicates(query), this.toPredicates(query.getVertices()));
+    }
+
+    @Override
+    public PredicatesHolder getVertexPredicates(List<Vertex> vertices) {
+        return this.toPredicates(vertices);
     }
 
     @Override

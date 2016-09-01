@@ -23,6 +23,7 @@ import org.unipop.elastic.document.DocumentEdgeSchema;
 import org.unipop.elastic.document.schema.AbstractDocSchema;
 import org.unipop.elastic.document.schema.DocVertexSchema;
 import org.unipop.elastic.document.schema.property.IndexPropertySchema;
+import org.unipop.query.aggregation.ReduceVertexQuery;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.SearchQuery;
@@ -156,6 +157,11 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
     public Search getSearch(SearchVertexQuery query) {
         QueryBuilder queryBuilder = createQueryBuilder(query);
         return createSearch(query, queryBuilder);
+    }
+
+    @Override
+    public Search getReduce(ReduceVertexQuery query) {
+        return null;
     }
 
     public QueryBuilder createQueryBuilder(SearchVertexQuery query) {

@@ -3,11 +3,15 @@ package org.unipop.elastic.document.schema.nested;
 import io.searchbox.action.BulkableAction;
 import io.searchbox.core.DocumentResult;
 import io.searchbox.core.Search;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.MeanGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.support.QueryInnerHitBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.nested.NestedBuilder;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.unipop.elastic.common.ElasticClient;
@@ -15,6 +19,7 @@ import org.unipop.elastic.common.FilterHelper;
 import org.unipop.elastic.document.DocumentVertexSchema;
 import org.unipop.elastic.document.schema.AbstractDocSchema;
 import org.unipop.elastic.document.schema.property.IndexPropertySchema;
+import org.unipop.query.aggregation.ReduceQuery;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.structure.UniElement;
@@ -85,6 +90,65 @@ public class NestedVertexSchema extends AbstractDocSchema<Vertex> implements Doc
     }
 
     @Override
+    protected void createReduce(ReduceQuery query, SearchSourceBuilder searchBuilder) {
+        switch (query.getOp()) {
+            case Count:
+                searchBuilder.size(0);
+                NestedBuilder nested = AggregationBuilders.nested("nested").path(path);
+                if (query.getReduceOn() != null)
+                    nested.subAggregation(AggregationBuilders.count("count").field(query.getReduceOn()));
+                searchBuilder.aggregation(nested);
+                break;
+            case Sum:
+                searchBuilder.size(0);
+                searchBuilder.aggregation(AggregationBuilders.nested("nested").path(path)
+                        .subAggregation(AggregationBuilders.sum("sum").field(query.getReduceOn())));
+                break;
+            case Max:
+                searchBuilder.size(0);
+                searchBuilder.aggregation(AggregationBuilders.nested("nested").path(path)
+                        .subAggregation(AggregationBuilders.max("max").field(query.getReduceOn())));
+                break;
+            case Min:
+                searchBuilder.size(0);
+                searchBuilder.aggregation(AggregationBuilders.nested("nested").path(path)
+                        .subAggregation(AggregationBuilders.min("min").field(query.getReduceOn())));
+                break;
+            case Mean:
+                searchBuilder.size(0);
+                searchBuilder.aggregation(AggregationBuilders.nested("nested").path(path)
+                        .subAggregation(AggregationBuilders.filter("filter").filter(QueryBuilders.existsQuery(query.getReduceOn()))
+                                .subAggregation(AggregationBuilders.avg("avg").field(query.getReduceOn()))));
+                break;
+        }
+    }
+
+    @Override
+    public Set<Object> parseReduce(String result, ReduceQuery query) {
+        switch (query.getOp()) {
+            case Count:
+                if (query.getReduceOn() == null)
+                    return getValueByPath(result, "aggregations.nested.doc_count");
+                return getValueByPath(result, "aggregations.nested.count.value");
+            case Sum:
+                return getValueByPath(result, "aggregations.nested.sum.value");
+            case Max:
+                return getValueByPath(result, "aggregations.nested.max.value");
+            case Min:
+                return getValueByPath(result, "aggregations.nested.min.value");
+            case Mean:
+                Set<Object> count = getValueByPath(result, "aggregations.nested.filter.doc_count");
+                Set<Object> sum = getValueByPath(result, "aggregations.nested.filter.avg.value");
+                if (count.size() > 0 && sum.size() > 0) {
+                    MeanGlobalStep.MeanNumber meanNumber = new MeanGlobalStep.MeanNumber((double) sum.iterator().next(), (long) count.iterator().next());
+                    return Collections.singleton(meanNumber);
+                }
+            default:
+                return null;
+        }
+    }
+
+    @Override
     public BulkableAction<DocumentResult> addElement(Vertex element, boolean create) {
         return null;
     }
@@ -92,7 +156,7 @@ public class NestedVertexSchema extends AbstractDocSchema<Vertex> implements Doc
     @Override
     public QueryBuilder createQueryBuilder(PredicatesHolder predicatesHolder) {
         QueryBuilder queryBuilder = super.createQueryBuilder(predicatesHolder);
-        if(queryBuilder == null) return null;
+        if (queryBuilder == null) return null;
         return QueryBuilders.nestedQuery(this.path, queryBuilder);
     }
 
@@ -106,5 +170,10 @@ public class NestedVertexSchema extends AbstractDocSchema<Vertex> implements Doc
         PredicatesHolder predicatesHolder = this.toPredicates(query.getVertices());
         QueryBuilder queryBuilder = createQueryBuilder(predicatesHolder);
         return createSearch(query, queryBuilder);
+    }
+
+    @Override
+    public PredicatesHolder getVertexPredicates(List<Vertex> vertices) {
+        return null;
     }
 }

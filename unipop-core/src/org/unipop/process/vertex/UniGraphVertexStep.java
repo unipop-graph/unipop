@@ -161,4 +161,16 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
     public void setOrders(List<Pair<String, Order>> orders) {
         this.orders = orders;
     }
+
+    public void setControllers(List<SearchVertexQuery.SearchVertexController> controllers) {
+        this.controllers = controllers;
+    }
+
+    public boolean isReturnsVertex() {
+        return returnsVertex;
+    }
+
+    public Direction getDirection() {
+        return direction;
+    }
 }
