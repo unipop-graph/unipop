@@ -7,6 +7,7 @@ import org.javatuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unipop.process.UniPredicatesStep;
+import org.unipop.process.UniQueryStep;
 import org.unipop.process.order.Orderable;
 import org.unipop.query.StepDescriptor;
 import org.unipop.process.predicate.ReceivesPredicatesHolder;
@@ -17,6 +18,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequire
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
+import org.unipop.query.UniQuery;
 import org.unipop.util.ConversionUtils;
 import org.unipop.query.controller.ControllerManager;
 import org.unipop.query.predicates.PredicatesHolder;
@@ -31,7 +33,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Vertex, E> implements ReceivesPredicatesHolder<Vertex, E>, Orderable, Profiling{
+public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Vertex, E> implements ReceivesPredicatesHolder<Vertex, E>, Orderable, UniQueryStep<Vertex>, Profiling{
     private static final Logger logger = LoggerFactory.getLogger(UniGraphVertexStep.class);
 
     private final boolean returnsVertex;
@@ -76,11 +78,7 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
             traverserList.add(traverser);
             vertices.add(vertex);
         });
-        SearchVertexQuery vertexQuery;
-        if (!returnsVertex)
-            vertexQuery = new SearchVertexQuery(Edge.class, vertices, direction, predicates, limit, propertyKeys, orders, stepDescriptor);
-        else
-            vertexQuery = new SearchVertexQuery(Edge.class, vertices, direction, predicates, -1, propertyKeys, null, stepDescriptor);
+        SearchVertexQuery vertexQuery = (SearchVertexQuery) getQuery(traversers);
         logger.debug("Executing query: ", vertexQuery);
         Iterator<Traverser.Admin<E>> traversersIterator = controllers.stream().<Iterator<Edge>>map(controller -> controller.search(vertexQuery))
                 .<Edge>flatMap(ConversionUtils::asStream)
@@ -172,5 +170,13 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
 
     public Direction getDirection() {
         return direction;
+    }
+
+    @Override
+    public UniQuery getQuery(List<Traverser.Admin<Vertex>> traversers) {
+        if (!returnsVertex)
+            return new SearchVertexQuery(Edge.class, traversers.stream().map(Traverser::get).collect(Collectors.toList()), direction, predicates, limit, propertyKeys, orders, stepDescriptor);
+        else
+            return new SearchVertexQuery(Edge.class, traversers.stream().map(Traverser::get).collect(Collectors.toList()), direction, predicates, -1, propertyKeys, null, stepDescriptor);
     }
 }

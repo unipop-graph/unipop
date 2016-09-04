@@ -23,6 +23,7 @@ import org.unipop.elastic.common.FilterHelper;
 import org.unipop.elastic.document.Document;
 import org.unipop.elastic.document.DocumentSchema;
 import org.unipop.elastic.document.schema.property.IndexPropertySchema;
+import org.unipop.query.aggregation.LocalQuery;
 import org.unipop.query.aggregation.ReduceQuery;
 import org.unipop.query.aggregation.ReduceVertexQuery;
 import org.unipop.query.predicates.PredicateQuery;
@@ -75,6 +76,16 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
             search.addType(type);
 
         return search.build();
+    }
+
+    @Override
+    public Search getLocal(LocalQuery query) {
+        return null; // TODO: implement using terms aggregations and filters and etc. from the search query
+    }
+
+    @Override
+    public Collection<Object> parseLocal(String result, LocalQuery query) {
+        return null; // TODO: implement
     }
 
     protected PredicatesHolder getReducePredicates(ReduceQuery query){

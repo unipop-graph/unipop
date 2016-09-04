@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unipop.elastic.common.ElasticClient;
 import org.unipop.query.UniQuery;
+import org.unipop.query.aggregation.LocalQuery;
 import org.unipop.query.aggregation.ReduceQuery;
 import org.unipop.query.aggregation.ReduceVertexQuery;
 import org.unipop.query.controller.SimpleController;
@@ -38,7 +39,7 @@ import java.util.function.*;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
-public class DocumentController implements SimpleController, ReduceQuery.ReduceController, ReduceVertexQuery.ReduceVertexController {
+public class DocumentController implements SimpleController, ReduceQuery.ReduceController, ReduceVertexQuery.ReduceVertexController, LocalQuery.LocalController {
     private static final Logger logger = LoggerFactory.getLogger(DocumentController.class);
 
     private final ElasticClient client;
@@ -161,6 +162,15 @@ public class DocumentController implements SimpleController, ReduceQuery.ReduceC
             return search(query, reduces, collector);
         }
         return null;
+    }
+
+    @Override
+    public <S extends Element> Iterator<Map<String, S>> local(LocalQuery<S> query) {
+        SearchCollector<DocumentSchema<Element>, Search, Object> collector = new SearchCollector<>((schema) -> schema.getLocal(query), (schema, results) -> schema.parseLocal(results, query));
+        Set<? extends DocumentSchema<Element>> schemas = getSchemas(query.getQueryClass());
+        Map<DocumentSchema<Element>, Search> searches = schemas.stream().collect(collector);
+        Iterator<Object> search = search(query, searches, collector);
+        return ConversionUtils.asStream(search).map(o -> ((Map<String, S>) o)).iterator();
     }
 
     @Override
