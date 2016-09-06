@@ -20,32 +20,27 @@ import java.util.stream.Stream;
  * Created by sbarzilay on 8/1/16.
  */
 public class DateFieldPropertySchema extends FieldPropertySchema implements DatePropertySchema {
-    protected final SimpleDateFormat sourceFormat;
-    protected final MultiDateFormat displayFormat;
+    protected final String sourceFormat;
+    protected final List<String> displayFormat;
     protected long interval;
 
     public DateFieldPropertySchema(String key, String field, String format, boolean nullable) {
         super(key, field, nullable);
-        this.sourceFormat = new SimpleDateFormat(format);
-        this.displayFormat = new MultiDateFormat("yyyy-MM-dd HH:mm:ss:SSS");
+        this.sourceFormat = format;
+        this.displayFormat = Collections.singletonList("yyyy-MM-dd HH:mm:ss:SSS");
         this.interval = 1000 * 60 * 60 *24;
     }
 
     public DateFieldPropertySchema(String key, JSONObject config, boolean nullable) {
         super(key, config, nullable);
-        this.sourceFormat = new SimpleDateFormat(config.optString("sourceFormat"));
+        this.sourceFormat = config.optString("sourceFormat");
         JSONArray displayFormats = config.optJSONArray("displayFormats");
         if (displayFormats == null){
-            this.displayFormat = new MultiDateFormat("yyyy-MM-dd HH:mm:ss:SSS");
+            this.displayFormat = Collections.singletonList("yyyy-MM-dd HH:mm:ss:SSS");
         } else{
             List<String> formats = ConversionUtils.asStream(displayFormats.iterator())
                     .map(Object::toString).collect(Collectors.toList());
-            if (formats.size() > 1) {
-                this.displayFormat = new MultiDateFormat(formats.get(0),
-                        formats.subList(1, formats.size() - 1).toArray(new String[formats.size() - 2]));
-            } else {
-                this.displayFormat = new MultiDateFormat(formats.get(0));
-            }
+            this.displayFormat = formats;
         }
         String interval = config.optString("interval", "1d");
         if (interval.matches("\\d+")){
@@ -136,12 +131,16 @@ public class DateFieldPropertySchema extends FieldPropertySchema implements Date
 
     @Override
     public DateFormat getSourceDateFormat() {
-        return sourceFormat;
+        return new SimpleDateFormat(sourceFormat);
     }
 
     @Override
     public DateFormat getDisplayDateFormat() {
-        return displayFormat;
+        if (this.displayFormat.size() > 1) {
+            return new MultiDateFormat(displayFormat.get(0),
+                    displayFormat.subList(1, displayFormat.size() -1).toArray(new String[displayFormat.size() -2]));
+        }
+        return new MultiDateFormat(displayFormat.get(0));
     }
 
     public static class Builder implements PropertySchemaBuilder {

@@ -13,13 +13,13 @@ import java.util.Map;
  * Created by sbarzilay on 8/2/16.
  */
 public class StaticDatePropertySchema extends StaticPropertySchema implements DatePropertySchema {
-    protected final SimpleDateFormat sourceFormat;
-    protected final SimpleDateFormat displayFormat;
+    protected final String sourceFormat;
+    protected final String displayFormat;
 
     public StaticDatePropertySchema(String key, String value, JSONObject config) {
         super(key, value);
-        this.sourceFormat = new SimpleDateFormat(config.optString("sourceFormat"));
-        this.displayFormat = new SimpleDateFormat(config.optString("displayFormat", "yyyy-MM-dd HH:mm:ss:SSS"));
+        this.sourceFormat = config.optString("sourceFormat");
+        this.displayFormat = config.optString("displayFormat", "yyyy-MM-dd HH:mm:ss:SSS");
     }
 
     @Override
@@ -40,12 +40,12 @@ public class StaticDatePropertySchema extends StaticPropertySchema implements Da
 
     @Override
     public DateFormat getSourceDateFormat() {
-        return sourceFormat;
+        return new SimpleDateFormat(sourceFormat);
     }
 
     @Override
     public DateFormat getDisplayDateFormat() {
-        return displayFormat;
+        return new SimpleDateFormat(displayFormat);
     }
 
     public static class Builder implements PropertySchemaBuilder {
