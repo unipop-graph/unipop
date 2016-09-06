@@ -28,10 +28,10 @@ public class ConfigurationControllerManager implements ControllerManager {
 
     public ConfigurationControllerManager(UniGraph graph, Configuration configuration, List<PropertySchema.PropertySchemaBuilder> thirdPartyPropertySchemas) throws Exception {
         path = Paths.get(configuration.getString("providers"));
+        this.graph = graph;
         this.thirdPartyPropertySchemas = thirdPartyPropertySchemas;
         this.watcher = new DirectoryWatcher(path, configuration.getInt("controllerManager.interval", 10000),
                 (newPath) -> loadControllers());
-        this.graph = graph;
         loadControllers();
         this.watcher.start();
     }
