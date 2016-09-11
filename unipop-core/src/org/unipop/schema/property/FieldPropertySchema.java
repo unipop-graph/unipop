@@ -12,10 +12,7 @@ import org.unipop.schema.property.type.TextType;
 import org.unipop.util.ConversionUtils;
 import org.unipop.util.PropertyTypeFactory;
 
-import java.util.Collections;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Stream;
 
 public class FieldPropertySchema implements PropertySchema {
@@ -26,6 +23,7 @@ public class FieldPropertySchema implements PropertySchema {
     protected Set exclude;
     protected PropertyType type;
     protected JSONObject alias;
+    protected Map<String, String> reverseAlias;
 
     public FieldPropertySchema(String key, String field, boolean nullable) {
         this.key = key;
@@ -37,6 +35,7 @@ public class FieldPropertySchema implements PropertySchema {
             e.printStackTrace();
         }
         this.alias = null;
+        this.reverseAlias = null;
     }
 
     public FieldPropertySchema(String key, JSONObject config, boolean nullable) {
@@ -55,6 +54,12 @@ public class FieldPropertySchema implements PropertySchema {
         }
         Object alias = config.opt("alias");
         this.alias = alias == null ? null : ((JSONObject) alias);
+        if (this.alias == null)
+            reverseAlias = null;
+        else{
+            reverseAlias = new HashMap<>();
+            this.alias.keys().forEachRemaining(aliasKey -> reverseAlias.put(this.alias.getString(aliasKey), aliasKey));
+        }
     }
 
     @Override
@@ -99,7 +104,13 @@ public class FieldPropertySchema implements PropertySchema {
         if (has != null && !test(has.getPredicate())) {
             return PredicatesHolderFactory.abort();
         } else if (has != null) {
-            predicate = has.getPredicate();
+            predicate = has.getPredicate().clone();
+            if (reverseAlias != null) {
+                Object predicateValue = predicate.getValue();
+                if (reverseAlias.containsKey(predicateValue.toString())){
+                    predicate.setValue(reverseAlias.get(predicateValue.toString()));
+                }
+            }
         } else if (include != null) {
             predicate = P.within(include);
         } else if (exclude != null) {
