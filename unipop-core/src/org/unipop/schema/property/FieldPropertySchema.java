@@ -25,6 +25,7 @@ public class FieldPropertySchema implements PropertySchema {
     protected Set include;
     protected Set exclude;
     protected PropertyType type;
+    protected JSONObject alias;
 
     public FieldPropertySchema(String key, String field, boolean nullable) {
         this.key = key;
@@ -35,6 +36,7 @@ public class FieldPropertySchema implements PropertySchema {
         } catch (IllegalAccessException | InstantiationException e) {
             e.printStackTrace();
         }
+        this.alias = null;
     }
 
     public FieldPropertySchema(String key, JSONObject config, boolean nullable) {
@@ -51,6 +53,8 @@ public class FieldPropertySchema implements PropertySchema {
         } catch (IllegalAccessException | InstantiationException e) {
             e.printStackTrace();
         }
+        Object alias = config.opt("alias");
+        this.alias = alias == null ? null : ((JSONObject) alias);
     }
 
     @Override
@@ -62,6 +66,7 @@ public class FieldPropertySchema implements PropertySchema {
     public Map<String, Object> toProperties(Map<String, Object> source) {
         Object value = source.get(this.field);
         if (value == null && nullable) return Collections.emptyMap();
+        if (alias != null) value = alias.has(value.toString()) ? alias.get(value.toString()) : value;
         if (value == null || !test(P.eq(value))) return null;
         return Collections.singletonMap(this.key, value);
     }
@@ -70,6 +75,7 @@ public class FieldPropertySchema implements PropertySchema {
     public Map<String, Object> toFields(Map<String, Object> properties) {
         Object value = properties.get(this.key);
         if (value == null && nullable) return Collections.emptyMap();
+        // TODO: add alias use
         if (value == null || !test(P.eq(value))) return null;
         return Collections.singletonMap(this.field, value);
     }
