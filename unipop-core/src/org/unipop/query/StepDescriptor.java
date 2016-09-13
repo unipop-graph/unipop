@@ -18,7 +18,7 @@ public class StepDescriptor {
         this.step = step;
     }
 
-    public <S, E extends Element> StepDescriptor(Step<S, E> step, MutableMetrics metrics) {
+    public StepDescriptor(Step step, MutableMetrics metrics) {
         this(step);
         this.metrics = metrics;
     }

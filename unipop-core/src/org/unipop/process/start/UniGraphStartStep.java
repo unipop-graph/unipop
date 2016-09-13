@@ -73,6 +73,13 @@ public class UniGraphStartStep<S,E extends Element> extends GraphStep<S,E> imple
         this.limit = limit;
     }
 
+    public int getLimit() {
+        return limit;
+    }
+
+    public void setControllers(List<SearchQuery.SearchController> controllers) {
+        this.controllers = controllers;
+    }
 
     @Override
     public void addPropertyKey(String key) {

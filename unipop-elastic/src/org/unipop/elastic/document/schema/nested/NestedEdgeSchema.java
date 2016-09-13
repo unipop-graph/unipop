@@ -7,14 +7,12 @@ import io.searchbox.core.DocumentResult;
 import io.searchbox.core.Search;
 import io.searchbox.core.Update;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.T;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.shaded.jackson.core.JsonProcessingException;
 import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.javatuples.Pair;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.unipop.elastic.common.ElasticClient;
@@ -23,6 +21,8 @@ import org.unipop.elastic.document.DocumentEdgeSchema;
 import org.unipop.elastic.document.schema.AbstractDocSchema;
 import org.unipop.elastic.document.schema.DocVertexSchema;
 import org.unipop.elastic.document.schema.property.IndexPropertySchema;
+import org.unipop.query.aggregation.LocalQuery;
+import org.unipop.query.aggregation.ReduceVertexQuery;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.SearchQuery;
@@ -153,9 +153,19 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
     }
 
     @Override
+    public Collection<Pair<String, Element>> parseLocal(String result, LocalQuery query) {
+        return null;
+    }
+
+    @Override
     public Search getSearch(SearchVertexQuery query) {
         QueryBuilder queryBuilder = createQueryBuilder(query);
         return createSearch(query, queryBuilder);
+    }
+
+    @Override
+    public Search getReduce(ReduceVertexQuery query) {
+        return null;
     }
 
     public QueryBuilder createQueryBuilder(SearchVertexQuery query) {
