@@ -167,9 +167,9 @@ public class DocumentController implements SimpleController, ReduceQuery.ReduceC
 
     @Override
     public <S extends Element> Iterator<Pair<String, S>> local(LocalQuery<S> query) {
-        SearchCollector<DocumentSchema<Element>, Search, Pair<String, Element>> collector = new SearchCollector<>((schema) -> schema.getLocal(query), (schema, results) -> schema.parseLocal(results, query));
-        Set<? extends DocumentSchema<Element>> schemas = getSchemas(Edge.class);
-        Map<DocumentSchema<Element>, Search> searches = schemas.stream().collect(collector);
+        SearchCollector<DocumentEdgeSchema, Search, Pair<String, Element>> collector = new SearchCollector<>((schema) -> schema.getLocal(query), (schema, results) -> schema.parseLocal(results, query));
+        Set<? extends DocumentEdgeSchema> schemas = edgeSchemas;
+        Map<DocumentEdgeSchema, Search> searches = schemas.stream().collect(collector);
         Iterator<Pair<String, Element>> search = search(query, searches, collector);
         return ConversionUtils.asStream(search).map(o -> ((Pair<String, S>)o)).iterator();
     }

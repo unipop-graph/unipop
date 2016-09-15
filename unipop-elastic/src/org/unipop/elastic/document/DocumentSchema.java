@@ -26,9 +26,7 @@ public interface DocumentSchema<E extends Element> extends ElementSchema<E>{
 
     Search getSearch(SearchQuery<E> query);
     Search getReduce(ReduceQuery query);
-    Search getLocal(LocalQuery query);
     Set<Object> parseReduce(String result, ReduceQuery query);
-    Collection<Pair<String, Element>> parseLocal(String result, LocalQuery query);
     List<E> parseResults(String result, PredicateQuery query);
 
     BulkableAction<DocumentResult> addElement(E element, boolean create);

@@ -152,11 +152,6 @@ public class NestedVertexSchema extends AbstractDocSchema<Vertex> implements Doc
     }
 
     @Override
-    public Collection<Pair<String, Element>> parseLocal(String result, LocalQuery query) {
-        return null;
-    }
-
-    @Override
     public BulkableAction<DocumentResult> addElement(Vertex element, boolean create) {
         return null;
     }

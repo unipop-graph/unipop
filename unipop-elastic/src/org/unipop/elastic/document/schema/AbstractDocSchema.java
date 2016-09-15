@@ -81,41 +81,6 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
         return search.build();
     }
 
-    @Override
-    public Search getLocal(LocalQuery query) {
-        PropertySchema idSchema = getPropertySchemas().stream().filter(schema -> schema.getKey().equals(T.id.getAccessor())).findFirst().get();
-        Iterator<String> idFields = idSchema.toFields(Collections.emptySet()).iterator();
-        AggregationBuilder terms = createTerms("", idFields);
-        SearchQuery searchQuery = query.getSearchQuery();
-        SearchSourceBuilder searchBuilder = this.createSearchBuilder(searchQuery, createQueryBuilder(searchQuery.getPredicates()));
-        searchBuilder.aggregation(terms.subAggregation(AggregationBuilders.topHits("hits").setSize(searchQuery.getLimit())));
-        Search.Builder search = new Search.Builder(searchBuilder.toString().replace("\n", ""))
-                .addIndex(index.getIndex(searchQuery.getPredicates()))
-                .ignoreUnavailable(true)
-                .allowNoIndices(true);
-
-        if (type != null)
-            search.addType(type);
-
-        return search.build(); // TODO: implement using terms aggregations and filters and etc. from the search query
-    }
-
-    protected AggregationBuilder createTerms(String name, Iterator<String> fields){
-        int count = 1;
-        String next = fields.next();
-        if (next.equals("_id")) next = "_uid";
-        AggregationBuilder agg = AggregationBuilders.terms(name + "_id_" + count).field(next);
-        while (fields.hasNext()){
-            next = fields.next();
-            if (next.equals("_id")) next = "_uid";
-            count++;
-            AggregationBuilder sub = AggregationBuilders.terms(name + "_id_" + count).field(next);
-            agg.subAggregation(sub);
-            agg = sub;
-        }
-        return agg;
-    }
-
     protected PredicatesHolder getReducePredicates(ReduceQuery query){
         return this.toPredicates(query.getPredicates());
     }

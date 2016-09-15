@@ -10,6 +10,7 @@ import org.apache.tinkerpop.shaded.jackson.databind.node.ArrayNode;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.javatuples.Pair;
 import org.json.JSONException;
@@ -34,7 +35,7 @@ import org.unipop.util.ConversionUtils;
 import java.io.IOException;
 import java.util.*;
 
-public class DocEdgeSchema extends AbstractDocSchema<Edge> implements DocumentEdgeSchema {
+public class DocEdgeSchema extends AbstractDocEdgeSchema {
     protected VertexSchema outVertexSchema;
     protected VertexSchema inVertexSchema;
 
@@ -117,47 +118,40 @@ public class DocEdgeSchema extends AbstractDocSchema<Edge> implements DocumentEd
     }
 
     @Override
-    public Search getLocal(LocalQuery query) {
+    protected AggregationBuilder getSubAggregation(LocalQuery query, Direction direction) {
         SearchVertexQuery searchQuery = (SearchVertexQuery) query.getSearchQuery();
         PredicatesHolder edgePredicates = this.toPredicates(searchQuery.getPredicates());
-        PredicatesHolder vertexPredicates = this.getVertexPredicates(searchQuery.getVertices(), searchQuery.getDirection());
-        PredicatesHolder predicatesHolder = PredicatesHolderFactory.and(edgePredicates, vertexPredicates);
-        if (predicatesHolder.isAborted()) return null;
-        QueryBuilder queryBuilder = createQueryBuilder(predicatesHolder);
-        Iterator<String> fields;
-        List<AggregationBuilder> aggs = new ArrayList<>();
-        if (searchQuery.getDirection().equals(Direction.OUT) || searchQuery.getDirection().equals(Direction.BOTH)) {
-            fields = ((AbstractPropertyContainer) outVertexSchema).getPropertySchemas().stream()
-                    .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                    .findFirst().get().toFields(Collections.emptySet()).iterator();
-            AggregationBuilder out = createTerms("out", fields);
-            PredicatesHolder outVertexPredicates = this.getVertexPredicates(searchQuery.getVertices(), Direction.OUT);
-            QueryBuilder outQuery = createQueryBuilder(PredicatesHolderFactory.and(edgePredicates, outVertexPredicates));
-            out.subAggregation(AggregationBuilders.filter("filter").filter(outQuery).subAggregation(AggregationBuilders.topHits("hits").setSize(searchQuery.getLimit())));
-            aggs.add(out);
-        }
-        if(searchQuery.getDirection().equals(Direction.IN) || searchQuery.getDirection().equals(Direction.BOTH)){
-            fields = ((AbstractPropertyContainer) inVertexSchema).getPropertySchemas().stream()
-                    .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                    .findFirst().get().toFields(Collections.emptySet()).iterator();
-            AggregationBuilder in = createTerms("in", fields);
-            PredicatesHolder inVertexPredicates = this.getVertexPredicates(searchQuery.getVertices(), Direction.IN);
-            QueryBuilder outQuery = createQueryBuilder(PredicatesHolderFactory.and(edgePredicates, inVertexPredicates));
-            in.subAggregation(AggregationBuilders.filter("filter").filter(outQuery).subAggregation(AggregationBuilders.topHits("hits").setSize(searchQuery.getLimit())));
-            aggs.add(in);
-        }
-        SearchSourceBuilder searchBuilder = this.createSearchBuilder(searchQuery, queryBuilder);
-        aggs.forEach(terms -> searchBuilder.aggregation(terms));
-        searchBuilder.size(0);
-        Search.Builder search = new Search.Builder(searchBuilder.toString().replace("\n", ""))
-                .addIndex(index.getIndex(searchQuery.getPredicates()))
-                .ignoreUnavailable(true)
-                .allowNoIndices(true);
+        PredicatesHolder vertexPredicates = this.getVertexPredicates(searchQuery.getVertices(), direction);
+        QueryBuilder vertexQuery = createQueryBuilder(PredicatesHolderFactory.and(edgePredicates, vertexPredicates));
+        return AggregationBuilders.filter("filter").filter(vertexQuery).subAggregation(AggregationBuilders.topHits("hits").setSize(searchQuery.getLimit()));
+    }
 
-        if (type != null)
-            search.addType(type);
+    @Override
+    protected AggregationBuilder createTerms(String name, AggregationBuilder subs, SearchVertexQuery searchQuery, Direction direction, Iterator<String> fields){
+        int count = 1;
+        String next = fields.next();
+        if (next.equals("_id")) next = "_uid";
+        AggregationBuilder agg = AggregationBuilders.terms(name + "_id_" + count).field(next);
+        AggregationBuilder sub = null;
+        if (fields.hasNext()) {
+            sub = AggregationBuilders.terms(name + "_id_" + count).field(next);
+            agg.subAggregation(sub);
+            while (fields.hasNext()) {
+                next = fields.next();
+                if (next.equals("_id")) next = "_uid";
+                count++;
+                TermsBuilder field = AggregationBuilders.terms(name + "_id_" + count).field(next);
+                sub.subAggregation(field);
+                sub = field;
+            }
+        }
+        if (sub == null) {
+            agg.subAggregation(subs);
+        }
+        else
+            sub.subAggregation(subs);
 
-        return search.build();
+        return agg;
     }
 
     @Override
@@ -169,72 +163,27 @@ public class DocEdgeSchema extends AbstractDocSchema<Edge> implements DocumentEd
             fields = ((AbstractPropertyContainer) outVertexSchema).getPropertySchemas().stream()
                     .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
                     .findFirst().get().toFields(Collections.emptySet());
-            List<Pair<String, Element>> out = parseTerms("out", query, result, fields);
+            List<Pair<String, Element>> out = parseTerms("aggregations", "filter.hits.hits.hits", "out", query, result, fields);
             out.forEach(finalResult::add);
         }
         if (searchQuery.getDirection().equals(Direction.IN) || searchQuery.getDirection().equals(Direction.BOTH)) {
             fields = ((AbstractPropertyContainer) inVertexSchema).getPropertySchemas().stream()
                     .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
                     .findFirst().get().toFields(Collections.emptySet());
-            List<Pair<String, Element>> in = parseTerms("in", query, result, fields);
+            List<Pair<String, Element>> in = parseTerms("aggregations", "filter.hits.hits.hits", "in", query, result, fields);
             in.forEach(finalResult::add);
         }
         return finalResult;
     }
 
-    protected List<Pair<String, Element>> parseTerms(String name, LocalQuery query, String result, Set<String> fields){
-        SearchVertexQuery searchQuery = (SearchVertexQuery) query.getSearchQuery();
-        try {
-            JsonNode jsonNode = mapper.readTree(result);
-            for (int i = 1; i < fields.size() + 1; i++) {
-                jsonNode = jsonNode.get("aggregations");
-                jsonNode = jsonNode.get(name + "_id_" + i);
-            }
-            ArrayNode buckets = (ArrayNode) jsonNode.get("buckets");
-            ArrayList<Pair<String, Element>> objects = new ArrayList<>();
-            for (JsonNode node : buckets) {
-                ArrayNode hits = (ArrayNode) node.get("filter").get("hits").get("hits").withArray("hits");
-                for (JsonNode hit : hits) {
-                    Collection<Edge> edges = fromDocument(
-                            new Document(hit.get("_index").asText(),
-                                    hit.get("_type").asText(),
-                                    hit.get("_id").asText(),
-                                    mapper.readValue(hit.get("_source").toString(), Map.class)));
-                    if (edges != null){
-                        edges.forEach(edge -> {
-                            if (query.getQueryClass().equals(Edge.class))
-                                objects.add(Pair.with(node.get("key").asText(), edge));
-                            else{
-                                if (searchQuery.getDirection().equals(Direction.OUT))
-                                    objects.add(Pair.with(node.get("key").asText(), edge.inVertex()));
-                                else if (searchQuery.getDirection().equals(Direction.IN))
-                                    objects.add(Pair.with(node.get("key").asText(), edge.outVertex()));
-                                else{
-                                    objects.add(Pair.with(node.get("key").asText(), edge.inVertex()));
-                                    objects.add(Pair.with(node.get("key").asText(), edge.outVertex()));
-                                }
-                            }
-                        });
-                    }
-                }
-            }
-            return objects;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return Collections.emptyList();
+    @Override
+    public VertexSchema getOutVertexSchema() {
+        return outVertexSchema;
     }
 
-    protected PredicatesHolder getVertexPredicates(List<Vertex> vertices, Direction direction) {
-        PredicatesHolder outPredicates = this.outVertexSchema.toPredicates(vertices);
-        PredicatesHolder inPredicates = this.inVertexSchema.toPredicates(vertices);
-        if(direction.equals(Direction.OUT) && outPredicates.notAborted()) return outPredicates;
-        if(direction.equals(Direction.IN) && inPredicates.notAborted()) return inPredicates;
-        if (outPredicates.notAborted() && inPredicates.notAborted())
-            return PredicatesHolderFactory.or(inPredicates, outPredicates);
-        else if (outPredicates.isAborted()) return inPredicates;
-        else if (inPredicates.isAborted()) return outPredicates;
-        else return PredicatesHolderFactory.abort();
+    @Override
+    public VertexSchema getInVertexSchema() {
+        return inVertexSchema;
     }
 
     @Override

@@ -83,9 +83,4 @@ public class DocVertexSchema extends AbstractDocSchema<Vertex> implements Docume
                 ", type='" + type + '\'' +
                 '}';
     }
-
-    @Override
-    public Collection<Pair<String, Element>> parseLocal(String result, LocalQuery query) {
-        return null;
-    }
 }

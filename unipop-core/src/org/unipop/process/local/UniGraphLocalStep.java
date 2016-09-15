@@ -84,11 +84,13 @@ public class UniGraphLocalStep<S extends Element, E> extends AbstractStep<S, E> 
                         Iterator<Pair<String, Element>> result = localResults.next();
                         while (result.hasNext()) {
                             Pair<String, Element> pair = result.next();
-                            Iterator<Traverser.Admin> admins = idMap.get(pair.getValue0()).iterator();
-                            while (admins.hasNext()) {
-                                Traverser.Admin split = admins.next().split((E) pair.getValue1(), this);
-                                split.addLabels(step.getLabels());
-                                runElements.add(split);
+                            if(idMap.containsKey(pair.getValue0())) {
+                                Iterator<Traverser.Admin> admins = idMap.get(pair.getValue0()).iterator();
+                                while (admins.hasNext()) {
+                                    Traverser.Admin split = admins.next().split((E) pair.getValue1(), this);
+                                    split.addLabels(step.getLabels());
+                                    runElements.add(split);
+                                }
                             }
                         }
                     }
