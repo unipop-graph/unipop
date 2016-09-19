@@ -1,22 +1,22 @@
 {
   "class": "org.unipop.jdbc.JdbcSourceProvider",
-  "driver": "org.h2.Driver",
-  "address": "jdbc:h2:mem:gremlin;",
-  "sqlDialect": "H2",
+  "driver": "org.postgresql.Driver",
+  "address": "jdbc:postgresql://localhost:5432/postgres",
+  "sqlDialect": "POSTGRES",
   "vertices": [
     {
       "table": "vertices",
-      "id": "@ID",
-      "label": "@LABEL",
+      "id": "@id",
+      "label": "@label",
       "properties": {
-        "name": "@NAME",
-        "age": "@AGE",
-        "location": "@LOCATION",
-        "status": "@STATUS",
-        "lang": "@LANG",
-        "oid": "@OID",
-        "test": "@DATA",
-        "communityIndex": "@COMMUNITYINDEX"
+        "name": "@name",
+        "age": "@age",
+        "location": "@location",
+        "status": "@status",
+        "lang": "@lang",
+        "oid": "@oid",
+        "test": "@data",
+        "communityIndex": "@comunityindex"
       },
       "dynamicProperties": false
     }
@@ -24,25 +24,25 @@
   "edges": [
     {
       "table": "edges",
-      "id": "@ID",
-      "label": "@LABEL",
+      "id": "@id",
+      "label": "@label",
       "properties": {
-        "year": "@YEAR",
-        "weight": "@WEIGHT",
-        "data": "@DATA",
-        "location": "@LOCATION"
+        "year": "@year",
+        "weight": "@weight",
+        "data": "@data",
+        "location": "@location"
       },
       "dynamicProperties": false,
       "outVertex": {
         "ref": "true",
-        "id": "@OUTID",
-        "label": "@OUTLABEL",
+        "id": "@outid",
+        "label": "@outlabel",
         "properties": {}
       },
       "inVertex": {
         "ref": "true",
-        "id": "@INID",
-        "label": "@INLABEL",
+        "id": "@inid",
+        "label": "@inlabel",
         "properties": {}
       }
 

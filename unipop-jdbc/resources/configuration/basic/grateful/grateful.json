@@ -1,47 +1,47 @@
 {
   "class": "org.unipop.jdbc.JdbcSourceProvider",
-  "driver": "org.h2.Driver",
-  "address": "jdbc:h2:mem:gremlin;",
-  "sqlDialect": "H2",
+  "driver": "org.postgresql.Driver",
+  "address": "jdbc:postgresql://localhost:5432/postgres",
+  "sqlDialect": "POSTGRES",
   "vertices": [
     {
       "table": "ARTIST_GRATEFUL_DEAD",
-      "id": "@ID",
+      "id": "@id",
       "label": "artist",
       "properties": {
-        "name": "@NAME"
+        "name": "@name"
       }
     },
     {
       "table": "SONG_GRATEFUL_DEAD",
-      "id": "@ID",
+      "id": "@id",
       "label": "song",
       "properties": {
-        "name": "@NAME",
-        "songType": "@SONGTYPE",
-        "performances": "@PERFORMANCES"
+        "name": "@name",
+        "songType": "@songtype",
+        "performances": "@performances"
       }
     }
   ],
   "edges": [
     {
       "table": "GRATEFUL_DEAD_EDGES",
-      "id": "@ID",
-      "label": "@LABEL",
+      "id": "@id",
+      "label": "@label",
       "properties": {
-        "weight": "@WEIGHT"
+        "weight": "@weight"
       },
       "dynamicProperties": false,
       "outVertex": {
         "ref": true,
-        "id": "@OUTID",
-        "label": "@OUTLABEL",
+        "id": "@outid",
+        "label": "@outlabel",
         "properties": {}
       },
       "inVertex": {
         "ref": true,
-        "id": "@INID",
-        "label": "@INLABEL",
+        "id": "@inid",
+        "label": "@inlabel",
         "properties": {}
       }
     }

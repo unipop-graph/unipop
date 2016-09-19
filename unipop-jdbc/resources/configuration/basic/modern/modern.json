@@ -1,57 +1,57 @@
 {
   "class": "org.unipop.jdbc.JdbcSourceProvider",
-  "driver": "org.h2.Driver",
-  "address": "jdbc:h2:mem:gremlin;",
-  "sqlDialect": "H2",
+  "driver": "org.postgresql.Driver",
+  "address": "jdbc:postgresql://localhost:5432/postgres",
+  "sqlDialect": "POSTGRES",
   "vertices": [
     {
       "table": "PERSON_MODERN",
-      "id": "@ID",
+      "id": "@id",
       "label": "person",
       "properties": {
-        "name": "@NAME",
-        "age": "@AGE"
+        "name": "@name",
+        "age": "@age"
       }
     },
     {
       "table": "ANIMAL_MODERN",
-      "id": "@ID",
+      "id": "@id",
       "label": "animal",
       "properties": {
-        "name": "@NAME",
-        "age": "@AGE"
+        "name": "@name",
+        "age": "@age"
       }
     },
     {
       "table": "SOFTWARE_MODERN",
-      "id": "@ID",
+      "id": "@id",
       "label": "software",
       "properties": {
-        "name": "@NAME",
-        "lang": "@LANG"
+        "name": "@name",
+        "lang": "@lang"
       }
     }
   ],
   "edges": [
     {
       "table": "MODERN_EDGES",
-      "id": "@ID",
-      "label": "@LABEL",
+      "id": "@id",
+      "label": "@label",
       "properties": {
-        "weight": "@WEIGHT",
-        "year": "@YEAR"
+        "weight": "@weight",
+        "year": "@year"
       },
       "dynamicProperties": false,
       "outVertex": {
         "ref": "true",
-        "id": "@OUTID",
-        "label": "@OUTLABEL",
+        "id": "@outid",
+        "label": "@outlabel",
         "properties": {}
       },
       "inVertex": {
         "ref": "true",
-        "id": "@INID",
-        "label": "@INLABEL",
+        "id": "@inid",
+        "label": "@inlabel",
         "properties": {}
       }
     }

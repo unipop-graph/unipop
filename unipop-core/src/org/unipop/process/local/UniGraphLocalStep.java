@@ -67,54 +67,58 @@ public class UniGraphLocalStep<S extends Element, E> extends AbstractStep<S, E> 
             Map<String, List<Traverser.Admin>> idMap;
             List<Traverser<E>> resultList = new ArrayList<>();
             List<Traverser.Admin> runElements = elements.stream().collect(Collectors.toList());
-            while (querySteps.hasNext()) {
-                Step step = querySteps.next();
-                if (step instanceof UniQueryStep) {
-                    idMap = runElements.stream().collect(Collectors.groupingBy((e) -> ((Element) e.get()).id().toString(), Collectors.toList()));
-                    UniQueryStep queryStep = (UniQueryStep) step;
-                    Class returnType = Edge.class;
-                    if (queryStep instanceof UniGraphVertexStep) {
-                        returnType = ((UniGraphVertexStep) queryStep).isReturnsVertex() ? Vertex.class : Edge.class;
-                    }
-                    LocalQuery localQuery = new LocalQuery(returnType, runElements.stream().map(Traverser::get).collect(Collectors.toList()), (SearchQuery) queryStep.getQuery(runElements), stepDescriptor);
-                    runElements = new ArrayList<>();
-                    Iterator<Iterator<Pair<String, Element>>> localResults = localControllers.stream()
-                            .map(localController -> localController.<Element>local(localQuery)).iterator();
-                    while (localResults.hasNext()) {
-                        Iterator<Pair<String, Element>> result = localResults.next();
-                        while (result.hasNext()) {
-                            Pair<String, Element> pair = result.next();
-                            if(idMap.containsKey(pair.getValue0())) {
-                                Iterator<Traverser.Admin> admins = idMap.get(pair.getValue0()).iterator();
-                                while (admins.hasNext()) {
-                                    Traverser.Admin split = admins.next().split((E) pair.getValue1(), this);
-                                    split.addLabels(step.getLabels());
-                                    runElements.add(split);
+            if (localControllers.size() > 0) {
+                while (querySteps.hasNext()) {
+                    Step step = querySteps.next();
+                    if (step instanceof UniQueryStep) {
+                        idMap = runElements.stream().collect(Collectors.groupingBy((e) -> ((Element) e.get()).id().toString(), Collectors.toList()));
+                        UniQueryStep queryStep = (UniQueryStep) step;
+                        Class returnType = Edge.class;
+                        if (queryStep instanceof UniGraphVertexStep) {
+                            returnType = ((UniGraphVertexStep) queryStep).isReturnsVertex() ? Vertex.class : Edge.class;
+                        }
+                        LocalQuery localQuery = new LocalQuery(returnType, runElements.stream().map(Traverser::get).collect(Collectors.toList()), (SearchQuery) queryStep.getQuery(runElements), stepDescriptor);
+                        runElements = new ArrayList<>();
+                        Iterator<Iterator<Pair<String, Element>>> localResults = localControllers.stream()
+                                .map(localController -> localController.<Element>local(localQuery)).iterator();
+                        while (localResults.hasNext()) {
+                            Iterator<Pair<String, Element>> result = localResults.next();
+                            while (result.hasNext()) {
+                                Pair<String, Element> pair = result.next();
+                                if (idMap.containsKey(pair.getValue0())) {
+                                    Iterator<Traverser.Admin> admins = idMap.get(pair.getValue0()).iterator();
+                                    while (admins.hasNext()) {
+                                        Traverser.Admin split = admins.next().split((E) pair.getValue1(), this);
+                                        split.addLabels(step.getLabels());
+                                        runElements.add(split);
+                                    }
                                 }
                             }
                         }
-                    }
-                } else {
-                    Map<Object, List<Traverser.Admin>> traversers = runElements.stream().collect(Collectors.groupingBy(t -> ((Element) t.path("orig")).id(), Collectors.toList()));
-                    elements.stream().filter(e -> !traversers.containsKey(e.get().id())).forEach(e -> traversers.put(e.get().id(), Collections.emptyList()));
-                    Set<Map.Entry<Object, List<Traverser.Admin>>> traverserEntries = traversers.entrySet();
-                    runElements.clear();
-                    for (Map.Entry<Object, List<Traverser.Admin>> traverserEntry : traverserEntries) {
-                        step.reset();
-                        step.addStarts(traverserEntry.getValue().iterator());
-                        while (step.hasNext()) {
-                            Object next = step.next();
-                            runElements.add((Traverser.Admin) next);
+                    } else {
+                        Map<Object, List<Traverser.Admin>> traversers = runElements.stream().collect(Collectors.groupingBy(t -> ((Element) t.path("orig")).id(), Collectors.toList()));
+                        elements.stream().filter(e -> !traversers.containsKey(e.get().id())).forEach(e -> traversers.put(e.get().id(), Collections.emptyList()));
+                        Set<Map.Entry<Object, List<Traverser.Admin>>> traverserEntries = traversers.entrySet();
+                        runElements.clear();
+                        for (Map.Entry<Object, List<Traverser.Admin>> traverserEntry : traverserEntries) {
+                            step.reset();
+                            step.addStarts(traverserEntry.getValue().iterator());
+                            while (step.hasNext()) {
+                                Object next = step.next();
+                                runElements.add((Traverser.Admin) next);
+                            }
                         }
-                    }
 
+                    }
                 }
+            } else {
+                runElements.clear();
             }
             runElements.forEach(resultList::add);
-            for (Traverser.Admin<S> element : elements) {
-                localTraversal.reset();
-                localTraversal.addStart(element);
-                if (localTraversal.getStartStep().hasNext()) {
+            if (TraversalHelper.getFirstStepOfAssignableClass(UniQueryStep.class, localTraversal).get().hasControllers()) {
+                for (Traverser.Admin<S> element : elements) {
+                    localTraversal.reset();
+                    localTraversal.addStart(element);
                     while (localTraversal.getEndStep().hasNext()) {
                         resultList.add((Traverser.Admin<E>) localTraversal.getEndStep().next());
                     }

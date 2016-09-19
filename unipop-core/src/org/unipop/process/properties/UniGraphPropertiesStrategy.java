@@ -304,6 +304,16 @@ public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<Traver
             lastStepOfAssignableClass.get().fetchAllKeys();
         }
 
+        TraversalHelper.getStepsOfAssignableClass(LocalStep.class, traversal).forEach(localStep -> {
+            List<Traversal.Admin> localChildren = localStep.getLocalChildren();
+            localChildren.forEach(t -> {
+                Optional<PropertyFetcher> lastStepOfAssignableClass1 = TraversalHelper.getLastStepOfAssignableClass(PropertyFetcher.class, t);
+                if (lastStepOfAssignableClass1.isPresent()) {
+                    lastStepOfAssignableClass1.get().fetchAllKeys();
+                }
+            });
+        });
+
         TraversalHelper.getStepsOfAssignableClass(UniGraphEdgeOtherVertexStep.class, traversal).forEach(uniGraphEdgeOtherVertexStep -> {
             Collection<PropertyFetcher> propertyFetcherStepsOf = getPropertyFetcherStepOf(uniGraphEdgeOtherVertexStep, traversal);
             if (propertyFetcherStepsOf != null) {

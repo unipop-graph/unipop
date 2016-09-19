@@ -11,4 +11,5 @@ import java.util.List;
  */
 public interface UniQueryStep<S> {
     UniQuery getQuery(List<Traverser.Admin<S>> traversers);
+    boolean hasControllers();
 }

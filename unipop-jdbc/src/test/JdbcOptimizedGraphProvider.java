@@ -1,11 +1,18 @@
 package test;
 
+import de.flapdoodle.embed.process.distribution.IVersion;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.jooq.util.postgres.PostgresDatabase;
+import org.jooq.SQLDialect;
 import org.unipop.test.UnipopGraphProvider;
+import ru.yandex.qatools.embed.postgresql.PostgresExecutable;
+import ru.yandex.qatools.embed.postgresql.PostgresProcess;
+import ru.yandex.qatools.embed.postgresql.PostgresStarter;
+import ru.yandex.qatools.embed.postgresql.config.PostgresConfig;
+import ru.yandex.qatools.embed.postgresql.distribution.Version;
 
+import java.io.IOException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -13,18 +20,25 @@ import java.sql.SQLException;
 import java.util.Map;
 
 /**
- * @author Gur Ronen
- * @since 6/20/2016
+ * Created by sbarzilay on 9/18/16.
  */
-public class JdbcGraphProvider extends UnipopGraphProvider {
+public class JdbcOptimizedGraphProvider extends UnipopGraphProvider {
     private final Connection jdbcConnection;
+    private PostgresProcess process;
 
-    public JdbcGraphProvider() throws SQLException, ClassNotFoundException {
-        Class.forName("org.h2.Driver");
-        this.jdbcConnection = DriverManager.getConnection("jdbc:h2:mem:gremlin;");
+    public JdbcOptimizedGraphProvider() throws SQLException, ClassNotFoundException {
+        PostgresStarter<PostgresExecutable, PostgresProcess> runtime = PostgresStarter.getDefaultInstance();
+        final PostgresConfig config;
+        try {
+            config = new PostgresConfig(Version.V9_5_0, "localhost", 5432, "postgres");
+            PostgresExecutable exec = runtime.prepare(config);
+            process = exec.start();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
-//        Class.forName("org.postgresql.Driver");
-//        this.jdbcConnection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres");
+        Class.forName("org.postgresql.Driver");
+        this.jdbcConnection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres");
 
         createTables();
     }
@@ -77,7 +91,7 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
                         "CREATEDBY VARCHAR (100)," +
                         "EDGEID VARCHAR (100)," +
                         "EDGELANG VARCHAR (100)," +
-                        "EDGEWEIGHT DOUBLE," +
+                        "EDGEWEIGHT float," +
                         "EDGENAME VARCHAR(100))"
         );
 
@@ -108,7 +122,7 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
                         "time VARCHAR(100)," +
                         "location VARCHAR(100)," +
                         "data VARCHAR(100)," +
-                        "weight DOUBLE)");
+                        "weight float)");
         //endregion
 
         //region modern tables
@@ -139,7 +153,7 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
                         "inId VARCHAR(100), " +
                         "inLabel VARCHAR(100)," +
                         "year int," +
-                        "weight DOUBLE)");
+                        "weight float)");
         //endregion
 
         //region crew tables
@@ -197,7 +211,7 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
                         "outLabel VARCHAR(100), " +
                         "inId VARCHAR(100), " +
                         "inLabel VARCHAR(100)," +
-                        "weight DOUBLE)"
+                        "weight float)"
         );
         //endregion
     }

@@ -2,16 +2,19 @@ package org.unipop.jdbc.schemas;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.*;
+import org.javatuples.Pair;
+import org.jooq.Result;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.unipop.jdbc.schemas.jdbc.JdbcEdgeSchema;
+import org.unipop.query.aggregation.LocalQuery;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
+import org.unipop.query.search.SearchVertexQuery;
 import org.unipop.schema.element.ElementSchema;
 import org.unipop.schema.element.VertexSchema;
+import org.unipop.schema.property.AbstractPropertyContainer;
 import org.unipop.schema.property.PropertySchema;
 import org.unipop.schema.reference.ReferenceVertexSchema;
 import org.unipop.structure.UniEdge;
@@ -19,12 +22,14 @@ import org.unipop.structure.UniGraph;
 import org.unipop.util.ConversionUtils;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author Gur Ronen
  * @since 6/13/2016
  */
-public class RowEdgeSchema extends AbstractRowSchema<Edge> implements JdbcEdgeSchema
+public class RowEdgeSchema extends AbstractJdbcEdgeSchema
 {
     protected VertexSchema inVertexSchema;
     protected VertexSchema outVertexSchema;
@@ -88,6 +93,56 @@ public class RowEdgeSchema extends AbstractRowSchema<Edge> implements JdbcEdgeSc
         PredicatesHolder edgePredicates = this.toPredicates(predicates);
         PredicatesHolder vertexPredicates = this.getVertexPredicates(vertices, direction);
         return PredicatesHolderFactory.and(edgePredicates, vertexPredicates);
+    }
+
+    @Override
+    public Collection<Pair<String, Element>> parseLocal(Result result, LocalQuery query) {
+        SearchVertexQuery searchQuery = (SearchVertexQuery) query.getSearchQuery();
+        ArrayList<Pair<String, Element>> finalResult = new ArrayList<>();
+        List<Map<String, Object>> resultMap = result.intoMaps();
+        if (searchQuery.getDirection().equals(Direction.OUT) || searchQuery.getDirection().equals(Direction.BOTH)) {
+            resultMap.stream().flatMap(map -> {
+                Vertex outVertex = getOutVertexSchema().createElement(map);
+                String id = outVertex.id().toString();
+                Collection<Edge> edges = fromFields(map);
+                return edges == null ? Stream.empty() : edges.stream().flatMap(e -> {
+                    if (query.getQueryClass().equals(Edge.class))
+                        return Stream.of(Pair.with(id, (Element)e));
+                    if (searchQuery.getDirection().equals(Direction.OUT))
+                        return Stream.of(Pair.with(id, (Element)e.inVertex()));
+                    if (searchQuery.getDirection().equals(Direction.IN))
+                        return Stream.of(Pair.with(id, (Element)e.outVertex()));
+                    return Stream.of(Pair.with(id, (Element)e.outVertex()), Pair.with(id, (Element)e.inVertex()));
+                });
+            }).forEach(finalResult::add);
+        }
+        if (searchQuery.getDirection().equals(Direction.IN) || searchQuery.getDirection().equals(Direction.BOTH)) {
+            resultMap.stream().flatMap(map -> {
+                Vertex outVertex = getInVertexSchema().createElement(map);
+                String id = outVertex.id().toString();
+                Collection<Edge> edges = fromFields(map);
+                return edges == null ? Stream.empty() : edges.stream().flatMap(e -> {
+                    if (query.getQueryClass().equals(Edge.class))
+                        return Stream.of(Pair.with(id, (Element)e));
+                    if (searchQuery.getDirection().equals(Direction.OUT))
+                        return Stream.of(Pair.with(id, (Element)e.inVertex()));
+                    if (searchQuery.getDirection().equals(Direction.IN))
+                        return Stream.of(Pair.with(id, (Element)e.outVertex()));
+                    return Stream.of(Pair.with(id, (Element)e.outVertex()), Pair.with(id, (Element)e.inVertex()));
+                });
+            }).forEach(finalResult::add);
+        }
+        return finalResult;
+    }
+
+    @Override
+    public VertexSchema getOutVertexSchema() {
+        return outVertexSchema;
+    }
+
+    @Override
+    public VertexSchema getInVertexSchema() {
+        return inVertexSchema;
     }
 
     protected PredicatesHolder getVertexPredicates(List<Vertex> vertices, Direction direction) {

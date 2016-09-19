@@ -1,8 +1,10 @@
 package org.unipop.jdbc.schemas;
 
+import com.google.common.collect.Iterators;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.javatuples.Pair;
 import org.jooq.*;
 import org.jooq.impl.DSL;
@@ -13,6 +15,7 @@ import org.unipop.query.predicates.PredicateQuery;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.search.SearchQuery;
 import org.unipop.schema.element.AbstractElementSchema;
+import org.unipop.schema.property.PropertySchema;
 import org.unipop.structure.UniGraph;
 
 import java.util.*;
@@ -70,7 +73,7 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
     }
 
     @Override
-    public Select getSearch(SearchQuery<E> query, PredicatesHolder predicatesHolder, DSLContext context) {
+    public Select createSelect(SearchQuery<E> query, PredicatesHolder predicatesHolder, DSLContext context, Field... fields) {
         if (predicatesHolder.isAborted()) {
             return null;
         }
@@ -78,7 +81,7 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
         Condition conditions = new JdbcPredicatesTranslator().translate(predicatesHolder);
         int finalLimit = query.getLimit() < 0 ? Integer.MAX_VALUE : query.getLimit();
 
-        SelectConditionStep<Record> where = createSqlQuery(query.getPropertyKeys(), context)
+        SelectConditionStep<Record> where = createSqlQuery(query.getPropertyKeys(), context, fields)
                 .where(conditions);
 
         List<Pair<String, Order>> orders = query.getOrders();
@@ -89,23 +92,32 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
                             field(getFieldByPropertyKey(order.getValue0())).asc() :
                             field(getFieldByPropertyKey(order.getValue0())).desc()).collect(Collectors.toList());
             if (orderValues.size() > 0)
-                return where.orderBy(orderValues).limit(finalLimit);
+                return where.orderBy(orderValues);
         }
+        return where;
+    }
 
-        return where.limit(finalLimit);
-
+    @Override
+    public Select getSearch(SearchQuery<E> query, PredicatesHolder predicatesHolder, DSLContext context, Field... fields) {
+        if (predicatesHolder.isAborted())
+            return null;
+        int finalLimit = query.getLimit() < 0 ? Integer.MAX_VALUE : query.getLimit();
+        Select select = createSelect(query, predicatesHolder, context, fields);
+        return ((SelectOrderByStep) select).limit(finalLimit);
     }
 
 
-    private <E extends Element> SelectJoinStep<Record> createSqlQuery(Set<String> columnsToRetrieve, DSLContext context) {
+    private <E extends Element> SelectJoinStep<Record> createSqlQuery(Set<String> columnsToRetrieve, DSLContext context, Field... fields) {
         if (columnsToRetrieve == null) {
-            return context.select().from(this.getTable());
-
+            columnsToRetrieve = this.getPropertySchemas().stream().map(PropertySchema::getKey).collect(Collectors.toSet());
+//            return context.select().from(this.getTable());
         }
 
         Set<String> props = this.toFields(columnsToRetrieve);
+        Iterator<Field<Object>> fieldIterator = props.stream().map(DSL::field).iterator();
+        List<Field<Object>> fieldList = IteratorUtils.asList(Iterators.concat(fieldIterator, Arrays.asList(fields).iterator()));
         return context
-                .select(props.stream().map(DSL::field).collect(Collectors.toList()))
+                .select(fieldList)
                 .from(this.getTable());
     }
 

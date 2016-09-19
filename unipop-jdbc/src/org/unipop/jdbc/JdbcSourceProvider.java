@@ -11,6 +11,7 @@ import org.jooq.impl.DefaultExecuteListenerProvider;
 import org.json.JSONObject;
 import org.unipop.common.util.PredicatesTranslator;
 import org.unipop.jdbc.controller.simple.RowController;
+import org.unipop.jdbc.controller.simple.RowOptimizedController;
 import org.unipop.jdbc.schemas.RowEdgeSchema;
 import org.unipop.jdbc.schemas.RowVertexSchema;
 import org.unipop.jdbc.schemas.jdbc.JdbcSchema;
@@ -55,6 +56,9 @@ public class JdbcSourceProvider implements SourceProvider {
         Connection c = getConnection(configuration);
         SQLDialect dialect = SQLDialect.valueOf(configuration.getString("sqlDialect"));
 
+        boolean optimized = false;
+        if (dialect.equals(SQLDialect.POSTGRES)) optimized = true;
+
         Configuration conf = new DefaultConfiguration().set(c).set(dialect)
                 .set(new DefaultExecuteListenerProvider(new TimingExecuterListener()));
 
@@ -67,7 +71,7 @@ public class JdbcSourceProvider implements SourceProvider {
         getList(configuration, "vertices").forEach(vertexJson -> schemas.add(createVertexSchema(vertexJson)));
         getList(configuration, "edges").forEach(edgeJson -> schemas.add(createEdgeSchema(edgeJson)));
 
-        return createControllers(schemas);
+        return createControllers(schemas, optimized);
     }
 
     @Override
@@ -83,8 +87,12 @@ public class JdbcSourceProvider implements SourceProvider {
         return new RowEdgeSchema(edgeJson, this.graph);
     }
 
-    public Set<UniQueryController> createControllers(Set<JdbcSchema> schemas) {
-        RowController rowController = new RowController(this.graph, this.context, schemas, this.predicatesTranslatorSupplier.get());
+    public Set<UniQueryController> createControllers(Set<JdbcSchema> schemas, boolean optimized) {
+        RowController rowController;
+        if (!optimized)
+         rowController = new RowController(this.graph, this.context, schemas, this.predicatesTranslatorSupplier.get());
+        else
+            rowController = new RowOptimizedController(this.graph, this.context, schemas, this.predicatesTranslatorSupplier.get());
         return Sets.newHashSet(rowController);
     }
 

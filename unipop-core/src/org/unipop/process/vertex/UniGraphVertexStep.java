@@ -184,4 +184,9 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
         else
             return new SearchVertexQuery(Edge.class, traversers.stream().map(Traverser::get).collect(Collectors.toList()), direction, predicates, -1, propertyKeys, null, stepDescriptor);
     }
+
+    @Override
+    public boolean hasControllers() {
+        return controllers.size() > 0;
+    }
 }

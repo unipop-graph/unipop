@@ -3,7 +3,6 @@ os:
   - linux
 jdk:
   - oraclejdk8
-sudo: required
 dist: trusty
 addons:
   apt:
