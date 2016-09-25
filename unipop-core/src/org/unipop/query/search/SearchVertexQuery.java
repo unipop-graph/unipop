@@ -3,6 +3,7 @@ package org.unipop.query.search;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.javatuples.Pair;
 import org.unipop.query.predicates.PredicatesHolder;
@@ -37,6 +38,19 @@ public class SearchVertexQuery extends SearchQuery<Edge> implements VertexQuery 
 
     public interface SearchVertexController extends UniQueryController {
         Iterator<Edge> search(SearchVertexQuery uniQuery);
+    }
+
+    @Override
+    public boolean test(Edge element, PredicatesHolder predicates) {
+        boolean edgePredicates = super.test(element, predicates);
+        if (!edgePredicates) return false;
+        if (direction.equals(Direction.OUT) || direction.equals(Direction.BOTH)) {
+            if (vertices.contains(element.outVertex())) return true;
+        }
+        if (direction.equals(Direction.IN) || direction.equals(Direction.BOTH)) {
+            if (vertices.contains(element.inVertex())) return true;
+        }
+        return false;
     }
 
     @Override

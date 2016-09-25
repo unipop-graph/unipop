@@ -5,7 +5,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.unipop.query.StepDescriptor;
 import org.unipop.query.UniQuery;
 
-public class PredicateQuery extends UniQuery {
+public class PredicateQuery<E extends Element> extends UniQuery {
     private final PredicatesHolder predicates;
 
     public PredicateQuery(PredicatesHolder predicates, StepDescriptor stepDescriptor) {
@@ -17,7 +17,7 @@ public class PredicateQuery extends UniQuery {
         return predicates;
     }
 
-    public <E extends Element> boolean test(E element, PredicatesHolder predicates) {
+    public boolean test(E element, PredicatesHolder predicates) {
         if(predicates.getClause().equals(PredicatesHolder.Clause.And)) {
             if (!HasContainer.testAll(element, predicates.getPredicates())) return false;
 
