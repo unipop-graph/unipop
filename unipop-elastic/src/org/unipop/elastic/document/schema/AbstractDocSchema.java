@@ -104,7 +104,7 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
                 Collection<E> elements = fromDocument(document);
                 if(elements != null) {
                     elements.forEach(element -> {
-                        if(element != null && query.getPredicates().test(element))
+                        if(element != null && query.test(element, query.getPredicates()))
                             results.add(element);
                     });
                 }
