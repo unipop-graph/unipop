@@ -113,7 +113,7 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
     }
 
     @Override
-    public Set<Object> parseReduce(String result, ReduceQuery query) {
+    public List<Object> parseReduce(String result, ReduceQuery query) {
         switch (query.getOp()) {
             case Count:
                 if (query.getReduceOn() == null)
@@ -126,18 +126,18 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
             case Min:
                 return getValueByPath(result, "aggregations.min.value");
             case Mean:
-                Set<Object> count = getValueByPath(result, "aggregations.filter.doc_count");
-                Set<Object> sum = getValueByPath(result, "aggregations.filter.avg.value");
+                List<Object> count = getValueByPath(result, "aggregations.filter.doc_count");
+                List<Object> sum = getValueByPath(result, "aggregations.filter.avg.value");
                 if (count.size() > 0 && sum.size() > 0) {
                     MeanGlobalStep.MeanNumber meanNumber = new MeanGlobalStep.MeanNumber((double) sum.iterator().next(), (long) count.iterator().next());
-                    return Collections.singleton(meanNumber);
+                    return Collections.singletonList(meanNumber);
                 }
             default:
                 return null;
         }
     }
 
-    protected Set<Object> getValueByPath(String result, String path) {
+    protected List<Object> getValueByPath(String result, String path) {
         String[] split = path.split("\\.");
         try {
             JsonNode jsonNode = mapper.readTree(result);
@@ -145,9 +145,9 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
                 jsonNode = jsonNode.get(part);
             double value = jsonNode.asDouble();
             if (value % 1 == 0)
-                return Collections.singleton(((Double) value).longValue());
+                return Collections.singletonList(((Double) value).longValue());
             else
-                return Collections.singleton(value);
+                return Collections.singletonList(value);
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -6,6 +6,7 @@ import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.schema.property.AbstractPropertyContainer;
 import org.unipop.schema.property.NonDynamicPropertySchema;
+import org.unipop.schema.property.PropertySchema;
 import org.unipop.structure.UniElement;
 import org.unipop.structure.UniGraph;
 import org.unipop.util.ConversionUtils;
@@ -81,6 +82,11 @@ public abstract class AbstractElementSchema<E extends Element> extends AbstractP
                 .collect(Collectors.toSet());
 
         return PredicatesHolderFactory.create(predicatesHolder.getClause(), predicates);
+    }
+
+    @Override
+    public PropertySchema getPropertySchema(String key){
+        return getPropertySchemas().stream().filter(s -> s.getKey().equals(key)).findFirst().get();
     }
 
     @Override

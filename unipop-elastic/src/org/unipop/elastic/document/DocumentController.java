@@ -142,23 +142,20 @@ public class DocumentController implements SimpleController, ReduceQuery.ReduceC
             if (search.hasNext())
                 return search;
         } else {
-            Iterator<Edge> search = search(new SearchVertexQuery(Edge.class, query.getVertices(), query.getDirection(),
-                    PredicatesHolderFactory.empty(), query.getLimit(),
-                    Collections.emptySet(), Collections.emptyList(), query.getStepDescriptor()));
-            List<Vertex> vertexList = ConversionUtils.asStream(search).flatMap(edge -> {
-                List<Vertex> vertices = new ArrayList<>();
-                if (query.getDirection().equals(Direction.OUT) || query.getDirection().equals(Direction.BOTH))
-                    vertices.add(edge.inVertex());
-                if (query.getDirection().equals(Direction.IN) || query.getDirection().equals(Direction.BOTH))
-                    vertices.add(edge.outVertex());
-                return vertices.stream();
-            }).collect(Collectors.toList());
+            System.out.println(query);
+//            Iterator<Edge> search = search(new SearchVertexQuery(Edge.class, query.getVertices(), query.getDirection(),
+//                    PredicatesHolderFactory.empty(), query.getLimit(),
+//                    Collections.emptySet(), Collections.emptyList(), query.getStepDescriptor()));
+//            List<Vertex> vertexList = ConversionUtils.asStream(search).flatMap(edge -> {
+//                List<Vertex> vertices = new ArrayList<>();
+//                if (query.getDirection().equals(Direction.OUT) || query.getDirection().equals(Direction.BOTH))
+//                    vertices.add(edge.inVertex());
+//                if (query.getDirection().equals(Direction.IN) || query.getDirection().equals(Direction.BOTH))
+//                    vertices.add(edge.outVertex());
+//                return vertices.stream();
+//            }).collect(Collectors.toList());
             Set<? extends DocumentSchema<Vertex>> schemas = getSchemas(Vertex.class);
-            SearchCollector<DocumentSchema<Vertex>, Search, Object> collector = new SearchCollector<>((schema) -> {
-                ReduceQuery reduceQuery = new ReduceQuery(vertexList, query.getPredicates(), query.getPropertyKeys(), query.getReduceOn(),
-                        query.getOp(), query.getReturnType(), query.getLimit(), query.getStepDescriptor());
-                return schema.getReduce(reduceQuery);
-            }, (schema, results) -> schema.parseReduce(results, query));
+            SearchCollector<DocumentSchema<Vertex>, Search, Object> collector = new SearchCollector<>((schema) -> schema.getReduce(query), (schema, results) -> schema.parseReduce(results, query));
             Map<DocumentSchema<Vertex>, Search> reduces = schemas.stream().collect(collector);
             return search(query, reduces, collector);
         }

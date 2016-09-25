@@ -113,11 +113,12 @@ public class UniGraphReduceStrategy extends AbstractTraversalStrategy<TraversalS
                 setUpReduceStep(minGlobalStep, ReduceQuery.ReduceOperator.Min, reduceOn, traversal);
         });
 
-        TraversalHelper.getStepsOfAssignableClass(MeanGlobalStep.class, traversal).forEach(meanGlobalStep -> {
-            String reduceOn = getReduceOn(meanGlobalStep, traversal);
-            if (reduceOn != null)
-                setUpReduceStep(meanGlobalStep, ReduceQuery.ReduceOperator.Mean, reduceOn, traversal);
-        });
+        // TODO: think on how to implement mean with bulks
+//        TraversalHelper.getStepsOfAssignableClass(MeanGlobalStep.class, traversal).forEach(meanGlobalStep -> {
+//            String reduceOn = getReduceOn(meanGlobalStep, traversal);
+//            if (reduceOn != null)
+//                setUpReduceStep(meanGlobalStep, ReduceQuery.ReduceOperator.Mean, reduceOn, traversal);
+//        });
     }
 
     private String getReduceOn(ReducingBarrierStep reduceStep, Traversal.Admin traversal) {

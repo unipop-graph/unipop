@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.shaded.jackson.databind.JsonNode;
 import org.apache.tinkerpop.shaded.jackson.databind.node.ArrayNode;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.search.aggregations.AbstractAggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -15,6 +16,8 @@ import org.json.JSONObject;
 import org.unipop.elastic.common.ElasticClient;
 import org.unipop.elastic.document.Document;
 import org.unipop.elastic.document.DocumentEdgeSchema;
+import org.unipop.query.UniQuery;
+import org.unipop.query.VertexQuery;
 import org.unipop.query.aggregation.LocalQuery;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
@@ -48,7 +51,7 @@ public abstract class AbstractDocEdgeSchema extends AbstractDocSchema<Edge> impl
         else return PredicatesHolderFactory.abort();
     }
 
-    protected abstract AggregationBuilder createTerms(String name, AggregationBuilder subs, SearchVertexQuery searchQuery, Direction direction, Iterator<String> fields);
+    protected abstract AggregationBuilder createTerms(String name, AggregationBuilder subs, VertexQuery searchQuery, Direction direction, Iterator<String> fields);
 
     @Override
     public Search getLocal(LocalQuery query) {
@@ -65,14 +68,14 @@ public abstract class AbstractDocEdgeSchema extends AbstractDocSchema<Edge> impl
             fields = ((AbstractPropertyContainer) getOutVertexSchema()).getPropertySchemas().stream()
                     .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
                     .findFirst().get().toFields(Collections.emptySet()).iterator();
-            AggregationBuilder out = createTerms("out", getSubAggregation(query, Direction.OUT), searchQuery, Direction.OUT, fields);
+            AggregationBuilder out = createTerms("out", getSubAggregation(query.getSearchQuery(), AggregationBuilders.topHits("hits").setSize(searchQuery.getLimit()), Direction.OUT), searchQuery, Direction.OUT, fields);
             aggs.add(out);
         }
         if(searchQuery.getDirection().equals(Direction.IN) || searchQuery.getDirection().equals(Direction.BOTH)){
             fields = ((AbstractPropertyContainer) getInVertexSchema()).getPropertySchemas().stream()
                     .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
                     .findFirst().get().toFields(Collections.emptySet()).iterator();
-            AggregationBuilder in = createTerms("in", getSubAggregation(query, Direction.IN), searchQuery, Direction.IN, fields);
+            AggregationBuilder in = createTerms("in", getSubAggregation(query.getSearchQuery(), AggregationBuilders.topHits("hits").setSize(searchQuery.getLimit()), Direction.IN), searchQuery, Direction.IN, fields);
             aggs.add(in);
         }
         SearchSourceBuilder searchBuilder = this.createSearchBuilder(searchQuery, queryBuilder);
@@ -89,7 +92,7 @@ public abstract class AbstractDocEdgeSchema extends AbstractDocSchema<Edge> impl
         return search.build();
     }
 
-    abstract protected AggregationBuilder getSubAggregation(LocalQuery query, Direction direction);
+    abstract protected AggregationBuilder getSubAggregation(UniQuery query, AbstractAggregationBuilder builder, Direction direction);
 
     protected List<Pair<String, Element>> parseTerms(String path, String bottomPath, String name, LocalQuery query, String result, Set<String> fields){
         SearchVertexQuery searchQuery = (SearchVertexQuery) query.getSearchQuery();
@@ -100,7 +103,7 @@ public abstract class AbstractDocEdgeSchema extends AbstractDocSchema<Edge> impl
                 jsonNode = jsonNode.get(s);
             }
             for (int i = 1; i < fields.size() + 1; i++) {
-                jsonNode = jsonNode.get(name + "_id_" + i);
+                jsonNode = jsonNode.get(name + "_id");
             }
             ArrayNode buckets = (ArrayNode) jsonNode.get("buckets");
             ArrayList<Pair<String, Element>> objects = new ArrayList<>();

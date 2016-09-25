@@ -36,7 +36,7 @@ import java.util.stream.Stream;
 public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Vertex, E> implements ReceivesPredicatesHolder<Vertex, E>, Orderable, UniQueryStep<Vertex>, Profiling{
     private static final Logger logger = LoggerFactory.getLogger(UniGraphVertexStep.class);
 
-    private final boolean returnsVertex;
+    private boolean returnsVertex;
     private final Direction direction;
     private Class<E> returnClass;
     private String[] edgeLabels = new String[0];
@@ -62,6 +62,11 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
         this.deferredVertexControllers = controllerManager.getControllers(DeferredVertexQuery.DeferredVertexController.class);
         this.stepDescriptor = new StepDescriptor(this);
         limit = -1;
+    }
+
+    public void setReturnClass(Class returnClass){
+        this.returnClass = returnClass;
+        this.returnsVertex = returnClass == Vertex.class;
     }
 
     @Override

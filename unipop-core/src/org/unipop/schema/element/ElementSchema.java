@@ -2,6 +2,7 @@ package org.unipop.schema.element;
 
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.unipop.query.predicates.PredicatesHolder;
+import org.unipop.schema.property.PropertySchema;
 import org.unipop.structure.UniGraph;
 
 import java.util.*;
@@ -12,6 +13,7 @@ public interface ElementSchema<E extends Element> {
     Set<String> toFields(Set<String> propertyKeys);
     PredicatesHolder toPredicates(PredicatesHolder predicatesHolder);
     String getFieldByPropertyKey(String key);
+    PropertySchema getPropertySchema(String key);
 
     default Set<ElementSchema> getChildSchemas() { return Collections.emptySet(); }
 }

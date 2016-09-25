@@ -13,6 +13,7 @@ import org.apache.tinkerpop.shaded.jackson.core.JsonProcessingException;
 import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.aggregations.AbstractAggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
@@ -27,8 +28,12 @@ import org.unipop.elastic.document.schema.AbstractDocEdgeSchema;
 import org.unipop.elastic.document.schema.AbstractDocSchema;
 import org.unipop.elastic.document.schema.DocVertexSchema;
 import org.unipop.elastic.document.schema.property.IndexPropertySchema;
+import org.unipop.query.UniQuery;
+import org.unipop.query.VertexQuery;
+import org.unipop.query.aggregation.AggregateVertexQuery;
 import org.unipop.query.aggregation.LocalQuery;
 import org.unipop.query.aggregation.ReduceVertexQuery;
+import org.unipop.query.predicates.PredicateQuery;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.SearchQuery;
@@ -158,15 +163,19 @@ public class NestedEdgeSchema extends AbstractDocEdgeSchema {
         return createSearch(query, nestedQuery);
     }
 
+
     @Override
-    protected AggregationBuilder getSubAggregation(LocalQuery query, Direction direction) {
-        SearchVertexQuery searchQuery = (SearchVertexQuery) query.getSearchQuery();
-        PredicatesHolder edgePredicates = super.toPredicates(searchQuery.getPredicates());
+    protected AggregationBuilder getSubAggregation(UniQuery query, AbstractAggregationBuilder builder, Direction direction) {
+        VertexQuery searchQuery = (VertexQuery) query;
+        PredicatesHolder edgePredicates = super.toPredicates(((PredicateQuery) searchQuery).getPredicates());
         PredicatesHolder VertexPredicates = this.getVertexPredicates(searchQuery.getVertices(), direction);
         QueryBuilder vertexQuery = createQueryBuilder(PredicatesHolderFactory.and(edgePredicates, VertexPredicates));
+        if (builder == null)
+            return AggregationBuilders.filter("filter").filter(vertexQuery)
+                    .subAggregation(AggregationBuilders.reverseNested("reverse"));
         return AggregationBuilders.filter("filter").filter(vertexQuery)
                 .subAggregation(AggregationBuilders.reverseNested("reverse")
-                        .subAggregation(AggregationBuilders.topHits("hits").setSize(searchQuery.getLimit())));
+                        .subAggregation(builder));
     }
 
 //    @Override
@@ -216,7 +225,7 @@ public class NestedEdgeSchema extends AbstractDocEdgeSchema {
 //    }
 
     @Override
-    protected AggregationBuilder createTerms(String name, AggregationBuilder subs, SearchVertexQuery searchQuery, Direction direction, Iterator<String> fields){
+    protected AggregationBuilder createTerms(String name, AggregationBuilder subs, VertexQuery searchQuery, Direction direction, Iterator<String> fields){
         int count = 1;
         String next = fields.next();
         if (next.equals("_id")) next = "_uid";

@@ -33,57 +33,11 @@ public class TempTests extends AbstractGremlinTest {
         GraphManager.setGraphProvider(new JdbcOptimizedGraphProvider());
     }
 
-    @Test
-    @LoadGraphWith(MODERN)
-    public void shouldTraversalResetProperly() {
-        final Traversal<Object, Vertex> traversal = as("a").out().out().has("name", P.within("ripple", "lop")).as("b");
-        if (new Random().nextBoolean()) traversal.asAdmin().reset();
-        assertFalse(traversal.hasNext());
-        traversal.asAdmin().addStarts(traversal.asAdmin().getTraverserGenerator().generateIterator(g.V(), traversal.asAdmin().getSteps().get(0), 1l));
-        assertTrue(traversal.hasNext());
-        assertEquals(2, IteratorUtils.count(traversal));
-
-        if (new Random().nextBoolean()) traversal.asAdmin().reset();
-        traversal.asAdmin().addStarts(traversal.asAdmin().getTraverserGenerator().generateIterator(g.V(), traversal.asAdmin().getSteps().get(0), 1l));
-        assertTrue(traversal.hasNext());
-        traversal.next();
-        assertTrue(traversal.hasNext());
-        traversal.asAdmin().reset();
-        assertFalse(traversal.hasNext());
-
-        traversal.asAdmin().addStarts(traversal.asAdmin().getTraverserGenerator().generateIterator(g.V(), traversal.asAdmin().getSteps().get(0), 1l));
-        assertEquals(2, IteratorUtils.count(traversal));
-
-        assertFalse(traversal.hasNext());
-        if (new Random().nextBoolean()) traversal.asAdmin().reset();
-        assertFalse(traversal.hasNext());
-    }
-
     @LoadGraphWith(LoadGraphWith.GraphData.GRATEFUL)
     @Test
     public void testA() {
-        Traversal t = g.V().repeat(both("followedBy")).times(2).group().by("songType");//.by(count());
+        Traversal t = g.V().repeat(both("followedBy")).times(2).group().by("songType").by(count());
         check(t);
-    }
-
-    @Test
-    @LoadGraphWith(MODERN)
-    public void g_V_chooseXout_countX_optionX2L__nameX_optionX3L__valueMapX() {
-        final Traversal<Vertex, Object> traversal = g.V().choose(out().count())
-                .option(2L, values("name"))
-                .option(3L, valueMap());
-        printTraversalForm(traversal);
-        final Map<String, Long> counts = new HashMap<>();
-        int counter = 0;
-        while (traversal.hasNext()) {
-            MapHelper.incr(counts, traversal.next().toString(), 1l);
-            counter++;
-        }
-        assertFalse(traversal.hasNext());
-        assertEquals(2, counter);
-        assertEquals(2, counts.size());
-        assertEquals(Long.valueOf(1), counts.get("{name=[marko], age=[29]}"));
-        assertEquals(Long.valueOf(1), counts.get("josh"));
     }
 
     private void check(Traversal traversal) {

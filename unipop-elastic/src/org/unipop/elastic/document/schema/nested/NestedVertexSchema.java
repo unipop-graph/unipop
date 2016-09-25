@@ -127,7 +127,7 @@ public class NestedVertexSchema extends AbstractDocSchema<Vertex> implements Doc
     }
 
     @Override
-    public Set<Object> parseReduce(String result, ReduceQuery query) {
+    public List<Object> parseReduce(String result, ReduceQuery query) {
         switch (query.getOp()) {
             case Count:
                 if (query.getReduceOn() == null)
@@ -140,11 +140,11 @@ public class NestedVertexSchema extends AbstractDocSchema<Vertex> implements Doc
             case Min:
                 return getValueByPath(result, "aggregations.nested.min.value");
             case Mean:
-                Set<Object> count = getValueByPath(result, "aggregations.nested.filter.doc_count");
-                Set<Object> sum = getValueByPath(result, "aggregations.nested.filter.avg.value");
+                List<Object> count = getValueByPath(result, "aggregations.nested.filter.doc_count");
+                List<Object> sum = getValueByPath(result, "aggregations.nested.filter.avg.value");
                 if (count.size() > 0 && sum.size() > 0) {
                     MeanGlobalStep.MeanNumber meanNumber = new MeanGlobalStep.MeanNumber((double) sum.iterator().next(), (long) count.iterator().next());
-                    return Collections.singleton(meanNumber);
+                    return Collections.singletonList(meanNumber);
                 }
             default:
                 return null;

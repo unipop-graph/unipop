@@ -5,6 +5,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.Profiling;
+import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
@@ -29,23 +30,27 @@ import java.util.stream.Collectors;
 /**
  * Created by sbarzilay on 9/4/16.
  */
-public class UniGraphLocalStep<S extends Element, E> extends AbstractStep<S, E> implements Profiling {
+public class UniGraphLocalStep<S extends Element, E> extends AbstractStep<S, E> implements TraversalParent, Profiling {
 
-    private final Traversal.Admin<S, Traverser<E>> localTraversal;
+    private final Traversal.Admin<S, E> localTraversal;
     private StepDescriptor stepDescriptor;
     private List<LocalQuery.LocalController> localControllers;
     private Iterator<Traverser.Admin<E>> results = EmptyIterator.instance();
     private UniGraph graph;
     private Iterator<Step> querySteps;
 
-    public UniGraphLocalStep(Traversal.Admin traversal, Traversal.Admin<S, Traverser<E>> localTraversal,
+    public UniGraphLocalStep(Traversal.Admin traversal, Traversal.Admin<S, E> localTraversal,
                              List<LocalQuery.LocalController> localControllers) {
         super(traversal);
         this.graph = (UniGraph) this.traversal.getGraph().get();
         this.localTraversal = localTraversal;
         this.stepDescriptor = new StepDescriptor(this);
         this.localControllers = localControllers;
-        this.querySteps = localTraversal.clone().getSteps().iterator();
+    }
+
+    @Override
+    public List<Traversal.Admin<S, E>> getLocalChildren() {
+        return Collections.singletonList(localTraversal);
     }
 
     @Override
@@ -56,6 +61,7 @@ public class UniGraphLocalStep<S extends Element, E> extends AbstractStep<S, E> 
     @Override
     protected Traverser.Admin<E> processNextStart() throws NoSuchElementException {
         if (results instanceof EmptyIterator) {
+            this.querySteps = localTraversal.clone().getSteps().iterator();
             List<Traverser.Admin<S>> elements = new ArrayList<>();
             this.starts.forEachRemaining(start -> {
                 Set<String> labels = new HashSet<>();
@@ -137,7 +143,7 @@ public class UniGraphLocalStep<S extends Element, E> extends AbstractStep<S, E> 
     }
 
     private Set<SearchQuery> getTraversalQueries(List<Traverser.Admin<S>> elements) {
-        Traversal.Admin<S, Traverser<E>> clone = localTraversal.clone();
+        Traversal.Admin<S, E> clone = localTraversal.clone();
         clone.reset();
         elements.forEach(clone::addStart);
         return clone.getSteps().stream().filter(step -> step instanceof UniQueryStep)

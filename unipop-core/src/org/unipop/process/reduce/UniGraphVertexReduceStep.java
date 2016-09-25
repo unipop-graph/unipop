@@ -11,7 +11,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementExce
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.unipop.process.UniQueryStep;
 import org.unipop.query.StepDescriptor;
+import org.unipop.query.UniQuery;
 import org.unipop.query.aggregation.ReduceQuery;
 import org.unipop.query.aggregation.ReduceVertexQuery;
 import org.unipop.query.predicates.PredicatesHolder;
@@ -25,7 +27,7 @@ import java.util.stream.Collectors;
 /**
  * Created by sbarzilay on 8/31/16.
  */
-public class UniGraphVertexReduceStep<S, E> extends AbstractStep<S, E> implements Profiling {
+public class UniGraphVertexReduceStep<S, E> extends AbstractStep<S, E> implements UniQueryStep<Vertex>, Profiling {
     private final BinaryOperator<E> biOperator;
     private final Traversal.Admin<S, E> reduceTraversal;
     private final Supplier<E> seedSupplier;
@@ -65,9 +67,7 @@ public class UniGraphVertexReduceStep<S, E> extends AbstractStep<S, E> implement
             throw FastNoSuchElementException.instance();
         List<Traverser.Admin<Vertex>> vertices = new ArrayList<>();
         this.starts.forEachRemaining(start -> vertices.add((Traverser.Admin<Vertex>) start));
-        ReduceVertexQuery query = new ReduceVertexQuery(returnsVertex, vertices.stream().map(Traverser::get).collect(Collectors.toList()),
-                direction, predicatesHolder,
-                propertyKeys, reduceOn, op, limit, stepDescriptor);
+        ReduceVertexQuery query = (ReduceVertexQuery) getQuery(vertices);
 
         List<E> eList = reduceControllers.stream()
                 .map(reduceController -> (E)reduceController.<E>reduce(query))
@@ -105,5 +105,18 @@ public class UniGraphVertexReduceStep<S, E> extends AbstractStep<S, E> implement
     @Override
     public void setMetrics(MutableMetrics metrics) {
         this.stepDescriptor = new StepDescriptor(this, metrics);
+    }
+
+    @Override
+    public UniQuery getQuery(List<Traverser.Admin<Vertex>> traversers) {
+        ReduceVertexQuery query = new ReduceVertexQuery(returnsVertex, traversers.stream().map(Traverser::get).collect(Collectors.toList()),
+                direction, predicatesHolder,
+                propertyKeys, reduceOn, op, limit, stepDescriptor);
+        return query;
+    }
+
+    @Override
+    public boolean hasControllers() {
+        return reduceControllers.size() > 0;
     }
 }
