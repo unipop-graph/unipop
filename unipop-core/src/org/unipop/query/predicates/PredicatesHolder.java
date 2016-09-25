@@ -68,25 +68,25 @@ public class PredicatesHolder {
         return predicates.stream().filter(has -> has.getKey().equals(key));
     }
 
-    public <E extends Element> boolean test(E element) {
-        if(getClause().equals(Clause.And)) {
-            if (!HasContainer.testAll(element, this.predicates)) return false;
-
-            for (PredicatesHolder child : this.children) {
-                if (!child.test(element)) return false;
-            }
-            return true;
-        }
-        else {
-            for(HasContainer has : this.predicates) {
-                if (has.test(element)) return true;
-            }
-            for (PredicatesHolder child : this.children) {
-                if (child.test(element)) return true;
-            }
-            return false;
-        }
-    }
+//    public <E extends Element> boolean test(E element) {
+//        if(getClause().equals(Clause.And)) {
+//            if (!HasContainer.testAll(element, this.predicates)) return false;
+//
+//            for (PredicatesHolder child : this.children) {
+//                if (!child.test(element)) return false;
+//            }
+//            return true;
+//        }
+//        else {
+//            for(HasContainer has : this.predicates) {
+//                if (has.test(element)) return true;
+//            }
+//            for (PredicatesHolder child : this.children) {
+//                if (child.test(element)) return true;
+//            }
+//            return false;
+//        }
+//    }
 
     public PredicatesHolder map(Function<HasContainer, HasContainer> func){
         List<HasContainer> predicates = getPredicates().stream().map(func).collect(Collectors.toList());

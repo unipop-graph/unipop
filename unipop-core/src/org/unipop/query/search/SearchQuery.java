@@ -14,7 +14,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-public class SearchQuery<E extends Element> extends PredicateQuery {
+public class SearchQuery<E extends Element> extends PredicateQuery<E> {
     private final Class<E> returnType;
     private final int limit;
     private Set<String> propertyKeys;
