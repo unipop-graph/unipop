@@ -104,7 +104,7 @@ public class DateFieldPropertySchema extends FieldPropertySchema implements Date
     @Override
     public Map<String, Object> toProperties(Map<String, Object> source) {
         Object dateField = source.get(this.field);
-        if (dateField == null) return Collections.emptyMap();
+        if (dateField == null || dateField.equals("")) return Collections.emptyMap();
         Date parsedDate = fromSource(dateField.toString());
         String displayDate = toDisplay(parsedDate);
         return Collections.singletonMap(this.key, displayDate);
