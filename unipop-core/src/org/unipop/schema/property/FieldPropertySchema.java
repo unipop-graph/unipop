@@ -52,6 +52,8 @@ public class FieldPropertySchema implements PropertySchema {
         } catch (IllegalAccessException | InstantiationException e) {
             e.printStackTrace();
         }
+        if (include != null || exclude != null)
+            this.nullable = false;
         Object alias = config.opt("alias");
         this.alias = alias == null ? null : ((JSONObject) alias);
         if (this.alias == null)
