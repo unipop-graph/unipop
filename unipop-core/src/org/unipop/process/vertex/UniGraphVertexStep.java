@@ -78,9 +78,9 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
         });
         SearchVertexQuery vertexQuery;
         if (!returnsVertex)
-            vertexQuery = new SearchVertexQuery(Edge.class, vertices, direction, predicates, limit, propertyKeys, orders, stepDescriptor);
+            vertexQuery = new SearchVertexQuery(Edge.class, vertices, direction, predicates, limit, propertyKeys, orders, stepDescriptor, traversal);
         else
-            vertexQuery = new SearchVertexQuery(Edge.class, vertices, direction, predicates, -1, propertyKeys, null, stepDescriptor);
+            vertexQuery = new SearchVertexQuery(Edge.class, vertices, direction, predicates, -1, propertyKeys, null, stepDescriptor, traversal);
         logger.debug("Executing query: ", vertexQuery);
         Iterator<Traverser.Admin<E>> traversersIterator = controllers.stream().<Iterator<Edge>>map(controller -> controller.search(vertexQuery))
                 .<Edge>flatMap(ConversionUtils::asStream)
@@ -98,7 +98,7 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
                 .filter(DeferredVertex::isDeferred)
                 .collect(Collectors.toList());
         if (deferredVertices.size() > 0) {
-            DeferredVertexQuery query = new DeferredVertexQuery(deferredVertices, propertyKeys, orders, this.stepDescriptor);
+            DeferredVertexQuery query = new DeferredVertexQuery(deferredVertices, propertyKeys, orders, this.stepDescriptor, traversal);
             deferredVertexControllers.stream().forEach(controller -> controller.fetchProperties(query));
         }
         return copyTraversers.iterator();

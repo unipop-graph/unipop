@@ -1,5 +1,6 @@
 package org.unipop.query.aggregation;
 
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.unipop.process.group.traversal.SemanticKeyTraversal;
 import org.unipop.process.group.traversal.SemanticReducerTraversal;
 import org.unipop.process.group.traversal.SemanticValuesTraversal;
@@ -19,8 +20,8 @@ public class AggregateQuery extends PredicateQuery {
                           SemanticKeyTraversal key,
                           SemanticValuesTraversal values,
                           SemanticReducerTraversal reduce,
-                          StepDescriptor stepDescriptor) {
-        super(predicates, stepDescriptor);
+                          StepDescriptor stepDescriptor, Traversal traversal) {
+        super(predicates, stepDescriptor,traversal);
         this.key = key;
         this.values = values;
         this.reduce = reduce;

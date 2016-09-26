@@ -1,5 +1,6 @@
 package org.unipop.query.aggregation;
 
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.unipop.process.group.traversal.SemanticKeyTraversal;
@@ -23,8 +24,8 @@ public class AggregateVertexQuery extends AggregateQuery implements VertexQuery 
                                 SemanticKeyTraversal key,
                                 SemanticValuesTraversal values,
                                 SemanticReducerTraversal reduce,
-                                StepDescriptor stepDescriptor) {
-        super(predicates, key, values, reduce, stepDescriptor);
+                                StepDescriptor stepDescriptor, Traversal traversal) {
+        super(predicates, key, values, reduce, stepDescriptor, traversal);
         this.vertices = vertices;
         this.direction = direction;
     }

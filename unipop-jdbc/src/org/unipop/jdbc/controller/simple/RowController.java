@@ -36,6 +36,7 @@ import org.unipop.structure.UniEdge;
 import org.unipop.structure.UniElement;
 import org.unipop.structure.UniGraph;
 import org.unipop.structure.UniVertex;
+import org.unipop.structure.traversalfilter.TraversalFilter;
 import org.unipop.util.MetricsRunner;
 
 import java.util.*;
@@ -60,18 +61,23 @@ public class RowController implements SimpleController {
     private Set<? extends RowEdgeSchema> edgeSchemas;
 
     private final PredicatesTranslator<Condition> predicatesTranslator;
+    private TraversalFilter filter;
 
-    public <E extends Element> RowController(UniGraph graph, DSLContext context, Set<JdbcSchema> schemaSet, PredicatesTranslator<Condition> predicatesTranslator) {
+    public <E extends Element> RowController(UniGraph graph, DSLContext context, Set<JdbcSchema> schemaSet, PredicatesTranslator<Condition> predicatesTranslator, TraversalFilter filter) {
         this.graph = graph;
         this.dslContext = context;
-
+        this.filter = filter;
         extractRowSchemas(schemaSet);
         this.predicatesTranslator = predicatesTranslator;
     }
 
     @Override
     public <E extends Element> Iterator<E> search(SearchQuery<E> uniQuery) {
-        Set<? extends JdbcSchema<E>> schemas = this.getSchemas(uniQuery.getReturnType());
+        Set<? extends JdbcSchema<E>> schemas = this.getSchemas(uniQuery.getReturnType())
+                .stream()
+                .filter(schema -> this.filter.filter(schema, uniQuery.getTraversal()))
+                .map(schema -> ((JdbcSchema<E>) schema))
+                .collect(Collectors.toSet());
 
         Function<JdbcSchema<E>, PredicatesHolder> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery.getPredicates());
 
@@ -82,7 +88,9 @@ public class RowController implements SimpleController {
     public void fetchProperties(DeferredVertexQuery uniQuery) {
         Function<JdbcVertexSchema, PredicatesHolder> toPredicatesFunction = (schema) ->
                 schema.toPredicates(uniQuery.getVertices());
-        Iterator<Vertex> searchIterator = this.search(toPredicatesFunction, vertexSchemas, uniQuery);
+        Iterator<Vertex> searchIterator = this.search(toPredicatesFunction,
+                vertexSchemas.stream().filter(schema -> filter.filter(schema, uniQuery.getTraversal())).collect(Collectors.toSet()),
+                uniQuery);
 
         Map<Object, DeferredVertex> vertexMap =
                 uniQuery.getVertices().stream().collect(Collectors.toMap(UniElement::id, Function.identity(), (a, b) -> a));
@@ -100,7 +108,7 @@ public class RowController implements SimpleController {
                 uniQuery.getVertices(), uniQuery.getDirection(), uniQuery.getPredicates());
         return this.search(
                 toPredicatesFunction,
-                this.edgeSchemas,
+                this.edgeSchemas.stream().filter(schema -> this.filter.filter(schema, uniQuery.getTraversal())).collect(Collectors.toSet()),
                 uniQuery
         );
     }

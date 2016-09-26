@@ -6,6 +6,7 @@ import org.unipop.query.controller.SourceProvider;
 import org.unipop.query.controller.UniQueryController;
 import org.unipop.schema.element.ElementSchema;
 import org.unipop.structure.UniGraph;
+import org.unipop.structure.traversalfilter.TraversalFilter;
 
 import java.util.Collections;
 import java.util.Set;
@@ -20,7 +21,7 @@ public class VirtualSourceProvider implements SourceProvider {
     private UniGraph graph;
 
     @Override
-    public Set<UniQueryController> init(UniGraph graph, JSONObject configuration) throws Exception {
+    public Set<UniQueryController> init(UniGraph graph, TraversalFilter filter, JSONObject configuration) throws Exception {
         this.graph = graph;
         Set<ElementSchema> schemas = getList(configuration, "vertices").stream().map(this::createVertexSchema).collect(Collectors.toSet());
         return Collections.singleton(new VirtualController(graph, schemas));

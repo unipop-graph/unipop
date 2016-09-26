@@ -8,6 +8,7 @@ import org.unipop.elastic.document.schema.DocEdgeSchema;
 import org.unipop.elastic.document.schema.DocVertexSchema;
 import org.unipop.elastic.document.schema.property.IndexPropertySchema;
 import org.unipop.schema.property.PropertySchema;
+import org.unipop.structure.traversalfilter.TraversalFilter;
 import org.unipop.util.ConversionUtils;
 import org.unipop.elastic.common.ElasticClient;
 import org.unipop.elastic.document.DocumentController;
@@ -29,7 +30,7 @@ public class ElasticSourceProvider implements SourceProvider {
     private UniGraph graph;
 
     @Override
-    public Set<UniQueryController> init(UniGraph graph, JSONObject configuration) throws Exception {
+    public Set<UniQueryController> init(UniGraph graph, TraversalFilter filter, JSONObject configuration) throws Exception {
         this.graph = graph;
 
         List<String> addresses = ConversionUtils.toStringList(configuration, "addresses");
@@ -43,7 +44,7 @@ public class ElasticSourceProvider implements SourceProvider {
             schemas.add(createEdgeSchema(json));
         }
 
-        DocumentController documentController = new DocumentController(schemas, client, graph);
+        DocumentController documentController = new DocumentController(schemas, client, filter, graph);
         return Sets.newHashSet(documentController);
     }
 

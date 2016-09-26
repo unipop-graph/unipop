@@ -20,8 +20,8 @@ public class SearchQuery<E extends Element> extends PredicateQuery<E> {
     private Set<String> propertyKeys;
     private List<Pair<String, Order>> orders;
 
-    public SearchQuery(Class<E> returnType, PredicatesHolder predicates, int limit, Set<String> propertyKeys, List<Pair<String, Order>> orders, StepDescriptor stepDescriptor) {
-        super(predicates, stepDescriptor);
+    public SearchQuery(Class<E> returnType, PredicatesHolder predicates, int limit, Set<String> propertyKeys, List<Pair<String, Order>> orders, StepDescriptor stepDescriptor, Traversal traversal) {
+        super(predicates, stepDescriptor, traversal);
         this.returnType = returnType;
         this.limit = limit;
         this.propertyKeys = propertyKeys;

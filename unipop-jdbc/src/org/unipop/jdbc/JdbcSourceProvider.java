@@ -21,6 +21,7 @@ import org.unipop.query.controller.UniQueryController;
 import org.unipop.schema.element.SchemaSet;
 import org.unipop.schema.property.PropertySchema;
 import org.unipop.structure.UniGraph;
+import org.unipop.structure.traversalfilter.TraversalFilter;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -51,7 +52,7 @@ public class JdbcSourceProvider implements SourceProvider {
     }
 
     @Override
-    public Set<UniQueryController> init(UniGraph graph, JSONObject configuration) throws Exception {
+    public Set<UniQueryController> init(UniGraph graph, TraversalFilter filter, JSONObject configuration) throws Exception {
         Connection c = getConnection(configuration);
         SQLDialect dialect = SQLDialect.valueOf(configuration.getString("sqlDialect"));
 
@@ -67,7 +68,7 @@ public class JdbcSourceProvider implements SourceProvider {
         getList(configuration, "vertices").forEach(vertexJson -> schemas.add(createVertexSchema(vertexJson)));
         getList(configuration, "edges").forEach(edgeJson -> schemas.add(createEdgeSchema(edgeJson)));
 
-        return createControllers(schemas);
+        return createControllers(schemas, filter);
     }
 
     @Override
@@ -83,8 +84,8 @@ public class JdbcSourceProvider implements SourceProvider {
         return new RowEdgeSchema(edgeJson, this.graph);
     }
 
-    public Set<UniQueryController> createControllers(Set<JdbcSchema> schemas) {
-        RowController rowController = new RowController(this.graph, this.context, schemas, this.predicatesTranslatorSupplier.get());
+    public Set<UniQueryController> createControllers(Set<JdbcSchema> schemas, TraversalFilter filter) {
+        RowController rowController = new RowController(this.graph, this.context, schemas, this.predicatesTranslatorSupplier.get(), filter);
         return Sets.newHashSet(rowController);
     }
 
