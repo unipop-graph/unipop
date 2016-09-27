@@ -133,7 +133,7 @@ public class DocVertexSchema extends AbstractDocSchema<Vertex> implements Docume
                 fields = getPropertySchemas().stream()
                         .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
                         .findFirst().get().toFields(Collections.emptySet()).iterator();
-                searchBuilder.aggregation(createTerms("vertex", getSubAggregation(query, AggregationBuilders.min("min").field(query.getReduceOn())), fields));
+                searchBuilder.aggregation(AggregationBuilders.filter("exists").filter(QueryBuilders.existsQuery(query.getReduceOn())).subAggregation(createTerms("vertex", getSubAggregation(query, AggregationBuilders.min("min").field(query.getReduceOn())), fields)));
                 break;
             case Mean:
                 fields = getPropertySchemas().stream()
@@ -177,7 +177,7 @@ public class DocVertexSchema extends AbstractDocSchema<Vertex> implements Docume
                 fields = getPropertySchemas().stream()
                         .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
                         .findFirst().get().toFields(Collections.emptySet()).stream().collect(Collectors.toList());
-                parseReduce("aggregations", "filter.min.value", "vertex", result, fields, null).forEach(reduceResult::add);
+                parseReduce("aggregations.exists", "filter.min.value", "vertex", result, fields, null).forEach(reduceResult::add);
                 break;
             case Mean:
                 fields = getPropertySchemas().stream()
@@ -190,6 +190,7 @@ public class DocVertexSchema extends AbstractDocSchema<Vertex> implements Docume
     }
 
     protected List<Pair<HashMap<String, Object>, JsonNode>> getAllBuckets(JsonNode node, String key, List<String> fields, int start) {
+        if(node.get("buckets").size() == 0) return Collections.emptyList();
         if (!node.get("buckets").get(0).has(key)) {
             ArrayNode buckets = (ArrayNode) node.get("buckets");
             return ConversionUtils.asStream(buckets.iterator()).map(j -> {
@@ -235,13 +236,13 @@ public class DocVertexSchema extends AbstractDocSchema<Vertex> implements Docume
                     else
                         parse = parse.get(s);
                 }
-                if (parse.isDouble())
+                if (parse.asDouble() % 1 != 0)
                     if (idBulk != null)
-                        objects.add(parse.asDouble() * idBulk.get(id)); // TODO: get real number type and multiply by bulk
+                        objects.add(parse.asDouble() * idBulk.getOrDefault(id, 1L)); // TODO: get real number type and multiply by bulk
                     else
                         objects.add(parse.asDouble());
                 else if (idBulk != null)
-                    objects.add(parse.asLong() * idBulk.get(id));
+                    objects.add(parse.asLong() * idBulk.getOrDefault(id, 1L));
                 else
                     objects.add(parse.asLong());
             }

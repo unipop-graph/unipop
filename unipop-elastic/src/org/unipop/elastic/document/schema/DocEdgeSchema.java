@@ -128,178 +128,198 @@ public class DocEdgeSchema extends AbstractDocEdgeSchema {
     }
 
     @Override
-    protected void createReduce(ReduceQuery query, SearchSourceBuilder searchBuilder) {
-        ReduceVertexQuery reduceVertexQuery = (ReduceVertexQuery) query;
-        searchBuilder.size(0);
-        switch (query.getOp()) {
-            case Count:
-                AbstractAggregationBuilder builder = null;
-                if (query.getReduceOn() != null) {
-                    builder = AggregationBuilders.count("count").field(query.getReduceOn());
-                }
-                if (reduceVertexQuery.getDirection().equals(Direction.OUT) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
-                    Iterator<String> fields = ((AbstractPropertyContainer) getOutVertexSchema()).getPropertySchemas().stream()
-                            .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                            .findFirst().get().toFields(Collections.emptySet()).iterator();
-                    searchBuilder.aggregation(createTerms("out", getSubAggregation(query, builder, Direction.OUT), (ReduceVertexQuery) query, Direction.OUT, fields));
-                }
-                if (reduceVertexQuery.getDirection().equals(Direction.IN) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
-                    Iterator<String> fields = ((AbstractPropertyContainer) getInVertexSchema()).getPropertySchemas().stream()
-                            .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                            .findFirst().get().toFields(Collections.emptySet()).iterator();
-                    searchBuilder.aggregation(createTerms("in", getSubAggregation(query, builder, Direction.OUT), (ReduceVertexQuery) query, Direction.OUT, fields));
-                }
-                break;
-            case Sum:
-                if (reduceVertexQuery.getDirection().equals(Direction.OUT) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
-                    Iterator<String> fields = ((AbstractPropertyContainer) getOutVertexSchema()).getPropertySchemas().stream()
-                            .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                            .findFirst().get().toFields(Collections.emptySet()).iterator();
-                    searchBuilder.aggregation(createTerms("out", getSubAggregation(query, AggregationBuilders.sum("sum").field(query.getReduceOn()), Direction.OUT), (ReduceVertexQuery) query, Direction.OUT, fields));
-                }
-                if (reduceVertexQuery.getDirection().equals(Direction.IN) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
-                    Iterator<String> fields = ((AbstractPropertyContainer) getInVertexSchema()).getPropertySchemas().stream()
-                            .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                            .findFirst().get().toFields(Collections.emptySet()).iterator();
-                    searchBuilder.aggregation(createTerms("in", getSubAggregation(query, AggregationBuilders.sum("sum").field(query.getReduceOn()), Direction.OUT), (ReduceVertexQuery) query, Direction.OUT, fields));
-                }
-                break;
-            case Max:
-                if (reduceVertexQuery.getDirection().equals(Direction.OUT) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
-                    Iterator<String> fields = ((AbstractPropertyContainer) getOutVertexSchema()).getPropertySchemas().stream()
-                            .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                            .findFirst().get().toFields(Collections.emptySet()).iterator();
-                    searchBuilder.aggregation(createTerms("out", getSubAggregation(query, AggregationBuilders.max("max").field(query.getReduceOn()), Direction.OUT), (ReduceVertexQuery) query, Direction.OUT, fields));
-                }
-                if (reduceVertexQuery.getDirection().equals(Direction.IN) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
-                    Iterator<String> fields = ((AbstractPropertyContainer) getInVertexSchema()).getPropertySchemas().stream()
-                            .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                            .findFirst().get().toFields(Collections.emptySet()).iterator();
-                    searchBuilder.aggregation(createTerms("in", getSubAggregation(query, AggregationBuilders.max("max").field(query.getReduceOn()), Direction.OUT), (ReduceVertexQuery) query, Direction.OUT, fields));
-                }
-                break;
-            case Min:
-                if (reduceVertexQuery.getDirection().equals(Direction.OUT) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
-                    Iterator<String> fields = ((AbstractPropertyContainer) getOutVertexSchema()).getPropertySchemas().stream()
-                            .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                            .findFirst().get().toFields(Collections.emptySet()).iterator();
-                    searchBuilder.aggregation(createTerms("out", getSubAggregation(query, AggregationBuilders.min("min").field(query.getReduceOn()), Direction.OUT), (ReduceVertexQuery) query, Direction.OUT, fields));
-                }
-                if (reduceVertexQuery.getDirection().equals(Direction.IN) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
-                    Iterator<String> fields = ((AbstractPropertyContainer) getInVertexSchema()).getPropertySchemas().stream()
-                            .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                            .findFirst().get().toFields(Collections.emptySet()).iterator();
-                    searchBuilder.aggregation(createTerms("in", getSubAggregation(query, AggregationBuilders.min("min").field(query.getReduceOn()), Direction.OUT), (ReduceVertexQuery) query, Direction.OUT, fields));
-                }
-                break;
-            case Mean:
-                if (reduceVertexQuery.getDirection().equals(Direction.OUT) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
-                    Iterator<String> fields = ((AbstractPropertyContainer) getOutVertexSchema()).getPropertySchemas().stream()
-                            .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                            .findFirst().get().toFields(Collections.emptySet()).iterator();
-                    searchBuilder.aggregation(createTerms("out", getSubAggregation(query, AggregationBuilders.filter("filter").filter(QueryBuilders.existsQuery(query.getReduceOn()))
-                            .subAggregation(AggregationBuilders.avg("avg").field(query.getReduceOn())), Direction.OUT), (ReduceVertexQuery) query, Direction.OUT, fields));
-                }
-                if (reduceVertexQuery.getDirection().equals(Direction.IN) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
-                    Iterator<String> fields = ((AbstractPropertyContainer) getInVertexSchema()).getPropertySchemas().stream()
-                            .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                            .findFirst().get().toFields(Collections.emptySet()).iterator();
-                    searchBuilder.aggregation(createTerms("in", getSubAggregation(query, AggregationBuilders.filter("filter").filter(QueryBuilders.existsQuery(query.getReduceOn()))
-                            .subAggregation(AggregationBuilders.avg("avg").field(query.getReduceOn())), Direction.OUT), (ReduceVertexQuery) query, Direction.OUT, fields));
-                }
-                break;
+    protected PredicatesHolder getReducePredicates(ReduceQuery query) {
+        if (query instanceof ReduceVertexQuery){
+            PredicatesHolder reducePredicates = super.getReducePredicates(query);
+            PredicatesHolder vertexPredicates = getVertexPredicates(query.getVertices(), ((ReduceVertexQuery) query).getDirection());
+            return PredicatesHolderFactory.and(reducePredicates, vertexPredicates);
         }
+        return super.getReducePredicates(query);
+    }
+
+    @Override
+    protected void createReduce(ReduceQuery query, SearchSourceBuilder searchBuilder) {
+        if (query instanceof ReduceVertexQuery) {
+            ReduceVertexQuery reduceVertexQuery = (ReduceVertexQuery) query;
+            searchBuilder.size(0);
+            switch (query.getOp()) {
+                case Count:
+                    AbstractAggregationBuilder builder = null;
+                    if (query.getReduceOn() != null) {
+                        builder = AggregationBuilders.count("count").field(query.getReduceOn());
+                    }
+                    if (reduceVertexQuery.getDirection().equals(Direction.OUT) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
+                        Iterator<String> fields = ((AbstractPropertyContainer) getOutVertexSchema()).getPropertySchemas().stream()
+                                .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
+                                .findFirst().get().toFields(Collections.emptySet()).iterator();
+                        searchBuilder.aggregation(createTerms("out", getSubAggregation(query, builder, Direction.OUT), (ReduceVertexQuery) query, Direction.OUT, fields));
+                    }
+                    if (reduceVertexQuery.getDirection().equals(Direction.IN) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
+                        Iterator<String> fields = ((AbstractPropertyContainer) getInVertexSchema()).getPropertySchemas().stream()
+                                .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
+                                .findFirst().get().toFields(Collections.emptySet()).iterator();
+                        searchBuilder.aggregation(createTerms("in", getSubAggregation(query, builder, Direction.IN), (ReduceVertexQuery) query, Direction.OUT, fields));
+                    }
+                    break;
+                case Sum:
+                    if (reduceVertexQuery.getDirection().equals(Direction.OUT) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
+                        Iterator<String> fields = ((AbstractPropertyContainer) getOutVertexSchema()).getPropertySchemas().stream()
+                                .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
+                                .findFirst().get().toFields(Collections.emptySet()).iterator();
+                        searchBuilder.aggregation(createTerms("out", getSubAggregation(query, AggregationBuilders.sum("sum").field(query.getReduceOn()), Direction.OUT), (ReduceVertexQuery) query, Direction.OUT, fields));
+                    }
+                    if (reduceVertexQuery.getDirection().equals(Direction.IN) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
+                        Iterator<String> fields = ((AbstractPropertyContainer) getInVertexSchema()).getPropertySchemas().stream()
+                                .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
+                                .findFirst().get().toFields(Collections.emptySet()).iterator();
+                        searchBuilder.aggregation(createTerms("in", getSubAggregation(query, AggregationBuilders.sum("sum").field(query.getReduceOn()), Direction.IN), (ReduceVertexQuery) query, Direction.OUT, fields));
+                    }
+                    break;
+                case Max:
+                    if (reduceVertexQuery.getDirection().equals(Direction.OUT) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
+                        Iterator<String> fields = ((AbstractPropertyContainer) getOutVertexSchema()).getPropertySchemas().stream()
+                                .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
+                                .findFirst().get().toFields(Collections.emptySet()).iterator();
+                        searchBuilder.aggregation(createTerms("out", getSubAggregation(query, AggregationBuilders.max("max").field(query.getReduceOn()), Direction.OUT), (ReduceVertexQuery) query, Direction.OUT, fields));
+                    }
+                    if (reduceVertexQuery.getDirection().equals(Direction.IN) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
+                        Iterator<String> fields = ((AbstractPropertyContainer) getInVertexSchema()).getPropertySchemas().stream()
+                                .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
+                                .findFirst().get().toFields(Collections.emptySet()).iterator();
+                        searchBuilder.aggregation(createTerms("in", getSubAggregation(query, AggregationBuilders.max("max").field(query.getReduceOn()), Direction.IN), (ReduceVertexQuery) query, Direction.OUT, fields));
+                    }
+                    break;
+                case Min:
+                    if (reduceVertexQuery.getDirection().equals(Direction.OUT) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
+                        Iterator<String> fields = ((AbstractPropertyContainer) getOutVertexSchema()).getPropertySchemas().stream()
+                                .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
+                                .findFirst().get().toFields(Collections.emptySet()).iterator();
+                        searchBuilder.aggregation(createTerms("out", getSubAggregation(query, AggregationBuilders.min("min").field(query.getReduceOn()), Direction.OUT), (ReduceVertexQuery) query, Direction.OUT, fields));
+                    }
+                    if (reduceVertexQuery.getDirection().equals(Direction.IN) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
+                        Iterator<String> fields = ((AbstractPropertyContainer) getInVertexSchema()).getPropertySchemas().stream()
+                                .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
+                                .findFirst().get().toFields(Collections.emptySet()).iterator();
+                        searchBuilder.aggregation(createTerms("in", getSubAggregation(query, AggregationBuilders.min("min").field(query.getReduceOn()), Direction.IN), (ReduceVertexQuery) query, Direction.OUT, fields));
+                    }
+                    break;
+                case Mean:
+                    if (reduceVertexQuery.getDirection().equals(Direction.OUT) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
+                        Iterator<String> fields = ((AbstractPropertyContainer) getOutVertexSchema()).getPropertySchemas().stream()
+                                .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
+                                .findFirst().get().toFields(Collections.emptySet()).iterator();
+                        searchBuilder.aggregation(createTerms("out", getSubAggregation(query, AggregationBuilders.filter("filter").filter(QueryBuilders.existsQuery(query.getReduceOn()))
+                                .subAggregation(AggregationBuilders.avg("avg").field(query.getReduceOn())), Direction.OUT), (ReduceVertexQuery) query, Direction.OUT, fields));
+                    }
+                    if (reduceVertexQuery.getDirection().equals(Direction.IN) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
+                        Iterator<String> fields = ((AbstractPropertyContainer) getInVertexSchema()).getPropertySchemas().stream()
+                                .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
+                                .findFirst().get().toFields(Collections.emptySet()).iterator();
+                        searchBuilder.aggregation(createTerms("in", getSubAggregation(query, AggregationBuilders.filter("filter").filter(QueryBuilders.existsQuery(query.getReduceOn()))
+                                .subAggregation(AggregationBuilders.avg("avg").field(query.getReduceOn())), Direction.IN), (ReduceVertexQuery) query, Direction.OUT, fields));
+                    }
+                    break;
+            }
+        }
+        else
+            super.createReduce(query, searchBuilder);
     }
 
     @Override
     public List<Object> parseReduce(String result, ReduceQuery query) {
-        List<Object> reduceResult = new ArrayList<>();
-        ReduceVertexQuery reduceVertexQuery = (ReduceVertexQuery) query;
-        Map<String, Long> idBulk = reduceVertexQuery.getVertices().stream().map(e -> e.id().toString()).collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
-        switch (query.getOp()) {
-            case Count:
-                if (reduceVertexQuery.getDirection().equals(Direction.OUT) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
-                    List<String> fields = ((AbstractPropertyContainer) getOutVertexSchema()).getPropertySchemas().stream()
-                            .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                            .findFirst().get().toFields(Collections.emptySet()).stream().collect(Collectors.toList());
-                    if (query.getReduceOn() != null)
-                        parseReduce("aggregations", "filter.count.value", "out", result, fields, idBulk, Direction.OUT).forEach(reduceResult::add);
-                    else
-                        parseReduce("aggregations", "filter.doc_count", "out", result, fields, idBulk, Direction.OUT).forEach(reduceResult::add);
-                }
-                if (reduceVertexQuery.getDirection().equals(Direction.IN) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
-                    List<String> fields = ((AbstractPropertyContainer) getInVertexSchema()).getPropertySchemas().stream()
-                            .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                            .findFirst().get().toFields(Collections.emptySet()).stream().collect(Collectors.toList());
-                    if (query.getReduceOn() != null)
-                        parseReduce("aggregations", "filter.count.value", "in", result, fields, idBulk, Direction.IN).forEach(reduceResult::add);
-                    else
-                        parseReduce("aggregations", "filter.doc_count", "in", result, fields, idBulk, Direction.IN).forEach(reduceResult::add);
-                }
-                break;
-            case Sum:
-                if (reduceVertexQuery.getDirection().equals(Direction.OUT) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
-                    List<String> fields = ((AbstractPropertyContainer) getOutVertexSchema()).getPropertySchemas().stream()
-                            .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                            .findFirst().get().toFields(Collections.emptySet()).stream().collect(Collectors.toList());
-                    parseReduce("aggregations", "filter.sum.value", "out", result, fields, idBulk, Direction.OUT).forEach(reduceResult::add);
-                }
-                if (reduceVertexQuery.getDirection().equals(Direction.IN) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
-                    List<String> fields = ((AbstractPropertyContainer) getInVertexSchema()).getPropertySchemas().stream()
-                            .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                            .findFirst().get().toFields(Collections.emptySet()).stream().collect(Collectors.toList());
-                    parseReduce("aggregations", "filter.sum.value", "in", result, fields, idBulk, Direction.IN).forEach(reduceResult::add);
-                }
-                break;
-            case Max:
-                if (reduceVertexQuery.getDirection().equals(Direction.OUT) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
-                    List<String> fields = ((AbstractPropertyContainer) getOutVertexSchema()).getPropertySchemas().stream()
-                            .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                            .findFirst().get().toFields(Collections.emptySet()).stream().collect(Collectors.toList());
-                    parseReduce("aggregations", "filter.max.value", "out", result, fields, null, Direction.OUT).forEach(reduceResult::add);
-                }
-                if (reduceVertexQuery.getDirection().equals(Direction.IN) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
-                    List<String> fields = ((AbstractPropertyContainer) getInVertexSchema()).getPropertySchemas().stream()
-                            .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                            .findFirst().get().toFields(Collections.emptySet()).stream().collect(Collectors.toList());
-                    parseReduce("aggregations", "filter.max.value", "in", result, fields, null, Direction.IN).forEach(reduceResult::add);
-                }
-                break;
-            case Min:
-                if (reduceVertexQuery.getDirection().equals(Direction.OUT) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
-                    List<String> fields = ((AbstractPropertyContainer) getOutVertexSchema()).getPropertySchemas().stream()
-                            .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                            .findFirst().get().toFields(Collections.emptySet()).stream().collect(Collectors.toList());
-                    parseReduce("aggregations", "filter.min.value", "out", result, fields, null, Direction.OUT).forEach(reduceResult::add);
-                }
-                if (reduceVertexQuery.getDirection().equals(Direction.IN) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
-                    List<String> fields = ((AbstractPropertyContainer) getInVertexSchema()).getPropertySchemas().stream()
-                            .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                            .findFirst().get().toFields(Collections.emptySet()).stream().collect(Collectors.toList());
-                    parseReduce("aggregations", "filter.min.value", "in", result, fields, null, Direction.IN).forEach(reduceResult::add);
-                }
-                break;
-            case Mean:
-                if (reduceVertexQuery.getDirection().equals(Direction.OUT) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
-                    List<String> fields = ((AbstractPropertyContainer) getOutVertexSchema()).getPropertySchemas().stream()
-                            .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                            .findFirst().get().toFields(Collections.emptySet()).stream().collect(Collectors.toList());
-                    ;
-                    parseReduce("aggregations", "filter.filter.avg.value", "out", result, fields, idBulk, Direction.OUT).forEach(reduceResult::add);
-                }
-                if (reduceVertexQuery.getDirection().equals(Direction.IN) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
-                    List<String> fields = ((AbstractPropertyContainer) getInVertexSchema()).getPropertySchemas().stream()
-                            .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                            .findFirst().get().toFields(Collections.emptySet()).stream().collect(Collectors.toList());
-                    ;
-                    parseReduce("aggregations", "filter.filter.avg.value", "in", result, fields, idBulk, Direction.IN).forEach(reduceResult::add);
-                }
-                break;
+        if (query instanceof ReduceVertexQuery) {
+            List<Object> reduceResult = new ArrayList<>();
+            ReduceVertexQuery reduceVertexQuery = (ReduceVertexQuery) query;
+            Map<String, Long> idBulk = reduceVertexQuery.getVertices().stream().map(e -> e.id().toString()).collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+            switch (query.getOp()) {
+                case Count:
+                    if (reduceVertexQuery.getDirection().equals(Direction.OUT) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
+                        List<String> fields = ((AbstractPropertyContainer) getOutVertexSchema()).getPropertySchemas().stream()
+                                .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
+                                .findFirst().get().toFields(Collections.emptySet()).stream().collect(Collectors.toList());
+                        if (query.getReduceOn() != null)
+                            parseReduce("aggregations", "filter.count.value", "out", result, fields, idBulk, Direction.OUT).forEach(reduceResult::add);
+                        else
+                            parseReduce("aggregations", "filter.doc_count", "out", result, fields, idBulk, Direction.OUT).forEach(reduceResult::add);
+                    }
+                    if (reduceVertexQuery.getDirection().equals(Direction.IN) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
+                        List<String> fields = ((AbstractPropertyContainer) getInVertexSchema()).getPropertySchemas().stream()
+                                .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
+                                .findFirst().get().toFields(Collections.emptySet()).stream().collect(Collectors.toList());
+                        if (query.getReduceOn() != null)
+                            parseReduce("aggregations", "filter.count.value", "in", result, fields, idBulk, Direction.IN).forEach(reduceResult::add);
+                        else
+                            parseReduce("aggregations", "filter.doc_count", "in", result, fields, idBulk, Direction.IN).forEach(reduceResult::add);
+                    }
+                    break;
+                case Sum:
+                    if (reduceVertexQuery.getDirection().equals(Direction.OUT) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
+                        List<String> fields = ((AbstractPropertyContainer) getOutVertexSchema()).getPropertySchemas().stream()
+                                .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
+                                .findFirst().get().toFields(Collections.emptySet()).stream().collect(Collectors.toList());
+                        parseReduce("aggregations", "filter.sum.value", "out", result, fields, idBulk, Direction.OUT).forEach(reduceResult::add);
+                    }
+                    if (reduceVertexQuery.getDirection().equals(Direction.IN) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
+                        List<String> fields = ((AbstractPropertyContainer) getInVertexSchema()).getPropertySchemas().stream()
+                                .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
+                                .findFirst().get().toFields(Collections.emptySet()).stream().collect(Collectors.toList());
+                        parseReduce("aggregations", "filter.sum.value", "in", result, fields, idBulk, Direction.IN).forEach(reduceResult::add);
+                    }
+                    break;
+                case Max:
+                    if (reduceVertexQuery.getDirection().equals(Direction.OUT) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
+                        List<String> fields = ((AbstractPropertyContainer) getOutVertexSchema()).getPropertySchemas().stream()
+                                .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
+                                .findFirst().get().toFields(Collections.emptySet()).stream().collect(Collectors.toList());
+                        parseReduce("aggregations", "filter.max.value", "out", result, fields, null, Direction.OUT).forEach(reduceResult::add);
+                    }
+                    if (reduceVertexQuery.getDirection().equals(Direction.IN) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
+                        List<String> fields = ((AbstractPropertyContainer) getInVertexSchema()).getPropertySchemas().stream()
+                                .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
+                                .findFirst().get().toFields(Collections.emptySet()).stream().collect(Collectors.toList());
+                        parseReduce("aggregations", "filter.max.value", "in", result, fields, null, Direction.IN).forEach(reduceResult::add);
+                    }
+                    break;
+                case Min:
+                    if (reduceVertexQuery.getDirection().equals(Direction.OUT) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
+                        List<String> fields = ((AbstractPropertyContainer) getOutVertexSchema()).getPropertySchemas().stream()
+                                .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
+                                .findFirst().get().toFields(Collections.emptySet()).stream().collect(Collectors.toList());
+                        parseReduce("aggregations", "filter.min.value", "out", result, fields, null, Direction.OUT).forEach(reduceResult::add);
+                    }
+                    if (reduceVertexQuery.getDirection().equals(Direction.IN) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
+                        List<String> fields = ((AbstractPropertyContainer) getInVertexSchema()).getPropertySchemas().stream()
+                                .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
+                                .findFirst().get().toFields(Collections.emptySet()).stream().collect(Collectors.toList());
+                        parseReduce("aggregations", "filter.min.value", "in", result, fields, null, Direction.IN).forEach(reduceResult::add);
+                    }
+                    break;
+                case Mean:
+                    if (reduceVertexQuery.getDirection().equals(Direction.OUT) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
+                        List<String> fields = ((AbstractPropertyContainer) getOutVertexSchema()).getPropertySchemas().stream()
+                                .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
+                                .findFirst().get().toFields(Collections.emptySet()).stream().collect(Collectors.toList());
+                        ;
+                        parseReduce("aggregations", "filter.filter.avg.value", "out", result, fields, idBulk, Direction.OUT).forEach(reduceResult::add);
+                    }
+                    if (reduceVertexQuery.getDirection().equals(Direction.IN) || reduceVertexQuery.getDirection().equals(Direction.BOTH)) {
+                        List<String> fields = ((AbstractPropertyContainer) getInVertexSchema()).getPropertySchemas().stream()
+                                .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
+                                .findFirst().get().toFields(Collections.emptySet()).stream().collect(Collectors.toList());
+                        ;
+                        parseReduce("aggregations", "filter.filter.avg.value", "in", result, fields, idBulk, Direction.IN).forEach(reduceResult::add);
+                    }
+                    break;
+            }
+            return reduceResult;
         }
-        return reduceResult;
+        else{
+            return super.parseReduce(result, query);
+        }
     }
 
     protected List<Pair<HashMap<String, Object>, JsonNode>> getAllBuckets(JsonNode node, String key, List<String> fields, int start) {
+        if(node.get("buckets").size() == 0) return Collections.emptyList();
         if (!node.get("buckets").get(0).has(key)) {
             ArrayNode buckets = (ArrayNode) node.get("buckets");
             return ConversionUtils.asStream(buckets.iterator()).map(j -> {
@@ -347,11 +367,11 @@ public class DocEdgeSchema extends AbstractDocEdgeSchema {
                 }
                 if (parse.isDouble())
                     if (idBulk != null)
-                        objects.add(parse.asDouble() * idBulk.get(id)); // TODO: get real number type and multiply by bulk
+                        objects.add(parse.asDouble() * idBulk.getOrDefault(id, 1L)); // TODO: get real number type and multiply by bulk
                     else
                         objects.add(parse.asDouble());
                 else if (idBulk != null)
-                    objects.add(parse.asLong() * idBulk.get(id));
+                    objects.add(parse.asLong() * idBulk.getOrDefault(id, 1L));
                 else
                     objects.add(parse.asLong());
             }

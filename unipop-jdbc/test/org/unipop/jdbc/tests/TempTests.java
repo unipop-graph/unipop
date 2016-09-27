@@ -33,10 +33,10 @@ public class TempTests extends AbstractGremlinTest {
         GraphManager.setGraphProvider(new JdbcOptimizedGraphProvider());
     }
 
-    @LoadGraphWith(LoadGraphWith.GraphData.GRATEFUL)
+    @LoadGraphWith(LoadGraphWith.GraphData.MODERN)
     @Test
     public void testA() {
-        Traversal t = g.V().repeat(both("followedBy")).times(2).group().by("songType").by(count());
+        Traversal t = g.V().count();
         check(t);
     }
 

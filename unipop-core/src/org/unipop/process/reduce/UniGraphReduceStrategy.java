@@ -48,6 +48,7 @@ public class UniGraphReduceStrategy extends AbstractTraversalStrategy<TraversalS
         if (traversal.getParent().asStep() instanceof OrderGlobalStep) return;
         if (traversal.getParent().asStep() instanceof ProjectStep) return;
         if (traversal.getParent().asStep() instanceof GroupStep) return;
+        if (traversal.getParent().asStep() instanceof GroupCountStep) return;
         if (traversal.getParent().asStep() instanceof StoreStep) return;
         // TODO: remove the above conditions once LocalStrategy is implemented
         boolean reduced = applyForVertexStep(traversal);
