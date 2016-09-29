@@ -4,7 +4,10 @@ import io.searchbox.action.BulkableAction;
 import io.searchbox.core.*;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
-import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.javatuples.Pair;
@@ -20,8 +23,6 @@ import org.unipop.query.mutation.AddEdgeQuery;
 import org.unipop.query.mutation.AddVertexQuery;
 import org.unipop.query.mutation.PropertyQuery;
 import org.unipop.query.mutation.RemoveQuery;
-import org.unipop.query.predicates.PredicatesHolder;
-import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.query.search.SearchQuery;
 import org.unipop.query.search.SearchVertexQuery;
@@ -142,18 +143,6 @@ public class DocumentController implements SimpleController, ReduceQuery.ReduceC
             if (search.hasNext())
                 return search;
         } else {
-            System.out.println(query);
-//            Iterator<Edge> search = search(new SearchVertexQuery(Edge.class, query.getVertices(), query.getDirection(),
-//                    PredicatesHolderFactory.empty(), query.getLimit(),
-//                    Collections.emptySet(), Collections.emptyList(), query.getStepDescriptor()));
-//            List<Vertex> vertexList = ConversionUtils.asStream(search).flatMap(edge -> {
-//                List<Vertex> vertices = new ArrayList<>();
-//                if (query.getDirection().equals(Direction.OUT) || query.getDirection().equals(Direction.BOTH))
-//                    vertices.add(edge.inVertex());
-//                if (query.getDirection().equals(Direction.IN) || query.getDirection().equals(Direction.BOTH))
-//                    vertices.add(edge.outVertex());
-//                return vertices.stream();
-//            }).collect(Collectors.toList());
             Set<? extends DocumentSchema<Vertex>> schemas = getSchemas(Vertex.class);
             SearchCollector<DocumentSchema<Vertex>, Search, Object> collector = new SearchCollector<>((schema) -> schema.getReduce(query), (schema, results) -> schema.parseReduce(results, query));
             Map<DocumentSchema<Vertex>, Search> reduces = schemas.stream().collect(collector);

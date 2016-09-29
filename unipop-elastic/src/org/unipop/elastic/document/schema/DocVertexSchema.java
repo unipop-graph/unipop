@@ -171,13 +171,13 @@ public class DocVertexSchema extends AbstractDocSchema<Vertex> implements Docume
                 fields = getPropertySchemas().stream()
                         .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
                         .findFirst().get().toFields(Collections.emptySet()).stream().collect(Collectors.toList());
-                parseReduce("aggregations", "filter.max.value", "vertex", result, fields, null).forEach(reduceResult::add);
+                parseReduce("aggregations", "filter.max.value", "vertex", result, fields, null).stream().map(n -> ((Number)n).intValue() < Integer.MAX_VALUE ? ((Number)n).intValue() : n).forEach(reduceResult::add);
                 break;
             case Min:
                 fields = getPropertySchemas().stream()
                         .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
                         .findFirst().get().toFields(Collections.emptySet()).stream().collect(Collectors.toList());
-                parseReduce("aggregations.exists", "filter.min.value", "vertex", result, fields, null).forEach(reduceResult::add);
+                parseReduce("aggregations.exists", "filter.min.value", "vertex", result, fields, null).stream().map(n -> ((Number)n).intValue() < Integer.MAX_VALUE ? ((Number)n).intValue() : n).forEach(reduceResult::add);
                 break;
             case Mean:
                 fields = getPropertySchemas().stream()

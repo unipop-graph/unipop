@@ -5,6 +5,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.ProjectStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.unipop.process.UniQueryStep;
@@ -36,20 +37,25 @@ public class UniGraphLocalStrategy extends AbstractTraversalStrategy<TraversalSt
     @Override
     public void apply(Traversal.Admin<?, ?> traversal) {
         UniGraph uniGraph = (UniGraph) traversal.getGraph().get();
+        List<LocalQuery.LocalController> localControllers = uniGraph.getControllerManager()
+                .getControllers(LocalQuery.LocalController.class);
+
+        List<SearchVertexQuery.SearchVertexController> nonLocalControllers = uniGraph.getControllerManager().getControllers(SearchVertexQuery.SearchVertexController.class)
+                .stream().filter(controller -> !localControllers.contains(controller)).collect(Collectors.toList());
+
         TraversalHelper.getStepsOfAssignableClass(LocalStep.class, traversal).forEach(localStep -> {
             Traversal.Admin localTraversal = (Traversal.Admin) localStep.getLocalChildren().get(0);
             if (TraversalHelper.hasStepOfAssignableClass(UniQueryStep.class, localTraversal)) {
-                List<LocalQuery.LocalController> localControllers = uniGraph.getControllerManager()
-                        .getControllers(LocalQuery.LocalController.class);
-
-                List<SearchVertexQuery.SearchVertexController> nonLocalControllers = uniGraph.getControllerManager().getControllers(SearchVertexQuery.SearchVertexController.class)
-                        .stream().filter(controller -> !localControllers.contains(controller)).collect(Collectors.toList());
 
                 localTraversal.getSteps().stream().filter(step -> step instanceof UniGraphVertexStep).forEach(step -> ((UniGraphVertexStep) step).setControllers(nonLocalControllers));
-
                 UniGraphLocalStep uniGraphLocalStep = new UniGraphLocalStep(traversal, localTraversal, localControllers);
                 TraversalHelper.replaceStep(localStep, uniGraphLocalStep, traversal);
             }
+        });
+        TraversalHelper.getStepsOfAssignableClass(ProjectStep.class, traversal).forEach(projectStep -> {
+            UniGraphProjectStep uniGraphProjectStep = new UniGraphProjectStep(traversal, projectStep, localControllers, nonLocalControllers, uniGraph);
+            // TODO: pass non local controllers to uniGraphProjectStep
+            TraversalHelper.replaceStep(projectStep, uniGraphProjectStep, traversal);
         });
     }
 }
