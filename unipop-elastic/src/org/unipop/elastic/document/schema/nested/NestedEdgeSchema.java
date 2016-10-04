@@ -226,21 +226,18 @@ public class NestedEdgeSchema extends AbstractDocEdgeSchema {
 
     @Override
     protected AggregationBuilder createTerms(String name, AggregationBuilder subs, VertexQuery searchQuery, Direction direction, Iterator<String> fields){
-        int count = 1;
         String next = fields.next();
         if (next.equals("_id")) next = "_uid";
         else next = path + "." + next;
         AggregationBuilder agg = AggregationBuilders.nested(name).path(path);
-        AggregationBuilder sub = AggregationBuilders.terms(name + "_id_" + count).field(next);
+        AggregationBuilder sub = AggregationBuilders.terms(name + "_id").field(next);
         agg.subAggregation(sub);
         if (fields.hasNext()) {
-            count++;
             while (fields.hasNext()) {
                 next = fields.next();
                 if (next.equals("_id")) next = "_uid";
                 else next = path + "." + next;
-                count++;
-                TermsBuilder field = AggregationBuilders.terms(name + "_id_" + count).field(next);
+                TermsBuilder field = AggregationBuilders.terms(name + "_id").field(next);
                 sub.subAggregation(field);
                 sub = field;
             }

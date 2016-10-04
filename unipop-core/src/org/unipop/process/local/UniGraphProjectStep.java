@@ -2,9 +2,12 @@ package org.unipop.process.local;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
+import org.apache.tinkerpop.gremlin.process.traversal.step.ByModulating;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.ProjectStep;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.RequirementsStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.javatuples.Pair;
 import org.javatuples.Tuple;
@@ -24,22 +27,31 @@ import java.util.stream.Collectors;
 /**
  * Created by sbarzilay on 9/28/16.
  */
-public class UniGraphProjectStep<S extends Element, E> extends UniBulkStep<S, Map<String, E>> implements TraversalParent {
-    private static final String regex = "ProjectStep\\(\\[(.*)\\],\\[";
-    private List<UniGraphLocalStep<S, E>> projects;
+public class UniGraphProjectStep<S, E> extends UniBulkStep<S, Map<String, E>> implements TraversalParent, ByModulating {
+    private List<SearchVertexQuery.SearchVertexController> nonLocalControllers;
+    private List<LocalQuery.LocalController> controllers;
+        private List<UniGraphLocalStep<S, E>> projects;
+//    private List<Traversal.Admin<S, E>> projects;
     private String[] keys;
 
-    public UniGraphProjectStep(Traversal.Admin traversal, ProjectStep<S, E> projectStep, List<LocalQuery.LocalController> controllers, List<SearchVertexQuery.SearchVertexController> nonLocalControllers, UniGraph graph) {
+    public UniGraphProjectStep(Traversal.Admin traversal, UniGraph graph, String[] keys, List<LocalQuery.LocalController> controllers, List<SearchVertexQuery.SearchVertexController> nonLocalControllers) {
         super(traversal, graph);
+        this.keys = keys;
         this.projects = new ArrayList<>();
-        projectStep.getLocalChildren().forEach(t -> {
-            t.getSteps().stream().filter(step -> step instanceof UniGraphVertexStep).forEach(step -> ((UniGraphVertexStep) step).setControllers(nonLocalControllers));
-            projects.add(new UniGraphLocalStep<>(traversal, t, controllers));
-        });
-        final Pattern pattern = Pattern.compile(regex);
-        final Matcher matcher = pattern.matcher(projectStep.toString());
-        if (!matcher.find()) throw new IllegalArgumentException("no keys found");
-        this.keys = matcher.group(1).split(", ");
+        this.controllers = controllers;
+        this.nonLocalControllers = nonLocalControllers;
+    }
+
+    public void setProjects(List<Traversal.Admin<S, E>> projects) {
+//        this.projects = projects;
+    }
+
+    @Override
+    public void modulateBy(Traversal.Admin<?, ?> traversal) throws UnsupportedOperationException {
+        traversal.getSteps().stream().filter(step -> step instanceof UniGraphVertexStep).forEach(step -> ((UniGraphVertexStep) step).setControllers(nonLocalControllers));
+//        projects.add((Traversal.Admin<S, E>) traversal);
+        traversal.setParent(this);
+        projects.add(new UniGraphLocalStep<>(this.traversal, (Traversal.Admin<S, E>) traversal, controllers));
     }
 
     @Override
@@ -49,6 +61,7 @@ public class UniGraphProjectStep<S extends Element, E> extends UniBulkStep<S, Ma
 
     @Override
     public List<Traversal.Admin<S, E>> getLocalChildren() {
+//        return projects;
         return projects.stream().flatMap(p -> p.getLocalChildren().stream()).collect(Collectors.toList());
     }
 
@@ -76,6 +89,7 @@ public class UniGraphProjectStep<S extends Element, E> extends UniBulkStep<S, Ma
         }
         return results.iterator();
     }
-//        throw new IllegalArgumentException("not all traversers maps to element");
-}
+    }
+
+
 

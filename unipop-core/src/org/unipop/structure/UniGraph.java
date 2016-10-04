@@ -154,7 +154,8 @@ public class UniGraph implements Graph {
 
     @Override
     public GraphTraversalSource traversal() {
-        return new GraphTraversalSource(this, strategies);
+//        return new GraphTraversalSource(this, strategies);
+        return new UniGraphTraversalSource(this, strategies);
     }
 
     @Override

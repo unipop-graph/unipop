@@ -8,6 +8,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.lambda.ElementValueTravers
 import org.apache.tinkerpop.gremlin.process.traversal.step.Profiling;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.RequirementsStep;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.RequirementsStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.B_LP_O_P_S_SE_SL_Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.DefaultTraversalSideEffects;
@@ -26,6 +28,7 @@ import org.unipop.query.StepDescriptor;
 import org.unipop.query.aggregation.LocalQuery;
 import org.unipop.query.search.SearchQuery;
 import org.unipop.structure.UniGraph;
+import org.unipop.structure.UniGraphTraversal;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -33,7 +36,7 @@ import java.util.stream.Collectors;
 /**
  * Created by sbarzilay on 9/4/16.
  */
-public class UniGraphLocalStep<S extends Element, E> extends AbstractStep<S, E> implements TraversalParent, Profiling {
+public class UniGraphLocalStep<S, E> extends AbstractStep<S, E> implements TraversalParent, Profiling {
 
     private final Traversal.Admin<S, E> localTraversal;
     private StepDescriptor stepDescriptor;
@@ -44,11 +47,29 @@ public class UniGraphLocalStep<S extends Element, E> extends AbstractStep<S, E> 
 
     public UniGraphLocalStep(Traversal.Admin traversal, Traversal.Admin<S, E> localTraversal,
                              List<LocalQuery.LocalController> localControllers) {
+        this((UniGraph) traversal.getGraph().get(), traversal, localTraversal, localControllers);
+    }
+
+    public UniGraphLocalStep(UniGraph graph, Traversal.Admin traversal, Traversal.Admin<S, E> localTraversal,
+                             List<LocalQuery.LocalController> localControllers) {
         super(traversal);
-        this.graph = (UniGraph) this.traversal.getGraph().get();
+        this.graph = graph;
         this.localTraversal = localTraversal;
         this.stepDescriptor = new StepDescriptor(this);
         this.localControllers = localControllers;
+    }
+
+    public Traversal<S, E> getUniTraversal(){
+        UniGraphTraversal<S, E> seUniGraphTraversal = new UniGraphTraversal<>(graph);
+        RequirementsStrategy.addRequirements(seUniGraphTraversal.getStrategies(), TraverserRequirement.PATH);
+        seUniGraphTraversal.addStep(this);
+        seUniGraphTraversal.setParent(this.getTraversal().getParent());
+        return seUniGraphTraversal;
+    }
+
+    @Override
+    public String getId() {
+        return super.getId() + " local";
     }
 
     @Override
@@ -61,10 +82,11 @@ public class UniGraphLocalStep<S extends Element, E> extends AbstractStep<S, E> 
         return Collections.singleton(TraverserRequirement.PATH);
     }
 
+
     @Override
     protected Traverser.Admin<E> processNextStart() throws NoSuchElementException {
         if (results instanceof EmptyIterator) {
-            this.querySteps = localTraversal.clone().getSteps().iterator();
+            this.querySteps = localTraversal.clone().getSteps().stream().filter(s -> !(s instanceof RequirementsStep)).iterator();
             List<Traverser.Admin<S>> elements = new ArrayList<>();
             this.starts.forEachRemaining(start -> {
                 Set<String> labels = new HashSet<>();
@@ -79,6 +101,7 @@ public class UniGraphLocalStep<S extends Element, E> extends AbstractStep<S, E> 
             if (localControllers.size() > 0) {
                 while (querySteps.hasNext()) {
                     Step step = querySteps.next();
+                    step.setId(step.getId() + ".local");
                     if (step instanceof UniQueryStep) {
                         idMap = runElements.stream().collect(Collectors.groupingBy((e) -> ((Element) e.get()).id().toString(), Collectors.toList()));
                         UniQueryStep queryStep = (UniQueryStep) step;
