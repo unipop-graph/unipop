@@ -205,12 +205,6 @@ public class RowController implements SimpleController {
 
     @SuppressWarnings("unchecked")
     protected <E extends Element, R> Iterator<R> search(UniQuery query, Map<JdbcSchema<E>, Select> selects, SelectCollector<JdbcSchema<E>, Select, R> collector) {
-//        Map<S, Select> schemas = allSchemas.stream()
-//                .map(schema -> Pair.of(schema, toSearchFunction.apply(schema)))
-//                .filter(pair -> pair.getRight() != null)
-//                .map(pair -> Pair.of(pair.getLeft(), pair.getLeft().getSearch(query, pair.getRight(), this.getDslContext())))
-//                .filter(pair -> pair.getRight() != null)
-//                .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
 
         if (bulk.size() != 0){
             dslContext.batch(bulk).execute();
@@ -244,12 +238,6 @@ public class RowController implements SimpleController {
                 dslContext.batch(bulk).execute();
                 bulk.clear();
             }
-//            int changeSetCount = dslContext.execute(query);
-//            if (logger.isDebugEnabled())
-//                logger.debug("executed insertion, query: {}", dslContext.render(query));
-//            if (changeSetCount == 0) {
-//                logger.error("no rows changed on insertion. query: {}, element: {}", dslContext.render(query), element);
-//            }
             return true;
         }
         return false;
@@ -272,9 +260,6 @@ public class RowController implements SimpleController {
                 dslContext.batch(bulk).execute();
                 bulk.clear();
             }
-//            step.execute();
-//            logger.info("executed update statement with following parameters, step: {}, element: {}, schema: {}", step, element, schema);
-//            dslContext.execute("commit;");
         }
     }
 

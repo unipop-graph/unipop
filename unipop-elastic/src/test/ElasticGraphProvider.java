@@ -47,9 +47,9 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
                 case GRATEFUL:
                     return confDirectory + "grateful";
                 default:
-                    return "/configuration/basic/postgres/default";
+                    return "/configuration/basic/default";
             }
-        return "/configuration/basic/postgres/default/";
+        return "/configuration/basic/default/";
     }
 
     @Override
