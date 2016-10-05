@@ -61,6 +61,11 @@
         </dependency>
     </dependencies>
     <build>
+        <resources>
+            <resource>
+                <directory>resources</directory>
+            </resource>
+        </resources>
         <directory>${basedir}/target</directory>
         <pluginManagement>
             <plugins>
