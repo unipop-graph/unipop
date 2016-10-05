@@ -1,0 +1,49 @@
+{
+  "class": "org.unipop.jdbc.JdbcSourceProvider",
+  "driver": "org.h2.Driver",
+  "address": "jdbc:h2:mem:gremlin;",
+  "sqlDialect": "H2",
+  "vertices": [
+    {
+      "table": "ARTIST_GRATEFUL_DEAD",
+      "id": "@id",
+      "label": "artist",
+      "properties": {
+        "name": "@name"
+      }
+    },
+    {
+      "table": "SONG_GRATEFUL_DEAD",
+      "id": "@id",
+      "label": "song",
+      "properties": {
+        "name": "@name",
+        "songType": "@songtype",
+        "performances": "@performances"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "table": "GRATEFUL_DEAD_EDGES",
+      "id": "@id",
+      "label": "@label",
+      "properties": {
+        "weight": "@weight"
+      },
+      "dynamicProperties": false,
+      "outVertex": {
+        "ref": true,
+        "id": "@outid",
+        "label": "@outlabel",
+        "properties": {}
+      },
+      "inVertex": {
+        "ref": true,
+        "id": "@inid",
+        "label": "@inlabel",
+        "properties": {}
+      }
+    }
+  ]
+}

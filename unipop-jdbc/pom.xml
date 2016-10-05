@@ -80,7 +80,7 @@
                                     <include>**/*JdbcProcessSuite*.java</include>
                                 </includes>
                                 <environmentVariables>
-                                    <conf>basic</conf>
+                                    <conf>basic/h2</conf>
                                 </environmentVariables>
                                 <skip>false</skip>
                                 <reportNameSuffix>BASIC</reportNameSuffix>

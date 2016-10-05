@@ -239,10 +239,8 @@ public class RowController implements SimpleController {
         for (JdbcSchema<E> schema : schemas) {
             Query query = schema.getInsertStatement(element);
             if (query == null) continue;
-            if (bulk.size() < 500){
-               bulk.add(query);
-            }
-            if (bulk.size() >= 500){
+            bulk.add(query);
+            if (bulk.size() >= 1000){
                 dslContext.batch(bulk).execute();
                 bulk.clear();
             }
@@ -269,10 +267,8 @@ public class RowController implements SimpleController {
             Update step = this.getDslContext().update(table(schema.getTable()))
                     .set(fieldMap).where(field(schema.getFieldByPropertyKey(T.id.getAccessor())).eq(row.getId()));
 
-            if (bulk.size() < 500){
-                bulk.add(step);
-            }
-            if (bulk.size() >= 500){
+            bulk.add(step);
+            if (bulk.size() >= 1000){
                 dslContext.batch(bulk).execute();
                 bulk.clear();
             }

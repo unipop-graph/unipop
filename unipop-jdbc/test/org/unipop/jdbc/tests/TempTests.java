@@ -20,9 +20,7 @@ import java.util.stream.Collectors;
 import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.GRATEFUL;
 import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * @author Gur Ronen
@@ -30,7 +28,15 @@ import static org.junit.Assert.assertTrue;
  */
 public class TempTests extends AbstractGremlinTest {
     public TempTests() throws SQLException, ClassNotFoundException {
-        GraphManager.setGraphProvider(new JdbcOptimizedGraphProvider());
+        GraphManager.setGraphProvider(new JdbcGraphProvider());
+    }
+
+    @Test
+    @LoadGraphWith
+    public void shouldNeverPropagateANoBulkTraverser() {
+        assertFalse(g.V().dedup().sideEffect(t -> t.asAdmin().setBulk(0)).hasNext());
+        assertEquals(0, g.V().dedup().sideEffect(t -> t.asAdmin().setBulk(0)).toList().size());
+        g.V().dedup().sideEffect(t -> t.asAdmin().setBulk(0)).sideEffect(t -> fail("this should not have happened")).iterate();
     }
 
     @LoadGraphWith(LoadGraphWith.GraphData.MODERN)

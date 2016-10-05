@@ -3,7 +3,6 @@ package test;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.jooq.util.postgres.PostgresDatabase;
 import org.unipop.test.UnipopGraphProvider;
 
 import java.net.URL;
@@ -47,9 +46,9 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
                 case GRATEFUL:
                     return confDirectory + "grateful";
                 default:
-                    return "/configuration/basic/default";
+                    return "/configuration/basic/h2/default";
             }
-        return "/configuration/basic/default";
+        return "/configuration/basic/h2/default";
     }
 
     @Override
@@ -89,6 +88,7 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
                         "age int, " +
                         "location VARCHAR(100)," +
                         "status VARCHAR(100)," +
+                        "COMUNITYINDEX VARCHAR(100),"+
                         "oid int," +
                         "test VARCHAR(100)," +
                         "communityIndex int," +

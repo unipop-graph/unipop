@@ -1,10 +1,8 @@
 package test;
 
-import de.flapdoodle.embed.process.distribution.IVersion;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.jooq.SQLDialect;
 import org.unipop.test.UnipopGraphProvider;
 import ru.yandex.qatools.embed.postgresql.PostgresExecutable;
 import ru.yandex.qatools.embed.postgresql.PostgresProcess;
@@ -61,9 +59,9 @@ public class JdbcOptimizedGraphProvider extends UnipopGraphProvider {
                 case GRATEFUL:
                     return confDirectory + "grateful";
                 default:
-                    return "/configuration/basic/default";
+                    return "/configuration/basic/postgres/default";
             }
-        return "/configuration/basic/default";
+        return "/configuration/basic/postgres/default";
     }
 
     @Override
