@@ -9,4 +9,4 @@ addons:
     packages:
       - oracle-java8-installer
 script: 
-- "mvn clean install -Dci"
+- "mvn clean install -X -Dci"
