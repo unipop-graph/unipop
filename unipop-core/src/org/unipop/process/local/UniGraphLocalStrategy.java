@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.GroupStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.ProjectStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.RequirementsStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
@@ -58,14 +59,9 @@ public class UniGraphLocalStrategy extends AbstractTraversalStrategy<TraversalSt
             }
         });
 
-//        TraversalHelper.getStepsOfAssignableClass(UniGraphProjectStep.class, traversal).forEach(projectStep -> {
-//            List<Traversal.Admin<?, ?>> collect = ((UniGraphProjectStep<?, ?>) projectStep).getLocalChildren().stream().map(t -> {
-//                Traversal.Admin admin = t.clone();
-//                UniGraphLocalStep uniGraphLocalStep = new UniGraphLocalStep<>(uniGraph, admin, admin, localControllers);
-//                Traversal.Admin<?, ?> admin1 = (Traversal.Admin<?, ?>) uniGraphLocalStep.getUniTraversal().asAdmin();
-//                return admin1;
-//            }).collect(Collectors.toList());
-//            projectStep.setProjects(collect);
-//        });
+        TraversalHelper.getStepsOfAssignableClass(GroupStep.class, traversal).forEach(groupStep -> {
+            UniGraphGroupStep uniGraphGroupStep = new UniGraphGroupStep(traversal, uniGraph, localControllers, nonLocalControllers, groupStep);
+            TraversalHelper.replaceStep(groupStep, uniGraphGroupStep, traversal);
+        });
     }
 }

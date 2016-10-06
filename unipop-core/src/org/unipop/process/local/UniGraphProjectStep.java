@@ -27,49 +27,24 @@ import java.util.stream.Collectors;
 /**
  * Created by sbarzilay on 9/28/16.
  */
-public class UniGraphProjectStep<S, E> extends UniBulkStep<S, Map<String, E>> implements TraversalParent, ByModulating {
-    private List<SearchVertexQuery.SearchVertexController> nonLocalControllers;
-    private List<LocalQuery.LocalController> controllers;
-        private List<UniGraphLocalStep<S, E>> projects;
-//    private List<Traversal.Admin<S, E>> projects;
+public class UniGraphProjectStep<S, E> extends UniLocalBulkStep<S, E, Map<String, E>> implements ByModulating {
     private String[] keys;
 
     public UniGraphProjectStep(Traversal.Admin traversal, UniGraph graph, String[] keys, List<LocalQuery.LocalController> controllers, List<SearchVertexQuery.SearchVertexController> nonLocalControllers) {
-        super(traversal, graph);
+        super(traversal, graph, controllers, nonLocalControllers);
         this.keys = keys;
-        this.projects = new ArrayList<>();
-        this.controllers = controllers;
-        this.nonLocalControllers = nonLocalControllers;
-    }
-
-    public void setProjects(List<Traversal.Admin<S, E>> projects) {
-//        this.projects = projects;
     }
 
     @Override
     public void modulateBy(Traversal.Admin<?, ?> traversal) throws UnsupportedOperationException {
-        traversal.getSteps().stream().filter(step -> step instanceof UniGraphVertexStep).forEach(step -> ((UniGraphVertexStep) step).setControllers(nonLocalControllers));
-//        projects.add((Traversal.Admin<S, E>) traversal);
-        traversal.setParent(this);
-        projects.add(new UniGraphLocalStep<>(this.traversal, (Traversal.Admin<S, E>) traversal, controllers));
-    }
-
-    @Override
-    public Set<TraverserRequirement> getRequirements() {
-        return Collections.singleton(TraverserRequirement.PATH);
-    }
-
-    @Override
-    public List<Traversal.Admin<S, E>> getLocalChildren() {
-//        return projects;
-        return projects.stream().flatMap(p -> p.getLocalChildren().stream()).collect(Collectors.toList());
+        locals.add(createLocalStep((Traversal.Admin<S, E>) traversal));
     }
 
     @Override
     protected Iterator<Traverser.Admin<Map<String, E>>> process(List<Traverser.Admin<S>> traversers) {
         Map<UniVertex, Map<String, E>> maps = new HashMap<>();
-        for (int i = 0; i < this.projects.size(); i++) {
-            UniGraphLocalStep<S, E> project = projects.get(i);
+        for (int i = 0; i < this.locals.size(); i++) {
+            UniGraphLocalStep<S, E> project = locals.get(i);
             project.reset();
             traversers.forEach(project::addStart);
             List<Pair<UniVertex, E>> projectResult = new ArrayList<>();
@@ -78,11 +53,8 @@ public class UniGraphProjectStep<S, E> extends UniBulkStep<S, Map<String, E>> im
                 Map<String, E> map = maps.containsKey(projectResult.get(j).getValue0()) ? maps.get(projectResult.get(j).getValue0()) : new HashMap<>();
                 map.put(keys[i], projectResult.get(j).getValue1());
                 maps.put(projectResult.get(j).getValue0(), map);
-//                if (maps.size() <= j) maps.add(new HashMap<>());
-//                maps.get(j).put(keys[i], projectResult.get(j));
             }
         }
-//        if (maps.size() >= traversers.size()) {
         List<Traverser.Admin<Map<String, E>>> results = new ArrayList<>();
         for (int i = 0; i < traversers.size(); i++) {
             results.add(traversers.get(i).split(maps.get(traversers.get(i).get()), this));

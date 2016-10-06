@@ -5,6 +5,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.ElementValueTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.lambda.IdentityTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.lambda.TokenTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.Profiling;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
@@ -159,7 +161,9 @@ public class UniGraphLocalStep<S, E> extends AbstractStep<S, E> implements Trave
             }
             runElements.forEach(resultList::add);
             Optional<UniQueryStep> firstStepOfAssignableClass = TraversalHelper.getFirstStepOfAssignableClass(UniQueryStep.class, localTraversal);
-            if (localTraversal instanceof ElementValueTraversal){
+            if (localTraversal instanceof ElementValueTraversal ||
+                    localTraversal instanceof IdentityTraversal ||
+                    localTraversal instanceof TokenTraversal){
                 resultList.clear();
                 for (Traverser.Admin<S> element : elements) {
                     localTraversal.reset();
