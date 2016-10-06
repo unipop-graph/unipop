@@ -14,6 +14,8 @@ import org.unipop.schema.property.PropertySchema;
 import org.unipop.schema.property.type.DateType;
 import org.unipop.schema.property.type.NumberType;
 import org.unipop.schema.property.type.TextType;
+import org.unipop.structure.traversalfilter.DefaultTraversalFilter;
+import org.unipop.structure.traversalfilter.TraversalFilter;
 import org.unipop.test.UnipopGraphProvider;
 import org.unipop.util.ConversionUtils;
 import org.unipop.process.strategyregistrar.StandardStrategyProvider;
@@ -113,8 +115,9 @@ public class UniGraph implements Graph {
                 }
             }).forEach(thirdPartyPropertySchemas::add);
         }
-
-        ConfigurationControllerManager configurationControllerManager = new ConfigurationControllerManager(this, configuration, thirdPartyPropertySchemas);
+        String traversalFilter = configuration.getString("traversalFilter", DefaultTraversalFilter.class.getCanonicalName());
+        TraversalFilter filter = Class.forName(traversalFilter).asSubclass(TraversalFilter.class).newInstance();
+        ConfigurationControllerManager configurationControllerManager = new ConfigurationControllerManager(this, configuration, thirdPartyPropertySchemas, filter);
         StrategyProvider strategyProvider = determineStrategyProvider(configuration);
 
         init(configurationControllerManager, strategyProvider);
@@ -212,7 +215,7 @@ public class UniGraph implements Graph {
     private <E extends Element, C extends Comparable> Iterator<E> query(Class<E> returnType, Object[] ids) {
         PredicatesHolder idPredicate = createIdPredicate(ids, returnType);
         // TODO: check order
-        SearchQuery<E> uniQuery = new SearchQuery<>(returnType, idPredicate, -1, null, null, null);
+        SearchQuery<E> uniQuery = new SearchQuery<>(returnType, idPredicate, -1, null, null, null, null);
         return queryControllers.stream().<E>flatMap(controller -> ConversionUtils.asStream(controller.search(uniQuery))).iterator();
     }
 

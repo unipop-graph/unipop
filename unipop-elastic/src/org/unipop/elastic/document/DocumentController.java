@@ -33,6 +33,7 @@ import org.unipop.structure.UniElement;
 import org.unipop.structure.UniGraph;
 import org.unipop.structure.UniVertex;
 import org.unipop.util.ConversionUtils;
+import org.unipop.structure.traversalfilter.TraversalFilter;
 import org.unipop.util.MetricsRunner;
 
 import java.util.*;
@@ -49,11 +50,12 @@ public class DocumentController implements SimpleController, ReduceQuery.ReduceC
 
     private Set<? extends DocumentVertexSchema> vertexSchemas = new HashSet<>();
     private Set<? extends DocumentEdgeSchema> edgeSchemas = new HashSet<>();
+    private TraversalFilter filter;
 
-    public DocumentController(Set<DocumentSchema> schemas, ElasticClient client, UniGraph graph) {
+    public DocumentController(Set<DocumentSchema> schemas, ElasticClient client, TraversalFilter filter, UniGraph graph) {
         this.client = client;
         this.graph = graph;
-
+        this.filter = filter;
         Set<DocumentSchema> documentSchemas = collectSchemas(schemas);
         this.vertexSchemas = documentSchemas.stream().filter(schema -> schema instanceof DocumentVertexSchema)
                 .map(schema -> ((DocumentVertexSchema) schema)).collect(Collectors.toSet());
@@ -88,8 +90,14 @@ public class DocumentController implements SimpleController, ReduceQuery.ReduceC
     //region Query Controller
 
 
+
     @Override
     public <E extends Element> Iterator<E> search(SearchQuery<E> uniQuery) {
+        Set<? extends DocumentSchema<E>> schemas = getSchemas(uniQuery.getReturnType())
+                .stream()
+                .filter(schema -> this.filter.filter(schema, uniQuery.getTraversal()))
+                .map(schema -> ((DocumentSchema<E>) schema))
+                .collect(Collectors.toSet());
         Set<? extends DocumentSchema<E>> schemas = getSchemas(uniQuery.getReturnType());
         SearchCollector<DocumentSchema<E>, Search, E> collector = new SearchCollector<>((schema) -> schema.getSearch(uniQuery), (schema, results) -> schema.parseResults(results, uniQuery));
         Map<DocumentSchema<E>, Search> searches = schemas.stream()
@@ -103,6 +111,9 @@ public class DocumentController implements SimpleController, ReduceQuery.ReduceC
         Map<DocumentEdgeSchema, Search> schemas = edgeSchemas.stream()
                 .collect(collector);
         return search(uniQuery, schemas, collector);
+                .filter(schema -> this.filter.filter(schema, uniQuery.getTraversal()))
+                .collect(new SearchCollector<>((schema) -> schema.getSearch(uniQuery)));
+        return search(uniQuery, schemas);
     }
 
     @Override
@@ -111,6 +122,9 @@ public class DocumentController implements SimpleController, ReduceQuery.ReduceC
         Map<DocumentVertexSchema, Search> schemas = vertexSchemas.stream()
                 .collect(collector);
         Iterator<Vertex> search = search(uniQuery, schemas, collector);
+                .filter(schema -> this.filter.filter(schema, uniQuery.getTraversal()))
+                .collect(new SearchCollector<>((schema) -> schema.getSearch(uniQuery)));
+        Iterator<Vertex> search = search(uniQuery, schemas);
 
         Map<Object, DeferredVertex> vertexMap = uniQuery.getVertices().stream()
                 .collect(Collectors.toMap(UniElement::id, Function.identity(), (a, b) -> a));

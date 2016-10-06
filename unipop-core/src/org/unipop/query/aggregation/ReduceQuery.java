@@ -1,5 +1,6 @@
 package org.unipop.query.aggregation;
 
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.unipop.query.predicates.PredicatesHolder;
@@ -28,6 +29,8 @@ public class ReduceQuery extends SearchQuery {
         this.op = op;
         this.reduceOn = reduceOn;
         this.vertices = vertices;
+    public ReduceQuery(PredicatesHolder predicates, StepDescriptor stepDescriptor, Traversal traversal) {
+        super(predicates, stepDescriptor, traversal);
     }
 
     public interface ReduceController<E extends Element> extends UniQueryController {

@@ -14,14 +14,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-public class SearchQuery<E extends Element> extends PredicateQuery {
+public class SearchQuery<E extends Element> extends PredicateQuery<E> {
     private final Class<E> returnType;
     private final int limit;
     private Set<String> propertyKeys;
     private List<Pair<String, Order>> orders;
 
-    public SearchQuery(Class<E> returnType, PredicatesHolder predicates, int limit, Set<String> propertyKeys, List<Pair<String, Order>> orders, StepDescriptor stepDescriptor) {
-        super(predicates, stepDescriptor);
+    public SearchQuery(Class<E> returnType, PredicatesHolder predicates, int limit, Set<String> propertyKeys, List<Pair<String, Order>> orders, StepDescriptor stepDescriptor, Traversal traversal) {
+        super(predicates, stepDescriptor, traversal);
         this.returnType = returnType;
         this.limit = limit;
         this.propertyKeys = propertyKeys;

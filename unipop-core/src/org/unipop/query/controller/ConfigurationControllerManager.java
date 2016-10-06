@@ -4,6 +4,7 @@ import org.apache.commons.configuration.Configuration;
 import org.json.JSONObject;
 import org.unipop.schema.property.PropertySchema;
 import org.unipop.structure.UniGraph;
+import org.unipop.structure.traversalfilter.TraversalFilter;
 import org.unipop.util.DirectoryWatcher;
 import org.unipop.util.PropertySchemaFactory;
 
@@ -25,9 +26,11 @@ public class ConfigurationControllerManager implements ControllerManager {
     protected Path path;
     protected UniGraph graph;
     protected List<PropertySchema.PropertySchemaBuilder> thirdPartyPropertySchemas;
+    protected TraversalFilter filter;
 
-    public ConfigurationControllerManager(UniGraph graph, Configuration configuration, List<PropertySchema.PropertySchemaBuilder> thirdPartyPropertySchemas) throws Exception {
+    public ConfigurationControllerManager(UniGraph graph, Configuration configuration, List<PropertySchema.PropertySchemaBuilder> thirdPartyPropertySchemas, TraversalFilter filter) throws Exception {
         path = Paths.get(configuration.getString("providers"));
+        this.filter = filter;
         this.graph = graph;
         this.thirdPartyPropertySchemas = thirdPartyPropertySchemas;
         this.watcher = new DirectoryWatcher(path, configuration.getInt("controllerManager.interval", 10000),
@@ -49,7 +52,7 @@ public class ConfigurationControllerManager implements ControllerManager {
                 try {
                     sourceProvider = Class.forName(providerClass).asSubclass(SourceProvider.class).newInstance();
                     PropertySchemaFactory.build(sourceProvider.providerBuilders(), thirdPartyPropertySchemas);
-                    Set<UniQueryController> controllers = sourceProvider.init(graph, providerConfig);
+                    Set<UniQueryController> controllers = sourceProvider.init(graph, this.filter, providerConfig);
                     this.controllers.addAll(controllers);
                     this.sourceProviders.add(sourceProvider);
                 } catch (Exception e) {

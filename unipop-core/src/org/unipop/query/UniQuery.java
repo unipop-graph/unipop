@@ -1,6 +1,6 @@
 package org.unipop.query;
 
-public class UniQuery {
+public abstract class UniQuery {
     private StepDescriptor stepDescriptor;
 
     public UniQuery(StepDescriptor stepDescriptor) {
