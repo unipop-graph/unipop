@@ -94,6 +94,8 @@ public class UniGraphLocalStep<S, E> extends AbstractStep<S, E> implements Trave
                 Set<String> labels = new HashSet<>();
                 start.path().labels().forEach(set -> set.forEach(labels::add));
                 labels.add("orig");
+                start.getSideEffects().register("prev", ()-> null, (a,b) -> b);
+                start.getSideEffects().add("prev", start.clone());
                 ((Traverser.Admin<S>) start).addLabels(labels);
                 elements.add((Traverser.Admin<S>) start);
             });
@@ -137,7 +139,7 @@ public class UniGraphLocalStep<S, E> extends AbstractStep<S, E> implements Trave
 //                        Map<Object, List<Traverser.Admin>> traversers = runElements.stream().collect(Collectors.groupingBy(t -> ((Element) t.path("orig")).id(), Collectors.toList()));
                         Map<Object, List<Traverser.Admin>> traversers = runElements.stream()
                                 .collect(Collectors.groupingBy(
-                                        t -> (t.path("orig")),
+                                        t -> (t.getSideEffects().get("prev")),
                                         Collectors.toList()));
                         elements.stream().filter(e -> !traversers.containsKey(e.get())).forEach(e -> traversers.put(e.get(), Collections.emptyList()));
                         Set<Map.Entry<Object, List<Traverser.Admin>>> traverserEntries = traversers.entrySet();

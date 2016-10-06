@@ -9,6 +9,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.PartitionStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.SubgraphStrategy;
 import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -16,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import test.ElasticGraphProvider;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.GRATEFUL;
 import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
@@ -32,10 +34,11 @@ public class TemporaryTests extends AbstractGremlinTest {
         GraphManager.setGraphProvider(new ElasticGraphProvider());
     }
 
+
     @Test
     @LoadGraphWith(MODERN)
     public void test() {
-        Traversal t = g.V().group().by(T.label).by(__.bothE().fold());
+        Traversal t = g.V().hasLabel("software").<String, Number>group().by("name").by(bothE().values("weight").max());
 
         check(t);
     }
