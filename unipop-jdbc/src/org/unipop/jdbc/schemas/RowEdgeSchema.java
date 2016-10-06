@@ -119,6 +119,7 @@ public class RowEdgeSchema extends AbstractJdbcEdgeSchema
         if (searchQuery.getDirection().equals(Direction.IN) || searchQuery.getDirection().equals(Direction.BOTH)) {
             resultMap.stream().flatMap(map -> {
                 Vertex outVertex = getInVertexSchema().createElement(map);
+                if (outVertex == null) return Stream.empty();
                 String id = outVertex.id().toString();
                 Collection<Edge> edges = fromFields(map);
                 return edges == null ? Stream.empty() : edges.stream().flatMap(e -> {

@@ -1,8 +1,8 @@
 {
   "class": "org.unipop.jdbc.JdbcSourceProvider",
-  "driver": "org.postgresql.Driver",
-  "address": "jdbc:postgresql://localhost:5432/postgres",
-  "sqlDialect": "POSTGRES",
+  "driver": "org.h2.Driver",
+  "address": "jdbc:h2:mem:gremlin;",
+  "sqlDialect": "H2",
   "vertices": [
     {
       "table": "vertex_inner",
@@ -17,7 +17,15 @@
         "name": "@NAME",
         "age": "@AGE"
       },
-      "dynamicProperties": false,
+      "dynamicProperties": {
+        "excludeFields": [
+          "EDGEID",
+          "KNOWNID",
+          "EDGEWEIGHT",
+          "EDGENAME",
+          "LABEL"
+        ]
+      },
       "edges": [
         {
           "id": "@EDGEID",
@@ -27,15 +35,13 @@
             "weight": "@EDGEWEIGHT",
             "name": "@EDGENAME"
           },
-          "dynamicProperties":false,
           "vertex": {
             "ref": true,
             "id": {
               "field":"KNOWNBY",
               "nullable":false
             },
-            "label": "person",
-            "dynamicProperties":false
+            "label": "person"
           }
         }
       ]
@@ -53,7 +59,7 @@
         "name": "@NAME",
         "lang": "@LANG"
       },
-      "dynamicProperties": false
+      "dynamicProperties": true
     }
   ],
   "edges": [

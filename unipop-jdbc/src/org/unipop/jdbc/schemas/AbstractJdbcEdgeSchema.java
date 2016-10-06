@@ -38,9 +38,11 @@ public abstract class AbstractJdbcEdgeSchema extends AbstractRowSchema<Edge> imp
         PredicatesHolder vertexPredicates = this.getVertexPredicates(searchQuery.getVertices(), searchQuery.getDirection());
         if (edgePredicates.isAborted() || vertexPredicates.isAborted()) return null;
         PredicatesHolder predicatesHolder = PredicatesHolderFactory.and(edgePredicates, vertexPredicates);
-        if (predicatesHolder.isAborted()) return null;
+         if (predicatesHolder.isAborted()) return null;
         // TODO: create select
-        SelectGroupByStep select = ((SelectGroupByStep) createSelect(searchQuery, predicatesHolder, dsl, (Field) DSL.rank().over(DSL.partitionBy(field("outid")).orderBy(field("id"))).as("r1")));
+        Set<String> outId = getOutVertexSchema().getPropertySchema(T.id.getAccessor()).toFields(Collections.emptySet());
+        Set<String> id = getPropertySchema(T.id.getAccessor()).toFields(Collections.emptySet());
+        SelectGroupByStep select = ((SelectGroupByStep) createSelect(searchQuery, predicatesHolder, dsl, (Field) DSL.rank().over(DSL.partitionBy(field(outId.iterator().next())).orderBy(field(id.iterator().next()))).as("r1")));
 
         Set<String> fields = searchQuery.getPropertyKeys();
         if (fields == null)
@@ -48,7 +50,7 @@ public abstract class AbstractJdbcEdgeSchema extends AbstractRowSchema<Edge> imp
         Set<String> props = this.toFields(fields);
         int limit = searchQuery.getLimit();
         int finalLimit = limit == -1 ? Integer.MAX_VALUE : limit + 1;
-        SelectConditionStep<Record> selectf = dsl.select(props.stream().map(DSL::field).collect(Collectors.toList())).from(select).where(field("r1").lt(finalLimit));
+        SelectConditionStep<Record> selectf = dsl.select(props.stream().filter(p -> p!=null).map(DSL::field).collect(Collectors.toList())).from(select).where(field("r1").lt(finalLimit));
 
         return selectf;
     }

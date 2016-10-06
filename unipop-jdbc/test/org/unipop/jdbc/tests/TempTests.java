@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
@@ -28,7 +29,7 @@ import static org.junit.Assert.*;
  */
 public class TempTests extends AbstractGremlinTest {
     public TempTests() throws SQLException, ClassNotFoundException {
-        GraphManager.setGraphProvider(new JdbcGraphProvider());
+        GraphManager.setGraphProvider(new JdbcOptimizedGraphProvider());
     }
 
     @Test
@@ -42,7 +43,7 @@ public class TempTests extends AbstractGremlinTest {
     @LoadGraphWith(LoadGraphWith.GraphData.MODERN)
     @Test
     public void testA() {
-        Traversal t = g.V().count();
+        Traversal t = g.V().project("a", "b").by(identity()).by(__.bothE().fold());
         check(t);
     }
 

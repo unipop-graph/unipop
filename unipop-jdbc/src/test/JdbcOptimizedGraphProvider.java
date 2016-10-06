@@ -111,10 +111,10 @@ public class JdbcOptimizedGraphProvider extends UnipopGraphProvider {
                 "CREATE TABLE IF NOT EXISTS edges(" +
                         "ID VARCHAR(100) NOT NULL PRIMARY KEY, " +
                         "LABEL VARCHAR(100) NOT NULL, " +
-                        "outId VARCHAR(100), " +
-                        "outLabel VARCHAR(100), " +
-                        "inId VARCHAR(100), " +
-                        "inLabel VARCHAR(100)," +
+                        "OUTID VARCHAR(100), " +
+                        "OUTLABEL VARCHAR(100), " +
+                        "INID VARCHAR(100), " +
+                        "INLABEL VARCHAR(100)," +
                         "year VARCHAR(100)," +
                         "acl VARCHAR(100)," +
                         "time VARCHAR(100)," +

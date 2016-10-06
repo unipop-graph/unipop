@@ -114,7 +114,7 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
         }
 
         Set<String> props = this.toFields(columnsToRetrieve);
-        Iterator<Field<Object>> fieldIterator = props.stream().map(DSL::field).iterator();
+        Iterator<Field<Object>> fieldIterator = props.stream().filter(p -> p!= null).map(DSL::field).iterator();
         List<Field<Object>> fieldList = IteratorUtils.asList(Iterators.concat(fieldIterator, Arrays.asList(fields).iterator()));
         return context
                 .select(fieldList)
