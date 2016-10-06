@@ -8,12 +8,10 @@ import org.unipop.query.UniQuery;
 
 public class PredicateQuery<E extends Element> extends UniQuery {
     private final PredicatesHolder predicates;
-    private Traversal traversal;
 
-    public PredicateQuery(PredicatesHolder predicates, StepDescriptor stepDescriptor, Traversal traversal) {
+    public PredicateQuery(PredicatesHolder predicates, StepDescriptor stepDescriptor) {
         super(stepDescriptor);
         this.predicates = predicates;
-        this.traversal = traversal;
     }
 
     public PredicatesHolder getPredicates(){
@@ -21,7 +19,10 @@ public class PredicateQuery<E extends Element> extends UniQuery {
     }
 
     public Traversal getTraversal() {
-        return traversal;
+        StepDescriptor stepDescriptor = getStepDescriptor();
+        if (stepDescriptor == null)
+            return null;
+        return stepDescriptor.getTraversal();
     }
 
     public boolean test(E element, PredicatesHolder predicates) {

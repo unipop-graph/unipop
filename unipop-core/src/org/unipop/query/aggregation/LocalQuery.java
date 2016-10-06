@@ -1,5 +1,6 @@
 package org.unipop.query.aggregation;
 
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.javatuples.Pair;
@@ -38,6 +39,13 @@ public class LocalQuery<S extends Element> extends UniQuery{
 
     public SearchQuery<S> getSearchQuery() {
         return searchQuery;
+    }
+
+    public Traversal.Admin getTraversal() {
+        StepDescriptor stepDescriptor = getStepDescriptor();
+        if (stepDescriptor == null)
+            return null;
+        return stepDescriptor.getTraversal();
     }
 
     public interface LocalController extends UniQueryController {

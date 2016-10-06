@@ -52,7 +52,7 @@ public class UniGraphStartStep<S,E extends Element> extends GraphStep<S,E> imple
                         .flatMap(Collection::stream)
         ).map(HasContainer::getKey).forEach(this::addPropertyKey);
 
-        SearchQuery<E> searchQuery = new SearchQuery<>(returnClass, predicates, limit, propertyKeys, orders, stepDescriptor, traversal);
+        SearchQuery<E> searchQuery = new SearchQuery<>(returnClass, predicates, limit, propertyKeys, orders, stepDescriptor);
         logger.debug("Executing query: ", searchQuery);
         return controllers.stream().<Iterator<E>>map(controller -> controller.search(searchQuery)).flatMap(ConversionUtils::asStream).distinct().iterator();
     }

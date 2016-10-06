@@ -98,7 +98,6 @@ public class DocumentController implements SimpleController, ReduceQuery.ReduceC
                 .filter(schema -> this.filter.filter(schema, uniQuery.getTraversal()))
                 .map(schema -> ((DocumentSchema<E>) schema))
                 .collect(Collectors.toSet());
-        Set<? extends DocumentSchema<E>> schemas = getSchemas(uniQuery.getReturnType());
         SearchCollector<DocumentSchema<E>, Search, E> collector = new SearchCollector<>((schema) -> schema.getSearch(uniQuery), (schema, results) -> schema.parseResults(results, uniQuery));
         Map<DocumentSchema<E>, Search> searches = schemas.stream()
                 .collect(collector);
@@ -108,23 +107,18 @@ public class DocumentController implements SimpleController, ReduceQuery.ReduceC
     @Override
     public Iterator<Edge> search(SearchVertexQuery uniQuery) {
         SearchCollector<DocumentEdgeSchema, Search, Edge> collector = new SearchCollector<>((schema) -> schema.getSearch(uniQuery), (schema, results) -> schema.parseResults(results, uniQuery));
-        Map<DocumentEdgeSchema, Search> schemas = edgeSchemas.stream()
+        Map<DocumentEdgeSchema, Search> schemas = edgeSchemas.stream().filter(schema -> this.filter.filter(schema, uniQuery.getTraversal()))
                 .collect(collector);
         return search(uniQuery, schemas, collector);
-                .filter(schema -> this.filter.filter(schema, uniQuery.getTraversal()))
-                .collect(new SearchCollector<>((schema) -> schema.getSearch(uniQuery)));
-        return search(uniQuery, schemas);
     }
 
     @Override
     public void fetchProperties(DeferredVertexQuery uniQuery) {
         SearchCollector<DocumentVertexSchema, Search, Vertex> collector = new SearchCollector<>((schema) -> schema.getSearch(uniQuery), (schema, results) -> schema.parseResults(results, uniQuery));
         Map<DocumentVertexSchema, Search> schemas = vertexSchemas.stream()
+                .filter(schema -> this.filter.filter(schema, uniQuery.getTraversal()))
                 .collect(collector);
         Iterator<Vertex> search = search(uniQuery, schemas, collector);
-                .filter(schema -> this.filter.filter(schema, uniQuery.getTraversal()))
-                .collect(new SearchCollector<>((schema) -> schema.getSearch(uniQuery)));
-        Iterator<Vertex> search = search(uniQuery, schemas);
 
         Map<Object, DeferredVertex> vertexMap = uniQuery.getVertices().stream()
                 .collect(Collectors.toMap(UniElement::id, Function.identity(), (a, b) -> a));
@@ -169,7 +163,9 @@ public class DocumentController implements SimpleController, ReduceQuery.ReduceC
     public <S extends Element> Iterator<Pair<String, S>> local(LocalQuery<S> query) {
         SearchCollector<DocumentEdgeSchema, Search, Pair<String, Element>> collector = new SearchCollector<>((schema) -> schema.getLocal(query), (schema, results) -> schema.parseLocal(results, query));
         Set<? extends DocumentEdgeSchema> schemas = edgeSchemas;
-        Map<DocumentEdgeSchema, Search> searches = schemas.stream().collect(collector);
+        Map<DocumentEdgeSchema, Search> searches = schemas.stream()
+                .filter(schema -> this.filter.filter(schema, query.getTraversal()))
+                .collect(collector);
         Iterator<Pair<String, Element>> search = search(query, searches, collector);
         return ConversionUtils.asStream(search).map(o -> ((Pair<String, S>)o)).iterator();
     }

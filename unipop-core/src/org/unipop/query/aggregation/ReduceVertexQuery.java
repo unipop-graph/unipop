@@ -21,8 +21,6 @@ public class ReduceVertexQuery extends ReduceQuery implements VertexQuery {
 
     public ReduceVertexQuery(boolean returnsVertex, List<Vertex> vertices, Direction direction, PredicatesHolder predicates, Set<String> properties, String reduceOn, ReduceOperator op, int limit, StepDescriptor stepDescriptor) {
         super(predicates, properties, reduceOn, op, Edge.class, limit, stepDescriptor);
-    public ReduceVertexQuery(List<Vertex> vertices, Direction direction, PredicatesHolder predicates, StepDescriptor stepDescriptor, Traversal traversal) {
-        super(predicates, stepDescriptor, traversal);
         this.vertices = vertices;
         this.direction = direction;
         this.returnsVertex = returnsVertex;

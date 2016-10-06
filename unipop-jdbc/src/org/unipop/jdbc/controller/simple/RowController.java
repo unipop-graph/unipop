@@ -65,10 +65,9 @@ public class RowController implements SimpleController {
     protected Set<? extends RowVertexSchema> vertexSchemas;
     protected Set<? extends RowEdgeSchema> edgeSchemas;
 
-    protected final PredicatesTranslator<Condition> predicatesTranslator;
     protected List<Query> bulk;
     private final PredicatesTranslator<Condition> predicatesTranslator;
-    private TraversalFilter filter;
+    protected TraversalFilter filter;
 
     public <E extends Element> RowController(UniGraph graph, DSLContext context, Set<JdbcSchema> schemaSet, PredicatesTranslator<Condition> predicatesTranslator, TraversalFilter filter) {
         this.graph = graph;
@@ -81,11 +80,7 @@ public class RowController implements SimpleController {
 
     @Override
     public <E extends Element> Iterator<E> search(SearchQuery<E> uniQuery) {
-        Set<? extends JdbcSchema<E>> schemas = this.getSchemas(uniQuery.getReturnType())
-                .stream()
-                .filter(schema -> this.filter.filter(schema, uniQuery.getTraversal()))
-                .map(schema -> ((JdbcSchema<E>) schema))
-                .collect(Collectors.toSet());
+
         SelectCollector<JdbcSchema<E>, Select, E> collector = new SelectCollector<>(
                 schema -> schema.getSearch(uniQuery,
                         schema.toPredicates(uniQuery.getPredicates()),
@@ -94,7 +89,7 @@ public class RowController implements SimpleController {
         );
         Set<? extends JdbcSchema<E>> schemas = this.getSchemas(uniQuery.getReturnType());
 
-        Map<JdbcSchema<E>, Select> selects = schemas.stream().collect(collector);
+        Map<JdbcSchema<E>, Select> selects = schemas.stream().filter(schema -> this.filter.filter(schema, uniQuery.getTraversal())).collect(collector);
 
 
         return this.search(uniQuery, selects, collector);
@@ -102,11 +97,7 @@ public class RowController implements SimpleController {
 
     @Override
     public void fetchProperties(DeferredVertexQuery uniQuery) {
-        Function<JdbcVertexSchema, PredicatesHolder> toPredicatesFunction = (schema) ->
-                schema.toPredicates(uniQuery.getVertices());
-        Iterator<Vertex> searchIterator = this.search(toPredicatesFunction,
-                vertexSchemas.stream().filter(schema -> filter.filter(schema, uniQuery.getTraversal())).collect(Collectors.toSet()),
-                uniQuery);
+
         SelectCollector<JdbcSchema<Vertex>, Select, Vertex> collector = new SelectCollector<>(
                 schema -> schema.getSearch(uniQuery,
                         schema.toPredicates(uniQuery.getPredicates()),
@@ -114,7 +105,7 @@ public class RowController implements SimpleController {
                 (schema, results) -> schema.parseResults(results, uniQuery)
         );
 
-        Map<JdbcSchema<Vertex>, Select> selects = vertexSchemas.stream().collect(collector);
+        Map<JdbcSchema<Vertex>, Select> selects = vertexSchemas.stream().filter(schema -> this.filter.filter(schema, uniQuery.getTraversal())).collect(collector);
         Iterator<Vertex> searchIterator = this.search(uniQuery, selects, collector);
 
         Map<Object, DeferredVertex> vertexMap =
@@ -129,12 +120,6 @@ public class RowController implements SimpleController {
 
     @Override
     public Iterator<Edge> search(SearchVertexQuery uniQuery) {
-        Function<JdbcEdgeSchema, PredicatesHolder> toPredicatesFunction = (schema) -> schema.toPredicates(
-                uniQuery.getVertices(), uniQuery.getDirection(), uniQuery.getPredicates());
-        return this.search(
-                toPredicatesFunction,
-                this.edgeSchemas.stream().filter(schema -> this.filter.filter(schema, uniQuery.getTraversal())).collect(Collectors.toSet()),
-                uniQuery
         SelectCollector<JdbcSchema<Edge>, Select, Edge> collector = new SelectCollector<>(
                 schema -> schema.getSearch(uniQuery,
                         ((JdbcEdgeSchema) schema).toPredicates(uniQuery.getVertices(), uniQuery.getDirection(), uniQuery.getPredicates()),
@@ -142,7 +127,7 @@ public class RowController implements SimpleController {
                 (schema, results) -> schema.parseResults(results, uniQuery)
         );
 
-        Map<JdbcSchema<Edge>, Select> selects = edgeSchemas.stream().collect(collector);
+        Map<JdbcSchema<Edge>, Select> selects = edgeSchemas.stream().filter(schema -> this.filter.filter(schema, uniQuery.getTraversal())).collect(collector);
 
         return this.search(uniQuery, selects, collector);
     }

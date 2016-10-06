@@ -17,8 +17,8 @@ import java.util.Set;
 public class DeferredVertexQuery extends SearchQuery<Vertex> {
     private List<DeferredVertex> vertices;
 
-    public DeferredVertexQuery(List<DeferredVertex> vertices, Set<String> propertyKeys, List<Pair<String, Order>> orders, StepDescriptor stepDescriptor, Traversal traversal) {
-        super(Vertex.class, PredicatesHolderFactory.empty(), -1, propertyKeys, orders, stepDescriptor, traversal);
+    public DeferredVertexQuery(List<DeferredVertex> vertices, Set<String> propertyKeys, List<Pair<String, Order>> orders, StepDescriptor stepDescriptor) {
+        super(Vertex.class, PredicatesHolderFactory.empty(), -1, propertyKeys, orders, stepDescriptor);
         this.vertices = vertices;
     }
 

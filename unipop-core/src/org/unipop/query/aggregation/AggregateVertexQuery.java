@@ -24,8 +24,8 @@ public class AggregateVertexQuery extends AggregateQuery implements VertexQuery 
                                 SemanticKeyTraversal key,
                                 SemanticValuesTraversal values,
                                 SemanticReducerTraversal reduce,
-                                StepDescriptor stepDescriptor, Traversal traversal) {
-        super(predicates, key, values, reduce, stepDescriptor, traversal);
+                                StepDescriptor stepDescriptor) {
+        super(predicates, key, values, reduce, stepDescriptor);
         this.vertices = vertices;
         this.direction = direction;
     }

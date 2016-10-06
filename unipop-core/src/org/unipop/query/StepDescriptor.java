@@ -1,6 +1,7 @@
 package org.unipop.query;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -28,6 +29,9 @@ public class StepDescriptor {
     }
     public Set<String> getLabels(){
         return step.getLabels();
+    }
+    public Traversal.Admin getTraversal(){
+        return step.getTraversal();
     }
     public Optional<MutableMetrics> getMetrics(){
         return Optional.ofNullable(metrics);

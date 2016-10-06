@@ -91,9 +91,9 @@ public class JdbcSourceProvider implements SourceProvider {
     public Set<UniQueryController> createControllers(Set<JdbcSchema> schemas, boolean optimized, TraversalFilter filter) {
         RowController rowController;
         if (!optimized)
-         rowController = new RowController(this.graph, this.context, schemas, this.predicatesTranslatorSupplier.get());
+         rowController = new RowController(this.graph, this.context, schemas, this.predicatesTranslatorSupplier.get(), filter);
         else
-            rowController = new RowOptimizedController(this.graph, this.context, schemas, this.predicatesTranslatorSupplier.get());
+            rowController = new RowOptimizedController(this.graph, this.context, schemas, this.predicatesTranslatorSupplier.get(), filter);
         return Sets.newHashSet(rowController);
     }
 

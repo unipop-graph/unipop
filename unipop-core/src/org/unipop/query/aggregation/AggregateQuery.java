@@ -20,8 +20,8 @@ public class AggregateQuery extends PredicateQuery {
                           SemanticKeyTraversal key,
                           SemanticValuesTraversal values,
                           SemanticReducerTraversal reduce,
-                          StepDescriptor stepDescriptor, Traversal traversal) {
-        super(predicates, stepDescriptor,traversal);
+                          StepDescriptor stepDescriptor) {
+        super(predicates, stepDescriptor);
         this.key = key;
         this.values = values;
         this.reduce = reduce;

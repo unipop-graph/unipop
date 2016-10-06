@@ -11,6 +11,7 @@ import org.unipop.jdbc.schemas.jdbc.JdbcEdgeSchema;
 import org.unipop.jdbc.schemas.jdbc.JdbcSchema;
 import org.unipop.query.aggregation.LocalQuery;
 import org.unipop.structure.UniGraph;
+import org.unipop.structure.traversalfilter.TraversalFilter;
 import org.unipop.util.ConversionUtils;
 
 import java.util.Iterator;
@@ -22,8 +23,8 @@ import java.util.Set;
  */
 public class RowOptimizedController extends RowController implements LocalQuery.LocalController{
 
-    public <E extends Element> RowOptimizedController(UniGraph graph, DSLContext context, Set<JdbcSchema> schemaSet, PredicatesTranslator<Condition> predicatesTranslator) {
-        super(graph, context, schemaSet, predicatesTranslator);
+    public <E extends Element> RowOptimizedController(UniGraph graph, DSLContext context, Set<JdbcSchema> schemaSet, PredicatesTranslator<Condition> predicatesTranslator, TraversalFilter filter) {
+        super(graph, context, schemaSet, predicatesTranslator, filter);
     }
 
     @Override
@@ -33,7 +34,7 @@ public class RowOptimizedController extends RowController implements LocalQuery.
                 (schema, results) -> ((JdbcEdgeSchema) schema).parseLocal(results, query)
         );
 
-        Map<JdbcSchema<Edge>, Select> selects = edgeSchemas.stream().collect(collector);
+        Map<JdbcSchema<Edge>, Select> selects = edgeSchemas.stream().filter(schema -> this.filter.filter(schema, query.getTraversal())).collect(collector);
 
         Iterator<org.javatuples.Pair<String, Element>> search = search(query, selects, collector);
         return ConversionUtils.asStream(search).map(o -> ((org.javatuples.Pair<String, S>)o)).iterator();

@@ -24,13 +24,12 @@ public class ReduceQuery extends SearchQuery {
         this.reduceOn = reduceOn;
         this.vertices = Collections.emptyList();
     }
+    
     public ReduceQuery(List<Vertex> vertices, PredicatesHolder predicates, Set<String> properties, String reduceOn, ReduceOperator op, Class returnType, int limit, StepDescriptor stepDescriptor) {
         super(returnType, predicates, limit, properties, Collections.emptyList(), stepDescriptor);
         this.op = op;
         this.reduceOn = reduceOn;
         this.vertices = vertices;
-    public ReduceQuery(PredicatesHolder predicates, StepDescriptor stepDescriptor, Traversal traversal) {
-        super(predicates, stepDescriptor, traversal);
     }
 
     public interface ReduceController<E extends Element> extends UniQueryController {
