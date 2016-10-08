@@ -6,7 +6,10 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.DedupGlobalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.SampleGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GroupStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.CollectingBarrierStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.unipop.process.UniBulkStep;
@@ -17,6 +20,7 @@ import org.unipop.structure.UniGraph;
 import org.unipop.structure.UniVertex;
 
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -71,30 +75,27 @@ public class UniGraphGroupStep<S, K, V> extends UniBulkStep<S, Map<K, V>> implem
         Map<K, V> map = new HashMap<>();
         keys.forEach(key -> {
             Object prev = key.getSideEffects().get("prev");
+            List<Traverser.Admin> valueResult;
+            List<Object> mapValue = new ArrayList<>();
             if (prev instanceof Traverser) {
-                List<Object> mapValue = new ArrayList<>();
-                values.stream().filter(value -> ((Traverser) value.getSideEffects().get("prev")).get().equals(((Traverser) prev).get())).map(Traverser::get)
-                        .flatMap(o -> {
-                            if (o instanceof Collection)
-                                return ((Collection) o).stream();
-                            return Stream.of(o);
-                        }).forEach(mapValue::add);
-                if (!map.containsKey(key.get()))
-                    map.put(key.get(), (V) mapValue);
-                else
-                    ((List) map.get(key.get())).addAll(mapValue);
+                valueResult = values.stream().filter(value -> ((Traverser) value.getSideEffects().get("prev")).get().equals(((Traverser) prev).get())).collect(Collectors.toList());
             } else {
-                List<Object> mapValue = new ArrayList<>();
-                values.stream().filter(value -> value.getSideEffects().get("prev").equals(prev)).map(Traverser::get).flatMap(o -> {
-                    if (o instanceof Collection)
-                        return ((Collection) o).stream();
-                    return Stream.of(o);
-                }).forEach(mapValue::add);
-                if (!map.containsKey(key.get()))
-                    map.put(key.get(), (V) mapValue);
-                else
-                    ((List) map.get(key.get())).addAll(mapValue);
+                valueResult = values.stream().filter(value -> value.getSideEffects().get("prev").equals(prev)).collect(Collectors.toList());
             }
+            if (TraversalHelper.hasStepOfAssignableClass(CollectingBarrierStep.class, valueStep.getLocalChildren().get(0))){
+                // TODO: apply after group
+                CollectingBarrierStep reducingBarrierStep = TraversalHelper.getFirstStepOfAssignableClass(CollectingBarrierStep.class, valueStep.getLocalChildren().get(0)).get();
+                valueResult = runBarrier(valueResult, reducingBarrierStep);
+            }
+            valueResult.stream().map(Traverser::get).flatMap(o -> {
+                if (o instanceof Collection)
+                    return ((Collection) o).stream();
+                return Stream.of(o);
+            }).forEach(mapValue::add);
+            if (!map.containsKey(key.get()))
+                map.put(key.get(), (V) mapValue);
+            else
+                ((List) map.get(key.get())).addAll(mapValue);
         });
 
         map.keySet().forEach(key -> {
@@ -109,9 +110,17 @@ public class UniGraphGroupStep<S, K, V> extends UniBulkStep<S, Map<K, V>> implem
         });
 
 
-    Traverser.Admin<Map<K, V>> generate = getTraversal().getTraverserGenerator().generate(map, (Step<Map<K, V>, Map<K, V>>) this, 1l);
+        Traverser.Admin<Map<K, V>> generate = getTraversal().getTraverserGenerator().generate(map, (Step<Map<K, V>, Map<K, V>>) this, 1l);
         return Collections.singleton(generate).
 
-    iterator();
-}
+                iterator();
+    }
+
+    private List<Traverser.Admin> runBarrier(List<Traverser.Admin> traversers, CollectingBarrierStep step){
+        step.reset();
+        step.addStarts(traversers.iterator());
+        List<Traverser.Admin> results = new ArrayList<>();
+        step.forEachRemaining(t -> results.add((Traverser.Admin) t));
+        return results;
+    }
 }

@@ -37,6 +37,20 @@ public class TemporaryTests extends AbstractGremlinTest {
 
     @Test
     @LoadGraphWith(MODERN)
+    public void g_V_group_byXlabelX_byXbothE_weight_sampleX2X_foldX() {
+        final Traversal<Vertex, Map<String, Collection<Double>>> traversal =
+                g.V().<String, Collection<Double>>group().by(T.label).by(bothE().values("weight").sample(2).fold());
+        printTraversalForm(traversal);
+        assertTrue(traversal.hasNext());
+        final Map<String, Collection<Double>> map = traversal.next();
+        assertFalse(traversal.hasNext());
+        assertEquals(2, map.size());
+        assertEquals(2, map.get("software").size());
+        assertEquals(2, map.get("person").size());
+    }
+
+    @Test
+    @LoadGraphWith(MODERN)
     public void test() {
         Traversal t = g.V().hasLabel("software").<String, Number>group().by("name").by(bothE().values("weight").max());
 

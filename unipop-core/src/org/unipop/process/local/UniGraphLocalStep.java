@@ -61,14 +61,6 @@ public class UniGraphLocalStep<S, E> extends AbstractStep<S, E> implements Trave
         this.localControllers = localControllers;
     }
 
-    public Traversal<S, E> getUniTraversal(){
-        UniGraphTraversal<S, E> seUniGraphTraversal = new UniGraphTraversal<>(graph);
-        RequirementsStrategy.addRequirements(seUniGraphTraversal.getStrategies(), TraverserRequirement.PATH);
-        seUniGraphTraversal.addStep(this);
-        seUniGraphTraversal.setParent(this.getTraversal().getParent());
-        return seUniGraphTraversal;
-    }
-
     @Override
     public String getId() {
         return super.getId() + " local";
