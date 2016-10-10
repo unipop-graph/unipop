@@ -34,6 +34,23 @@ public class TemporaryTests extends AbstractGremlinTest {
         GraphManager.setGraphProvider(new ElasticGraphProvider());
     }
 
+    @Test
+    @LoadGraphWith(GRATEFUL)
+    public void g_V_hasLabelXsongX_group_byXnameX_byXproperties_groupCount_byXlabelXX() {
+        final Traversal<Vertex, Map<String, Map<String, Long>>> traversal = g.V().hasLabel("song").<String, Map<String, Long>>group().by("name").by(__.properties().groupCount().by(T.label));
+        printTraversalForm(traversal);
+        final Map<String, Map<String, Long>> map = traversal.next();
+        assertEquals(584, map.size());
+        for (final Map.Entry<String, Map<String, Long>> entry : map.entrySet()) {
+            assertEquals(entry.getKey().toUpperCase(), entry.getKey());
+            final Map<String, Long> countMap = entry.getValue();
+            assertEquals(3, countMap.size());
+            assertEquals(1l, countMap.get("name").longValue());
+            assertEquals(1l, countMap.get("songType").longValue());
+            assertEquals(1l, countMap.get("performances").longValue());
+        }
+        assertFalse(traversal.hasNext());
+    }
 
     @Test
     @LoadGraphWith(MODERN)
@@ -49,10 +66,11 @@ public class TemporaryTests extends AbstractGremlinTest {
         assertEquals(2, map.get("person").size());
     }
 
+
     @Test
     @LoadGraphWith(MODERN)
     public void test() {
-        Traversal t = g.V().<String, Collection<Vertex>>group().by("name");
+        Traversal t = g.V().hasLabel("software").<String, Number>group().by("name").by(bothE().values("weight").max());
 
         check(t);
     }

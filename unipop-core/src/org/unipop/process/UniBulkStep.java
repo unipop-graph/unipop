@@ -37,7 +37,7 @@ public abstract class UniBulkStep<S, E> extends AbstractStep<S, E> {
         throw FastNoSuchElementException.instance();
     }
 
-    private Iterator<Traverser.Admin<E>> process() {
+    protected Iterator<Traverser.Admin<E>> process() {
         BulkIterator<Traverser.Admin<S>> partitionedTraversers = new BulkIterator<>(maxBulk, startBulk, multiplier, starts);
 //        UnmodifiableIterator<List<Traverser.Admin<S>>> partitionedTraversers = Iterators.partition(starts, maxBulk);
         return ConversionUtils.asStream(partitionedTraversers)

@@ -24,6 +24,7 @@ public class UniGraphTraversal<S,E> extends DefaultGraphTraversal<S,E> {
 
     @Override
     public <E2> GraphTraversal<S, Map<String, E2>> project(String projectKey, String... otherProjectKeys) {
+        // TODO: Think on how to apply this with anonymous traversals
         final String[] projectKeys = new String[otherProjectKeys.length + 1];
         projectKeys[0] = projectKey;
         System.arraycopy(otherProjectKeys, 0, projectKeys, 1, otherProjectKeys.length);
