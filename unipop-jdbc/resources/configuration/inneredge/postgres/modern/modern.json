@@ -24,8 +24,7 @@
           "label": "knows",
           "direction": "OUT",
           "properties": {
-            "weight": "@EDGEWEIGHT",
-            "name": "@EDGENAME"
+            "weight": "@EDGEWEIGHT"
           },
           "dynamicProperties":false,
           "vertex": {

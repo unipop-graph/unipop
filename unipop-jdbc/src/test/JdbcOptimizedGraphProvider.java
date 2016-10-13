@@ -103,7 +103,7 @@ public class JdbcOptimizedGraphProvider extends UnipopGraphProvider {
                         "status VARCHAR(100)," +
                         "oid int," +
                         "test VARCHAR(100)," +
-                        "communityIndex int," +
+                        "comunityIndex int," +
                         "data VARCHAR(100)," +
                         "lang VARCHAR(100))");
 

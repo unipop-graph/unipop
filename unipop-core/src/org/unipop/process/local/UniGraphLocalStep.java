@@ -65,8 +65,7 @@ public class UniGraphLocalStep<S, E> extends AbstractStep<S, E> implements Trave
                 TraversalHelper.hasStepOfAssignableClass(SampleLocalStep.class, localTraversal)) {
             this.localControllers = Collections.emptyList();
             TraversalHelper.getStepsOfAssignableClassRecursively(UniQueryStep.class, localTraversal).forEach(uniQueryStep -> uniQueryStep.addControllers(localControllers));
-        }
-        else
+        } else
             this.localControllers = localControllers;
     }
 
@@ -96,7 +95,7 @@ public class UniGraphLocalStep<S, E> extends AbstractStep<S, E> implements Trave
                 start.path().labels().forEach(set -> set.forEach(labels::add));
                 labels.add("orig");
                 start.setSideEffects(new DefaultTraversalSideEffects());
-                start.getSideEffects().register("prev", ()-> null, (a,b) -> b);
+                start.getSideEffects().register("prev", () -> null, (a, b) -> b);
                 start.getSideEffects().add("prev", start);
                 ((Traverser.Admin<S>) start).addLabels(labels);
                 elements.add((Traverser.Admin<S>) start);
@@ -104,7 +103,8 @@ public class UniGraphLocalStep<S, E> extends AbstractStep<S, E> implements Trave
             Map<String, List<Traverser.Admin>> idMap;
             List<Traverser<E>> resultList = new ArrayList<>();
             List<Traverser.Admin> runElements = elements.stream().collect(Collectors.toList());
-            if (localControllers.size() > 0) {
+            Optional<UniQueryStep> firstStepOfAssignableClass = TraversalHelper.getFirstStepOfAssignableClass(UniQueryStep.class, localTraversal);
+            if (localControllers.size() > 0 && firstStepOfAssignableClass.isPresent()) {
                 while (querySteps.hasNext()) {
                     Step step = querySteps.next();
                     step.setId(step.getId() + ".local");
@@ -129,7 +129,7 @@ public class UniGraphLocalStep<S, E> extends AbstractStep<S, E> implements Trave
                                         Traverser.Admin next = admins.next();
                                         B_LP_O_P_S_SE_SL_Traverser split = (B_LP_O_P_S_SE_SL_Traverser) next.split((E) pair.getValue1(), this);
                                         split.setSideEffects(new DefaultTraversalSideEffects());
-                                        split.getSideEffects().register("prev", ()-> null, (a,b) -> b);
+                                        split.getSideEffects().register("prev", () -> null, (a, b) -> b);
                                         split.getSideEffects().add("prev", next.path("orig"));
                                         split.addLabels(step.getLabels());
                                         runElements.add(split);
@@ -152,7 +152,7 @@ public class UniGraphLocalStep<S, E> extends AbstractStep<S, E> implements Trave
                             while (step.hasNext()) {
                                 B_LP_O_P_S_SE_SL_Traverser next = (B_LP_O_P_S_SE_SL_Traverser) step.next();
                                 next.setSideEffects(new DefaultTraversalSideEffects());
-                                next.getSideEffects().register("prev", ()-> null, (a,b) -> b);
+                                next.getSideEffects().register("prev", () -> null, (a, b) -> b);
                                 next.getSideEffects().add("prev", traverserEntry.getKey());
                                 runElements.add((Traverser.Admin) next);
                             }
@@ -164,29 +164,43 @@ public class UniGraphLocalStep<S, E> extends AbstractStep<S, E> implements Trave
                 runElements.clear();
             }
             runElements.forEach(resultList::add);
-            Optional<UniQueryStep> firstStepOfAssignableClass = TraversalHelper.getFirstStepOfAssignableClass(UniQueryStep.class, localTraversal);
+//            Optional<UniQueryStep> firstStepOfAssignableClass = TraversalHelper.getFirstStepOfAssignableClass(UniQueryStep.class, localTraversal);
             if (localTraversal instanceof ElementValueTraversal ||
                     localTraversal instanceof IdentityTraversal ||
-                    localTraversal instanceof TokenTraversal){
+                    localTraversal instanceof TokenTraversal) {
                 resultList.clear();
                 for (Traverser.Admin<S> element : elements) {
                     localTraversal.reset();
                     localTraversal.addStart(element);
                     Traverser.Admin<E> split = element.split(localTraversal.next(), this);
                     split.setSideEffects(new DefaultTraversalSideEffects());
-                    split.getSideEffects().register("prev", ()-> null, (a,b) -> b);
+                    split.getSideEffects().register("prev", () -> null, (a, b) -> b);
                     split.getSideEffects().add("prev", element.path("orig"));
                     resultList.add(split);
                 }
+            } else if (firstStepOfAssignableClass.isPresent()) {
+                if (firstStepOfAssignableClass.get().hasControllers()) {
+                    for (Traverser.Admin<S> element : elements) {
+                        localTraversal.reset();
+                        localTraversal.addStart(element);
+                        while (localTraversal.getEndStep().hasNext()) {
+                            B_LP_O_P_S_SE_SL_Traverser<E> next = (B_LP_O_P_S_SE_SL_Traverser<E>) localTraversal.getEndStep().next();
+                            next.setSideEffects(new DefaultTraversalSideEffects());
+                            next.getSideEffects().register("prev", () -> null, (a, b) -> b);
+                            next.getSideEffects().add("prev", element.path("orig"));
+                            resultList.add((Traverser.Admin<E>) next);
+                        }
+                    }
+                }
             }
-            else if (firstStepOfAssignableClass.isPresent() && firstStepOfAssignableClass.get().hasControllers()) {
+            else{
                 for (Traverser.Admin<S> element : elements) {
                     localTraversal.reset();
                     localTraversal.addStart(element);
                     while (localTraversal.getEndStep().hasNext()) {
                         B_LP_O_P_S_SE_SL_Traverser<E> next = (B_LP_O_P_S_SE_SL_Traverser<E>) localTraversal.getEndStep().next();
                         next.setSideEffects(new DefaultTraversalSideEffects());
-                        next.getSideEffects().register("prev", ()-> null, (a,b) -> b);
+                        next.getSideEffects().register("prev", () -> null, (a, b) -> b);
                         next.getSideEffects().add("prev", element.path("orig"));
                         resultList.add((Traverser.Admin<E>) next);
                     }

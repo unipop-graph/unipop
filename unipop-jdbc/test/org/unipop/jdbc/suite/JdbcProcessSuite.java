@@ -13,6 +13,6 @@ import test.JdbcOptimizedGraphProvider;
  * @since 6/20/2016
  */
 @RunWith(UnipopProcessSuite.class)
-@GraphProviderClass(provider = JdbcGraphProvider.class, graph = UniGraph.class)
+@GraphProviderClass(provider = JdbcOptimizedGraphProvider.class, graph = UniGraph.class)
 public class JdbcProcessSuite {
 }

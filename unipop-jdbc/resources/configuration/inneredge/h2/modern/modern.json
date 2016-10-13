@@ -24,6 +24,9 @@
           "EDGEWEIGHT",
           "EDGENAME",
           "LABEL"
+        ],
+        "excludeProperties":[
+          "weight"
         ]
       },
       "edges": [

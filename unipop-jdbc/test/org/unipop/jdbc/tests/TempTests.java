@@ -8,6 +8,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.Test;
@@ -20,6 +21,8 @@ import java.util.stream.Collectors;
 
 import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.GRATEFUL;
 import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
+import static org.apache.tinkerpop.gremlin.process.AbstractGremlinProcessTest.checkResults;
+import static org.apache.tinkerpop.gremlin.process.AbstractGremlinProcessTest.checkSideEffects;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
 import static org.junit.Assert.*;
 
@@ -29,7 +32,7 @@ import static org.junit.Assert.*;
  */
 public class TempTests extends AbstractGremlinTest {
     public TempTests() throws SQLException, ClassNotFoundException {
-        GraphManager.setGraphProvider(new JdbcOptimizedGraphProvider());
+        GraphManager.setGraphProvider(new JdbcGraphProvider());
     }
 
     @Test
@@ -40,10 +43,19 @@ public class TempTests extends AbstractGremlinTest {
         g.V().dedup().sideEffect(t -> t.asAdmin().setBulk(0)).sideEffect(t -> fail("this should not have happened")).iterate();
     }
 
+    @Test
+    @LoadGraphWith(MODERN)
+    public void g_V_out_group_byXlabelX_selectXpersonX_unfold_outXcreatedX_name_limitX2X() {
+        final Traversal<Vertex, String> traversal = g.V().out().<String, Vertex>group().by(T.label).select("person").unfold().out("created").<String>values("name").limit(2);
+        printTraversalForm(traversal);
+        checkResults(Arrays.asList("ripple", "lop"), traversal);
+        checkSideEffects(traversal.asAdmin().getSideEffects());
+    }
+
     @LoadGraphWith(LoadGraphWith.GraphData.MODERN)
     @Test
     public void testA() {
-        Traversal t = g.V().project("a", "b").by(identity()).by(__.bothE().fold());
+        Traversal t = g.withPath().V().both().hasLabel("person").order().by("age", Order.decr).limit(5).values("name");
         check(t);
     }
 
