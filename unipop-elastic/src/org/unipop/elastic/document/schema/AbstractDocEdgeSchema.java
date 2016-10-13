@@ -53,15 +53,24 @@ public abstract class AbstractDocEdgeSchema extends AbstractDocSchema<Edge> impl
 
     protected abstract AggregationBuilder createTerms(String name, AggregationBuilder subs, VertexQuery searchQuery, Direction direction, Iterator<String> fields);
 
+    public QueryBuilder createQueryBuilder(SearchVertexQuery query) {
+        PredicatesHolder edgePredicates = this.toPredicates(query.getPredicates());
+        PredicatesHolder vertexPredicates = this.getVertexPredicates(query.getVertices(), query.getDirection());
+        PredicatesHolder predicatesHolder = PredicatesHolderFactory.and(edgePredicates, vertexPredicates);
+        if (predicatesHolder.isAborted()) return null;
+        return createQueryBuilder(predicatesHolder);
+    }
+
     @Override
     public Search getLocal(LocalQuery query) {
         SearchVertexQuery searchQuery = (SearchVertexQuery) query.getSearchQuery();
-        PredicatesHolder edgePredicates = this.toPredicates(searchQuery.getPredicates());
-        PredicatesHolder vertexPredicates = this.getVertexPredicates(searchQuery.getVertices(), searchQuery.getDirection());
-        if (edgePredicates.isAborted() || vertexPredicates.isAborted()) return null;
-        PredicatesHolder predicatesHolder = PredicatesHolderFactory.and(edgePredicates, vertexPredicates);
-        if (predicatesHolder.isAborted()) return null;
-        QueryBuilder queryBuilder = createQueryBuilder(predicatesHolder);
+//        PredicatesHolder edgePredicates = this.toPredicates(searchQuery.getPredicates());
+//        PredicatesHolder vertexPredicates = this.getVertexPredicates(searchQuery.getVertices(), searchQuery.getDirection());
+//        if (edgePredicates.isAborted() || vertexPredicates.isAborted()) return null;
+//        PredicatesHolder predicatesHolder = PredicatesHolderFactory.and(edgePredicates, vertexPredicates);
+//        if (predicatesHolder.isAborted()) return null;
+        QueryBuilder queryBuilder = createQueryBuilder(searchQuery);
+        if (queryBuilder == null) return null;
         Iterator<String> fields;
         List<AggregationBuilder> aggs = new ArrayList<>();
         if (searchQuery.getDirection().equals(Direction.OUT) || searchQuery.getDirection().equals(Direction.BOTH)) {

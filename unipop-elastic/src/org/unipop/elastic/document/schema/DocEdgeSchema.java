@@ -99,12 +99,7 @@ public class DocEdgeSchema extends AbstractDocEdgeSchema {
 
     @Override
     public Search getSearch(SearchVertexQuery query) {
-        PredicatesHolder edgePredicates = this.toPredicates(query.getPredicates());
-        PredicatesHolder vertexPredicates = this.getVertexPredicates(query.getVertices(), query.getDirection());
-        PredicatesHolder predicatesHolder = PredicatesHolderFactory.and(edgePredicates, vertexPredicates);
-        if (predicatesHolder.isAborted()) return null;
-        QueryBuilder queryBuilder = createQueryBuilder(predicatesHolder);
-        return createSearch(query, queryBuilder);
+        return createSearch(query, createQueryBuilder(query));
     }
 
     @Override
