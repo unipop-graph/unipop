@@ -1,5 +1,6 @@
 package org.unipop.process.local;
 
+import javassist.tools.reflect.Sample;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
@@ -9,6 +10,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.lambda.IdentityTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.TokenTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.Profiling;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.SampleGlobalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.SampleLocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.RequirementsStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.RequirementsStrategy;
@@ -58,7 +61,11 @@ public class UniGraphLocalStep<S, E> extends AbstractStep<S, E> implements Trave
         this.graph = graph;
         this.localTraversal = localTraversal;
         this.stepDescriptor = new StepDescriptor(this);
-        this.localControllers = localControllers;
+        if (TraversalHelper.hasStepOfAssignableClass(SampleGlobalStep.class, localTraversal) ||
+                TraversalHelper.hasStepOfAssignableClass(SampleLocalStep.class, localTraversal))
+            this.localControllers = Collections.emptyList();
+        else
+            this.localControllers = localControllers;
     }
 
     @Override
