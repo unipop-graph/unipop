@@ -6,8 +6,10 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.SampleGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GroupStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.ProjectStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.SampleLocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.RequirementsStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.RequirementsStrategy;
@@ -51,8 +53,11 @@ public class UniGraphLocalStrategy extends AbstractTraversalStrategy<TraversalSt
 
         TraversalHelper.getStepsOfAssignableClass(LocalStep.class, traversal).forEach(localStep -> {
             Traversal.Admin localTraversal = (Traversal.Admin) localStep.getLocalChildren().get(0);
+            if (TraversalHelper.hasStepOfAssignableClass(SampleGlobalStep.class, localTraversal) ||
+                    TraversalHelper.hasStepOfAssignableClass(SampleLocalStep.class, localTraversal)){
+                return;
+            }
             if (TraversalHelper.hasStepOfAssignableClass(UniQueryStep.class, localTraversal)) {
-
                 localTraversal.getSteps().stream().filter(step -> step instanceof UniGraphVertexStep).forEach(step -> ((UniGraphVertexStep) step).setControllers(nonLocalControllers));
                 UniGraphLocalStep uniGraphLocalStep = new UniGraphLocalStep(traversal, localTraversal, localControllers);
                 TraversalHelper.replaceStep(localStep, uniGraphLocalStep, traversal);
@@ -60,6 +65,11 @@ public class UniGraphLocalStrategy extends AbstractTraversalStrategy<TraversalSt
         });
 
         TraversalHelper.getStepsOfAssignableClass(GroupStep.class, traversal).forEach(groupStep -> {
+            Traversal.Admin localTraversal = (Traversal.Admin) groupStep.getLocalChildren().get(1);
+            if (TraversalHelper.hasStepOfAssignableClass(SampleGlobalStep.class, localTraversal) ||
+                    TraversalHelper.hasStepOfAssignableClass(SampleLocalStep.class, localTraversal)){
+                return;
+            }
             UniGraphGroupStep uniGraphGroupStep = new UniGraphGroupStep(traversal, uniGraph, localControllers, nonLocalControllers, groupStep);
             TraversalHelper.replaceStep(groupStep, uniGraphGroupStep, traversal);
         });
