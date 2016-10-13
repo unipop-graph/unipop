@@ -2,6 +2,8 @@ package org.unipop.process;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.unipop.query.UniQuery;
+import org.unipop.query.controller.UniQueryController;
+import org.unipop.query.search.SearchQuery;
 
 import java.util.List;
 
@@ -12,4 +14,5 @@ import java.util.List;
 public interface UniQueryStep<S> {
     UniQuery getQuery(List<Traverser.Admin<S>> traversers);
     boolean hasControllers();
+    void addControllers(List<UniQueryController> controllers);
 }

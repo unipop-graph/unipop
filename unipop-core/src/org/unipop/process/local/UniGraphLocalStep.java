@@ -62,8 +62,10 @@ public class UniGraphLocalStep<S, E> extends AbstractStep<S, E> implements Trave
         this.localTraversal = localTraversal;
         this.stepDescriptor = new StepDescriptor(this);
         if (TraversalHelper.hasStepOfAssignableClass(SampleGlobalStep.class, localTraversal) ||
-                TraversalHelper.hasStepOfAssignableClass(SampleLocalStep.class, localTraversal))
+                TraversalHelper.hasStepOfAssignableClass(SampleLocalStep.class, localTraversal)) {
             this.localControllers = Collections.emptyList();
+            TraversalHelper.getStepsOfAssignableClassRecursively(UniQueryStep.class, localTraversal).forEach(uniQueryStep -> uniQueryStep.addControllers(localControllers));
+        }
         else
             this.localControllers = localControllers;
     }

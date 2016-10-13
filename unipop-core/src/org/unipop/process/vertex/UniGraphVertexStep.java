@@ -19,6 +19,8 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.unipop.query.UniQuery;
+import org.unipop.query.controller.UniQueryController;
+import org.unipop.query.search.SearchQuery;
 import org.unipop.util.ConversionUtils;
 import org.unipop.query.controller.ControllerManager;
 import org.unipop.query.predicates.PredicatesHolder;
@@ -194,5 +196,13 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
     @Override
     public boolean hasControllers() {
         return controllers.size() > 0;
+    }
+
+    @Override
+    public void addControllers(List<UniQueryController> controllers) {
+        controllers.forEach(controller -> {
+            if (controller instanceof SearchVertexQuery.SearchVertexController)
+                this.controllers.add((SearchVertexQuery.SearchVertexController) controller);
+        });
     }
 }

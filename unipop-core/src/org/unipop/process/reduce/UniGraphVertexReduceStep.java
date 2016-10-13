@@ -16,6 +16,7 @@ import org.unipop.query.StepDescriptor;
 import org.unipop.query.UniQuery;
 import org.unipop.query.aggregation.ReduceQuery;
 import org.unipop.query.aggregation.ReduceVertexQuery;
+import org.unipop.query.controller.UniQueryController;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.structure.UniGraph;
 
@@ -118,5 +119,12 @@ public class UniGraphVertexReduceStep<S, E> extends AbstractStep<S, E> implement
     @Override
     public boolean hasControllers() {
         return reduceControllers.size() > 0;
+    }
+
+    @Override
+    public void addControllers(List<UniQueryController> controllers) {
+        controllers.forEach(controller -> {
+            this.reduceControllers.add(((ReduceVertexQuery.ReduceVertexController) controller));
+        });
     }
 }
