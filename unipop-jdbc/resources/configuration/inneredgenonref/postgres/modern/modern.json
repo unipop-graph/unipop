@@ -1,0 +1,95 @@
+{
+  "class": "org.unipop.jdbc.JdbcSourceProvider",
+  "driver": "org.postgresql.Driver",
+  "address": "jdbc:postgresql://localhost:5432/postgres",
+  "sqlDialect": "POSTGRES",
+  "vertices": [
+    {
+      "table": "ANIMAL_MODERN",
+      "id": "@ID",
+      "label": "animal",
+      "properties": {
+        "name": "@NAME",
+        "age": "@AGE"
+      }
+    },
+    {
+      "table": "vertex_inner",
+      "id": "@ID",
+      "label": {
+        "field": "LABEL",
+        "include": [
+          "person"
+        ]
+      },
+      "properties":{
+        "name": "@NAME",
+        "age": "@AGE"
+      },
+      "dynamicProperties": false,
+      "edges": [
+        {
+          "id": "@EDGEID",
+          "label": "created",
+          "direction": "OUT",
+          "properties": {
+            "weight": "@EDGEWEIGHT"
+          },
+          "vertex": {
+            "ref": false,
+            "id": {
+              "field":"CREATEDBY",
+              "nullable":false
+            },
+            "label": "software",
+            "properties":{
+              "name": "@EDGENAME",
+              "lang": "@EDGELANG"
+            },
+            "dynamicProperties":false
+          }
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "table": "edges",
+      "id": "@ID",
+      "label": {
+        "field": "LABEL",
+        "exclude": [
+          "created"
+        ]
+      },
+      "properties": {
+        "weight": "@WEIGHT"
+      },
+      "dynamicProperties": {
+        "excludeProperties":[
+          "name", "lang", "age"
+        ],
+        "excludeFields": [
+          "OUTID",
+          "INID",
+          "OUTLABEL",
+          "INLABEL"
+        ]
+      },
+      "outVertex": {
+        "ref": true,
+        "id": "@OUTID",
+        "label": "@OUTLABEL",
+        "properties":{
+        }
+      },
+      "inVertex": {
+        "ref": true,
+        "id": "@INID",
+        "label": "@INLABEL",
+        "properties":{
+        }
+      }
+    }
+  ]
+}

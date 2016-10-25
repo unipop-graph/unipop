@@ -28,66 +28,16 @@ import static org.junit.Assert.assertThat;
 
 public class TemporaryTests extends AbstractGremlinTest {
 
-    private static final Logger logger = LoggerFactory.getLogger(AbstractGremlinTest.class);
-
     public TemporaryTests() throws Exception {
         GraphManager.setGraphProvider(new ElasticGraphProvider());
     }
 
     @Test
-    @LoadGraphWith(GRATEFUL)
-    public void g_V_hasLabelXsongX_group_byXnameX_byXproperties_groupCount_byXlabelXX() {
-        final Traversal<Vertex, Map<String, Map<String, Long>>> traversal = g.V().hasLabel("song").<String, Map<String, Long>>group().by("name").by(__.properties().groupCount().by(T.label));
-        printTraversalForm(traversal);
-        final Map<String, Map<String, Long>> map = traversal.next();
-        assertEquals(584, map.size());
-        for (final Map.Entry<String, Map<String, Long>> entry : map.entrySet()) {
-            assertEquals(entry.getKey().toUpperCase(), entry.getKey());
-            final Map<String, Long> countMap = entry.getValue();
-            assertEquals(3, countMap.size());
-            assertEquals(1l, countMap.get("name").longValue());
-            assertEquals(1l, countMap.get("songType").longValue());
-            assertEquals(1l, countMap.get("performances").longValue());
-        }
-        assertFalse(traversal.hasNext());
-    }
-
-    @Test
-    @LoadGraphWith(MODERN)
-    public void g_V_group_byXlabelX_byXbothE_weight_sampleX2X_foldX() {
-        final Traversal<Vertex, Map<String, Collection<Double>>> traversal =
-                g.V().<String, Collection<Double>>group().by(T.label).by(bothE().values("weight").sample(2).fold());
-        printTraversalForm(traversal);
-        assertTrue(traversal.hasNext());
-        final Map<String, Collection<Double>> map = traversal.next();
-        assertFalse(traversal.hasNext());
-        assertEquals(2, map.size());
-        assertEquals(2, map.get("software").size());
-        assertEquals(2, map.get("person").size());
-    }
-
-
-    @Test
     @LoadGraphWith(MODERN)
     public void test() {
-        Traversal t = g.V().local(outE().sample(1).by("weight"));
+        Traversal t = g.V().project("a").by(__.project("b").by());
 
         check(t);
-    }
-
-    @Test
-    @LoadGraphWith(MODERN)
-    public void test_a() {
-        final Traversal<Object, Vertex> traversal = out().out();
-        assertFalse(traversal.hasNext());
-        traversal.asAdmin().addStarts(traversal.asAdmin().getTraverserGenerator().generateIterator(g.V(), traversal.asAdmin().getSteps().get(0), 1l));
-        assertTrue(traversal.hasNext());
-        assertEquals(2, IteratorUtils.count(traversal));
-    }
-
-    @Test
-    public void nullProperty() {
-        graph.addVertex("abc", null);
     }
 
     private void check(Traversal traversal) {

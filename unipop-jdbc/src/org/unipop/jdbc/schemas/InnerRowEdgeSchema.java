@@ -67,7 +67,9 @@ public class InnerRowEdgeSchema extends RowEdgeSchema {
         // TODO: create select
         Set<String> outId = getOutVertexSchema().getPropertySchema(T.id.getAccessor()).toFields(Collections.emptySet());
         Set<String> id = getPropertySchema(T.id.getAccessor()).toFields(Collections.emptySet());
-        List<Field<Object>> vertexFields = parentVertexSchema.toFields((Set<String>) null).stream().map(DSL::field).collect(Collectors.toList());
+        List<Field<Object>> vertexFields = Stream.of(
+                parentVertexSchema.toFields(searchQuery.getPropertyKeys()),
+                childVertexSchema.toFields(searchQuery.getPropertyKeys())).flatMap(Collection::stream).map(DSL::field).collect(Collectors.toList());
         Field<Object>[] allFields = new Field[vertexFields.size() + 1];
         for (int i = 0; i < vertexFields.size(); i++) {
             allFields[i] = vertexFields.get(i);
@@ -100,7 +102,10 @@ public class InnerRowEdgeSchema extends RowEdgeSchema {
 
     @Override
     public Select getSearch(SearchQuery<Edge> query, PredicatesHolder predicatesHolder, DSLContext context, Field... fields) {
-        List<Field<Object>> vertexFields = parentVertexSchema.toFields((Set<String>) null).stream().map(DSL::field).collect(Collectors.toList());
+        List<Field<Object>> vertexFields = Stream.of(parentVertexSchema.toFields(query.getPropertyKeys()),
+                childVertexSchema.toFields(query.getPropertyKeys()))
+                .flatMap(Collection::stream)
+                .map(DSL::field).collect(Collectors.toList());
         Field[] allFields = new Field[fields.length + vertexFields.size()];
         for (int i = 0; i < fields.length; i++) {
             allFields[i] = fields[i];
@@ -109,7 +114,6 @@ public class InnerRowEdgeSchema extends RowEdgeSchema {
             allFields[i + fields.length] = vertexFields.get(i);
         }
         SelectJoinStep search = (SelectJoinStep) super.getSearch(query, predicatesHolder, context, allFields);
-//        search.select(parentVertexSchema.toFields((Set<String>)null).stream().map(DSL::field).collect(Collectors.toList()));
         if (search == null) return null;
         return search.where(field(this.getFieldByPropertyKey(T.id.getAccessor())).isNotNull());
     }

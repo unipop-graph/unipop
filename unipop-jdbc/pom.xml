@@ -112,7 +112,7 @@
                                     <include>**/*JdbcProcessSuite*.java</include>
                                 </includes>
                                 <environmentVariables>
-                                    <conf>inneredgenonref</conf>
+                                    <conf>inneredgenonref/postgres</conf>
                                 </environmentVariables>
                                 <skip>false</skip>
                                 <reportNameSuffix>INNER</reportNameSuffix>

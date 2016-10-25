@@ -9,6 +9,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.Requir
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.javatuples.Pair;
 import org.javatuples.Tuple;
 import org.unipop.process.UniBulkStep;
@@ -61,7 +62,12 @@ public class UniGraphProjectStep<S, E> extends UniLocalBulkStep<S, E, Map<String
         }
         return results.iterator();
     }
+
+    @Override
+    public String toString() {
+        return StringFactory.stepString(this, Arrays.asList(this.keys), this.locals);
     }
+}
 
 
 

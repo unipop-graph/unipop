@@ -25,6 +25,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoPool;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.javatuples.Pair;
 import org.unipop.process.UniQueryStep;
@@ -221,5 +222,10 @@ public class UniGraphLocalStep<S, E> extends AbstractStep<S, E> implements Trave
         elements.forEach(clone::addStart);
         return clone.getSteps().stream().filter(step -> step instanceof UniQueryStep)
                 .map(step -> ((UniQueryStep) step).getQuery(elements)).map(query -> ((SearchQuery) query)).collect(Collectors.toSet());
+    }
+
+    @Override
+    public String toString() {
+        return StringFactory.stepString(this, this.localTraversal);
     }
 }
