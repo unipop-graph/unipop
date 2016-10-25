@@ -10,17 +10,22 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.unipop.jdbc.schemas.jdbc.JdbcSchema;
 import org.unipop.jdbc.schemas.jdbc.JdbcVertexSchema;
+import org.unipop.query.aggregation.LocalQuery;
 import org.unipop.query.predicates.PredicatesHolder;
+import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.SearchQuery;
+import org.unipop.query.search.SearchVertexQuery;
 import org.unipop.schema.element.ElementSchema;
 import org.unipop.schema.element.VertexSchema;
+import org.unipop.schema.property.PropertySchema;
 import org.unipop.schema.reference.ReferenceVertexSchema;
 import org.unipop.structure.UniGraph;
 
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import static org.jooq.impl.DSL.all;
 import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.table;
 
@@ -52,6 +57,38 @@ public class InnerRowEdgeSchema extends RowEdgeSchema {
     }
 
     @Override
+    public Select getLocal(LocalQuery query, DSLContext dsl) {
+        SearchVertexQuery searchQuery = (SearchVertexQuery) query.getSearchQuery();
+        PredicatesHolder edgePredicates = this.toPredicates(searchQuery.getPredicates());
+        PredicatesHolder vertexPredicates = this.getVertexPredicates(searchQuery.getVertices(), searchQuery.getDirection());
+        if (edgePredicates.isAborted() || vertexPredicates.isAborted()) return null;
+        PredicatesHolder predicatesHolder = PredicatesHolderFactory.and(edgePredicates, vertexPredicates);
+        if (predicatesHolder.isAborted()) return null;
+        // TODO: create select
+        Set<String> outId = getOutVertexSchema().getPropertySchema(T.id.getAccessor()).toFields(Collections.emptySet());
+        Set<String> id = getPropertySchema(T.id.getAccessor()).toFields(Collections.emptySet());
+        List<Field<Object>> vertexFields = parentVertexSchema.toFields((Set<String>) null).stream().map(DSL::field).collect(Collectors.toList());
+        Field<Object>[] allFields = new Field[vertexFields.size() + 1];
+        for (int i = 0; i < vertexFields.size(); i++) {
+            allFields[i] = vertexFields.get(i);
+        }
+        allFields[vertexFields.size()] = (Field) DSL.rank().over(DSL.partitionBy(field(outId.iterator().next())).orderBy(field(id.iterator().next()))).as("r1");
+        SelectGroupByStep select = ((SelectGroupByStep) createSelect(searchQuery, predicatesHolder, dsl, allFields));
+
+        Set<String> fields = searchQuery.getPropertyKeys();
+        if (fields == null)
+            fields = this.getPropertySchemas().stream().map(PropertySchema::getKey).collect(Collectors.toSet());
+        Set<String> props = this.toFields(fields);
+        int limit = searchQuery.getLimit();
+        int finalLimit = limit == -1 ? Integer.MAX_VALUE : limit + 1;
+        List<Field<Object>> queryFields = props.stream().filter(p -> p != null).map(DSL::field).collect(Collectors.toList());
+        queryFields = Stream.of(queryFields, Arrays.asList(allFields)).flatMap(Collection::stream).distinct().collect(Collectors.toList());
+        SelectConditionStep<Record> selectf = dsl.select(queryFields).from(select).where(field("r1").lt(finalLimit));
+
+        return selectf;
+    }
+
+    @Override
     public Set<ElementSchema> getChildSchemas() {
         return Sets.newHashSet(childVertexSchema);
     }
@@ -63,7 +100,16 @@ public class InnerRowEdgeSchema extends RowEdgeSchema {
 
     @Override
     public Select getSearch(SearchQuery<Edge> query, PredicatesHolder predicatesHolder, DSLContext context, Field... fields) {
-        SelectJoinStep search = (SelectJoinStep) super.getSearch(query, predicatesHolder, context, fields);
+        List<Field<Object>> vertexFields = parentVertexSchema.toFields((Set<String>) null).stream().map(DSL::field).collect(Collectors.toList());
+        Field[] allFields = new Field[fields.length + vertexFields.size()];
+        for (int i = 0; i < fields.length; i++) {
+            allFields[i] = fields[i];
+        }
+        for (int i = 0; i < vertexFields.size(); i++) {
+            allFields[i + fields.length] = vertexFields.get(i);
+        }
+        SelectJoinStep search = (SelectJoinStep) super.getSearch(query, predicatesHolder, context, allFields);
+//        search.select(parentVertexSchema.toFields((Set<String>)null).stream().map(DSL::field).collect(Collectors.toList()));
         if (search == null) return null;
         return search.where(field(this.getFieldByPropertyKey(T.id.getAccessor())).isNotNull());
     }

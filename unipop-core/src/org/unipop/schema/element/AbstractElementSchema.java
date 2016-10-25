@@ -61,6 +61,9 @@ public abstract class AbstractElementSchema<E extends Element> extends AbstractP
 
     @Override
     public Set<String> toFields(Set<String> propertyKeys) {
+        if (propertyKeys == null)
+            return getPropertySchemas().stream().flatMap(propertySchema -> propertySchema.toFields(Collections.singleton(propertySchema.getKey())).stream())
+            .collect(Collectors.toSet());
         return getPropertySchemas().stream().flatMap(propertySchema ->
                 propertySchema.toFields(propertyKeys).stream()).collect(Collectors.toSet());
     }

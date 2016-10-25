@@ -80,7 +80,7 @@
                                     <include>**/*JdbcProcessSuite*.java</include>
                                 </includes>
                                 <environmentVariables>
-                                    <conf>basic/h2</conf>
+                                    <conf>basic/postgres</conf>
                                 </environmentVariables>
                                 <skip>false</skip>
                                 <reportNameSuffix>BASIC</reportNameSuffix>
@@ -96,7 +96,7 @@
                                     <include>**/*JdbcProcessSuite*.java</include>
                                 </includes>
                                 <environmentVariables>
-                                    <conf>inneredge</conf>
+                                    <conf>inneredge/postgres</conf>
                                 </environmentVariables>
                                 <skip>false</skip>
                                 <reportNameSuffix>INNERREF</reportNameSuffix>

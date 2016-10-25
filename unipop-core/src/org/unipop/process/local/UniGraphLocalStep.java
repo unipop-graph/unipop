@@ -107,7 +107,6 @@ public class UniGraphLocalStep<S, E> extends AbstractStep<S, E> implements Trave
             if (localControllers.size() > 0 && firstStepOfAssignableClass.isPresent()) {
                 while (querySteps.hasNext()) {
                     Step step = querySteps.next();
-                    step.setId(step.getId() + ".local");
                     if (step instanceof UniQueryStep) {
                         idMap = runElements.stream().collect(Collectors.groupingBy((e) -> ((Element) e.get()).id().toString(), Collectors.toList()));
                         UniQueryStep queryStep = (UniQueryStep) step;
@@ -138,7 +137,6 @@ public class UniGraphLocalStep<S, E> extends AbstractStep<S, E> implements Trave
                             }
                         }
                     } else {
-//                        Map<Object, List<Traverser.Admin>> traversers = runElements.stream().collect(Collectors.groupingBy(t -> ((Element) t.path("orig")).id(), Collectors.toList()));
                         Map<Object, List<Traverser.Admin>> traversers = runElements.stream()
                                 .collect(Collectors.groupingBy(
                                         t -> (t.getSideEffects().get("prev") instanceof Traverser ? ((Traverser) t.getSideEffects().get("prev")).get() : t.getSideEffects().get("prev")),
@@ -164,7 +162,6 @@ public class UniGraphLocalStep<S, E> extends AbstractStep<S, E> implements Trave
                 runElements.clear();
             }
             runElements.forEach(resultList::add);
-//            Optional<UniQueryStep> firstStepOfAssignableClass = TraversalHelper.getFirstStepOfAssignableClass(UniQueryStep.class, localTraversal);
             if (localTraversal instanceof ElementValueTraversal ||
                     localTraversal instanceof IdentityTraversal ||
                     localTraversal instanceof TokenTraversal) {

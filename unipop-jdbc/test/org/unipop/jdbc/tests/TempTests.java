@@ -32,30 +32,13 @@ import static org.junit.Assert.*;
  */
 public class TempTests extends AbstractGremlinTest {
     public TempTests() throws SQLException, ClassNotFoundException {
-        GraphManager.setGraphProvider(new JdbcGraphProvider());
-    }
-
-    @Test
-    @LoadGraphWith
-    public void shouldNeverPropagateANoBulkTraverser() {
-        assertFalse(g.V().dedup().sideEffect(t -> t.asAdmin().setBulk(0)).hasNext());
-        assertEquals(0, g.V().dedup().sideEffect(t -> t.asAdmin().setBulk(0)).toList().size());
-        g.V().dedup().sideEffect(t -> t.asAdmin().setBulk(0)).sideEffect(t -> fail("this should not have happened")).iterate();
-    }
-
-    @Test
-    @LoadGraphWith(MODERN)
-    public void g_V_out_group_byXlabelX_selectXpersonX_unfold_outXcreatedX_name_limitX2X() {
-        final Traversal<Vertex, String> traversal = g.V().out().<String, Vertex>group().by(T.label).select("person").unfold().out("created").<String>values("name").limit(2);
-        printTraversalForm(traversal);
-        checkResults(Arrays.asList("ripple", "lop"), traversal);
-        checkSideEffects(traversal.asAdmin().getSideEffects());
+        GraphManager.setGraphProvider(new JdbcOptimizedGraphProvider());
     }
 
     @LoadGraphWith(LoadGraphWith.GraphData.MODERN)
     @Test
     public void testA() {
-        Traversal t = g.withPath().V().both().hasLabel("person").order().by("age", Order.decr).limit(5).values("name");
+        Traversal t = g.V("4").local(bothE().limit(2)).otherV().values("name");
         check(t);
     }
 
@@ -67,7 +50,8 @@ public class TempTests extends AbstractGremlinTest {
 
         int count = 0;
         while(traversal.hasNext()) {
-            System.out.println(traversal.next());
+            Object next = traversal.next();
+            System.out.println(next);
             count ++;
         }
         System.out.println(count);
