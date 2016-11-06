@@ -1,5 +1,7 @@
 package org.unipop.process.local;
 
+import com.google.common.collect.Iterators;
+import com.google.common.collect.UnmodifiableIterator;
 import org.apache.tinkerpop.gremlin.groovy.loaders.ObjectLoader;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
@@ -12,6 +14,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.CollectingBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
+import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
@@ -31,15 +34,16 @@ import java.util.stream.Stream;
 /**
  * Created by sbarzilay on 10/6/16.
  */
-public class UniGraphGroupStep<S, K, V> extends UniBulkStep<S, Map<K, V>> implements TraversalParent {
+public class UniGraphGroupStep<S, K, V> extends AbstractStep<S, Map<K, V>> implements TraversalParent {
 
     private final List<LocalQuery.LocalController> controllers;
     private final List<SearchVertexQuery.SearchVertexController> nonLocalControllers;
     private UniGraphLocalStep<S, K> keyStep;
     private UniGraphLocalStep<S, V> valueStep;
+    private boolean done;
 
     public UniGraphGroupStep(Traversal.Admin traversal, UniGraph graph, List<LocalQuery.LocalController> controllers, List<SearchVertexQuery.SearchVertexController> nonLocalControllers, GroupStep<S, K, V> groupStep) {
-        super(traversal, graph);
+        super(traversal);
         this.controllers = controllers;
         this.nonLocalControllers = nonLocalControllers;
         List<Traversal.Admin<?, ?>> localChildren = groupStep.getLocalChildren();
@@ -47,6 +51,7 @@ public class UniGraphGroupStep<S, K, V> extends UniBulkStep<S, Map<K, V>> implem
         Traversal.Admin<S, V> svAdmin = (Traversal.Admin<S, V>) localChildren.get(1);
         svAdmin.addStep(new UnfoldStep<>(svAdmin));
         valueStep = createLocalStep(svAdmin);
+        done = false;
     }
 
     @Override
@@ -68,7 +73,6 @@ public class UniGraphGroupStep<S, K, V> extends UniBulkStep<S, Map<K, V>> implem
         return children;
     }
 
-    @Override
     protected Iterator<Traverser.Admin<Map<K, V>>> process(List<Traverser.Admin<S>> traversers) {
         AbstractStep<S, V> valueStepClone = valueStep.clone();
         AbstractStep<S, K> keyStepClone = keyStep.clone();
@@ -146,6 +150,10 @@ public class UniGraphGroupStep<S, K, V> extends UniBulkStep<S, Map<K, V>> implem
                     Map newChild = (Map) newMap.get(key);
                     original.put(key, deepMerge(originalChild, newChild));
                 } else {
+                    if (newMap.get(key) instanceof  List && original.get(key) instanceof List){
+                        List list = (List) newMap.get(key);
+                        list.addAll(((List) original.get(key)));
+                    }
                     original.put(key, newMap.get(key));
                 }
             }
@@ -153,9 +161,39 @@ public class UniGraphGroupStep<S, K, V> extends UniBulkStep<S, Map<K, V>> implem
         return original;
     }
 
+    private List<Traverser.Admin<V>> runBarrier(List<Traverser.Admin<V>> traversers, AbstractStep<V,V> step) {
+        step.reset();
+        step.addStarts(traversers.iterator());
+        List<Traverser.Admin<V>> results = new ArrayList<>();
+        step.forEachRemaining(t -> results.add((Traverser.Admin) t));
+        return results;
+    }
+
+    private List<V> runBarrier(AbstractStep<V,V> step, List<V> toTraversers){
+        List<Traverser.Admin<V>> traversers = toTraversers.stream().map(t -> getTraversal().getTraverserGenerator().generate(t, (Step<V, V>) this, 1l))
+                .collect(Collectors.toList());
+        List<Traverser.Admin<V>> admins = runBarrier(traversers, step);
+        return admins.stream().map(Traverser::get).collect(Collectors.toList());
+    }
+
+    private Traverser.Admin<List<V>> getAsTraversers(List<V> values){
+        return getTraversal().getTraverserGenerator()
+                .generate(values, (Step<List<V>, V>) this, 1l).asAdmin();
+    }
+
     @Override
-    protected Iterator<Traverser.Admin<Map<K, V>>> process() {
-        Iterator<Traverser.Admin<Map<K, V>>> maps = super.process();
+    public void reset() {
+        super.reset();
+        done = false;
+    }
+
+    @Override
+    protected Traverser.Admin<Map<K, V>> processNextStart() throws NoSuchElementException {
+        if (done) throw FastNoSuchElementException.instance();
+        UnmodifiableIterator<List<Traverser.Admin<S>>> partition = Iterators.partition(starts, 100);
+        Iterator<Traverser.Admin<Map<K, V>>> maps = ConversionUtils.asStream(partition).map(this::process)
+                .flatMap(ConversionUtils::asStream).iterator();
+//        Iterator<Traverser.Admin<Map<K, V>>> maps = process(IteratorUtils.asList());
         // TODO: merge maps into one
         Map<K, Object> finalMap = ConversionUtils.asStream(maps).flatMap(t -> t.get().entrySet().stream())
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> {
@@ -163,6 +201,13 @@ public class UniGraphGroupStep<S, K, V> extends UniBulkStep<S, Map<K, V>> implem
                         if (b instanceof List)
                             ((List) a).addAll(((List) b));
                         else ((List) a).add(b);
+                        return a;
+                    }
+                    else if (a instanceof Map){
+                        if (b instanceof Map) {
+                            Map<K, Object> map = deepMerge((Map) a, (Map) b);
+                            return map;
+                        }
                         return a;
                     }
                     return a;
@@ -216,26 +261,7 @@ public class UniGraphGroupStep<S, K, V> extends UniBulkStep<S, Map<K, V>> implem
             });
         }
         Traverser.Admin<Map<K, V>> generate = getTraversal().getTraverserGenerator().generate((Map<K,V>)finalMap, (Step<Map<K, V>, Map<K, V>>) this, 1l);
-        return Collections.singleton(generate).iterator();
-    }
-
-    private List<Traverser.Admin<V>> runBarrier(List<Traverser.Admin<V>> traversers, AbstractStep<V,V> step) {
-        step.reset();
-        step.addStarts(traversers.iterator());
-        List<Traverser.Admin<V>> results = new ArrayList<>();
-        step.forEachRemaining(t -> results.add((Traverser.Admin) t));
-        return results;
-    }
-
-    private List<V> runBarrier(AbstractStep<V,V> step, List<V> toTraversers){
-        List<Traverser.Admin<V>> traversers = toTraversers.stream().map(t -> getTraversal().getTraverserGenerator().generate(t, (Step<V, V>) this, 1l))
-                .collect(Collectors.toList());
-        List<Traverser.Admin<V>> admins = runBarrier(traversers, step);
-        return admins.stream().map(Traverser::get).collect(Collectors.toList());
-    }
-
-    private Traverser.Admin<List<V>> getAsTraversers(List<V> values){
-        return getTraversal().getTraverserGenerator()
-                .generate(values, (Step<List<V>, V>) this, 1l).asAdmin();
+        done = true;
+        return generate;
     }
 }

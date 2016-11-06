@@ -1,35 +1,26 @@
 package org.unipop.process.local;
 
 import com.google.common.collect.Sets;
-import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.SampleGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GroupStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.ProjectStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.SampleLocalStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.RequirementsStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
-import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.RequirementsStrategy;
-import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.unipop.process.UniQueryStep;
 import org.unipop.process.edge.EdgeStepsStrategy;
 import org.unipop.process.properties.UniGraphPropertiesStrategy;
 import org.unipop.process.reduce.UniGraphReduceStrategy;
 import org.unipop.process.start.UniGraphStartStepStrategy;
-import org.unipop.process.traverser.UniGraphTraverserStep;
 import org.unipop.process.vertex.UniGraphVertexStep;
 import org.unipop.query.aggregation.LocalQuery;
-import org.unipop.query.search.SearchQuery;
 import org.unipop.query.search.SearchVertexQuery;
 import org.unipop.structure.UniGraph;
-import org.unipop.structure.UniGraphTraversal;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -64,13 +55,21 @@ public class UniGraphLocalStrategy extends AbstractTraversalStrategy<TraversalSt
             }
         });
 
+        TraversalHelper.getStepsOfAssignableClass(ProjectStep.class, traversal).forEach(projectStep -> {
+            UniGraphProjectStep uniGraphProjectStep = new UniGraphProjectStep(traversal, uniGraph,
+                    (String[]) projectStep.getProjectKeys().toArray(new String[projectStep.getProjectKeys().size()]),
+                    localControllers, nonLocalControllers, projectStep.getLocalChildren());
+
+            TraversalHelper.replaceStep(projectStep, uniGraphProjectStep, traversal);
+        });
+
         TraversalHelper.getStepsOfAssignableClass(GroupStep.class, traversal).forEach(groupStep -> {
             Traversal.Admin localTraversal = (Traversal.Admin) groupStep.getLocalChildren().get(1);
             if (TraversalHelper.hasStepOfAssignableClass(SampleGlobalStep.class, localTraversal) ||
                     TraversalHelper.hasStepOfAssignableClass(SampleLocalStep.class, localTraversal)){
                 return;
             }
-            UniGraphGroupStep uniGraphGroupStep = new UniGraphGroupStep(traversal, uniGraph, localControllers, nonLocalControllers, groupStep);
+            UniGraphGroupStepRevised uniGraphGroupStep = new UniGraphGroupStepRevised(traversal, uniGraph, localControllers, nonLocalControllers, groupStep);
             TraversalHelper.replaceStep(groupStep, uniGraphGroupStep, traversal);
         });
     }

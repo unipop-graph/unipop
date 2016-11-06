@@ -28,17 +28,16 @@ import java.util.stream.Collectors;
 /**
  * Created by sbarzilay on 9/28/16.
  */
-public class UniGraphProjectStep<S, E> extends UniLocalBulkStep<S, E, Map<String, E>> implements ByModulating {
+public class UniGraphProjectStep<S, E> extends UniLocalBulkStep<S, E, Map<String, E>> {
     private String[] keys;
 
-    public UniGraphProjectStep(Traversal.Admin traversal, UniGraph graph, String[] keys, List<LocalQuery.LocalController> controllers, List<SearchVertexQuery.SearchVertexController> nonLocalControllers) {
+    public UniGraphProjectStep(Traversal.Admin traversal, UniGraph graph, String[] keys,
+                               List<LocalQuery.LocalController> controllers,
+                               List<SearchVertexQuery.SearchVertexController> nonLocalControllers,
+                               List<Traversal.Admin<?,?>> traversals) {
         super(traversal, graph, controllers, nonLocalControllers);
+        traversals.forEach(t -> locals.add(createLocalStep((Traversal.Admin<S, E>) t)));
         this.keys = keys;
-    }
-
-    @Override
-    public void modulateBy(Traversal.Admin<?, ?> traversal) throws UnsupportedOperationException {
-        locals.add(createLocalStep((Traversal.Admin<S, E>) traversal));
     }
 
     @Override
