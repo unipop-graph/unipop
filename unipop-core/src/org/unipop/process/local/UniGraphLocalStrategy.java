@@ -69,7 +69,7 @@ public class UniGraphLocalStrategy extends AbstractTraversalStrategy<TraversalSt
                     TraversalHelper.hasStepOfAssignableClass(SampleLocalStep.class, localTraversal)){
                 return;
             }
-            UniGraphGroupStepRevised uniGraphGroupStep = new UniGraphGroupStepRevised(traversal, uniGraph, localControllers, nonLocalControllers, groupStep);
+            UniGraphGroupStep uniGraphGroupStep = new UniGraphGroupStep(traversal, uniGraph, localControllers, nonLocalControllers, groupStep);
             TraversalHelper.replaceStep(groupStep, uniGraphGroupStep, traversal);
         });
     }

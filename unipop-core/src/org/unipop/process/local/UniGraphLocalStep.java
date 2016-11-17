@@ -7,6 +7,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.ElementValueTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.IdentityTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.TokenTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.step.Barrier;
 import org.apache.tinkerpop.gremlin.process.traversal.step.Profiling;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.SampleGlobalStep;
@@ -45,14 +46,20 @@ public class UniGraphLocalStep<S, E> extends AbstractStep<S, E> implements Trave
     private Iterator<Traverser.Admin<E>> results = EmptyIterator.instance();
     private UniGraph graph;
     private Iterator<Step> querySteps;
+    private boolean localBarriers;
 
     public UniGraphLocalStep(Traversal.Admin traversal, Traversal.Admin<S, E> localTraversal,
                              List<LocalQuery.LocalController> localControllers) {
-        this((UniGraph) traversal.getGraph().get(), traversal, localTraversal, localControllers);
+        this(traversal, localTraversal, localControllers, true);
+    }
+
+    public UniGraphLocalStep(Traversal.Admin traversal, Traversal.Admin<S, E> localTraversal,
+                             List<LocalQuery.LocalController> localControllers, boolean localBarriers) {
+        this((UniGraph) traversal.getGraph().get(), traversal, localTraversal, localControllers, localBarriers);
     }
 
     public UniGraphLocalStep(UniGraph graph, Traversal.Admin traversal, Traversal.Admin<S, E> localTraversal,
-                             List<LocalQuery.LocalController> localControllers) {
+                             List<LocalQuery.LocalController> localControllers, boolean localBarriers) {
         super(traversal);
         this.graph = graph;
         this.localTraversal = localTraversal;
@@ -63,6 +70,7 @@ public class UniGraphLocalStep<S, E> extends AbstractStep<S, E> implements Trave
             TraversalHelper.getStepsOfAssignableClassRecursively(UniQueryStep.class, localTraversal).forEach(uniQueryStep -> uniQueryStep.addControllers(localControllers));
         } else
             this.localControllers = localControllers;
+        this.localBarriers = localBarriers;
     }
 
     @Override
@@ -88,11 +96,10 @@ public class UniGraphLocalStep<S, E> extends AbstractStep<S, E> implements Trave
             this.starts.forEachRemaining(start -> {
                 Set<String> labels = new HashSet<>();
                 start.path().labels().forEach(set -> set.forEach(labels::add));
-                labels.add("orig");
+                start.addLabels(Collections.singleton("orig"));
                 start.setSideEffects(new DefaultTraversalSideEffects());
                 start.getSideEffects().register("prev", () -> null, (a, b) -> b);
                 start.getSideEffects().add("prev", start);
-                start.addLabels(labels);
                 elements.add(start);
             });
             Map<String, List<Traverser.Admin>> idMap;
@@ -141,17 +148,26 @@ public class UniGraphLocalStep<S, E> extends AbstractStep<S, E> implements Trave
                         Set<Map.Entry<Object, List<Traverser.Admin>>> traverserEntries = traversers.entrySet();
                         runElements.clear();
                         for (Map.Entry<Object, List<Traverser.Admin>> traverserEntry : traverserEntries) {
-                            step.reset();
+                            if ((!(step instanceof Barrier)) || localBarriers) {
+                                step.reset();
+                            }
                             step.addStarts(traverserEntry.getValue().iterator());
+                            if ((!(step instanceof Barrier)) || localBarriers) {
+                                while (step.hasNext()) {
+                                    Traverser.Admin next = (Traverser.Admin) step.next();
+                                    next.setSideEffects(new DefaultTraversalSideEffects());
+                                    next.getSideEffects().register("prev", () -> null, (a, b) -> b);
+                                    next.getSideEffects().add("prev", traverserEntry.getKey());
+                                    runElements.add(next);
+                                }
+                            }
+                        }
+                        if (!localBarriers && (step instanceof Barrier)){
                             while (step.hasNext()) {
                                 Traverser.Admin next = (Traverser.Admin) step.next();
-                                next.setSideEffects(new DefaultTraversalSideEffects());
-                                next.getSideEffects().register("prev", () -> null, (a, b) -> b);
-                                next.getSideEffects().add("prev", traverserEntry.getKey());
                                 runElements.add(next);
                             }
                         }
-
                     }
                 }
             } else {
@@ -188,13 +204,21 @@ public class UniGraphLocalStep<S, E> extends AbstractStep<S, E> implements Trave
             }
             else{
                 for (Traverser.Admin<S> element : elements) {
-                    localTraversal.reset();
+                    if (localBarriers)
+                        localTraversal.reset();
                     localTraversal.addStart(element);
+                    if (localBarriers)
+                        while (localTraversal.getEndStep().hasNext()) {
+                            Traverser.Admin<E> next = localTraversal.getEndStep().next();
+                            next.setSideEffects(new DefaultTraversalSideEffects());
+                            next.getSideEffects().register("prev", () -> null, (a, b) -> b);
+                            next.getSideEffects().add("prev", element.path("orig"));
+                            resultList.add(next);
+                        }
+                }
+                if (!localBarriers){
                     while (localTraversal.getEndStep().hasNext()) {
                         Traverser.Admin<E> next = localTraversal.getEndStep().next();
-                        next.setSideEffects(new DefaultTraversalSideEffects());
-                        next.getSideEffects().register("prev", () -> null, (a, b) -> b);
-                        next.getSideEffects().add("prev", element.path("orig"));
                         resultList.add(next);
                     }
                 }

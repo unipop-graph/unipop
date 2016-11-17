@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.step.Barrier;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.PartitionStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.SubgraphStrategy;
 import org.apache.tinkerpop.gremlin.structure.*;
@@ -21,7 +22,10 @@ import java.util.stream.Collectors;
 
 import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.GRATEFUL;
 import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
+import static org.apache.tinkerpop.gremlin.process.traversal.Operator.sum;
+import static org.apache.tinkerpop.gremlin.process.traversal.SackFunctions.Barrier.normSack;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
+import static org.apache.tinkerpop.gremlin.structure.Column.values;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertThat;
@@ -35,8 +39,7 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void test() {
-        Traversal t = g.V().hasLabel("person").has("age", P.not(P.lte(10).and(P.not(P.between(11, 20)))).and(P.lt(29).or(P.eq(35)))).values("name");
-
+        Traversal t = g.V().out("followedBy").<String, Map<String, Number>>group().by("songType").by(__.bothE().group().by(T.label).by(__.values("weight").sum()));
         check(t);
     }
 
@@ -76,7 +79,8 @@ public class TemporaryTests extends AbstractGremlinTest {
 
         int count = 0;
         while (traversal.hasNext()) {
-            System.out.println(traversal.next());
+            Object next = traversal.next();
+            System.out.println(next);
             count++;
         }
         System.out.println(count);
