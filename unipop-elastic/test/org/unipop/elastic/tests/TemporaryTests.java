@@ -39,36 +39,8 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void test() {
-        Traversal t = g.V().out("followedBy").<String, Map<String, Number>>group().by("songType").by(__.bothE().group().by(T.label).by(__.values("weight").sum()));
+        Traversal t = g.withBulk(false).withSack(1.0d, sum).V("1").local(outE("knows").barrier(normSack).inV()).in("knows").barrier().sack();
         check(t);
-    }
-
-    @Test
-    @LoadGraphWith(GRATEFUL)
-    public void g_V_outXfollowedByX_group_byXsongTypeX_byXbothE_group_byXlabelX_byXweight_sumXX() {
-        final Traversal<Vertex, Map<String, Map<String, Number>>> traversal = g.V().out("followedBy").<String, Map<String, Number>>group().by("songType").by(__.bothE().group().by(T.label).by(__.values("weight").sum()));
-        final Map<String, Map<String, Number>> map = traversal.next();
-        assertFalse(traversal.hasNext());
-        assertEquals(3, map.size());
-        assertTrue(map.containsKey(""));
-        assertTrue(map.containsKey("original"));
-        assertTrue(map.containsKey("cover"));
-        //
-        Map<String, Number> subMap = map.get("");
-        assertEquals(1, subMap.size());
-        assertEquals(179350, subMap.get("followedBy").intValue());
-        //
-        subMap = map.get("original");
-        assertEquals(3, subMap.size());
-        assertEquals(2185613, subMap.get("followedBy").intValue());
-        assertEquals(0, subMap.get("writtenBy").intValue());
-        assertEquals(0, subMap.get("sungBy").intValue());
-        //
-        subMap = map.get("cover");
-        assertEquals(3, subMap.size());
-        assertEquals(777982, subMap.get("followedBy").intValue());
-        assertEquals(0, subMap.get("writtenBy").intValue());
-        assertEquals(0, subMap.get("sungBy").intValue());
     }
 
     private void check(Traversal traversal) {

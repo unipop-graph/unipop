@@ -22,7 +22,7 @@ import java.util.*;
 /**
  * Created by sbarzilay on 10/31/16.
  */
-public class UniGraphGroupStep<S, K, V> extends UniBulkStep<S, Map<K, V>> implements TraversalParent {
+public class UniGraphGroupStep<S, K, V> extends UniBulkStep<S, Map<K, V>> implements TraversalParent, Barrier<Map<K,V>> {
     private final List<LocalQuery.LocalController> controllers;
     private final List<SearchVertexQuery.SearchVertexController> nonLocalControllers;
     private UniGraphLocalStep<S, K> keyStep;
@@ -71,7 +71,14 @@ public class UniGraphGroupStep<S, K, V> extends UniBulkStep<S, Map<K, V>> implem
                 result.put(key.get(), (UniGraphLocalStep<S, V>) valueStep.clone());
             Object prev = key.getSideEffects().get("prev");
             traversers.forEach(traverser -> {
-                if (prev.equals(traverser.get()))
+                if (prev instanceof List) {
+                    for (Object p : ((List) prev)) {
+                        if (p.equals(traverser.get())){
+                            result.get(key.get()).addStart(traverser);
+                            break;
+                        }
+                    }
+                } else if (prev.equals(traverser.get()))
                     result.get(key.get()).addStart(traverser);
             });
         });
@@ -90,6 +97,7 @@ public class UniGraphGroupStep<S, K, V> extends UniBulkStep<S, Map<K, V>> implem
             proccesed.next();
         Map<K, V> map = new HashMap<>();
         result.entrySet().forEach(kv -> {
+            kv.getValue().softReset();
             if (kv.getValue().hasNext())
                 map.put(kv.getKey(), (V) kv.getValue().next().get());
         });
@@ -97,5 +105,30 @@ public class UniGraphGroupStep<S, K, V> extends UniBulkStep<S, Map<K, V>> implem
             throw FastNoSuchElementException.instance();
         Traverser.Admin<Map<K, V>> generate = traversal.getTraverserGenerator().generate(map, (Step<Map<K, V>, Map<K, V>>) this, 1);
         return Collections.singleton(generate).iterator();
+    }
+
+    @Override
+    public void processAllStarts() {
+
+    }
+
+    @Override
+    public boolean hasNextBarrier() {
+        return false;
+    }
+
+    @Override
+    public Map<K, V> nextBarrier() throws NoSuchElementException {
+        return null;
+    }
+
+    @Override
+    public void addBarrier(Map<K, V> barrier) {
+
+    }
+
+    @Override
+    public MemoryComputeKey<Map<K, V>> getMemoryComputeKey() {
+        return null;
     }
 }

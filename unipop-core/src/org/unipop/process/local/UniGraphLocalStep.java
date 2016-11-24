@@ -244,6 +244,17 @@ public class UniGraphLocalStep<S, E> extends AbstractStep<S, E> implements Trave
     }
 
     @Override
+    public void reset() {
+        super.reset();
+        softReset();
+    }
+
+    public void softReset() {
+        localTraversal.reset();
+        results = EmptyIterator.instance();
+    }
+
+    @Override
     public String toString() {
         return StringFactory.stepString(this, this.localTraversal);
     }
