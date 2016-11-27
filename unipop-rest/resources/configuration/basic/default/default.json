@@ -1,0 +1,18 @@
+{
+  "class": "org.unipop.rest.RestSourceProvider",
+  "url": "http://localhost:9200",
+  "vertices": [
+    {
+      "addUrlTemplate": "/{{label}}/{{id}}",
+      "addTemplate": "{{properties}}",
+      "resource": "vertex",
+      "id": "@_id",
+      "label": "@_type",
+      "properties": {
+      },
+      "dynamicProperties": true
+    }
+  ],
+  "edges": [
+  ]
+}
