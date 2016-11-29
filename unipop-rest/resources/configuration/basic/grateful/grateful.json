@@ -1,40 +1,47 @@
 {
-  "class": "org.unipop.elastic.ElasticSourceProvider",
-  "clusterName": "unipop",
-  "addresses": "http://localhost:9200",
+  "class": "org.unipop.rest.RestSourceProvider",
+  "baseUrl": "http://localhost:9200/",
+  "addUrlTemplate": "/{{resource}}/{{type}}/{{id}}",
+  "addTemplate": "{\n{{#prop}}\"{{key}}\":\"{{value}}\"{{^-last}}, {{/-last}}{{/prop}}\n}",
+  "searchTemplate":"/home/sbarzilay/search.mustache",
+  "searchUrlTemplate": "{{resource}}/_search",
+  "deleteUrlTemplate": "/{{_label}}/{{_id}}",
+  "resultPath": "hits.hits",
+  "opTranslator": {
+    "eq": "term",
+    "within": "terms"
+  },
   "vertices": [
     {
-      "index": "vertex",
-      "id": "@_id",
-      "label": "@_type",
+      "resource": "vertex",
+      "id": "@_source.id",
+      "label": "@_source.type",
       "properties": {
-        "gremlin.partitionGraphStrategy.partition": "@partition"
+        "name": "@_source.name",
+        "songType": "@_source.songtype",
+        "performances": "@_source.performances"
       },
-      "dynamicProperties": true
+      "dynamicProperties": false
     }
   ],
   "edges": [
     {
-      "index": "edge",
-      "id": "@_id",
-      "label": "@_type",
+      "resource": "edge",
+      "id": "@_source.id",
+      "label": "@_source.type",
       "properties": {
-        "gremlin.partitionGraphStrategy.partition": "@partition"
+        "weight": "@_source.weight"
       },
-      "dynamicProperties": {
-        "excludeFields": ["outId", "inId", "outLabel", "inLabel"]
-      },
-      "outVertex": {
+      "dynamicProperties": false,
+      "outVertex":{
         "ref": true,
-        "id": "@outId",
-        "label": "@outLabel",
-        "properties": {}
+        "id": "@_source.outid",
+        "label": "@_source.outlabel"
       },
-      "inVertex": {
+      "inVertex":{
         "ref": true,
-        "id": "@inId",
-        "label": "@inLabel",
-        "properties": {}
+        "id": "@_source.inid",
+        "label": "@_source.inlabel"
       }
     }
   ]

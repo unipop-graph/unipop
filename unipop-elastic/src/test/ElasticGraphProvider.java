@@ -38,6 +38,12 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
         return baseConfiguration;
     }
 
+    @Override
+    public void loadGraphData(Graph graph, LoadGraphWith loadGraphWith, Class testClass, String testName) {
+        super.loadGraphData(graph, loadGraphWith, testClass, testName);
+        node.getClient().admin().indices().prepareRefresh().get();
+    }
+
     public String getSchemaConfiguration(LoadGraphWith.GraphData loadGraphWith) {
         String confDirectory = "/configuration/" + System.getenv("conf") + "/";
         if (loadGraphWith != null)

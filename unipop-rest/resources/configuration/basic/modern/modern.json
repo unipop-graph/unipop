@@ -1,21 +1,48 @@
 {
   "class": "org.unipop.rest.RestSourceProvider",
   "baseUrl": "http://localhost:9200/",
-  "addUrlTemplate": "/{{_type}}/{{_id}}",
-  "addTemplate": "{{{#prop}}\"{{key}}\":\"{{value}}\",{{/prop}}}",
-  "searchTemplate":"",
-  "searchUrlTemplate": "/_search",
+  "addUrlTemplate": "/{{resource}}/{{type}}/{{id}}",
+  "addTemplate": "{\n{{#prop}}\"{{key}}\":\"{{value}}\"{{^-last}}, {{/-last}}{{/prop}}\n}",
+  "searchTemplate":"/home/sbarzilay/search.mustache",
+  "searchUrlTemplate": "{{resource}}/_search",
   "deleteUrlTemplate": "/{{_label}}/{{_id}}",
+  "resultPath": "hits.hits",
+  "opTranslator": {
+    "eq": "term",
+    "within": "terms"
+  },
   "vertices": [
     {
       "resource": "vertex",
-      "id": "@_id",
-      "label": "@_type",
+      "id": "@_source.id",
+      "label": "@_source.type",
       "properties": {
+        "name": "@_source.name",
+        "age": "@_source.age",
+        "lang": "@_source.lang"
       },
-      "dynamicProperties": true
+      "dynamicProperties": false
     }
   ],
   "edges": [
+    {
+      "resource": "edge",
+      "id": "@_source.id",
+      "label": "@_source.type",
+      "properties": {
+        "weight": "@_source.weight"
+      },
+      "dynamicProperties": false,
+      "outVertex":{
+        "ref": true,
+        "id": "@_source.outid",
+        "label": "@_source.outlabel"
+      },
+      "inVertex":{
+        "ref": true,
+        "id": "@_source.inid",
+        "label": "@_source.inlabel"
+      }
+    }
   ]
 }
