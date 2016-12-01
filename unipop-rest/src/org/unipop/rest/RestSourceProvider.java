@@ -1,8 +1,5 @@
 package org.unipop.rest;
 
-//import com.github.mustachejava.DefaultMustacheFactory;
-//import com.github.mustachejava.Mustache;
-//import com.github.mustachejava.MustacheFactory;
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Template;
 import org.json.JSONObject;
@@ -14,11 +11,8 @@ import org.unipop.structure.UniGraph;
 
 import java.io.File;
 import java.io.FileReader;
-import java.io.Reader;
-import java.io.StringReader;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import static org.unipop.util.ConversionUtils.getList;

@@ -3,7 +3,7 @@
   "baseUrl": "http://localhost:9200/",
   "addUrlTemplate": "/{{resource}}/{{type}}/{{id}}",
   "addTemplate": "{\n{{#prop}}\"{{key}}\":\"{{value}}\"{{^-last}}, {{/-last}}{{/prop}}\n}",
-  "searchTemplate":"/home/sbarzilay/search.mustache",
+  "searchTemplate":"resources/search.mustache",
   "searchUrlTemplate": "{{resource}}/_search",
   "deleteUrlTemplate": "/{{_label}}/{{_id}}",
   "resultPath": "hits.hits",
