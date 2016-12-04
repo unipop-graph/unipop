@@ -36,8 +36,8 @@ public class RestEdge extends AbstractRestSchema<Edge> implements RestEdgeSchema
 
     protected VertexSchema createVertexSchema(String key) throws JSONException {
         JSONObject vertexConfiguration = this.json.optJSONObject(key);
-        if(vertexConfiguration == null) return null;
-        if(vertexConfiguration.optBoolean("ref", false)) return new ReferenceVertexSchema(vertexConfiguration, graph);
+        if (vertexConfiguration == null) return null;
+        if (vertexConfiguration.optBoolean("ref", false)) return new ReferenceVertexSchema(vertexConfiguration, graph);
         return new RestVertex(vertexConfiguration, baseUrl, graph, searchTemplate, searchUrlTemplate, addTemplate,
                 addUrlTemplate, deleteUrlTemplate, resultPath, opTranslator, maxResultSize);
     }
@@ -55,10 +55,11 @@ public class RestEdge extends AbstractRestSchema<Edge> implements RestEdgeSchema
 
     @Override
     public BaseRequest getSearch(SearchVertexQuery query) {
+        int limit = query.getOrders() == null || query.getOrders().size() > 0 ? -1 : query.getLimit();
         PredicatesHolder edgePredicates = this.toPredicates(query.getPredicates());
         PredicatesHolder vertexPredicates = this.getVertexPredicates(query.getVertices(), query.getDirection());
         PredicatesHolder predicatesHolder = PredicatesHolderFactory.and(edgePredicates, vertexPredicates);
-        return createSearch(predicatesHolder, query.getLimit());
+        return createSearch(predicatesHolder, limit);
     }
 
     @Override
@@ -95,8 +96,8 @@ public class RestEdge extends AbstractRestSchema<Edge> implements RestEdgeSchema
     protected PredicatesHolder getVertexPredicates(List<Vertex> vertices, Direction direction) {
         PredicatesHolder outPredicates = this.outVertexSchema.toPredicates(vertices);
         PredicatesHolder inPredicates = this.inVertexSchema.toPredicates(vertices);
-        if(direction.equals(Direction.OUT) && outPredicates.notAborted()) return outPredicates;
-        if(direction.equals(Direction.IN) && inPredicates.notAborted()) return inPredicates;
+        if (direction.equals(Direction.OUT) && outPredicates.notAborted()) return outPredicates;
+        if (direction.equals(Direction.IN) && inPredicates.notAborted()) return inPredicates;
         if (outPredicates.notAborted() && inPredicates.notAborted())
             return PredicatesHolderFactory.or(inPredicates, outPredicates);
         else if (outPredicates.isAborted()) return inPredicates;

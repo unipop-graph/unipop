@@ -5,8 +5,9 @@ import org.junit.runner.RunWith;
 import org.unipop.structure.UniGraph;
 import org.unipop.test.UnipopProcessSuite;
 import test.ElasticGraphProvider;
+import test.RestGraphProvider;
 
 @RunWith(UnipopProcessSuite.class)
-@GraphProviderClass(provider = ElasticGraphProvider.class, graph = UniGraph.class)
+@GraphProviderClass(provider = RestGraphProvider.class, graph = UniGraph.class)
 public class RestProcessSuite {
 }

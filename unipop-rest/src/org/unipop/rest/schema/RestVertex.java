@@ -22,8 +22,9 @@ public class RestVertex extends AbstractRestSchema<Vertex> implements RestVertex
 
     @Override
     public BaseRequest getSearch(DeferredVertexQuery query) {
+        int limit = query.getOrders() == null || query.getOrders().size() > 0 ? -1 : query.getLimit();
         PredicatesHolder predicatesHolder = toPredicates(query.getVertices());
-        return createSearch(predicatesHolder, query.getLimit());
+        return createSearch(predicatesHolder, limit);
     }
 
     @Override

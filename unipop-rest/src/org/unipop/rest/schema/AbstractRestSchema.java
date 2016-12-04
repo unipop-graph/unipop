@@ -58,10 +58,11 @@ public abstract class AbstractRestSchema<E extends Element> extends AbstractElem
 
     @Override
     public BaseRequest getSearch(SearchQuery<E> query) {
-        return createSearch(this.toPredicates(query.getPredicates()), query.getLimit());
+        int limit = query.getOrders() == null || query.getOrders().size() > 0 ? -1 : query.getLimit();
+        return createSearch(this.toPredicates(query.getPredicates()), limit);
     }
 
-    protected BaseRequest createSearch(PredicatesHolder predicatesHolder, int limit){
+    protected BaseRequest createSearch(PredicatesHolder predicatesHolder, int limit) {
         if (limit == -1)
             limit = maxResultSize;
         else
@@ -78,7 +79,7 @@ public abstract class AbstractRestSchema<E extends Element> extends AbstractElem
         return request;
     }
 
-    protected Set<String> toFields(){
+    protected Set<String> toFields() {
         Set<String> keys = propertySchemas.stream().map(PropertySchema::getKey).collect(Collectors.toSet());
         return toFields(keys);
     }
@@ -110,12 +111,16 @@ public abstract class AbstractRestSchema<E extends Element> extends AbstractElem
                 if (data != null) {
                     if (!NumberUtils.isNumber(data.toString()))
                         fieldsMap.put(field, data);
-                    else
-                        fieldsMap.put(field, NumberUtils.createNumber(data.toString()));
+                    else {
+                        Number number = NumberUtils.createNumber(data.toString());
+                        if (number instanceof Float)
+                            number = Double.parseDouble(data.toString());
+                        fieldsMap.put(field, number);
+                    }
                 }
             });
             E element = create(fieldsMap);
-            if(element != null && query.test(element, query.getPredicates()))
+            if (element != null && query.test(element, query.getPredicates()))
                 elements.add(element);
         }
         return elements;
