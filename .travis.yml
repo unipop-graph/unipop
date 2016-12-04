@@ -10,4 +10,4 @@ addons:
     packages:
       - oracle-java8-installer
 script: 
-- "travis_wait 50 mvn clean install -Dci"
+- "mvn clean install -Dci"
