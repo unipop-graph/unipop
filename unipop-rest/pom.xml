@@ -49,6 +49,31 @@
             <plugins>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <configuration>
+                        <testFailureIgnore>false</testFailureIgnore>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>basic</id>
+                            <goals>
+                                <goal>test</goal>
+                            </goals>
+                            <configuration>
+                                <includes>
+                                    <include>**/*RestProcessSuite*.java</include>
+                                </includes>
+                                <environmentVariables>
+                                    <conf>basic</conf>
+                                </environmentVariables>
+                                <skip>false</skip>
+                                <reportNameSuffix>BASIC</reportNameSuffix>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>3.1</version>
                     <configuration>
