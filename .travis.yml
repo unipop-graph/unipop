@@ -5,10 +5,9 @@ jdk:
   - oraclejdk8
 sudo: required
 dist: trusty
-install: travis_wait 50 mvn install
 addons:
   apt:
     packages:
       - oracle-java8-installer
 script: 
-- "mvn clean install -Dci"
+- "travis_wait 50 mvn clean install -Dci"
