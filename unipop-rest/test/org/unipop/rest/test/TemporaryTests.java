@@ -32,36 +32,6 @@ public class TemporaryTests extends AbstractGremlinTest {
     }
 
     @Test
-    @LoadGraphWith(GRATEFUL)
-    public void g_V_hasLabelXsongX_order_byXperfomances_decrX_byXnameX_rangeX110_120X_name() {
-        final Traversal<Vertex, String> traversal = g.V().hasLabel("song").order().by("performances", Order.decr).by("name").range(110, 120).values("name");
-        printTraversalForm(traversal);
-        final List<String> results = traversal.toList();
-        assertEquals(10, results.size());
-        assertEquals("WANG DANG DOODLE", results.get(0));
-        assertEquals("THE ELEVEN", results.get(1));
-        assertEquals("WAY TO GO HOME", results.get(2));
-        assertEquals("FOOLISH HEART", results.get(3));
-        assertEquals("GIMME SOME LOVING", results.get(4));
-        assertEquals("DUPREES DIAMOND BLUES", results.get(5));
-        assertEquals("CORRINA", results.get(6));
-        assertEquals("PICASSO MOON", results.get(7));
-        assertEquals("KNOCKING ON HEAVENS DOOR", results.get(8));
-        assertEquals("MEMPHIS BLUES", results.get(9));
-        assertFalse(traversal.hasNext());
-    }
-
-    private void assert_g_v2_in(final Traversal<Vertex, Vertex> traversal) {
-        printTraversalForm(traversal);
-        int counter = 0;
-        while (traversal.hasNext()) {
-            counter++;
-            assertEquals(traversal.next().value("name"), "marko");
-        }
-        assertEquals(1, counter);
-    }
-
-    @Test
     @LoadGraphWith(MODERN)
     public void test() {
         Traversal t = g.V().limit(10);

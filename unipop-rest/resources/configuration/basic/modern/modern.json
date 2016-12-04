@@ -1,11 +1,17 @@
 {
   "class": "org.unipop.rest.RestSourceProvider",
   "baseUrl": "http://localhost:9200/",
-  "addUrlTemplate": "/{{resource}}/{{type}}/{{id}}",
-  "addTemplate": "{\n{{#prop}}\"{{key}}\":\"{{value}}\"{{^-last}}, {{/-last}}{{/prop}}\n}",
-  "searchTemplate":"resources/search.mustache",
-  "searchUrlTemplate": "{{resource}}/_search",
-  "deleteUrlTemplate": "/{{_label}}/{{_id}}",
+  "add":{
+    "url": "/{{resource}}/{{type}}/{{id}}",
+    "template": "{\n{{#prop}}\"{{key}}\":\"{{value}}\"{{^-last}}, {{/-last}}{{/prop}}\n}"
+  },
+  "search":{
+    "url": "{{resource}}/_search",
+    "template": "resources/search.mustache"
+  },
+  "delete":{
+    "url" : "/{{_label}}/{{_id}}"
+  },
   "resultPath": "hits.hits",
   "opTranslator": {
     "eq": "term",
