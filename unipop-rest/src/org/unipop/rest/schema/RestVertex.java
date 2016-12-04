@@ -16,8 +16,8 @@ import java.util.Map;
  * Created by sbarzilay on 24/11/16.
  */
 public class RestVertex extends AbstractRestSchema<Vertex> implements RestVertexSchema {
-    public RestVertex(JSONObject configuration, String url, UniGraph graph, Template searchTemplate, Template searchUrlTemplate, Template addTemplate, Template addUrlTemplate, Template deleteUrlTemplate, String resultPath, JSONObject opTranslator, int maxResultSize) {
-        super(configuration, graph, url, searchTemplate, searchUrlTemplate, addTemplate, addUrlTemplate, deleteUrlTemplate, resultPath, opTranslator, maxResultSize);
+    public RestVertex(JSONObject configuration, String url, UniGraph graph, Template searchTemplate, Template searchUrlTemplate, Template addTemplate, Template addUrlTemplate, Template deleteUrlTemplate, Template commitUrlTemplate, String resultPath, JSONObject opTranslator, int maxResultSize) {
+        super(configuration, graph, url, searchTemplate, searchUrlTemplate, addTemplate, addUrlTemplate, deleteUrlTemplate, commitUrlTemplate, resultPath, opTranslator, maxResultSize);
     }
 
     @Override

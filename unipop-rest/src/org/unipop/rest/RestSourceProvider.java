@@ -27,6 +27,7 @@ public class RestSourceProvider implements SourceProvider{
     private Template addTemplate;
     private Template addUrlTemplate;
     private Template deleteUrlTemplate;
+    private Template commitUrlTemplate;
     private String resultPath;
     private JSONObject opTranslator;
     private int maxResultSize;
@@ -54,6 +55,7 @@ public class RestSourceProvider implements SourceProvider{
         this.searchUrlTemplate = Mustache.compiler().compile(getReader(search.optString("url", "")));
         this.addUrlTemplate = Mustache.compiler().compile(getReader(add.optString("url")));
         this.addTemplate = Mustache.compiler().compile(getReader(add.optString("template")));
+        this.commitUrlTemplate = Mustache.compiler().compile(getReader(add.optString("commit")));
         this.deleteUrlTemplate = Mustache.compiler().compile(getReader(delete.optString("url")));
         this.resultPath = configuration.optString("resultPath");
         this.opTranslator = configuration.getJSONObject("opTranslator");
@@ -71,11 +73,11 @@ public class RestSourceProvider implements SourceProvider{
     }
 
     private RestSchema createEdgeSchema(JSONObject json, String url) {
-        return new RestEdge(json, graph, url, searchTemplate, searchUrlTemplate, addTemplate, addUrlTemplate, deleteUrlTemplate, resultPath, opTranslator, maxResultSize);
+        return new RestEdge(json, graph, url, searchTemplate, searchUrlTemplate, addTemplate, addUrlTemplate, deleteUrlTemplate, commitUrlTemplate, resultPath, opTranslator, maxResultSize);
     }
 
     private RestSchema createVertexSchema(JSONObject json, String url) {
-        return new RestVertex(json, url, graph, searchTemplate, searchUrlTemplate, addTemplate, addUrlTemplate, deleteUrlTemplate, resultPath, opTranslator, maxResultSize);
+        return new RestVertex(json, url, graph, searchTemplate, searchUrlTemplate, addTemplate, addUrlTemplate, deleteUrlTemplate, commitUrlTemplate, resultPath, opTranslator, maxResultSize);
     }
 
     @Override

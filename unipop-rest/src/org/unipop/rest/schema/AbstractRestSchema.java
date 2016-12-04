@@ -4,6 +4,7 @@ package org.unipop.rest.schema;
 //import com.github.Templatejava.Template;
 //import com.github.Templatejava.TemplateFactory;
 
+import com.mashape.unirest.http.exceptions.UnirestException;
 import com.samskivert.mustache.Template;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
@@ -41,8 +42,9 @@ public abstract class AbstractRestSchema<E extends Element> extends AbstractElem
     protected String resultPath;
     protected JSONObject opTranslator;
     protected int maxResultSize;
+    protected Template commitUrlTemplate;
 
-    public AbstractRestSchema(JSONObject configuration, UniGraph graph, String url, Template searchTemplate, Template searchUrlTemplate, Template addTemplate, Template addUrlTemplate, Template deleteUrlTemplate, String resultPath, JSONObject opTranslator, int maxResultSize) {
+    public AbstractRestSchema(JSONObject configuration, UniGraph graph, String url, Template searchTemplate, Template searchUrlTemplate, Template addTemplate, Template addUrlTemplate, Template deleteUrlTemplate, Template commitUrlTemplate, String resultPath, JSONObject opTranslator, int maxResultSize) {
         super(configuration, graph);
         this.resource = configuration.optString("resource");
         this.searchTemplate = searchTemplate;
@@ -54,6 +56,7 @@ public abstract class AbstractRestSchema<E extends Element> extends AbstractElem
         this.resultPath = resultPath;
         this.opTranslator = opTranslator;
         this.maxResultSize = maxResultSize;
+        this.commitUrlTemplate = commitUrlTemplate;
     }
 
     @Override
@@ -75,6 +78,12 @@ public abstract class AbstractRestSchema<E extends Element> extends AbstractElem
         String url = searchUrlTemplate.execute(urlMap);
         RequestBodyEntity request = Unirest.post(baseUrl + url.toString())
                 .body(body.toString());
+
+        try {
+            Unirest.get(baseUrl + commitUrlTemplate.execute(urlMap)).asJson();
+        } catch (UnirestException e) {
+            e.printStackTrace();
+        }
 
         return request;
     }

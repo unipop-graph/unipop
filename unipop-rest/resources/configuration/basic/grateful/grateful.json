@@ -3,7 +3,8 @@
   "baseUrl": "http://localhost:9200/",
   "add":{
     "url": "/{{resource}}/{{type}}/{{id}}",
-    "template": "{\n{{#prop}}\"{{key}}\":\"{{value}}\"{{^-last}}, {{/-last}}{{/prop}}\n}"
+    "template": "{\n{{#prop}}\"{{key}}\":\"{{value}}\"{{^-last}}, {{/-last}}{{/prop}}\n}",
+    "commit": "/{{resource}}/_refresh"
   },
   "search":{
     "url": "{{resource}}/_search",

@@ -28,8 +28,8 @@ public class RestEdge extends AbstractRestSchema<Edge> implements RestEdgeSchema
     protected VertexSchema outVertexSchema;
     protected VertexSchema inVertexSchema;
 
-    public RestEdge(JSONObject configuration, UniGraph graph, String url, Template searchTemplate, Template searchUrlTemplate, Template addTemplate, Template addUrlTemplate, Template deleteUrlTemplate, String resultPath, JSONObject opTranslator, int maxResultSize) {
-        super(configuration, graph, url, searchTemplate, searchUrlTemplate, addTemplate, addUrlTemplate, deleteUrlTemplate, resultPath, opTranslator, maxResultSize);
+    public RestEdge(JSONObject configuration, UniGraph graph, String url, Template searchTemplate, Template searchUrlTemplate, Template addTemplate, Template addUrlTemplate, Template deleteUrlTemplate, Template commitUrlTemplate, String resultPath, JSONObject opTranslator, int maxResultSize) {
+        super(configuration, graph, url, searchTemplate, searchUrlTemplate, addTemplate, addUrlTemplate, deleteUrlTemplate, commitUrlTemplate, resultPath, opTranslator, maxResultSize);
         this.outVertexSchema = createVertexSchema("outVertex");
         this.inVertexSchema = createVertexSchema("inVertex");
     }
@@ -39,7 +39,7 @@ public class RestEdge extends AbstractRestSchema<Edge> implements RestEdgeSchema
         if (vertexConfiguration == null) return null;
         if (vertexConfiguration.optBoolean("ref", false)) return new ReferenceVertexSchema(vertexConfiguration, graph);
         return new RestVertex(vertexConfiguration, baseUrl, graph, searchTemplate, searchUrlTemplate, addTemplate,
-                addUrlTemplate, deleteUrlTemplate, resultPath, opTranslator, maxResultSize);
+                addUrlTemplate, deleteUrlTemplate, commitUrlTemplate, resultPath, opTranslator, maxResultSize);
     }
 
 
