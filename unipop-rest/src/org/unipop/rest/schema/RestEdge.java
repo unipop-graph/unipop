@@ -75,10 +75,14 @@ public class RestEdge extends AbstractRestSchema<Edge> implements RestEdgeSchema
     }
 
     @Override
-    public BaseRequest addElement(Edge element) {
-        Map<String, Object> stringObjectMap = Stream.of(outVertexSchema.toFields(element.outVertex()).entrySet(),
-                inVertexSchema.toFields(element.inVertex()).entrySet(),
-                toFields(element).entrySet()).flatMap(Collection::stream)
+    public BaseRequest addElement(Edge element) throws NoSuchElementException{
+        Map<String, Object> outVertexFields = outVertexSchema.toFields(element.outVertex());
+        Map<String, Object> inVertexFields = inVertexSchema.toFields(element.inVertex());
+        Map<String, Object> fields = toFields(element);
+        if (fields == null || outVertexFields == null || inVertexFields == null) throw new NoSuchElementException();
+        Map<String, Object> stringObjectMap = Stream.of(outVertexFields.entrySet(),
+                inVertexFields.entrySet(),
+                fields.entrySet()).flatMap(Collection::stream)
                 .map(entry -> {
                     String[] split = entry.getKey().split("\\.");
                     return new HashMap.SimpleEntry<>(split[split.length - 1], entry.getValue());

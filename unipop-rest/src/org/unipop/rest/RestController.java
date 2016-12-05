@@ -109,19 +109,35 @@ public class RestController implements SimpleController {
 
     @Override
     public <E extends Element> void remove(RemoveQuery<E> uniQuery) {
-
+        uniQuery.getElements().forEach(element -> {
+            Set<? extends RestSchema<Element>> schemas = getSchemas(element.getClass());
+            for (RestSchema<Element> schema : schemas) {
+                BaseRequest delete = schema.delete(element);
+                try {
+                    HttpResponse<JsonNode> jsonNodeHttpResponse = delete.asJson();
+                    if(jsonNodeHttpResponse.getStatus() == 200)
+                        break;
+                } catch (UnirestException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 
     @Override
     public Vertex addVertex(AddVertexQuery uniQuery) {
         UniVertex vertex = new UniVertex(uniQuery.getProperties(), graph);
-        try {
-            BaseRequest baseRequest = vertexSchemas.iterator().next().addElement(vertex);// TODO: iterate all schemas
-            if (baseRequest == null)
-                return vertex;
-            baseRequest.asJson();
-        } catch (UnirestException e) {
-            e.printStackTrace();
+        for (RestVertexSchema vertexSchema : vertexSchemas) {
+            try {
+                BaseRequest baseRequest = vertexSchema.addElement(vertex);
+                if (baseRequest == null)
+                    return vertex;
+                baseRequest.asJson();
+            } catch (UnirestException e) {
+                e.printStackTrace();
+            } catch (NoSuchElementException e) {
+                continue;
+            }
         }
         return vertex;
     }
@@ -130,13 +146,17 @@ public class RestController implements SimpleController {
     public <E extends Element> void property(PropertyQuery<E> uniQuery) {
         E element = uniQuery.getElement();
         Set<? extends RestSchema<E>> schemas = getSchemas(element.getClass());
-        try {
-            BaseRequest baseRequest = schemas.iterator().next().addElement(element);// TODO: iterate all schemas
-            if (baseRequest == null)
-                return;
-            baseRequest.asJson();
-        } catch (UnirestException e) {
-            e.printStackTrace();
+        for (RestSchema<E> schema : schemas) {
+            try {
+                BaseRequest baseRequest = schema.addElement(element);
+                if (baseRequest == null)
+                    return;
+                baseRequest.asJson();
+            } catch (UnirestException e) {
+                e.printStackTrace();
+            } catch (NoSuchElementException e) {
+                continue;
+            }
         }
     }
 
@@ -149,13 +169,17 @@ public class RestController implements SimpleController {
     @Override
     public Edge addEdge(AddEdgeQuery uniQuery) {
         UniEdge edge = new UniEdge(uniQuery.getProperties(), uniQuery.getOutVertex(), uniQuery.getInVertex(), graph);
-        try {
-            BaseRequest baseRequest = edgeSchemas.iterator().next().addElement(edge);// TODO: iterate all schemas
-            if (baseRequest == null)
-                return edge;
-            baseRequest.asJson();
-        } catch (UnirestException e) {
-            e.printStackTrace();
+        for (RestEdgeSchema edgeSchema : edgeSchemas) {
+            try {
+                BaseRequest baseRequest = edgeSchema.addElement(edge);
+                if (baseRequest == null)
+                    return edge;
+                baseRequest.asJson();
+            } catch (UnirestException e) {
+                e.printStackTrace();
+            } catch (NoSuchElementException e) {
+                continue;
+            }
         }
         return edge;
     }

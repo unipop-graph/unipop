@@ -36,20 +36,23 @@ public class TemplateHolder {
         JSONObject search = configuration.optJSONObject("search");
         JSONObject add = configuration.optJSONObject("add");
         JSONObject delete = configuration.optJSONObject("delete");
-        JSONObject bulk = add.optJSONObject("bulk");
+        if (add != null) {
+            JSONObject bulk = add.optJSONObject("bulk");
+            this.addUrlTemplate = Mustache.compiler().compile(getReader(add.optString("url")));
+            this.addTemplate = Mustache.compiler().compile(getReader(add.optString("template")));
+            this.commitUrlTemplate = Mustache.compiler().compile(getReader(add.optString("commit")));
+            if (bulk != null) {
+                this.bulkUrlTemplate = Mustache.compiler().compile(getReader(bulk.optString("url")));
+                this.bulkTemplate = Mustache.compiler().escapeHTML(false).standardsMode(true).withLoader(s ->
+                        getReader(add.optString("template"))).compile(getReader(bulk.optString("template")));
+            }
+        }
         String searchString = search.getString("template");
         this.searchTemplate = Mustache.compiler().escapeHTML(false).standardsMode(true).withLoader(s ->
                 getReader(searchString)).compile(getReader(searchString));
         this.searchUrlTemplate = Mustache.compiler().compile(getReader(search.optString("url", "")));
-        this.addUrlTemplate = Mustache.compiler().compile(getReader(add.optString("url")));
-        this.addTemplate = Mustache.compiler().compile(getReader(add.optString("template")));
-        this.commitUrlTemplate = Mustache.compiler().compile(getReader(add.optString("commit")));
-        this.deleteUrlTemplate = Mustache.compiler().compile(getReader(delete.optString("url")));
-        if (bulk != null) {
-            this.bulkUrlTemplate = Mustache.compiler().compile(getReader(bulk.optString("url")));
-            this.bulkTemplate = Mustache.compiler().escapeHTML(false).standardsMode(true).withLoader(s ->
-                    getReader(add.optString("template"))).compile(getReader(bulk.optString("template")));
-        }
+        if (delete != null)
+            this.deleteUrlTemplate = Mustache.compiler().compile(getReader(delete.optString("url")));
     }
 
     public Template getSearchUrlTemplate() {
@@ -86,5 +89,17 @@ public class TemplateHolder {
 
     public boolean isBulk() {
         return bulkTemplate != null;
+    }
+
+    public boolean isAdd() {
+        return addUrlTemplate != null;
+    }
+
+    public boolean isCommit() {
+        return commitUrlTemplate != null;
+    }
+
+    public boolean isDelete() {
+        return deleteUrlTemplate != null;
     }
 }

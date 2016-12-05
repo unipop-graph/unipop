@@ -9,6 +9,7 @@ import org.unipop.query.search.SearchQuery;
 import org.unipop.schema.element.ElementSchema;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 /**
  * Created by sbarzilay on 24/11/16.
@@ -17,6 +18,6 @@ public interface RestSchema<E extends Element> extends ElementSchema<E> {
     BaseRequest getSearch(SearchQuery<E> query);
     List<E> parseResults(HttpResponse<JsonNode> result, PredicateQuery query);
 
-    BaseRequest addElement(E element);
+    BaseRequest addElement(E element) throws NoSuchElementException;
     BaseRequest delete(E element);
 }

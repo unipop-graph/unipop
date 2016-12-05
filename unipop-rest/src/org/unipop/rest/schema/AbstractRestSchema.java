@@ -73,7 +73,8 @@ public abstract class AbstractRestSchema<E extends Element> extends AbstractElem
         try {
             if (bulk.size() > 0)
                 runBulk();
-            Unirest.get(baseUrl + templateHolder.getCommitUrlTemplate().execute(urlMap)).asJson();
+            if (templateHolder.isCommit())
+                Unirest.get(baseUrl + templateHolder.getCommitUrlTemplate().execute(urlMap)).asJson();
         } catch (UnirestException e) {
             e.printStackTrace();
         }
@@ -142,8 +143,10 @@ public abstract class AbstractRestSchema<E extends Element> extends AbstractElem
     }
 
     @Override
-    public BaseRequest addElement(E element) {
-        Map<String, Object> stringObjectMap = toFields(element)
+    public BaseRequest addElement(E element) throws NoSuchElementException{
+        Map<String, Object> fields = toFields(element);
+        if (fields == null) throw new NoSuchElementException();
+        Map<String, Object> stringObjectMap = fields
                 .entrySet().stream()
                 .map(entry -> {
                     String[] split = entry.getKey().split("\\.");
@@ -168,13 +171,17 @@ public abstract class AbstractRestSchema<E extends Element> extends AbstractElem
         String url = templateHolder.getAddUrlTemplate().execute(urlMap);
 
         String body = templateHolder.getAddTemplate().execute(Collections.singletonMap("prop", object.entrySet()));
-
-        return Unirest.post(baseUrl + url.toString()).body(body);
+        if (templateHolder.isAdd())
+            return Unirest.post(baseUrl + url.toString()).body(body);
+        return null;
     }
 
     @Override
     public BaseRequest delete(E element) {
-        String url = templateHolder.getDeleteUrlTemplate().execute(element);
-        return Unirest.delete(baseUrl + url.toString());
+        if(templateHolder.isDelete()) {
+            String url = templateHolder.getDeleteUrlTemplate().execute(element);
+            return Unirest.delete(baseUrl + url.toString());
+        }
+        return null;
     }
 }
