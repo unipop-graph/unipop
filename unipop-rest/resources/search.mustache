@@ -1,0 +1,70 @@
+{
+	{{#limit}}
+	"size":{{.}},
+	{{/limit}}
+	{{^predicates}}
+	"query":{"match_all":{}}
+	{{/predicates}}
+	{{#predicates}}
+	"query":{
+		"bool":{
+			"must":[
+			{{#and}}
+				{{#predicates}}
+					{{#.}}
+					{
+						"{{op}}":
+							{
+								"{{key}}": {{value}}
+							}
+					}
+					{{/.}}
+					{{^-last}}, {{/-last}}
+					{{#-last}}
+						{{#children}}
+							{{#-first}}, {{/-first}}
+							{{>subtmpl}}
+							{{^-last}}, {{/-last}}
+						{{/children}}
+					 {{/-last}}
+				{{/predicates}}
+				{{^predicates}}
+					{{#children}}
+						{{>subtmpl}}
+						{{^-last}}, {{/-last}}
+					{{/children}}
+				{{/predicates}}
+			{{/and}}
+			],
+			"should":[
+			{{#or}}
+				{{#predicates}}
+					{{#.}}
+					{
+						"{{op}}":
+							{
+								"{{key}}": {{value}}
+							}
+					}
+					{{/.}}
+					{{^-last}}, {{/-last}}
+					{{#-last}}
+						{{#children}}
+							{{#-first}}, {{/-first}}
+							{{>subtmpl}}
+							{{^-last}}, {{/-last}}
+						{{/children}}
+					 {{/-last}}
+				{{/predicates}}
+				{{^predicates}}
+					{{#children}}
+						{{>subtmpl}}
+						{{^-last}}, {{/-last}}
+					{{/children}}
+				{{/predicates}}
+			{{/or}}
+			]
+		}
+	}
+	{{/predicates}}
+}
