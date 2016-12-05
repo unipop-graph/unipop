@@ -12,6 +12,7 @@ import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.SearchVertexQuery;
 import org.unipop.rest.RestEdgeSchema;
+import org.unipop.rest.util.TemplateHolder;
 import org.unipop.schema.element.VertexSchema;
 import org.unipop.schema.reference.ReferenceVertexSchema;
 import org.unipop.structure.UniEdge;
@@ -28,8 +29,8 @@ public class RestEdge extends AbstractRestSchema<Edge> implements RestEdgeSchema
     protected VertexSchema outVertexSchema;
     protected VertexSchema inVertexSchema;
 
-    public RestEdge(JSONObject configuration, UniGraph graph, String url, Template searchTemplate, Template searchUrlTemplate, Template addTemplate, Template addUrlTemplate, Template deleteUrlTemplate, Template commitUrlTemplate, String resultPath, JSONObject opTranslator, int maxResultSize) {
-        super(configuration, graph, url, searchTemplate, searchUrlTemplate, addTemplate, addUrlTemplate, deleteUrlTemplate, commitUrlTemplate, resultPath, opTranslator, maxResultSize);
+    public RestEdge(JSONObject configuration, UniGraph graph, String url, TemplateHolder templateHolder, String resultPath, JSONObject opTranslator, int maxResultSize) {
+        super(configuration, graph, url, templateHolder, resultPath, opTranslator, maxResultSize);
         this.outVertexSchema = createVertexSchema("outVertex");
         this.inVertexSchema = createVertexSchema("inVertex");
     }
@@ -38,8 +39,7 @@ public class RestEdge extends AbstractRestSchema<Edge> implements RestEdgeSchema
         JSONObject vertexConfiguration = this.json.optJSONObject(key);
         if (vertexConfiguration == null) return null;
         if (vertexConfiguration.optBoolean("ref", false)) return new ReferenceVertexSchema(vertexConfiguration, graph);
-        return new RestVertex(vertexConfiguration, baseUrl, graph, searchTemplate, searchUrlTemplate, addTemplate,
-                addUrlTemplate, deleteUrlTemplate, commitUrlTemplate, resultPath, opTranslator, maxResultSize);
+        return new RestVertex(vertexConfiguration, baseUrl, graph, templateHolder, resultPath, opTranslator, maxResultSize);
     }
 
 
@@ -86,11 +86,7 @@ public class RestEdge extends AbstractRestSchema<Edge> implements RestEdgeSchema
         Map<String, Object> urlMap = new HashMap<>();
         urlMap.putAll(stringObjectMap);
         urlMap.put("resource", resource);
-        String url = addUrlTemplate.execute(urlMap);
-
-        String body = addTemplate.execute(Collections.singletonMap("prop", stringObjectMap.entrySet()));
-
-        return Unirest.post(baseUrl + url.toString()).body(body);
+        return insertElement(urlMap, stringObjectMap);
     }
 
     protected PredicatesHolder getVertexPredicates(List<Vertex> vertices, Direction direction) {

@@ -7,6 +7,7 @@ import org.json.JSONObject;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.rest.RestVertexSchema;
+import org.unipop.rest.util.TemplateHolder;
 import org.unipop.structure.UniGraph;
 import org.unipop.structure.UniVertex;
 
@@ -16,8 +17,8 @@ import java.util.Map;
  * Created by sbarzilay on 24/11/16.
  */
 public class RestVertex extends AbstractRestSchema<Vertex> implements RestVertexSchema {
-    public RestVertex(JSONObject configuration, String url, UniGraph graph, Template searchTemplate, Template searchUrlTemplate, Template addTemplate, Template addUrlTemplate, Template deleteUrlTemplate, Template commitUrlTemplate, String resultPath, JSONObject opTranslator, int maxResultSize) {
-        super(configuration, graph, url, searchTemplate, searchUrlTemplate, addTemplate, addUrlTemplate, deleteUrlTemplate, commitUrlTemplate, resultPath, opTranslator, maxResultSize);
+    public RestVertex(JSONObject configuration, String url, UniGraph graph, TemplateHolder templateHolder, String resultPath, JSONObject opTranslator, int maxResultSize) {
+        super(configuration, graph, url, templateHolder, resultPath, opTranslator, maxResultSize);
     }
 
     @Override

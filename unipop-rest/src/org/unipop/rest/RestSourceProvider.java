@@ -7,6 +7,7 @@ import org.unipop.query.controller.SourceProvider;
 import org.unipop.query.controller.UniQueryController;
 import org.unipop.rest.schema.RestEdge;
 import org.unipop.rest.schema.RestVertex;
+import org.unipop.rest.util.TemplateHolder;
 import org.unipop.structure.UniGraph;
 
 import java.io.*;
@@ -22,41 +23,16 @@ import static org.unipop.util.ConversionUtils.getList;
  */
 public class RestSourceProvider implements SourceProvider{
     private UniGraph graph;
-    private Template searchUrlTemplate;
-    private Template searchTemplate;
-    private Template addTemplate;
-    private Template addUrlTemplate;
-    private Template deleteUrlTemplate;
-    private Template commitUrlTemplate;
     private String resultPath;
     private JSONObject opTranslator;
     private int maxResultSize;
-
-    private Reader getReader(String mustache){
-        if (mustache.contains("{"))
-            return new StringReader(mustache);
-        try {
-            return new FileReader(mustache);
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException("file: " + mustache + " not found");
-        }
-    }
+    private TemplateHolder templateHolder;
 
     @Override
     public Set<UniQueryController> init(UniGraph graph, JSONObject configuration) throws Exception {
         this.graph = graph;
         String url = configuration.optString("baseUrl");
-        JSONObject search = configuration.optJSONObject("search");
-        JSONObject add = configuration.optJSONObject("add");
-        JSONObject delete = configuration.optJSONObject("delete");
-        String searchString = search.getString("template");
-        this.searchTemplate = Mustache.compiler().escapeHTML(false).standardsMode(true).withLoader(s ->
-            getReader(searchString)).compile(getReader(searchString));
-        this.searchUrlTemplate = Mustache.compiler().compile(getReader(search.optString("url", "")));
-        this.addUrlTemplate = Mustache.compiler().compile(getReader(add.optString("url")));
-        this.addTemplate = Mustache.compiler().compile(getReader(add.optString("template")));
-        this.commitUrlTemplate = Mustache.compiler().compile(getReader(add.optString("commit")));
-        this.deleteUrlTemplate = Mustache.compiler().compile(getReader(delete.optString("url")));
+        templateHolder = new TemplateHolder(configuration);
         this.resultPath = configuration.optString("resultPath");
         this.opTranslator = configuration.getJSONObject("opTranslator");
         this.maxResultSize = configuration.optInt("maxResultSize", 10000);
@@ -73,11 +49,11 @@ public class RestSourceProvider implements SourceProvider{
     }
 
     private RestSchema createEdgeSchema(JSONObject json, String url) {
-        return new RestEdge(json, graph, url, searchTemplate, searchUrlTemplate, addTemplate, addUrlTemplate, deleteUrlTemplate, commitUrlTemplate, resultPath, opTranslator, maxResultSize);
+        return new RestEdge(json, graph, url, templateHolder, resultPath, opTranslator, maxResultSize);
     }
 
     private RestSchema createVertexSchema(JSONObject json, String url) {
-        return new RestVertex(json, url, graph, searchTemplate, searchUrlTemplate, addTemplate, addUrlTemplate, deleteUrlTemplate, commitUrlTemplate, resultPath, opTranslator, maxResultSize);
+        return new RestVertex(json, url, graph, templateHolder, resultPath, opTranslator, maxResultSize);
     }
 
     @Override

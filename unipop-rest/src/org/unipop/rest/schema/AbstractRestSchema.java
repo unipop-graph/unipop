@@ -1,9 +1,5 @@
 package org.unipop.rest.schema;
 
-//import com.github.Templatejava.DefaultTemplateFactory;
-//import com.github.Templatejava.Template;
-//import com.github.Templatejava.TemplateFactory;
-
 import com.mashape.unirest.http.exceptions.UnirestException;
 import com.samskivert.mustache.Template;
 import com.mashape.unirest.http.HttpResponse;
@@ -20,6 +16,7 @@ import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.search.SearchQuery;
 import org.unipop.rest.RestSchema;
 import org.unipop.rest.util.PredicatesTranslator;
+import org.unipop.rest.util.TemplateHolder;
 import org.unipop.schema.element.AbstractElementSchema;
 import org.unipop.schema.property.PropertySchema;
 import org.unipop.structure.UniGraph;
@@ -34,29 +31,23 @@ public abstract class AbstractRestSchema<E extends Element> extends AbstractElem
 
     protected String baseUrl;
     protected String resource;
-    protected Template searchUrlTemplate;
-    protected Template searchTemplate;
-    protected Template addTemplate;
-    protected Template addUrlTemplate;
-    protected Template deleteUrlTemplate;
+    protected TemplateHolder templateHolder;
     protected String resultPath;
     protected JSONObject opTranslator;
     protected int maxResultSize;
-    protected Template commitUrlTemplate;
+    protected List<Map<String, Object>> bulk;
+    protected int bulkSize;
 
-    public AbstractRestSchema(JSONObject configuration, UniGraph graph, String url, Template searchTemplate, Template searchUrlTemplate, Template addTemplate, Template addUrlTemplate, Template deleteUrlTemplate, Template commitUrlTemplate, String resultPath, JSONObject opTranslator, int maxResultSize) {
+    public AbstractRestSchema(JSONObject configuration, UniGraph graph, String url, TemplateHolder templateHolder, String resultPath, JSONObject opTranslator, int maxResultSize) {
         super(configuration, graph);
         this.resource = configuration.optString("resource");
-        this.searchTemplate = searchTemplate;
-        this.searchUrlTemplate = searchUrlTemplate;
-        this.addTemplate = addTemplate;
-        this.addUrlTemplate = addUrlTemplate;
-        this.deleteUrlTemplate = deleteUrlTemplate;
+        this.templateHolder = templateHolder;
         this.baseUrl = url;
         this.resultPath = resultPath;
         this.opTranslator = opTranslator;
         this.maxResultSize = maxResultSize;
-        this.commitUrlTemplate = commitUrlTemplate;
+        this.bulk = new ArrayList<>();
+        this.bulkSize = 1000;
     }
 
     @Override
@@ -72,15 +63,17 @@ public abstract class AbstractRestSchema<E extends Element> extends AbstractElem
             limit = Math.min(maxResultSize, limit);
         Map<String, Object> predicates = PredicatesTranslator.translate(predicatesHolder, opTranslator, limit);
 
-        String body = searchTemplate.execute(predicates);
+        String body = templateHolder.getSearchTemplate().execute(predicates);
         Map<String, Object> urlMap = new HashMap<>();
         urlMap.put("resource", resource);
-        String url = searchUrlTemplate.execute(urlMap);
+        String url = templateHolder.getSearchUrlTemplate().execute(urlMap);
         RequestBodyEntity request = Unirest.post(baseUrl + url.toString())
                 .body(body.toString());
 
         try {
-            Unirest.get(baseUrl + commitUrlTemplate.execute(urlMap)).asJson();
+            if (bulk.size() > 0)
+                runBulk();
+            Unirest.get(baseUrl + templateHolder.getCommitUrlTemplate().execute(urlMap)).asJson();
         } catch (UnirestException e) {
             e.printStackTrace();
         }
@@ -137,6 +130,17 @@ public abstract class AbstractRestSchema<E extends Element> extends AbstractElem
 
     protected abstract E create(Map<String, Object> fields);
 
+    private void runBulk(){
+        String bulk = templateHolder.getBulkTemplate().execute(Collections.singletonMap("bulk", this.bulk));
+        String url = templateHolder.getBulkUrlTemplate().execute(Collections.singletonMap("resource", this.resource));
+        try {
+            Unirest.post(baseUrl + url).body(bulk).asJson();
+            this.bulk.clear();
+        } catch (UnirestException e) {
+            e.printStackTrace();
+        }
+    }
+
     @Override
     public BaseRequest addElement(E element) {
         Map<String, Object> stringObjectMap = toFields(element)
@@ -148,17 +152,29 @@ public abstract class AbstractRestSchema<E extends Element> extends AbstractElem
         Map<String, Object> urlMap = new HashMap<>();
         urlMap.putAll(stringObjectMap);
         urlMap.put("resource", resource);
-        String url = addUrlTemplate.execute(urlMap);
+        return insertElement(urlMap, stringObjectMap);
+    }
 
-        String body = addTemplate.execute(Collections.singletonMap("prop", stringObjectMap.entrySet()));
+    protected BaseRequest insertElement(Map<String, Object> urlMap, Map<String, Object> object){
+        if (templateHolder.isBulk()){
+            Map<String, Object> insert = new HashMap<>();
+            insert.put("object", Collections.singletonMap("prop", object.entrySet()));
+            insert.put("url", urlMap);
+            bulk.add(insert);
+            if (bulk.size() >= bulkSize)
+                runBulk();
+            return null;
+        }
+        String url = templateHolder.getAddUrlTemplate().execute(urlMap);
+
+        String body = templateHolder.getAddTemplate().execute(Collections.singletonMap("prop", object.entrySet()));
 
         return Unirest.post(baseUrl + url.toString()).body(body);
     }
 
     @Override
     public BaseRequest delete(E element) {
-//        StringWriter url = new StringWriter();
-        String url = deleteUrlTemplate.execute(element);
+        String url = templateHolder.getDeleteUrlTemplate().execute(element);
         return Unirest.delete(baseUrl + url.toString());
     }
 }

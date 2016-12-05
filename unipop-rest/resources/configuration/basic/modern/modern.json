@@ -3,8 +3,12 @@
   "baseUrl": "http://localhost:9200/",
   "add":{
     "url": "/{{resource}}/{{type}}/{{id}}",
-    "template": "{\n{{#prop}}\"{{key}}\":\"{{value}}\"{{^-last}}, {{/-last}}{{/prop}}\n}",
-    "commit": "/{{resource}}/_refresh"
+    "template": "{ {{#prop}}\"{{key}}\":\"{{value}}\"{{^-last}}, {{/-last}}{{/prop}} }",
+    "commit": "/{{resource}}/_refresh",
+    "bulk":{
+      "url": "/_bulk",
+      "template": "resources/bulk.mustache"
+    }
   },
   "search":{
     "url": "{{resource}}/_search",
