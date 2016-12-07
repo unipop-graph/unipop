@@ -22,6 +22,9 @@
     "eq": "term",
     "within": "terms"
   },
+  "complexTranslator":[
+    {"op": "gt", "template": "{ \"range\": { {{key}}: { \"gt\": {{value}} } } }"}
+  ],
   "vertices": [
     {
       "resource": "vertex",

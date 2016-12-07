@@ -1,7 +1,6 @@
 package org.unipop.rest.schema;
 
 import com.mashape.unirest.http.exceptions.UnirestException;
-import com.samskivert.mustache.Template;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
@@ -15,6 +14,7 @@ import org.unipop.query.predicates.PredicateQuery;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.search.SearchQuery;
 import org.unipop.rest.RestSchema;
+import org.unipop.rest.util.MatcherHolder;
 import org.unipop.rest.util.PredicatesTranslator;
 import org.unipop.rest.util.TemplateHolder;
 import org.unipop.schema.element.AbstractElementSchema;
@@ -37,8 +37,9 @@ public abstract class AbstractRestSchema<E extends Element> extends AbstractElem
     protected int maxResultSize;
     protected List<Map<String, Object>> bulk;
     protected int bulkSize;
+    protected MatcherHolder complexTranslator;
 
-    public AbstractRestSchema(JSONObject configuration, UniGraph graph, String url, TemplateHolder templateHolder, String resultPath, JSONObject opTranslator, int maxResultSize) {
+    public AbstractRestSchema(JSONObject configuration, UniGraph graph, String url, TemplateHolder templateHolder, String resultPath, JSONObject opTranslator, int maxResultSize, MatcherHolder complexTranslator) {
         super(configuration, graph);
         this.resource = configuration.optString("resource");
         this.templateHolder = templateHolder;
@@ -48,6 +49,7 @@ public abstract class AbstractRestSchema<E extends Element> extends AbstractElem
         this.maxResultSize = maxResultSize;
         this.bulk = new ArrayList<>();
         this.bulkSize = 1000;
+        this.complexTranslator = complexTranslator;
     }
 
     @Override
@@ -61,7 +63,7 @@ public abstract class AbstractRestSchema<E extends Element> extends AbstractElem
             limit = maxResultSize;
         else
             limit = Math.min(maxResultSize, limit);
-        Map<String, Object> predicates = PredicatesTranslator.translate(predicatesHolder, opTranslator, limit);
+        Map<String, Object> predicates = PredicatesTranslator.translate(predicatesHolder, opTranslator, complexTranslator, limit);
 
         String body = templateHolder.getSearchTemplate().execute(predicates);
         Map<String, Object> urlMap = new HashMap<>();

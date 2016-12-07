@@ -32,17 +32,21 @@ public class TemplateHolder {
         }
     }
 
+    public static Template createTemplate(String mustache) {
+        return Mustache.compiler().compile(getReader(mustache));
+    }
+
     public TemplateHolder(JSONObject configuration) {
         JSONObject search = configuration.optJSONObject("search");
         JSONObject add = configuration.optJSONObject("add");
         JSONObject delete = configuration.optJSONObject("delete");
         if (add != null) {
             JSONObject bulk = add.optJSONObject("bulk");
-            this.addUrlTemplate = Mustache.compiler().compile(getReader(add.optString("url")));
-            this.addTemplate = Mustache.compiler().compile(getReader(add.optString("template")));
-            this.commitUrlTemplate = Mustache.compiler().compile(getReader(add.optString("commit")));
+            this.addUrlTemplate = createTemplate(add.optString("url"));
+            this.addTemplate = createTemplate(add.optString("template"));
+            this.commitUrlTemplate = createTemplate(add.optString("commit"));
             if (bulk != null) {
-                this.bulkUrlTemplate = Mustache.compiler().compile(getReader(bulk.optString("url")));
+                this.bulkUrlTemplate = createTemplate(bulk.optString("url"));
                 this.bulkTemplate = Mustache.compiler().escapeHTML(false).standardsMode(true).withLoader(s ->
                         getReader(add.optString("template"))).compile(getReader(bulk.optString("template")));
             }
@@ -50,9 +54,9 @@ public class TemplateHolder {
         String searchString = search.getString("template");
         this.searchTemplate = Mustache.compiler().escapeHTML(false).standardsMode(true).withLoader(s ->
                 getReader(searchString)).compile(getReader(searchString));
-        this.searchUrlTemplate = Mustache.compiler().compile(getReader(search.optString("url", "")));
+        this.searchUrlTemplate = createTemplate(search.optString("url", ""));
         if (delete != null)
-            this.deleteUrlTemplate = Mustache.compiler().compile(getReader(delete.optString("url")));
+            this.deleteUrlTemplate = createTemplate(delete.optString("url"));
     }
 
     public Template getSearchUrlTemplate() {

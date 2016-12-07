@@ -1,20 +1,20 @@
 package org.unipop.rest;
 
-import com.samskivert.mustache.Mustache;
-import com.samskivert.mustache.Template;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.unipop.query.controller.SourceProvider;
 import org.unipop.query.controller.UniQueryController;
 import org.unipop.rest.schema.RestEdge;
 import org.unipop.rest.schema.RestVertex;
+import org.unipop.rest.util.MatcherHolder;
 import org.unipop.rest.util.TemplateHolder;
+import org.unipop.rest.util.matchers.KeyMatcher;
+import org.unipop.rest.util.matchers.Matcher;
+import org.unipop.rest.util.matchers.MultiOpMatcher;
+import org.unipop.rest.util.matchers.OpMatcher;
 import org.unipop.structure.UniGraph;
 
-import java.io.*;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.unipop.util.ConversionUtils.getList;
 
@@ -27,6 +27,7 @@ public class RestSourceProvider implements SourceProvider{
     private JSONObject opTranslator;
     private int maxResultSize;
     private TemplateHolder templateHolder;
+    private MatcherHolder complexTranslator;
 
     @Override
     public Set<UniQueryController> init(UniGraph graph, JSONObject configuration) throws Exception {
@@ -36,6 +37,18 @@ public class RestSourceProvider implements SourceProvider{
         this.resultPath = configuration.optString("resultPath");
         this.opTranslator = configuration.getJSONObject("opTranslator");
         this.maxResultSize = configuration.optInt("maxResultSize", 10000);
+        List<Matcher.MatcherBuilder> builders = new ArrayList<>();
+        builders.add(new KeyMatcher.KeyMatcherBuilder());
+        builders.add(new OpMatcher.OpMatcherBuilder());
+        builders.add(new MultiOpMatcher.MultiOpMatcherBuilder());
+        if (configuration.has("builders")){
+            JSONArray builderNames = configuration.getJSONArray("builders");
+            for (int i = 0; i < builderNames.length(); i++) {
+                String builderName = builderNames.getString(i);
+                builders.add(Class.forName(builderName).asSubclass(Matcher.MatcherBuilder.class).newInstance());
+            }
+        }
+        this.complexTranslator = new MatcherHolder(configuration, builders);
 
         Set<RestSchema> schemas = new HashSet<>();
         for(JSONObject json : getList(configuration, "vertices")) {
@@ -49,11 +62,11 @@ public class RestSourceProvider implements SourceProvider{
     }
 
     private RestSchema createEdgeSchema(JSONObject json, String url) {
-        return new RestEdge(json, graph, url, templateHolder, resultPath, opTranslator, maxResultSize);
+        return new RestEdge(json, graph, url, templateHolder, resultPath, opTranslator, maxResultSize, complexTranslator);
     }
 
     private RestSchema createVertexSchema(JSONObject json, String url) {
-        return new RestVertex(json, url, graph, templateHolder, resultPath, opTranslator, maxResultSize);
+        return new RestVertex(json, url, graph, templateHolder, resultPath, opTranslator, maxResultSize, complexTranslator);
     }
 
     @Override

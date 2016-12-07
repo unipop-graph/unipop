@@ -1,7 +1,5 @@
 package org.unipop.rest.schema;
 
-import com.mashape.unirest.http.Unirest;
-import com.samskivert.mustache.Template;
 import com.mashape.unirest.request.BaseRequest;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -12,6 +10,7 @@ import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.SearchVertexQuery;
 import org.unipop.rest.RestEdgeSchema;
+import org.unipop.rest.util.MatcherHolder;
 import org.unipop.rest.util.TemplateHolder;
 import org.unipop.schema.element.VertexSchema;
 import org.unipop.schema.reference.ReferenceVertexSchema;
@@ -29,8 +28,8 @@ public class RestEdge extends AbstractRestSchema<Edge> implements RestEdgeSchema
     protected VertexSchema outVertexSchema;
     protected VertexSchema inVertexSchema;
 
-    public RestEdge(JSONObject configuration, UniGraph graph, String url, TemplateHolder templateHolder, String resultPath, JSONObject opTranslator, int maxResultSize) {
-        super(configuration, graph, url, templateHolder, resultPath, opTranslator, maxResultSize);
+    public RestEdge(JSONObject configuration, UniGraph graph, String url, TemplateHolder templateHolder, String resultPath, JSONObject opTranslator, int maxResultSize, MatcherHolder complexTranslator) {
+        super(configuration, graph, url, templateHolder, resultPath, opTranslator, maxResultSize, complexTranslator);
         this.outVertexSchema = createVertexSchema("outVertex");
         this.inVertexSchema = createVertexSchema("inVertex");
     }
@@ -39,7 +38,7 @@ public class RestEdge extends AbstractRestSchema<Edge> implements RestEdgeSchema
         JSONObject vertexConfiguration = this.json.optJSONObject(key);
         if (vertexConfiguration == null) return null;
         if (vertexConfiguration.optBoolean("ref", false)) return new ReferenceVertexSchema(vertexConfiguration, graph);
-        return new RestVertex(vertexConfiguration, baseUrl, graph, templateHolder, resultPath, opTranslator, maxResultSize);
+        return new RestVertex(vertexConfiguration, baseUrl, graph, templateHolder, resultPath, opTranslator, maxResultSize, complexTranslator);
     }
 
 
