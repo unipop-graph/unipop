@@ -38,14 +38,10 @@
             <version>0.2</version>
         </dependency>
         <dependency>
-            <groupId>com.github.fakemongo</groupId>
-            <artifactId>fongo</artifactId>
-            <version>2.0.6</version>
-        </dependency>
-        <dependency>
-            <groupId>org.restheart</groupId>
-            <artifactId>restheart</artifactId>
-            <version>2.0.2</version>
+            <groupId>unipop</groupId>
+            <artifactId>unipop-rest</artifactId>
+            <version>0.2</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
     <build>

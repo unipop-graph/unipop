@@ -4,7 +4,9 @@
   "add":{
     "url": "/{{resource}}/{{type}}/{{id}}",
     "template": "{\n{{#prop}}\"{{key}}\":\"{{value}}\"{{^-last}}, {{/-last}}{{/prop}}\n}",
-    "commit": "/{{resource}}/_refresh"
+    "commit": {
+      "url":"/{{resource}}/_refresh"
+    }
   },
   "search":{
     "url": "{{resource}}/_search",

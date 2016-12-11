@@ -13,6 +13,7 @@
     }
   },
   "search":{
+    "method": "GET",
     "url": "{{resource}}/_search",
     "template": "resources/search.mustache"
   },
@@ -24,6 +25,9 @@
     "eq": "term",
     "within": "terms"
   },
+  "complexTranslator":[
+    {"op": "gt", "template": "{ \"range\": { {{key}}: { \"gt\": {{value}} } } }"}
+  ],
   "vertices": [
     {
       "resource": "vertex",
@@ -31,8 +35,8 @@
       "label": "@_source.type",
       "properties": {
         "name": "@_source.name",
-        "songType": "@_source.songtype",
-        "performances": "@_source.performances"
+        "age": "@_source.age",
+        "lang": "@_source.lang"
       },
       "dynamicProperties": false
     }

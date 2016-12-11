@@ -13,14 +13,11 @@ import java.io.StringReader;
  * Created by sbarzilay on 5/12/16.
  */
 public class TemplateHolder {
-    private Template searchUrlTemplate;
-    private Template searchTemplate;
-    private Template addTemplate;
-    private Template addUrlTemplate;
-    private Template deleteUrlTemplate;
-    private Template commitUrlTemplate;
-    private Template bulkUrlTemplate;
-    private Template bulkTemplate;
+    private TemplateRequest search;
+    private TemplateRequest add;
+    private TemplateRequest delete;
+    private TemplateRequest commit;
+    private TemplateRequest bulk;
 
     private static Reader getReader(String mustache) {
         if (mustache.contains("{"))
@@ -38,72 +35,70 @@ public class TemplateHolder {
 
     public TemplateHolder(JSONObject configuration) {
         JSONObject search = configuration.optJSONObject("search");
+        String searchString = search.getString("template");
+        Template searchTemplate = Mustache.compiler().escapeHTML(false).standardsMode(true).withLoader(s ->
+                getReader(searchString)).compile(getReader(searchString));
+        Template searchUrlTemplate = createTemplate(search.optString("url", ""));
+        this.search = new TemplateRequest(search.optString("method", "POST"), searchUrlTemplate, searchTemplate);
         JSONObject add = configuration.optJSONObject("add");
         JSONObject delete = configuration.optJSONObject("delete");
         if (add != null) {
+            this.add = new TemplateRequest(add.optString("method", "POST"),
+                    createTemplate(add.optString("url")),
+                    createTemplate(add.optString("template")));
             JSONObject bulk = add.optJSONObject("bulk");
-            this.addUrlTemplate = createTemplate(add.optString("url"));
-            this.addTemplate = createTemplate(add.optString("template"));
-            this.commitUrlTemplate = createTemplate(add.optString("commit"));
+            JSONObject commit = add.optJSONObject("commit");
+            if (commit != null)
+                this.commit = new TemplateRequest(commit.optString("method", "GET"),
+                        createTemplate(commit.optString("url")),
+                        createTemplate(commit.optString("template")));
             if (bulk != null) {
-                this.bulkUrlTemplate = createTemplate(bulk.optString("url"));
-                this.bulkTemplate = Mustache.compiler().escapeHTML(false).standardsMode(true).withLoader(s ->
+                Template bulkUrlTemplate = createTemplate(bulk.optString("url"));
+                Template bulkTemplate = Mustache.compiler().escapeHTML(false).standardsMode(true).withLoader(s ->
                         getReader(add.optString("template"))).compile(getReader(bulk.optString("template")));
+                this.bulk = new TemplateRequest(bulk.optString("method", "POST"), bulkUrlTemplate, bulkTemplate);
             }
         }
-        String searchString = search.getString("template");
-        this.searchTemplate = Mustache.compiler().escapeHTML(false).standardsMode(true).withLoader(s ->
-                getReader(searchString)).compile(getReader(searchString));
-        this.searchUrlTemplate = createTemplate(search.optString("url", ""));
+
         if (delete != null)
-            this.deleteUrlTemplate = createTemplate(delete.optString("url"));
+            this.delete = new TemplateRequest(delete.optString("method", "DELETE"),
+                    createTemplate(delete.optString("url")),
+                    createTemplate(delete.optString("body")));
     }
 
-    public Template getSearchUrlTemplate() {
-        return searchUrlTemplate;
+    public TemplateRequest getSearch() {
+        return search;
     }
 
-    public Template getSearchTemplate() {
-        return searchTemplate;
+    public TemplateRequest getAdd() {
+        return add;
     }
 
-    public Template getAddTemplate() {
-        return addTemplate;
+    public TemplateRequest getDelete() {
+        return delete;
     }
 
-    public Template getAddUrlTemplate() {
-        return addUrlTemplate;
+    public TemplateRequest getCommit() {
+        return commit;
     }
 
-    public Template getDeleteUrlTemplate() {
-        return deleteUrlTemplate;
-    }
-
-    public Template getCommitUrlTemplate() {
-        return commitUrlTemplate;
-    }
-
-    public Template getBulkUrlTemplate() {
-        return bulkUrlTemplate;
-    }
-
-    public Template getBulkTemplate() {
-        return bulkTemplate;
+    public TemplateRequest getBulk() {
+        return bulk;
     }
 
     public boolean isBulk() {
-        return bulkTemplate != null;
+        return bulk != null;
     }
 
     public boolean isAdd() {
-        return addUrlTemplate != null;
+        return add != null;
     }
 
     public boolean isCommit() {
-        return commitUrlTemplate != null;
+        return commit != null;
     }
 
     public boolean isDelete() {
-        return deleteUrlTemplate != null;
+        return delete != null;
     }
 }
