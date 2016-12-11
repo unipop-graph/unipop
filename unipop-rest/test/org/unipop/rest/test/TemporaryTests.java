@@ -10,6 +10,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 import test.ElasticGraphProvider;
+import test.MongoGraphProvider;
 import test.RestGraphProvider;
 
 import java.util.List;
@@ -28,7 +29,7 @@ import static org.junit.Assert.assertTrue;
 public class TemporaryTests extends AbstractGremlinTest {
 
     public TemporaryTests() throws Exception {
-        GraphManager.setGraphProvider(new RestGraphProvider());
+        GraphManager.setGraphProvider(new MongoGraphProvider());
     }
 
     @Test
