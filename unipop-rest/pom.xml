@@ -37,12 +37,6 @@
             <artifactId>unipop-elastic</artifactId>
             <version>0.2</version>
         </dependency>
-        <dependency>
-            <groupId>unipop</groupId>
-            <artifactId>unipop-rest</artifactId>
-            <version>0.2</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
     <build>
         <resources>
