@@ -39,7 +39,11 @@ public class TemplateHolder {
         Template searchTemplate = Mustache.compiler().escapeHTML(false).standardsMode(true).withLoader(s ->
                 getReader(searchString)).compile(getReader(searchString));
         Template searchUrlTemplate = createTemplate(search.optString("url", ""));
-        this.search = new TemplateRequest(search.optString("method", "POST"), searchUrlTemplate, searchTemplate);
+        String searchMethod = search.optString("method", "POST");
+        String field = null;
+        if (searchMethod.toUpperCase().equals("GET"))
+            field = search.optString("field");
+        this.search = new TemplateRequest(searchMethod, searchUrlTemplate, searchTemplate, field);
         JSONObject add = configuration.optJSONObject("add");
         JSONObject delete = configuration.optJSONObject("delete");
         if (add != null) {

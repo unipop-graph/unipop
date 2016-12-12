@@ -1,0 +1,55 @@
+{
+  "class": "org.unipop.rest.RestSourceProvider",
+  "baseUrl": "http://localhost:8080/",
+  "valuesToString" : true,
+  "add":{
+    "method": "PUT",
+    "url": "{{resource}}/{{_id}}",
+    "template": "{ {{#prop}}\"{{key}}\":\"{{value}}\"{{^-last}}, {{/-last}}{{/prop}} }",
+  },
+  "search":{
+    "method": "GET",
+    "field": "filter",
+    "url": "{{resource}}",
+    "template": "resources/mongo/filter.mustache"
+  },
+  "resultPath": "_embedded",
+  "opTranslator": {
+    "eq": "$eq",
+    "within": "$in"
+  },
+  "vertices": [
+    {
+      "resource": "db/vertexGrateful",
+      "id": "@_id",
+      "label": "@label",
+      "properties": {
+        "name": "@name",
+        "songType": "@songtype",
+        "performances": "@performances"
+      },
+      "dynamicProperties": false
+    }
+  ],
+  "edges": [
+    {
+      "resource": "db/edgeGrateful",
+      "id": "@_id",
+      "label": "@label",
+      "properties": {
+        "weight": "@weight"
+      },
+      "dynamicProperties": false,
+      "outVertex":{
+        "ref": true,
+        "id": "@outid",
+        "label": "@outlabel"
+      },
+      "inVertex":{
+        "ref": true,
+        "id": "@inid",
+        "label": "@inlabel"
+      }
+    }
+  ]
+}

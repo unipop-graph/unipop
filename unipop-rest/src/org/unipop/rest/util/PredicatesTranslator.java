@@ -15,13 +15,13 @@ import java.util.stream.Collectors;
  * Created by sbarzilay on 28/11/16.
  */
 public class PredicatesTranslator {
-    public static Map<String, Object> translate(PredicatesHolder predicatesHolder, JSONObject opTranslator, MatcherHolder complexTranslator, int limit) {
-        Map<String, Object> translate = translate(predicatesHolder, opTranslator, complexTranslator);
+    public static Map<String, Object> translate(PredicatesHolder predicatesHolder, JSONObject opTranslator, MatcherHolder complexTranslator, boolean valuesToString, int limit) {
+        Map<String, Object> translate = translate(predicatesHolder, opTranslator, complexTranslator, valuesToString);
         translate.put("limit", limit);
         return translate;
     }
 
-    public static Map<String, Object> translate(PredicatesHolder predicatesHolder, JSONObject opTranslator, MatcherHolder complexTranslator) {
+    public static Map<String, Object> translate(PredicatesHolder predicatesHolder, JSONObject opTranslator, MatcherHolder complexTranslator, boolean valuesToString) {
         List<HasContainer> predicates = predicatesHolder.getPredicates();
         Map<HasContainer, String> complexOps = predicates.stream().map(hasContainer -> {
             String match = complexTranslator.match(hasContainer);
@@ -43,26 +43,34 @@ public class PredicatesTranslator {
                 String valuesString = "";
                 String join = valuesString.join(",", values);
                 map.put("value", String.format(finalString, join));
-            } else
-                map.put("value", value);
+            } else {
+                if (!valuesToString)
+                    map.put("value", value);
+                else
+                    map.put("value", "\"" + value + "\"");
+            }
             if (!opTranslator.has(has.getBiPredicate().toString())) return null;
             map.put("op", opTranslator.getString(has.getBiPredicate().toString()));
             return map;
         }).filter(m -> m != null).collect(Collectors.toList());
 
         List<Map<String, Object>> children = predicatesHolder.getChildren().stream()
-                .map(p -> translate(p, opTranslator, complexTranslator)).collect(Collectors.toList());
+                .map(p -> translate(p, opTranslator, complexTranslator, valuesToString)).collect(Collectors.toList());
 
         Map<String, Object> map = new HashMap<>();
         Map<String, Object> predicateChildrenMap = new HashMap<>();
-        predicateChildrenMap.put("predicates", predicatesMaps);
-        predicateChildrenMap.put("complex", complexOps.values());
+        if (predicatesMaps.size() > 0)
+            predicateChildrenMap.put("predicates", predicatesMaps);
+        if (complexOps.values().size() > 0)
+            predicateChildrenMap.put("complex", complexOps.values());
         if (children.size() > 0)
             predicateChildrenMap.put("children", children);
-        map.put(predicatesHolder.getClause().toString().toLowerCase(), predicateChildrenMap);
+        if (predicateChildrenMap.size() > 0)
+            map.put(predicatesHolder.getClause().toString().toLowerCase(), predicateChildrenMap);
 
         Map<String, Object> result = new HashMap<>();
-        result.put("predicates", map);
+        if (map.size() > 0)
+            result.put("predicates", map);
 
         return result;
     }

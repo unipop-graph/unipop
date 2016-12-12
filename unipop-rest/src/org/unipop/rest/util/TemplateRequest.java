@@ -2,9 +2,11 @@ package org.unipop.rest.util;
 
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.request.BaseRequest;
+import com.mashape.unirest.request.GetRequest;
 import com.mashape.unirest.request.HttpRequestWithBody;
 import com.samskivert.mustache.Template;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -14,11 +16,17 @@ public class TemplateRequest {
     protected String method;
     protected Template urlTemplate;
     protected Template bodyTemplate;
+    protected String field;
 
     public TemplateRequest(String method, Template urlTemplate, Template bodyTemplate) {
+        this(method, urlTemplate, bodyTemplate, null);
+    }
+
+    public TemplateRequest(String method, Template urlTemplate, Template bodyTemplate, String field) {
         this.method = method;
         this.urlTemplate = urlTemplate;
         this.bodyTemplate = bodyTemplate;
+        this.field = field;
     }
 
     public BaseRequest execute(String baseUrl, Object urlMap, Object bodyMap){
@@ -54,7 +62,7 @@ public class TemplateRequest {
     }
 
     private BaseRequest executePut(String baseUrl, Object urlMap, Object bodyMap) {
-        return Unirest.put(baseUrl + urlTemplate.execute(urlMap)).body(bodyTemplate.execute(bodyMap));
+        return Unirest.put(baseUrl + urlTemplate.execute(urlMap)).header("Content-type", "application/json").body(bodyTemplate.execute(bodyMap));
     }
 
     private BaseRequest executePost(String baseUrl, Object urlMap, Object bodyMap) {
@@ -62,6 +70,12 @@ public class TemplateRequest {
     }
 
     private BaseRequest executeGet(String baseUrl, Object urlMap, Object bodyMap) {
-        return Unirest.get(baseUrl + urlTemplate.execute(urlMap) + bodyTemplate.execute(bodyMap));
+        GetRequest getRequest = Unirest.get(baseUrl + urlTemplate.execute(urlMap));
+        Map<String, Object> map = (Map<String, Object>) bodyMap;
+        if (field == null || !map.containsKey("predicates"))
+            return getRequest;
+        return getRequest
+                .queryString(field,
+                        bodyTemplate.execute(bodyMap).replace("\n", "").replace("\r", "").replace("\t", ""));
     }
 }

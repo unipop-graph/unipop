@@ -17,8 +17,8 @@ import java.util.Map;
  * Created by sbarzilay on 24/11/16.
  */
 public class RestVertex extends AbstractRestSchema<Vertex> implements RestVertexSchema {
-    public RestVertex(JSONObject configuration, String url, UniGraph graph, TemplateHolder templateHolder, String resultPath, JSONObject opTranslator, int maxResultSize, MatcherHolder complexTranslator) {
-        super(configuration, graph, url, templateHolder, resultPath, opTranslator, maxResultSize, complexTranslator);
+    public RestVertex(JSONObject configuration, String url, UniGraph graph, TemplateHolder templateHolder, String resultPath, JSONObject opTranslator, int maxResultSize, MatcherHolder complexTranslator, boolean valuesToString) {
+        super(configuration, graph, url, templateHolder, resultPath, opTranslator, maxResultSize, complexTranslator, valuesToString);
     }
 
     @Override

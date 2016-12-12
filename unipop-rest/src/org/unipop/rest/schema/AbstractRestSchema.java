@@ -3,9 +3,7 @@ package org.unipop.rest.schema;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
-import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.request.BaseRequest;
-import com.mashape.unirest.request.body.RequestBodyEntity;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.json.JSONArray;
@@ -38,8 +36,9 @@ public abstract class AbstractRestSchema<E extends Element> extends AbstractElem
     protected List<Map<String, Object>> bulk;
     protected int bulkSize;
     protected MatcherHolder complexTranslator;
+    protected boolean valuesToString;
 
-    public AbstractRestSchema(JSONObject configuration, UniGraph graph, String url, TemplateHolder templateHolder, String resultPath, JSONObject opTranslator, int maxResultSize, MatcherHolder complexTranslator) {
+    public AbstractRestSchema(JSONObject configuration, UniGraph graph, String url, TemplateHolder templateHolder, String resultPath, JSONObject opTranslator, int maxResultSize, MatcherHolder complexTranslator, boolean valuesToString) {
         super(configuration, graph);
         this.resource = configuration.optString("resource");
         this.templateHolder = templateHolder;
@@ -50,6 +49,7 @@ public abstract class AbstractRestSchema<E extends Element> extends AbstractElem
         this.bulk = new ArrayList<>();
         this.bulkSize = 1000;
         this.complexTranslator = complexTranslator;
+        this.valuesToString = valuesToString;
     }
 
     @Override
@@ -63,7 +63,7 @@ public abstract class AbstractRestSchema<E extends Element> extends AbstractElem
             limit = maxResultSize;
         else
             limit = Math.min(maxResultSize, limit);
-        Map<String, Object> predicates = PredicatesTranslator.translate(predicatesHolder, opTranslator, complexTranslator, limit);
+        Map<String, Object> predicates = PredicatesTranslator.translate(predicatesHolder, opTranslator, complexTranslator, valuesToString, limit);
 
         Map<String, Object> urlMap = new HashMap<>();
         urlMap.put("resource", resource);

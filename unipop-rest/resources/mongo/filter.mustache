@@ -1,0 +1,53 @@
+{
+{{#predicates}}
+    {{#and}}
+        {{#predicates}}
+            {{#.}}
+                '{{key}}':{
+                {{op}}:{{value}}
+                }
+            {{/.}}
+            {{^-last}}, {{/-last}}
+            {{#-last}}
+                {{#children}}
+                    {{#-first}}, {{/-first}}
+                    {{>subtmpl}}
+                    {{^-last}}, {{/-last}}
+                {{/children}}
+            {{/-last}}
+        {{/predicates}}
+        {{^predicates}}
+            {{#children}}
+                {{>subtmpl}}
+                {{^-last}}, {{/-last}}
+            {{/children}}
+        {{/predicates}}
+        {{#or}},{{/or}}
+    {{/and}}
+    {{#or}}
+        $or:[
+        {{#predicates}}
+            {{#.}}
+                '{{key}}':{
+                {{op}}:{{value}}
+                }
+            {{/.}}
+            {{^-last}}, {{/-last}}
+            {{#-last}}
+                {{#children}}
+                    {{#-first}}, {{/-first}}
+                    {{>subtmpl}}
+                    {{^-last}}, {{/-last}}
+                {{/children}}
+            {{/-last}}
+        {{/predicates}}
+        {{^predicates}}
+            {{#children}}
+                {{>subtmpl}}
+                {{^-last}}, {{/-last}}
+            {{/children}}
+        {{/predicates}}
+        ]
+    {{/or}}
+{{/predicates}}
+}

@@ -1,5 +1,7 @@
 package test;
 
+import com.mashape.unirest.http.Unirest;
+import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.unipop.elastic.common.ElasticClient;
@@ -11,6 +13,9 @@ import java.util.Collections;
  */
 public class RestGraphProvider extends ElasticGraphProvider {
     public RestGraphProvider() throws Exception {
+        Unirest.put("http://localhost:8080/db").asJson();
+        Unirest.put("http://localhost:8080/db/vertex").asJson();
+        Unirest.put("http://localhost:8080/db/edge").asJson();
     }
 
     @Override
@@ -19,5 +24,14 @@ public class RestGraphProvider extends ElasticGraphProvider {
         client.validateIndex("edge");
         client.validateIndex("vertex");
         super.loadGraphData(graph, loadGraphWith, testClass, testName);
+    }
+
+    @Override
+    public void clear(Graph g, Configuration configuration) throws Exception {
+        super.clear(g, configuration);
+        Unirest.delete("http://localhost:8080/db").asJson();
+        Unirest.put("http://localhost:8080/db").asJson();
+        Unirest.put("http://localhost:8080/db/vertex").asJson();
+        Unirest.put("http://localhost:8080/db/edge").asJson();
     }
 }
