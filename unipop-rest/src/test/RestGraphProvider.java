@@ -13,9 +13,6 @@ import java.util.Collections;
  */
 public class RestGraphProvider extends ElasticGraphProvider {
     public RestGraphProvider() throws Exception {
-        Unirest.put("http://localhost:8080/db").asJson();
-        Unirest.put("http://localhost:8080/db/vertex").asJson();
-        Unirest.put("http://localhost:8080/db/edge").asJson();
     }
 
     @Override
@@ -29,9 +26,5 @@ public class RestGraphProvider extends ElasticGraphProvider {
     @Override
     public void clear(Graph g, Configuration configuration) throws Exception {
         super.clear(g, configuration);
-        Unirest.delete("http://localhost:8080/db").asJson();
-        Unirest.put("http://localhost:8080/db").asJson();
-        Unirest.put("http://localhost:8080/db/vertex").asJson();
-        Unirest.put("http://localhost:8080/db/edge").asJson();
     }
 }
