@@ -28,6 +28,7 @@ public class RestSourceProvider implements SourceProvider{
     private int maxResultSize;
     private TemplateHolder templateHolder;
     private MatcherHolder complexTranslator;
+    private boolean valuesToString;
 
     @Override
     public Set<UniQueryController> init(UniGraph graph, JSONObject configuration) throws Exception {
@@ -37,6 +38,7 @@ public class RestSourceProvider implements SourceProvider{
         this.resultPath = configuration.optString("resultPath");
         this.opTranslator = configuration.getJSONObject("opTranslator");
         this.maxResultSize = configuration.optInt("maxResultSize", 10000);
+        this.valuesToString = configuration.optBoolean("valuesToString", false);
         List<Matcher.MatcherBuilder> builders = new ArrayList<>();
         builders.add(new KeyMatcher.KeyMatcherBuilder());
         builders.add(new OpMatcher.OpMatcherBuilder());
@@ -62,11 +64,11 @@ public class RestSourceProvider implements SourceProvider{
     }
 
     private RestSchema createEdgeSchema(JSONObject json, String url) {
-        return new RestEdge(json, graph, url, templateHolder, resultPath, opTranslator, maxResultSize, complexTranslator);
+        return new RestEdge(json, graph, url, templateHolder, resultPath, opTranslator, maxResultSize, complexTranslator, valuesToString);
     }
 
     private RestSchema createVertexSchema(JSONObject json, String url) {
-        return new RestVertex(json, url, graph, templateHolder, resultPath, opTranslator, maxResultSize, complexTranslator);
+        return new RestVertex(json, url, graph, templateHolder, resultPath, opTranslator, maxResultSize, complexTranslator, valuesToString);
     }
 
     @Override

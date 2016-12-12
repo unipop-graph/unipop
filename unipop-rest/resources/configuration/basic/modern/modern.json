@@ -4,7 +4,9 @@
   "add":{
     "url": "/{{resource}}/{{type}}/{{id}}",
     "template": "{ {{#prop}}\"{{key}}\":\"{{value}}\"{{^-last}}, {{/-last}}{{/prop}} }",
-    "commit": "/{{resource}}/_refresh",
+    "commit": {
+      "url":"/{{resource}}/_refresh"
+    },
     "bulk":{
       "url": "/_bulk",
       "template": "resources/bulk.mustache"
