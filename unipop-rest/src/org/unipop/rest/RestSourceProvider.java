@@ -13,6 +13,7 @@ import org.unipop.rest.util.matchers.Matcher;
 import org.unipop.rest.util.matchers.MultiOpMatcher;
 import org.unipop.rest.util.matchers.OpMatcher;
 import org.unipop.structure.UniGraph;
+import org.unipop.structure.traversalfilter.TraversalFilter;
 
 import java.util.*;
 
@@ -31,7 +32,7 @@ public class RestSourceProvider implements SourceProvider{
     private boolean valuesToString;
 
     @Override
-    public Set<UniQueryController> init(UniGraph graph, JSONObject configuration) throws Exception {
+    public Set<UniQueryController> init(UniGraph graph, TraversalFilter filter, JSONObject configuration) throws Exception {
         this.graph = graph;
         String url = configuration.optString("baseUrl");
         templateHolder = new TemplateHolder(configuration);
@@ -60,7 +61,7 @@ public class RestSourceProvider implements SourceProvider{
             schemas.add(createEdgeSchema(json, url));
         }
 
-        return Collections.singleton(new RestController(graph, schemas));
+        return Collections.singleton(new RestController(graph, schemas, filter));
     }
 
     private RestSchema createEdgeSchema(JSONObject json, String url) {

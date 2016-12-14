@@ -12,14 +12,10 @@ import org.unipop.elastic.document.schema.property.IndexPropertySchema;
 import org.unipop.schema.property.PropertySchema;
 import org.unipop.structure.traversalfilter.TraversalFilter;
 import org.unipop.util.ConversionUtils;
-import org.unipop.elastic.common.ElasticClient;
-import org.unipop.elastic.document.DocumentController;
 import org.unipop.elastic.document.schema.property.InnerPropertySchema;
 import org.unipop.query.controller.SourceProvider;
 import org.unipop.query.controller.UniQueryController;
-import org.unipop.schema.property.PropertySchema;
 import org.unipop.structure.UniGraph;
-import org.unipop.util.ConversionUtils;
 
 import java.util.Arrays;
 import java.util.HashSet;

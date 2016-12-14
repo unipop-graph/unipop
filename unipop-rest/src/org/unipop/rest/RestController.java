@@ -28,6 +28,7 @@ import org.unipop.structure.UniEdge;
 import org.unipop.structure.UniElement;
 import org.unipop.structure.UniGraph;
 import org.unipop.structure.UniVertex;
+import org.unipop.structure.traversalfilter.TraversalFilter;
 import org.unipop.util.MetricsRunner;
 
 import java.util.*;
@@ -46,13 +47,17 @@ public class RestController implements SimpleController {
     private Set<? extends RestVertexSchema> vertexSchemas = new HashSet<>();
     private Set<? extends RestEdgeSchema> edgeSchemas = new HashSet<>();
 
-    public RestController(UniGraph graph, Set<RestSchema> schemas) {
+    private TraversalFilter filter;
+
+    public RestController(UniGraph graph, Set<RestSchema> schemas, TraversalFilter filter) {
         this.graph = graph;
         Set<RestSchema> documentSchemas = collectSchemas(schemas);
         this.vertexSchemas = documentSchemas.stream().filter(schema -> schema instanceof RestVertexSchema)
                 .map(schema -> ((RestVertexSchema) schema)).collect(Collectors.toSet());
         this.edgeSchemas = documentSchemas.stream().filter(schema -> schema instanceof RestEdgeSchema)
                 .map(schema -> ((RestEdgeSchema) schema)).collect(Collectors.toSet());
+
+        this.filter = filter;
 
         logger.debug("Instantiated RestController: {}", this);
     }
@@ -76,7 +81,7 @@ public class RestController implements SimpleController {
                 new RestCollector<>(schema -> schema.getSearch(uniQuery),
                         (schema, result) -> schema.parseResults(result, uniQuery));
 
-        Map<RestEdgeSchema, BaseRequest> schemas = edgeSchemas.stream().collect(collector);
+        Map<RestEdgeSchema, BaseRequest> schemas = edgeSchemas.stream().filter(schema -> this.filter.filter(schema, uniQuery.getTraversal())).collect(collector);
 
         return search(uniQuery, schemas, collector);
     }
@@ -87,7 +92,7 @@ public class RestController implements SimpleController {
                 new RestCollector<>(schema -> schema.getSearch(uniQuery),
                         (schema, result) -> schema.parseResults(result, uniQuery));
         Set<? extends RestSchema<E>> schemas = getSchemas(uniQuery.getReturnType());
-        Map<RestSchema<E>, BaseRequest> collect = schemas.stream().collect(collector);
+        Map<RestSchema<E>, BaseRequest> collect = schemas.stream().filter(schema -> this.filter.filter(schema, uniQuery.getTraversal())).collect(collector);
         return search(uniQuery, collect, collector);
     }
 
@@ -97,7 +102,7 @@ public class RestController implements SimpleController {
         RestCollector<RestVertexSchema, BaseRequest, Vertex> collector =
                 new RestCollector<>(schema -> schema.getSearch(query),
                         (schema, result) -> schema.parseResults(result, query));
-        Map<RestVertexSchema, BaseRequest> schemas = vertexSchemas.stream().collect(collector);
+        Map<RestVertexSchema, BaseRequest> schemas = vertexSchemas.stream().filter(schema -> this.filter.filter(schema, query.getTraversal())).collect(collector);
         Iterator<Vertex> iterator = search(query, schemas, collector);
         Map<Object, DeferredVertex> vertexMap = query.getVertices().stream()
                 .collect(Collectors.toMap(UniElement::id, Function.identity(), (a, b) -> a));
