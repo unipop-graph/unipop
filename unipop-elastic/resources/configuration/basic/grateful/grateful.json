@@ -22,7 +22,7 @@
         "gremlin.partitionGraphStrategy.partition": "@partition",
         "weight": {
           "field": "weight",
-          "type": "DOUBLE",
+          "type": "LONG",
           "nullable": true
         }
       },

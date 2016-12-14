@@ -37,9 +37,9 @@ public class TemporaryTests extends AbstractGremlinTest {
     }
 
     @Test
-    @LoadGraphWith(MODERN)
+    @LoadGraphWith(GRATEFUL)
     public void test() {
-        Traversal t = g.V().hasLabel("software").<String, Number>group().by("name").by(bothE().values("weight").max());
+        Traversal t = g.V().out("followedBy").<String, Map<String, Number>>group().by("songType").by(__.bothE().group().by(T.label).by(__.values("weight").sum()));
         check(t);
     }
 
