@@ -18,7 +18,7 @@ import java.util.stream.Stream;
 public class FieldPropertySchema implements PropertySchema {
     protected String key;
     protected String field = null;
-    private boolean nullable;
+    protected boolean nullable;
     protected Set include;
     protected Set exclude;
     protected PropertyType type;
@@ -135,7 +135,7 @@ public class FieldPropertySchema implements PropertySchema {
         return Collections.singleton(this.key);
     }
 
-    private boolean test(P predicate) {
+    protected boolean test(P predicate) {
 
 
         if (this.include != null) {

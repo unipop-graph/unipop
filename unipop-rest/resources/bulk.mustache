@@ -1,0 +1,8 @@
+{{#bulk}}
+    {{#url}}
+{ "index": {"_index": "{{resource}}", "_type": "{{type}}", "_id": "{{id}}" }
+    {{/url}}
+    {{#object}}
+{{>subtmpl}}
+    {{/object}}
+{{/bulk}}
