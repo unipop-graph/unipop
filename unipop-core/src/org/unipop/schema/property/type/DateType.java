@@ -16,6 +16,11 @@ public class DateType implements PropertyType {
     }
 
     @Override
+    public Object convertToType(Object object) {
+        return object;
+    }
+
+    @Override
     public <V> P<V> translate(P<V> predicate) {
         BiPredicate<V, V> biPredicate = predicate.getBiPredicate();
         if (biPredicate instanceof Compare){

@@ -39,7 +39,7 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void test() {
-        Traversal t = g.withBulk(false).withSack(1.0d, sum).V("1").local(outE("knows").barrier(normSack).inV()).in("knows").barrier().sack();
+        Traversal t = g.V().hasLabel("software").<String, Number>group().by("name").by(bothE().values("weight").max());
         check(t);
     }
 

@@ -11,6 +11,7 @@ import java.util.function.BiPredicate;
 
 public interface PropertyType {
     String getType();
+    Object convertToType(Object object);
     default <V> P<V> translate(P<V> predicate){
         return predicate;
     }

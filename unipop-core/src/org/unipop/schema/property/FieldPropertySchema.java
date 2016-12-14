@@ -52,7 +52,7 @@ public class FieldPropertySchema implements PropertySchema {
         } catch (IllegalAccessException | InstantiationException e) {
             e.printStackTrace();
         }
-        if (include != null || exclude != null)
+        if ((include != null && include.size() != 0) || (exclude != null && exclude.size() != 0))
             this.nullable = false;
         Object alias = config.opt("alias");
         this.alias = alias == null ? null : ((JSONObject) alias);
@@ -75,7 +75,7 @@ public class FieldPropertySchema implements PropertySchema {
         if (value == null && nullable) return Collections.emptyMap();
         if (alias != null) value = alias.has(value.toString()) ? alias.get(value.toString()) : value;
         if (value == null || !test(P.eq(value))) return null;
-        return Collections.singletonMap(this.key, value);
+        return Collections.singletonMap(this.key, type.convertToType(value));
     }
 
     @Override
@@ -84,7 +84,7 @@ public class FieldPropertySchema implements PropertySchema {
         if (value == null && nullable) return Collections.emptyMap();
         // TODO: add alias use
         if (value == null || !test(P.eq(value))) return null;
-        return Collections.singletonMap(this.field, value);
+        return Collections.singletonMap(this.field, type.convertToType(value));
     }
 
     @Override

@@ -19,7 +19,12 @@
       "id": "@_id",
       "label": "@_type",
       "properties": {
-        "gremlin.partitionGraphStrategy.partition": "@partition"
+        "gremlin.partitionGraphStrategy.partition": "@partition",
+        "weight": {
+          "field": "weight",
+          "type": "DOUBLE",
+          "nullable": true
+        }
       },
       "dynamicProperties": {
         "excludeFields": ["outId", "inId", "outLabel", "inLabel"]

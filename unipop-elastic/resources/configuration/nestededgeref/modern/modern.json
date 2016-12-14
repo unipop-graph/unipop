@@ -34,7 +34,11 @@
           "label": "created",
           "direction": "OUT",
           "properties": {
-            "weight": "@weight",
+            "weight": {
+              "field": "weight",
+              "type": "DOUBLE",
+              "nullable": true
+            },
             "name": "@name"
           },
           "vertex": {
@@ -67,7 +71,13 @@
           "created"
         ]
       },
-      "properties": {},
+      "properties": {
+        "weight": {
+          "field": "weight",
+          "type": "DOUBLE",
+          "nullable": true
+        }
+      },
       "dynamicProperties": {
         "excludeFields": [
           "outId",

@@ -1,16 +1,16 @@
 package org.unipop.schema.property.type;
 
 /**
- * Created by sbarzilay on 8/19/16.
+ * Created by sbarzilay on 14/12/16.
  */
-public class TextType implements PropertyType {
+public class FloatType implements PropertyType {
     @Override
     public String getType() {
-        return "STRING";
+        return "FLOAT";
     }
 
     @Override
     public Object convertToType(Object object) {
-        return object.toString();
+        return Float.parseFloat(object.toString());
     }
 }
