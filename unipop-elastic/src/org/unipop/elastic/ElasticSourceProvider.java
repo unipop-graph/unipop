@@ -3,20 +3,20 @@ package org.unipop.elastic;
 import com.google.common.collect.Sets;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.unipop.elastic.common.ElasticClient;
+import org.unipop.elastic.document.DocumentController;
 import org.unipop.elastic.document.DocumentSchema;
 import org.unipop.elastic.document.schema.DocEdgeSchema;
 import org.unipop.elastic.document.schema.DocVertexSchema;
 import org.unipop.elastic.document.schema.property.IndexPropertySchema;
-import org.unipop.schema.property.PropertySchema;
-import org.unipop.util.ConversionUtils;
-import org.unipop.elastic.common.ElasticClient;
-import org.unipop.elastic.document.DocumentController;
+import org.unipop.elastic.document.schema.property.InnerPropertySchema;
 import org.unipop.query.controller.SourceProvider;
 import org.unipop.query.controller.UniQueryController;
+import org.unipop.schema.property.PropertySchema;
 import org.unipop.structure.UniGraph;
-import org.unipop.util.PropertySchemaFactory;
+import org.unipop.util.ConversionUtils;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -49,7 +49,7 @@ public class ElasticSourceProvider implements SourceProvider {
 
     @Override
     public List<PropertySchema.PropertySchemaBuilder> providerBuilders() {
-        return Collections.singletonList(new IndexPropertySchema.Builder());
+        return Arrays.asList(new IndexPropertySchema.Builder(), new InnerPropertySchema.Builder());
     }
 
     protected DocVertexSchema createVertexSchema(JSONObject vertexJson) throws JSONException {
