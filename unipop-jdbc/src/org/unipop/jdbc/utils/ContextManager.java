@@ -1,0 +1,134 @@
+package org.unipop.jdbc.utils;
+
+import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
+import org.jooq.*;
+import org.jooq.impl.DSL;
+import org.jooq.impl.DefaultConfiguration;
+import org.jooq.impl.DefaultExecuteListenerProvider;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.*;
+import java.util.stream.Collectors;
+
+/**
+ * Created by sbarzilay on 27/12/16.
+ */
+public class ContextManager {
+    private Set<DSLContext> contexts;
+    private JSONObject conf;
+
+    public ContextManager(JSONObject conf) throws SQLException, IOException, ClassNotFoundException {
+        this.conf = conf;
+        reloadContexts();
+    }
+
+    private void reloadContexts() {
+        this.contexts = new HashSet<>();
+        SQLDialect dialect = SQLDialect.valueOf(this.conf.getString("sqlDialect"));
+        List<Connection> connections = getConnections(this.conf);
+        contexts = connections.stream().map(connection -> {
+            Configuration conf = new DefaultConfiguration().set(connection).set(dialect)
+                    .set(new DefaultExecuteListenerProvider(new TimingExecuterListener()));
+            return DSL.using(conf);
+        }).collect(Collectors.toSet());
+    }
+
+    private List<Connection> getConnections(JSONObject configuration) {
+        List<Connection> connections = new ArrayList<>();
+        try {
+            List address = new ObjectMapper()
+                    .readValue(configuration.getJSONArray("address").toString(), List.class);
+
+            String driver = configuration.getString("driver");
+            String user = configuration.optString("user");
+            String password = configuration.optString("password");
+
+            for (Object url : address) {
+                try {
+                    Class.forName(driver);
+                    if (user.isEmpty() && password.isEmpty()) {
+                        connections.add(DriverManager.getConnection(url.toString()));
+                    }
+                    connections.add(DriverManager.getConnection(url.toString(), user, password));
+                } catch (SQLException | ClassNotFoundException exception) {
+                    exception.printStackTrace(); // TODO: write to log
+                }
+            }
+        } catch (IOException exception){
+            exception.printStackTrace(); // TODO: write to log
+        }
+        return connections;
+    }
+
+    public List<Map<String, Object>> fetch(ResultQuery query){
+        for (DSLContext context : contexts) {
+            try {
+                return context.fetch(query).intoMaps();
+            } catch (Exception e) {
+                contexts.remove(context);
+            }
+        }
+        reloadContexts();
+        if (contexts.isEmpty()) {
+            // TODO: write to log that no results were returned because no connections were established
+            return Collections.emptyList();
+        }
+        return fetch(query);
+    }
+
+    public int execute(Query query){
+        for (DSLContext context : contexts) {
+            try {
+                return context.execute(query);
+            } catch (Exception e) {
+                contexts.remove(context);
+            }
+        }
+        reloadContexts();
+        if (contexts.isEmpty()) {
+            // TODO: write to log that no rows were changed because no connections were established
+            return 0;
+        }
+        return execute(query);
+    }
+
+    public int execute(String query){
+        for (DSLContext context : contexts) {
+            try {
+                return context.execute(query);
+            } catch (Exception e) {
+                contexts.remove(context);
+            }
+        }
+        reloadContexts();
+        if (contexts.isEmpty()) {
+            // TODO: write to log that no rows were changed because no connections were established
+            return 0;
+        }
+        return execute(query);
+    }
+
+    public void close(){
+        contexts.forEach(DSLContext::close);
+    }
+
+    public Object render(Query query) {
+        for (DSLContext context : contexts) {
+            try {
+                return context.render(query);
+            } catch (Exception e) {
+                contexts.remove(context);
+            }
+        }
+        reloadContexts();
+        if (contexts.isEmpty()) {
+            // TODO: write to log that render wasn't able to execute because no connections were established
+            return "";
+        }
+        return render(query);
+    }
+}

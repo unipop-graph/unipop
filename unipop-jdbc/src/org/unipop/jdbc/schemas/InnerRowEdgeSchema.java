@@ -62,8 +62,8 @@ public class InnerRowEdgeSchema extends RowEdgeSchema {
     }
 
     @Override
-    public Select getSearch(SearchQuery<Edge> query, PredicatesHolder predicatesHolder, DSLContext context) {
-        SelectJoinStep search = (SelectJoinStep) super.getSearch(query, predicatesHolder, context);
+    public Select getSearch(SearchQuery<Edge> query, PredicatesHolder predicatesHolder) {
+        SelectJoinStep search = (SelectJoinStep) super.getSearch(query, predicatesHolder);
         if (search == null) return null;
         return search.where(field(this.getFieldByPropertyKey(T.id.getAccessor())).isNotNull());
     }

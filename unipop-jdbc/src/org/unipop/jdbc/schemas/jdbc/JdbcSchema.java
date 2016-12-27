@@ -5,6 +5,7 @@ import org.jooq.DSLContext;
 import org.jooq.Query;
 import org.jooq.Result;
 import org.jooq.Select;
+import org.unipop.jdbc.utils.ContextManager;
 import org.unipop.query.predicates.PredicateQuery;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.search.SearchQuery;
@@ -21,8 +22,8 @@ import java.util.stream.Collectors;
  */
 public interface JdbcSchema<E extends Element> extends ElementSchema<E> {
 
-    Select getSearch(SearchQuery<E> query, PredicatesHolder predicates, DSLContext context);
-    List<E> parseResults(Result result, PredicateQuery query);
+    Select getSearch(SearchQuery<E> query, PredicatesHolder predicates);
+    List<E> parseResults(List<Map<String, Object>> result, PredicateQuery query);
 
     /**
      * @return the full table name, including database prefix
