@@ -6,6 +6,9 @@ import org.jooq.impl.DSL;
 import org.jooq.impl.DefaultConfiguration;
 import org.jooq.impl.DefaultExecuteListenerProvider;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.unipop.jdbc.controller.simple.RowController;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -18,6 +21,7 @@ import java.util.stream.Collectors;
  * Created by sbarzilay on 27/12/16.
  */
 public class ContextManager {
+    private final static Logger logger = LoggerFactory.getLogger(RowController.class);
     private Set<DSLContext> contexts;
     private JSONObject conf;
 
@@ -55,11 +59,11 @@ public class ContextManager {
                     }
                     connections.add(DriverManager.getConnection(url.toString(), user, password));
                 } catch (SQLException | ClassNotFoundException exception) {
-                    exception.printStackTrace(); // TODO: write to log
+                    logger.error(exception.getMessage());
                 }
             }
         } catch (IOException exception){
-            exception.printStackTrace(); // TODO: write to log
+            logger.error(exception.getMessage());
         }
         return connections;
     }
@@ -90,7 +94,7 @@ public class ContextManager {
         }
         reloadContexts();
         if (contexts.isEmpty()) {
-            // TODO: write to log that no rows were changed because no connections were established
+            logger.error("No results were returned because no connections could be established for query=%s json=%s", query, conf);
             return 0;
         }
         return execute(query);
@@ -106,7 +110,7 @@ public class ContextManager {
         }
         reloadContexts();
         if (contexts.isEmpty()) {
-            // TODO: write to log that no rows were changed because no connections were established
+            logger.error("No rows were changed because no connections could be established for query=%s json=%s", query, conf);
             return 0;
         }
         return execute(query);
@@ -126,7 +130,7 @@ public class ContextManager {
         }
         reloadContexts();
         if (contexts.isEmpty()) {
-            // TODO: write to log that render wasn't able to execute because no connections were established
+            logger.error("could not render because no connections could be established for query=%s json=%s", query, conf);
             return "";
         }
         return render(query);
