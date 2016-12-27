@@ -237,7 +237,7 @@ public class RowController implements SimpleController {
                     .set(fieldMap).where(field(schema.getFieldByPropertyKey(T.id.getAccessor())).eq(row.getId()));
 
             this.getContextManager().execute(step);
-            logger.info("executed update statement with following parameters, step: {}, element: {}, schema: {}", step, element, schema);
+            logger.info("executed update statement with following parameters, step: {}, element: {}, schema: {}", this.getContextManager().render(step), element, schema);
             contextManager.execute("commit;");
         }
     }
