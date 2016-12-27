@@ -11,25 +11,6 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="Maven: org.apache.tinkerpop:gremlin-core:3.2.0-incubating" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.tinkerpop:gremlin-shaded:3.2.0-incubating" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.tinkerpop:gremlin-groovy:3.2.0-incubating" level="project" />
-    <orderEntry type="library" name="Maven: org.codehaus.groovy:groovy:indy:2.4.6" level="project" />
-    <orderEntry type="library" name="Maven: org.codehaus.groovy:groovy-groovysh:indy:2.4.6" level="project" />
-    <orderEntry type="library" name="Maven: org.codehaus.groovy:groovy-console:2.4.6" level="project" />
-    <orderEntry type="library" name="Maven: org.codehaus.groovy:groovy-swing:2.4.6" level="project" />
-    <orderEntry type="library" name="Maven: org.codehaus.groovy:groovy-templates:2.4.6" level="project" />
-    <orderEntry type="library" name="Maven: org.codehaus.groovy:groovy-xml:2.4.6" level="project" />
-    <orderEntry type="library" name="Maven: org.codehaus.groovy:groovy:2.4.6" level="project" />
-    <orderEntry type="library" name="Maven: org.codehaus.groovy:groovy-json:indy:2.4.6" level="project" />
-    <orderEntry type="library" name="Maven: org.codehaus.groovy:groovy-jsr223:indy:2.4.6" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.tinkerpop:gremlin-test:3.2.0-incubating" level="project" />
-    <orderEntry type="library" name="Maven: org.mockito:mockito-all:1.9.5" level="project" />
-    <orderEntry type="library" name="Maven: io.searchbox:jest:2.0.0" level="project" />
-    <orderEntry type="library" name="Maven: io.searchbox:jest-common:2.0.0" level="project" />
-    <orderEntry type="library" name="Maven: com.google.code.gson:gson:2.4" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpclient:4.5.1" level="project" />
-    <orderEntry type="library" name="Maven: org.slf4j:slf4j-api:1.7.13" level="project" />
     <orderEntry type="library" name="Maven: com.esotericsoftware.yamlbeans:yamlbeans:1.09" level="project" />
     <orderEntry type="library" name="Maven: com.googlecode.json-simple:json-simple:1.1.1" level="project" />
     <orderEntry type="module" module-name="unipop-core" />

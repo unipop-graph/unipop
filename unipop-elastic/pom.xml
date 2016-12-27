@@ -84,7 +84,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
                                 <environmentVariables>
                                     <conf>basic</conf>
                                 </environmentVariables>
-                                <skip>false</skip>
+                                <skip>true</skip>
                                 <reportNameSuffix>BASIC</reportNameSuffix>
                             </configuration>
                         </execution>
@@ -100,7 +100,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
                                 <environmentVariables>
                                     <conf>inner</conf>
                                 </environmentVariables>
-                                <skip>false</skip>
+                                <skip>true</skip>
                                 <reportNameSuffix>INNEREDGE</reportNameSuffix>
                             </configuration>
                         </execution>
@@ -116,7 +116,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
                                 <environmentVariables>
                                     <conf>nestededge</conf>
                                 </environmentVariables>
-                                <skip>false</skip>
+                                <skip>true</skip>
                                 <reportNameSuffix>NESTEDEDGE</reportNameSuffix>
                             </configuration>
                         </execution>
@@ -132,7 +132,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
                                 <environmentVariables>
                                     <conf>nestededgeref</conf>
                                 </environmentVariables>
-                                <skip>false</skip>
+                                <skip>true</skip>
                                 <reportNameSuffix>NESTEDEDGEREF</reportNameSuffix>
                             </configuration>
                         </execution>
