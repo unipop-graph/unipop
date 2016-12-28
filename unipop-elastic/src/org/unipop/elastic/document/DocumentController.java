@@ -2,6 +2,7 @@ package org.unipop.elastic.document;
 
 import io.searchbox.action.BulkableAction;
 import io.searchbox.core.*;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -10,6 +11,12 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.SortOrder;
+import org.javatuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unipop.elastic.common.ElasticClient;
@@ -89,21 +96,21 @@ public class DocumentController implements SimpleController {
     @Override
     public <E extends Element> Iterator<E> search(SearchQuery<E> uniQuery) {
         Set<? extends DocumentSchema<E>> schemas = getSchemas(uniQuery.getReturnType());
-        Map<DocumentSchema<E>, Search> searches = schemas.stream()
+        Map<DocumentSchema<E>, QueryBuilder> searches = schemas.stream()
                 .collect(new SearchCollector<>((schema) -> schema.getSearch(uniQuery)));
         return search(uniQuery, searches);
     }
 
     @Override
     public Iterator<Edge> search(SearchVertexQuery uniQuery) {
-        Map<DocumentEdgeSchema, Search> schemas = edgeSchemas.stream()
+        Map<DocumentEdgeSchema, QueryBuilder> schemas = edgeSchemas.stream()
                 .collect(new SearchCollector<>((schema) -> schema.getSearch(uniQuery)));
         return search(uniQuery, schemas);
     }
 
     @Override
     public void fetchProperties(DeferredVertexQuery uniQuery) {
-        Map<DocumentVertexSchema, Search> schemas = vertexSchemas.stream()
+        Map<DocumentVertexSchema, QueryBuilder> schemas = vertexSchemas.stream()
                 .collect(new SearchCollector<>((schema) -> schema.getSearch(uniQuery)));
         Iterator<Vertex> search = search(uniQuery, schemas);
 
@@ -175,7 +182,7 @@ public class DocumentController implements SimpleController {
         }
     }
 
-    private <E extends Element, S extends DocumentSchema<E>> Iterator<E> search(SearchQuery<E> query, Map<S, Search> schemas) {
+    private <E extends Element, S extends DocumentSchema<E>> Iterator<E> search(SearchQuery<E> query, Map<S, QueryBuilder> schemas) {
         MetricsRunner metrics = new MetricsRunner(this, query,
                 schemas.keySet().stream().map(s -> ((ElementSchema) s)).collect(Collectors.toList()));
 
@@ -183,16 +190,64 @@ public class DocumentController implements SimpleController {
         logger.debug("Preparing search. Schemas: {}", schemas);
 
         client.refresh();
-        MultiSearch multiSearch = new MultiSearch.Builder(schemas.values()).build();
-        MultiSearchResult results = client.execute(multiSearch);
-        List<MultiSearchResult.MultiSearchResponse> responses = results.getResponses();
-        metrics.stop((children) -> fillChildren(children, responses));
+
+        BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+        schemas.values().forEach(boolQueryBuilder::should);
+
+        int limit = query.getLimit();
+        if (query.getOrders() != null)
+            limit = -1;
+
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(boolQueryBuilder)
+                .size(limit == -1 ? 10000 : limit);
+
+        if(query.getPropertyKeys() == null) searchSourceBuilder.fetchSource(true);
+        else {
+            Set<String> fields = schemas.keySet().stream()
+                    .flatMap(schema -> schema.toFields(query.getPropertyKeys()).stream())
+                    .collect(Collectors.toSet());
+            if(fields.size() == 0) searchSourceBuilder.fetchSource(false);
+            else searchSourceBuilder.fetchSource(fields.toArray(new String[fields.size()]), null);
+        }
+        // TODO: see how can sorting be implemented per schema and not search
+//        List<Pair<String, Order>> orders = query.getOrders();
+//        if (orders != null){
+//            orders.forEach(order -> {
+//                Order orderValue = order.getValue1();
+//                switch (orderValue){
+//                    case decr:
+//                        schemas.keySet().stream()
+//                                .map(schema -> schema.getFieldByPropertyKey(order.getValue0()))
+//                                .filter(key -> key != null)
+//                                .forEach(key -> searchSourceBuilder.sort(key, SortOrder.DESC));
+//                        break;
+//                    case incr:
+//                        schemas.keySet().stream()
+//                                .map(schema -> schema.getFieldByPropertyKey(order.getValue0()))
+//                                .filter(key -> key != null)
+//                                .forEach(key -> searchSourceBuilder.sort(key, SortOrder.ASC));
+//                        break;
+//                    case shuffle:
+//                        break;
+//                }
+//            });
+//        }
+
+        Search.Builder builder = new Search.Builder(searchSourceBuilder.toString().replace("\n", "")).ignoreUnavailable(true).allowNoIndices(true);
+
+        schemas.keySet().stream().map(schema -> schema.getIndex().getIndex(query.getPredicates()))
+                .forEach(builder::addIndex);
+
+        Search search = builder.build();
+
+
+        SearchResult results = client.execute(search);
+//        metrics.stop((children) -> fillChildren(children, responses)); TODO: change fill children for metrics
 
         if (results == null || !results.isSucceeded()) return EmptyIterator.instance();
-        Iterator<S> schemaIterator = schemas.keySet().iterator();
 
-        return responses.stream().filter(this::valid).flatMap(result ->
-                schemaIterator.next().parseResults(result.searchResult.getJsonString(), query).stream()).iterator();
+        return schemas.keySet().stream().flatMap(schema -> schema.parseResults(results.getJsonString(), query).stream()).iterator();
+
     }
 
     private boolean valid(MultiSearchResult.MultiSearchResponse multiSearchResponse) {

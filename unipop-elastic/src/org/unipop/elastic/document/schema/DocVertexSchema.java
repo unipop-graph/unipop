@@ -1,6 +1,5 @@
 package org.unipop.elastic.document.schema;
 
-import io.searchbox.core.Search;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -43,10 +42,11 @@ public class DocVertexSchema extends AbstractDocSchema<Vertex> implements Docume
     }
 
     @Override
-    public Search getSearch(DeferredVertexQuery query) {
+    public QueryBuilder getSearch(DeferredVertexQuery query) {
         PredicatesHolder predicatesHolder = this.toPredicates(query.getVertices());
         QueryBuilder queryBuilder = createQueryBuilder(predicatesHolder);
-        return createSearch(query, queryBuilder);
+        return queryBuilder;
+//        return createSearch(query, queryBuilder);
     }
 
     @Override

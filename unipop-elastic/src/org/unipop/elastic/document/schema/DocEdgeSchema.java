@@ -2,7 +2,6 @@ package org.unipop.elastic.document.schema;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import io.searchbox.core.Search;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -76,13 +75,14 @@ public class DocEdgeSchema extends AbstractDocSchema<Edge> implements DocumentEd
     }
 
     @Override
-    public Search getSearch(SearchVertexQuery query) {
+    public QueryBuilder getSearch(SearchVertexQuery query) {
         PredicatesHolder edgePredicates = this.toPredicates(query.getPredicates());
         PredicatesHolder vertexPredicates = this.getVertexPredicates(query.getVertices(), query.getDirection());
         PredicatesHolder predicatesHolder = PredicatesHolderFactory.and(edgePredicates, vertexPredicates);
         if (predicatesHolder.isAborted()) return null;
         QueryBuilder queryBuilder = createQueryBuilder(predicatesHolder);
-        return createSearch(query, queryBuilder);
+        return queryBuilder;
+//        return createSearch(query, queryBuilder);
     }
 
     protected PredicatesHolder getVertexPredicates(List<Vertex> vertices, Direction direction) {
