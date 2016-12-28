@@ -14,6 +14,7 @@ import org.unipop.jdbc.controller.simple.RowController;
 import org.unipop.jdbc.schemas.RowEdgeSchema;
 import org.unipop.jdbc.schemas.RowVertexSchema;
 import org.unipop.jdbc.schemas.jdbc.JdbcSchema;
+import org.unipop.jdbc.utils.ContextManager;
 import org.unipop.jdbc.utils.JdbcPredicatesTranslator;
 import org.unipop.jdbc.utils.TimingExecuterListener;
 import org.unipop.query.controller.SourceProvider;
@@ -40,7 +41,7 @@ import static org.unipop.util.ConversionUtils.getList;
 public class JdbcSourceProvider implements SourceProvider {
     private final Supplier<PredicatesTranslator<Condition>> predicatesTranslatorSupplier;
     private UniGraph graph;
-    private DSLContext context;
+    private ContextManager contextManager;
 
     public JdbcSourceProvider() {
         this(JdbcPredicatesTranslator::new);
@@ -52,13 +53,7 @@ public class JdbcSourceProvider implements SourceProvider {
 
     @Override
     public Set<UniQueryController> init(UniGraph graph, JSONObject configuration) throws Exception {
-        Connection c = getConnection(configuration);
-        SQLDialect dialect = SQLDialect.valueOf(configuration.getString("sqlDialect"));
-
-        Configuration conf = new DefaultConfiguration().set(c).set(dialect)
-                .set(new DefaultExecuteListenerProvider(new TimingExecuterListener()));
-
-        this.context = DSL.using(conf);
+        this.contextManager = new ContextManager(configuration);
 
         this.graph = graph;
 
@@ -72,7 +67,7 @@ public class JdbcSourceProvider implements SourceProvider {
 
     @Override
     public void close() {
-        this.context.close();
+        this.contextManager.close();
     }
 
     public RowVertexSchema createVertexSchema(JSONObject vertexJson) {
@@ -84,27 +79,14 @@ public class JdbcSourceProvider implements SourceProvider {
     }
 
     public Set<UniQueryController> createControllers(Set<JdbcSchema> schemas) {
-        RowController rowController = new RowController(this.graph, this.context, schemas, this.predicatesTranslatorSupplier.get());
+        RowController rowController = new RowController(this.graph, this.contextManager, schemas, this.predicatesTranslatorSupplier.get());
         return Sets.newHashSet(rowController);
-    }
-
-    private Connection getConnection(JSONObject configuration) throws SQLException, ClassNotFoundException {
-        String url = configuration.getString("address");
-        String driver = configuration.getString("driver");
-        String user = configuration.optString("user");
-        String password = configuration.optString("password");
-
-        Class.forName(driver);
-        if (user.isEmpty() && password.isEmpty()) {
-            return DriverManager.getConnection(url);
-        }
-        return DriverManager.getConnection(url, user, password);
     }
 
     @Override
     public String toString() {
         return "JdbcSourceProvider{" +
-                "context=" + context +
+                "contextManager=" + contextManager +
                 ", predicatesTranslatorSupplier=" + predicatesTranslatorSupplier +
                 ", graph=" + graph +
                 '}';

@@ -1,7 +1,7 @@
 {
   "class": "org.unipop.jdbc.JdbcSourceProvider",
   "driver": "org.h2.Driver",
-  "address": "jdbc:h2:mem:gremlin;",
+  "address": ["jdbc:h2:mem:gremlin;"],
   "sqlDialect": "H2",
   "vertices": [
     {
