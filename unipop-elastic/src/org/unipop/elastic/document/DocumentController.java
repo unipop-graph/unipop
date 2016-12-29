@@ -2,7 +2,6 @@ package org.unipop.elastic.document;
 
 import io.searchbox.action.BulkableAction;
 import io.searchbox.core.*;
-import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -15,8 +14,6 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.SortOrder;
-import org.javatuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unipop.elastic.common.ElasticClient;
@@ -90,7 +87,6 @@ public class DocumentController implements SimpleController {
     }
 
     //region Query Controller
-
 
 
     @Override
@@ -192,7 +188,7 @@ public class DocumentController implements SimpleController {
         client.refresh();
 
         BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-        schemas.values().forEach(boolQueryBuilder::should);
+        schemas.values().stream().filter(Objects::nonNull).forEach(boolQueryBuilder::should);
 
         int limit = query.getLimit();
         if (query.getOrders() != null)
@@ -201,12 +197,12 @@ public class DocumentController implements SimpleController {
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(boolQueryBuilder)
                 .size(limit == -1 ? 10000 : limit);
 
-        if(query.getPropertyKeys() == null) searchSourceBuilder.fetchSource(true);
+        if (query.getPropertyKeys() == null) searchSourceBuilder.fetchSource(true);
         else {
             Set<String> fields = schemas.keySet().stream()
                     .flatMap(schema -> schema.toFields(query.getPropertyKeys()).stream())
                     .collect(Collectors.toSet());
-            if(fields.size() == 0) searchSourceBuilder.fetchSource(false);
+            if (fields.size() == 0) searchSourceBuilder.fetchSource(false);
             else searchSourceBuilder.fetchSource(fields.toArray(new String[fields.size()]), null);
         }
         // TODO: see how can sorting be implemented per schema and not search

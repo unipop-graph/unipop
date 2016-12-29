@@ -155,6 +155,7 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
     @Override
     public QueryBuilder getSearch(SearchVertexQuery query) {
         QueryBuilder queryBuilder = createQueryBuilder(query);
+        if (queryBuilder == null) return null;
         PredicatesHolder edgePredicates = this.toPredicates(query.getPredicates());
         if(edgePredicates.isAborted()) return  null;
 
