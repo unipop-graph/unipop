@@ -46,7 +46,6 @@ public class DocVertexSchema extends AbstractDocSchema<Vertex> implements Docume
         PredicatesHolder predicatesHolder = this.toPredicates(query.getVertices());
         QueryBuilder queryBuilder = createQueryBuilder(predicatesHolder);
         return queryBuilder;
-//        return createSearch(query, queryBuilder);
     }
 
     @Override

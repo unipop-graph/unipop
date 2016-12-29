@@ -56,9 +56,7 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
 
     protected QueryBuilder createQueryBuilder(PredicatesHolder predicatesHolder) {
         if (predicatesHolder.isAborted()) return null;
-        List<String> indices = this.index.getIndex(predicatesHolder);
-        String[] indicesArray = indices.toArray(new String[indices.size()]);
-        return QueryBuilders.indicesQuery(FilterHelper.createFilterBuilder(predicatesHolder), indicesArray);
+        return FilterHelper.createFilterBuilder(predicatesHolder);
     }
 
     protected SearchSourceBuilder createSearch(SearchQuery<E> query, QueryBuilder queryBuilder) {

@@ -147,24 +147,14 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
         PredicatesHolder predicatesHolder = this.toPredicates(query.getPredicates());
         QueryBuilder queryBuilder = createQueryBuilder(predicatesHolder);
         if(queryBuilder == null)  return null;
-        List<String> indices = this.index.getIndex(predicatesHolder);
-        String[] indicesArray = indices.toArray(new String[indices.size()]);
-        return QueryBuilders.indicesQuery(QueryBuilders.nestedQuery(this.path, queryBuilder), indicesArray);
+        return QueryBuilders.nestedQuery(this.path, queryBuilder);
     }
 
     @Override
     public QueryBuilder getSearch(SearchVertexQuery query) {
         QueryBuilder queryBuilder = createQueryBuilder(query);
-        if (queryBuilder == null) return null;
-        PredicatesHolder edgePredicates = this.toPredicates(query.getPredicates());
-        if(edgePredicates.isAborted()) return  null;
 
-        PredicatesHolder childPredicates = childVertexSchema.toPredicates(query.getVertices());
-        childPredicates = PredicatesHolderFactory.and(edgePredicates, childPredicates);
-        List<String> indices = this.index.getIndex(childPredicates);
-        String[] indicesArray = indices.toArray(new String[indices.size()]);
-
-        return QueryBuilders.indicesQuery(queryBuilder, indicesArray);
+        return queryBuilder;
     }
 
     public QueryBuilder createQueryBuilder(SearchVertexQuery query) {

@@ -90,9 +90,7 @@ public class NestedVertexSchema extends AbstractDocSchema<Vertex> implements Doc
     public QueryBuilder createQueryBuilder(PredicatesHolder predicatesHolder) {
         QueryBuilder queryBuilder = super.createQueryBuilder(predicatesHolder);
         if(queryBuilder == null) return null;
-        List<String> indices = this.index.getIndex(predicatesHolder);
-        String[] indicesArray = indices.toArray(new String[indices.size()]);
-        return QueryBuilders.indicesQuery(QueryBuilders.nestedQuery(this.path, queryBuilder), indicesArray);
+        return QueryBuilders.nestedQuery(this.path, queryBuilder);
     }
 
     @Override
@@ -105,6 +103,5 @@ public class NestedVertexSchema extends AbstractDocSchema<Vertex> implements Doc
         PredicatesHolder predicatesHolder = this.toPredicates(query.getVertices());
         QueryBuilder queryBuilder = createQueryBuilder(predicatesHolder);
         return queryBuilder;
-//        return createSearch(query, queryBuilder);
     }
 }
