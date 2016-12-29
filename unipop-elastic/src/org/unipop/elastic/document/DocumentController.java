@@ -2,6 +2,7 @@ package org.unipop.elastic.document;
 
 import io.searchbox.action.BulkableAction;
 import io.searchbox.core.*;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -10,10 +11,10 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
-import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.SortOrder;
+import org.javatuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unipop.elastic.common.ElasticClient;
@@ -178,6 +179,44 @@ public class DocumentController implements SimpleController {
         }
     }
 
+    private <E extends Element, S extends DocumentSchema<E>> Pair<S, SearchSourceBuilder> createSearchBuilder(Map.Entry<S, QueryBuilder> kv, SearchQuery<E> query){
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(kv.getValue())
+                .size(query.getLimit() == -1 ? 10000 : query.getLimit());
+        if (query.getPropertyKeys() == null) searchSourceBuilder.fetchSource(true);
+        else {
+            Set<String> fields = kv.getKey().toFields(query.getPropertyKeys());
+
+            if (fields.size() == 0) searchSourceBuilder.fetchSource(false);
+            else searchSourceBuilder.fetchSource(fields.toArray(new String[fields.size()]), null);
+        }
+        List<Pair<String, Order>> orders = query.getOrders();
+        if (orders != null) {
+            orders.forEach(order -> {
+                Order orderValue = order.getValue1();
+                switch (orderValue) {
+                    case decr:
+                        searchSourceBuilder.sort(kv.getKey()
+                                .getFieldByPropertyKey(order.getValue0()), SortOrder.DESC);
+                        break;
+                    case incr:
+                        searchSourceBuilder.sort(kv.getKey()
+                                .getFieldByPropertyKey(order.getValue0()), SortOrder.ASC);
+                        break;
+                    case shuffle:
+                        break;
+                }
+            });
+        }
+        return Pair.with(kv.getKey(), searchSourceBuilder);
+    }
+
+    private <E extends Element, S extends DocumentSchema<E>> Pair<S, Search> createSearch(Pair<S, SearchSourceBuilder> kv, SearchQuery<E> query){
+        Search.Builder builder = new Search.Builder(kv.getValue1().toString().replace("\n", ""))
+                .ignoreUnavailable(true).allowNoIndices(true);
+        kv.getValue0().getIndex().getIndex(query.getPredicates()).forEach(builder::addIndex);
+        return Pair.with(kv.getValue0(), builder.build());
+    }
+
     private <E extends Element, S extends DocumentSchema<E>> Iterator<E> search(SearchQuery<E> query, Map<S, QueryBuilder> schemas) {
         MetricsRunner metrics = new MetricsRunner(this, query,
                 schemas.keySet().stream().map(s -> ((ElementSchema) s)).collect(Collectors.toList()));
@@ -187,62 +226,15 @@ public class DocumentController implements SimpleController {
 
         client.refresh();
 
-        BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-        schemas.values().stream().filter(Objects::nonNull).forEach(boolQueryBuilder::should);
 
-        int limit = query.getLimit();
-        if (query.getOrders() != null)
-            limit = -1;
-
-        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(boolQueryBuilder)
-                .size(limit == -1 ? 10000 : limit);
-
-        if (query.getPropertyKeys() == null) searchSourceBuilder.fetchSource(true);
-        else {
-            Set<String> fields = schemas.keySet().stream()
-                    .flatMap(schema -> schema.toFields(query.getPropertyKeys()).stream())
-                    .collect(Collectors.toSet());
-            if (fields.size() == 0) searchSourceBuilder.fetchSource(false);
-            else searchSourceBuilder.fetchSource(fields.toArray(new String[fields.size()]), null);
-        }
-        // TODO: see how can sorting be implemented per schema and not search
-//        List<Pair<String, Order>> orders = query.getOrders();
-//        if (orders != null){
-//            orders.forEach(order -> {
-//                Order orderValue = order.getValue1();
-//                switch (orderValue){
-//                    case decr:
-//                        schemas.keySet().stream()
-//                                .map(schema -> schema.getFieldByPropertyKey(order.getValue0()))
-//                                .filter(key -> key != null)
-//                                .forEach(key -> searchSourceBuilder.sort(key, SortOrder.DESC));
-//                        break;
-//                    case incr:
-//                        schemas.keySet().stream()
-//                                .map(schema -> schema.getFieldByPropertyKey(order.getValue0()))
-//                                .filter(key -> key != null)
-//                                .forEach(key -> searchSourceBuilder.sort(key, SortOrder.ASC));
-//                        break;
-//                    case shuffle:
-//                        break;
-//                }
-//            });
-//        }
-
-        Search.Builder builder = new Search.Builder(searchSourceBuilder.toString().replace("\n", "")).ignoreUnavailable(true).allowNoIndices(true);
-
-        schemas.keySet().stream().map(schema -> schema.getIndex().getIndex(query.getPredicates()))
-                .forEach(builder::addIndex);
-
-        Search search = builder.build();
-
-
-        SearchResult results = client.execute(search);
-//        metrics.stop((children) -> fillChildren(children, responses)); TODO: change fill children for metrics
-
-        if (results == null || !results.isSucceeded()) return EmptyIterator.instance();
-
-        return schemas.keySet().stream().flatMap(schema -> schema.parseResults(results.getJsonString(), query).stream()).iterator();
+        return schemas.entrySet().parallelStream().filter(Objects::nonNull)
+                .map(kv -> createSearchBuilder(kv, query))
+                .map(kv -> createSearch(kv, query))
+                .map(kv -> {
+            SearchResult results = client.execute(kv.getValue1());
+            if (results == null || !results.isSucceeded()) return new ArrayList<E>();
+            return kv.getValue0().parseResults(results.getJsonString(), query);
+        }).flatMap(Collection::stream).iterator();
 
     }
 
