@@ -168,18 +168,15 @@ public class DocumentController implements SimpleController {
 
     //region Elastic Queries
 
-    private void fillChildren(List<MutableMetrics> childMetrics, List<MultiSearchResult.MultiSearchResponse> responses) {
-        for (int i = 0; i < responses.size(); i++) {
-            if (childMetrics.size() > i) {
-                MutableMetrics child = childMetrics.get(i);
-                MultiSearchResult.MultiSearchResponse response = responses.get(i);
-                child.setCount(TraversalMetrics.ELEMENT_COUNT_ID, response.searchResult.getTotal());
-                child.setDuration(Long.parseLong(response.searchResult.getJsonObject().get("took").toString()), TimeUnit.MILLISECONDS);
-            }
+    private void fillChildren(List<MutableMetrics> childMetrics, SearchResult result) {
+        if (childMetrics.size() > 0){
+            MutableMetrics child = childMetrics.get(0);
+            child.setCount(TraversalMetrics.ELEMENT_COUNT_ID, result.getTotal());
+            child.setDuration(Long.parseLong(result.getJsonObject().get("took").toString()), TimeUnit.MILLISECONDS);
         }
     }
 
-    private <E extends Element, S extends DocumentSchema<E>> Pair<S, SearchSourceBuilder> createSearchBuilder(Map.Entry<S, QueryBuilder> kv, SearchQuery<E> query){
+    private <E extends Element, S extends DocumentSchema<E>> Pair<S, SearchSourceBuilder> createSearchBuilder(Map.Entry<S, QueryBuilder> kv, SearchQuery<E> query) {
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(kv.getValue())
                 .size(query.getLimit() == -1 ? 10000 : query.getLimit());
         if (query.getPropertyKeys() == null) searchSourceBuilder.fetchSource(true);
@@ -210,7 +207,7 @@ public class DocumentController implements SimpleController {
         return Pair.with(kv.getKey(), searchSourceBuilder);
     }
 
-    private <E extends Element, S extends DocumentSchema<E>> Pair<S, Search> createSearch(Pair<S, SearchSourceBuilder> kv, SearchQuery<E> query){
+    private <E extends Element, S extends DocumentSchema<E>> Pair<S, Search> createSearch(Pair<S, SearchSourceBuilder> kv, SearchQuery<E> query) {
         Search.Builder builder = new Search.Builder(kv.getValue1().toString().replace("\n", ""))
                 .ignoreUnavailable(true).allowNoIndices(true);
         kv.getValue0().getIndex().getIndex(query.getPredicates()).forEach(builder::addIndex);
@@ -218,8 +215,8 @@ public class DocumentController implements SimpleController {
     }
 
     private <E extends Element, S extends DocumentSchema<E>> Iterator<E> search(SearchQuery<E> query, Map<S, QueryBuilder> schemas) {
-        MetricsRunner metrics = new MetricsRunner(this, query,
-                schemas.keySet().stream().map(s -> ((ElementSchema) s)).collect(Collectors.toList()));
+//        MetricsRunner metrics = new MetricsRunner(this, query,
+//                schemas.keySet().stream().map(s -> ((ElementSchema) s)).collect(Collectors.toList()));
 
         if (schemas.size() == 0) return EmptyIterator.instance();
         logger.debug("Preparing search. Schemas: {}", schemas);
@@ -231,10 +228,13 @@ public class DocumentController implements SimpleController {
                 .map(kv -> createSearchBuilder(kv, query))
                 .map(kv -> createSearch(kv, query))
                 .map(kv -> {
-            SearchResult results = client.execute(kv.getValue1());
-            if (results == null || !results.isSucceeded()) return new ArrayList<E>();
-            return kv.getValue0().parseResults(results.getJsonString(), query);
-        }).flatMap(Collection::stream).iterator();
+                    MetricsRunner metrics = new MetricsRunner(this, query,
+                            Collections.singletonList(kv.getValue0()));
+                    SearchResult results = client.execute(kv.getValue1());
+                    metrics.stop((children -> fillChildren(children, results)));
+                    if (results == null || !results.isSucceeded()) return new ArrayList<E>();
+                    return kv.getValue0().parseResults(results.getJsonString(), query);
+                }).flatMap(Collection::stream).iterator();
 
     }
 
