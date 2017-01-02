@@ -4,7 +4,6 @@ import io.searchbox.action.BulkableAction;
 import io.searchbox.core.Delete;
 import io.searchbox.core.DocumentResult;
 import io.searchbox.core.Index;
-import io.searchbox.core.Search;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.MeanGlobalStep;
@@ -12,6 +11,8 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.shaded.jackson.databind.JsonNode;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -30,7 +31,6 @@ import org.unipop.query.aggregation.ReduceQuery;
 import org.unipop.query.aggregation.ReduceVertexQuery;
 import org.unipop.query.predicates.PredicateQuery;
 import org.unipop.query.predicates.PredicatesHolder;
-import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.SearchQuery;
 import org.unipop.schema.element.AbstractElementSchema;
 import org.unipop.schema.property.PropertySchema;
@@ -56,102 +56,12 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
     }
 
     @Override
-    public Search getSearch(SearchQuery<E> query) {
+    public QueryBuilder getSearch(SearchQuery<E> query) {
         PredicatesHolder predicatesHolder = this.toPredicates(query.getPredicates());
         if (predicatesHolder.getClause().equals(PredicatesHolder.Clause.Abort)) return null;
         QueryBuilder queryBuilder = createQueryBuilder(predicatesHolder);
-        return createSearch(query, queryBuilder);
-    }
-
-    @Override
-    public Search getReduce(ReduceQuery query) {
-        PredicatesHolder predicatesHolder = getReducePredicates(query);
-        if (predicatesHolder.getClause().equals(PredicatesHolder.Clause.Abort)) return null;
-        QueryBuilder queryBuilder = createQueryBuilder(predicatesHolder);
-        SearchSourceBuilder searchBuilder = createSearchBuilder(query, queryBuilder);
-        createReduce(query, searchBuilder);
-        Search.Builder search = new Search.Builder(searchBuilder.toString().replace("\n", ""))
-                .addIndex(index.getIndex(query.getPredicates()))
-                .ignoreUnavailable(true)
-                .allowNoIndices(true);
-
-        if (type != null)
-            search.addType(type);
-
-        return search.build();
-    }
-
-    protected PredicatesHolder getReducePredicates(ReduceQuery query){
-        return this.toPredicates(query.getPredicates());
-    }
-
-    protected void createReduce(ReduceQuery query, SearchSourceBuilder searchBuilder) {
-        switch (query.getOp()) {
-            case Count:
-                searchBuilder.size(0);
-                if (query.getReduceOn() != null)
-                    searchBuilder.aggregation(AggregationBuilders.count("count").field(query.getReduceOn()));
-                break;
-            case Sum:
-                searchBuilder.size(0);
-                searchBuilder.aggregation(AggregationBuilders.sum("sum").field(query.getReduceOn()));
-                break;
-            case Max:
-                searchBuilder.size(0);
-                searchBuilder.aggregation(AggregationBuilders.max("max").field(query.getReduceOn()));
-                break;
-            case Min:
-                searchBuilder.size(0);
-                searchBuilder.aggregation(AggregationBuilders.min("min").field(query.getReduceOn()));
-                break;
-            case Mean:
-                searchBuilder.size(0);
-                searchBuilder.aggregation(AggregationBuilders.filter("filter").filter(QueryBuilders.existsQuery(query.getReduceOn()))
-                        .subAggregation(AggregationBuilders.avg("avg").field(query.getReduceOn())));
-                break;
-        }
-    }
-
-    @Override
-    public List<Object> parseReduce(String result, ReduceQuery query) {
-        switch (query.getOp()) {
-            case Count:
-                if (query.getReduceOn() == null)
-                    return getValueByPath(result, "hits.total");
-                return getValueByPath(result, "aggregations.count.value");
-            case Sum:
-                return getValueByPath(result, "aggregations.sum.value");
-            case Max:
-                return getValueByPath(result, "aggregations.max.value");
-            case Min:
-                return getValueByPath(result, "aggregations.min.value");
-            case Mean:
-                List<Object> count = getValueByPath(result, "aggregations.filter.doc_count");
-                List<Object> sum = getValueByPath(result, "aggregations.filter.avg.value");
-                if (count.size() > 0 && sum.size() > 0) {
-                    MeanGlobalStep.MeanNumber meanNumber = new MeanGlobalStep.MeanNumber((double) sum.iterator().next(), (long) count.iterator().next());
-                    return Collections.singletonList(meanNumber);
-                }
-            default:
-                return null;
-        }
-    }
-
-    protected List<Object> getValueByPath(String result, String path) {
-        String[] split = path.split("\\.");
-        try {
-            JsonNode jsonNode = mapper.readTree(result);
-            for (String part : split)
-                jsonNode = jsonNode.get(part);
-            double value = jsonNode.asDouble();
-            if (value % 1 == 0)
-                return Collections.singletonList(((Double) value).longValue());
-            else
-                return Collections.singletonList(value);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
+        return queryBuilder;
+//        return createSearch(query, queryBuilder);
     }
 
     protected QueryBuilder createQueryBuilder(PredicatesHolder predicatesHolder) {
@@ -159,6 +69,8 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
         return FilterHelper.createFilterBuilder(predicatesHolder);
     }
 
+    protected SearchSourceBuilder createSearch(SearchQuery<E> query, QueryBuilder queryBuilder) {
+        if(queryBuilder == null) return null;
     protected SearchSourceBuilder createSearchBuilder(SearchQuery<E> query, QueryBuilder queryBuilder) {
         if (queryBuilder == null) return null;
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(queryBuilder)
@@ -187,6 +99,7 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
             });
         }
 
+        return searchSourceBuilder;
         return searchSourceBuilder;
     }
 
@@ -256,6 +169,11 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
         fields.put("_id", document.getId());
         fields.put("_type", document.getType());
         return this.fromFields(fields);
+    }
+
+    @Override
+    public IndexPropertySchema getIndex() {
+        return index;
     }
 
     protected boolean checkIndex(String index) {

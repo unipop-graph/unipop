@@ -4,9 +4,36 @@
   "addresses": "http://localhost:9200",
   "vertices": [
     {
-      "index": "vertex",
+      "index": "person",
       "id": "@_id",
-      "label": "@_type",
+      "label": {
+        "field": "_type",
+        "include": "person"
+      },
+      "properties": {
+        "gremlin.partitionGraphStrategy.partition": "@partition"
+      },
+      "dynamicProperties": true
+    },
+    {
+      "index": "software",
+      "id": "@_id",
+      "label": {
+        "field": "_type",
+        "include": "software"
+      },
+      "properties": {
+        "gremlin.partitionGraphStrategy.partition": "@partition"
+      },
+      "dynamicProperties": true
+    },
+    {
+      "index": "animal",
+      "id": "@_id",
+      "label": {
+        "field": "_type",
+        "include": "animal"
+      },
       "properties": {
         "gremlin.partitionGraphStrategy.partition": "@partition"
       },
@@ -27,7 +54,12 @@
         }
       },
       "dynamicProperties": {
-        "excludeFields": ["outId", "inId", "outLabel", "inLabel"]
+        "excludeFields": [
+          "outId",
+          "inId",
+          "outLabel",
+          "inLabel"
+        ]
       },
       "outVertex": {
         "ref": true,

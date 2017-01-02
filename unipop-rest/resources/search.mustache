@@ -1,0 +1,102 @@
+{
+	{{#limit}}
+	"size":{{.}},
+	{{/limit}}
+	{{^predicates}}
+	"query":{"match_all":{}}
+	{{/predicates}}
+	{{#predicates}}
+	"query":{
+		"bool":{
+			"must":[
+			{{#and}}
+				{{#predicates}}
+					{{#.}}
+					{
+						"{{op}}":
+							{
+								"{{key}}": {{value}}
+							}
+					}
+					{{/.}}
+					{{^-last}}, {{/-last}}
+					{{#-last}}
+                        {{#complex}}
+                            {{#-first}}, {{/-first}}
+                            {{.}}
+                            {{^-last}}, {{/-last}}
+                        {{/complex}}
+						{{#children}}
+							{{#-first}}, {{/-first}}
+							{{>subtmpl}}
+							{{^-last}}, {{/-last}}
+						{{/children}}
+					 {{/-last}}
+				{{/predicates}}
+				{{^predicates}}
+                    {{#complex}}
+                        {{.}}
+                        {{^-last}}, {{/-last}}
+                        {{#children}}
+                            {{#-first}}, {{/-first}}
+                            {{>subtmpl}}
+                            {{^-last}}, {{/-last}}
+                        {{/children}}
+                    {{/complex}}
+                    {{^complex}}
+                        {{#children}}
+                            {{>subtmpl}}
+                            {{^-last}}, {{/-last}}
+                        {{/children}}
+                    {{/complex}}
+				{{/predicates}}
+			{{/and}}
+			],
+			"should":[
+			{{#or}}
+                {{#predicates}}
+                    {{#.}}
+                        {
+                        "{{op}}":
+                        {
+                        "{{key}}": {{value}}
+                        }
+                        }
+                    {{/.}}
+                    {{^-last}}, {{/-last}}
+                    {{#-last}}
+                        {{#complex}}
+                            {{#-first}}, {{/-first}}
+                            {{.}}
+                            {{^-last}}, {{/-last}}
+                        {{/complex}}
+                        {{#children}}
+                            {{#-first}}, {{/-first}}
+                            {{>subtmpl}}
+                            {{^-last}}, {{/-last}}
+                        {{/children}}
+                    {{/-last}}
+                {{/predicates}}
+                {{^predicates}}
+                    {{#complex}}
+                        {{.}}
+                        {{^-last}}, {{/-last}}
+                        {{#children}}
+                            {{#-first}}, {{/-first}}
+                            {{>subtmpl}}
+                            {{^-last}}, {{/-last}}
+                        {{/children}}
+                    {{/complex}}
+                    {{^complex}}
+                        {{#children}}
+                            {{>subtmpl}}
+                            {{^-last}}, {{/-last}}
+                        {{/children}}
+                    {{/complex}}
+                {{/predicates}}
+			{{/or}}
+			]
+		}
+	}
+	{{/predicates}}
+}

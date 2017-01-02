@@ -10,6 +10,7 @@ import org.jooq.*;
 import org.jooq.impl.DSL;
 import org.json.JSONObject;
 import org.unipop.jdbc.schemas.jdbc.JdbcSchema;
+import org.unipop.jdbc.utils.ContextManager;
 import org.unipop.jdbc.utils.JdbcPredicatesTranslator;
 import org.unipop.query.predicates.PredicateQuery;
 import org.unipop.query.predicates.PredicatesHolder;
@@ -59,9 +60,8 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
     }
 
     @Override
-    public List<E> parseResults(Result result, PredicateQuery query) {
-        List<Map<String, Object>> maps = result.intoMaps();
-        List<E> elements = maps.stream()
+    public List<E> parseResults(List<Map<String, Object>> result, PredicateQuery query) {
+        List<E> elements = result.stream()
                 .flatMap(r -> {
                     Collection<E> tableElements = this.fromFields(r);
                     return Objects.nonNull(tableElements) ? this.fromFields(r).stream() : Stream.empty();
@@ -73,7 +73,7 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
     }
 
     @Override
-    public Select createSelect(SearchQuery<E> query, PredicatesHolder predicatesHolder, DSLContext context, Field... fields) {
+    public Select getSearch(SearchQuery<E> query, PredicatesHolder predicatesHolder) {
         if (predicatesHolder.isAborted()) {
             return null;
         }
@@ -81,7 +81,7 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
         Condition conditions = new JdbcPredicatesTranslator().translate(predicatesHolder);
         int finalLimit = query.getLimit() < 0 ? Integer.MAX_VALUE : query.getLimit();
 
-        SelectConditionStep<Record> where = createSqlQuery(query.getPropertyKeys(), context, fields)
+        SelectConditionStep<Record> where = createSqlQuery(query.getPropertyKeys())
                 .where(conditions);
 
         List<Pair<String, Order>> orders = query.getOrders();
@@ -107,8 +107,10 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
     }
 
 
-    private <E extends Element> SelectJoinStep<Record> createSqlQuery(Set<String> columnsToRetrieve, DSLContext context, Field... fields) {
+    private <E extends Element> SelectJoinStep<Record> createSqlQuery(Set<String> columnsToRetrieve) {
         if (columnsToRetrieve == null) {
+            return DSL.select().from(this.getTable());
+
             columnsToRetrieve = this.getPropertySchemas().stream().map(PropertySchema::getKey).collect(Collectors.toSet());
 //            return context.select().from(this.getTable());
         }

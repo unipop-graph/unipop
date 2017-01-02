@@ -2,7 +2,6 @@ package org.unipop.jdbc.controller.simple;
 
 import com.google.common.collect.Maps;
 import org.apache.commons.collections4.keyvalue.DefaultMapEntry;
-import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
@@ -12,6 +11,7 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.jooq.*;
 import org.jooq.exception.DataAccessException;
+import org.jooq.impl.DSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unipop.common.util.PredicatesTranslator;
@@ -20,6 +20,7 @@ import org.unipop.jdbc.schemas.RowVertexSchema;
 import org.unipop.jdbc.schemas.jdbc.JdbcEdgeSchema;
 import org.unipop.jdbc.schemas.jdbc.JdbcSchema;
 import org.unipop.jdbc.schemas.jdbc.JdbcVertexSchema;
+import org.unipop.jdbc.utils.ContextManager;
 import org.unipop.jdbc.utils.TimingExecuterListener;
 import org.unipop.query.UniQuery;
 import org.unipop.query.aggregation.LocalQuery;
@@ -59,8 +60,8 @@ import static org.jooq.impl.DSL.table;
 public class RowController implements SimpleController {
     protected final static Logger logger = LoggerFactory.getLogger(RowController.class);
 
-    protected final DSLContext dslContext;
-    protected final UniGraph graph;
+    private final ContextManager contextManager;
+    private final UniGraph graph;
 
     protected Set<? extends RowVertexSchema> vertexSchemas;
     protected Set<? extends RowEdgeSchema> edgeSchemas;
@@ -70,9 +71,10 @@ public class RowController implements SimpleController {
     protected TraversalFilter filter;
 
     public <E extends Element> RowController(UniGraph graph, DSLContext context, Set<JdbcSchema> schemaSet, PredicatesTranslator<Condition> predicatesTranslator, TraversalFilter filter) {
+    public <E extends Element> RowController(UniGraph graph, ContextManager contextManager, Set<JdbcSchema> schemaSet, PredicatesTranslator<Condition> predicatesTranslator) {
         this.graph = graph;
-        this.dslContext = context;
-        this.filter = filter;
+        this.contextManager = contextManager;
+
         extractRowSchemas(schemaSet);
         this.predicatesTranslator = predicatesTranslator;
         bulk = new ArrayList<>();
@@ -170,13 +172,12 @@ public class RowController implements SimpleController {
             Set<? extends JdbcSchema<E>> schemas = this.getSchemas(el.getClass());
 
             for (JdbcSchema<E> schema : schemas) {
-
-                DeleteWhereStep deleteStep = this.getDslContext().delete(table(schema.getTable()));
+                DeleteWhereStep deleteStep = DSL.delete(table(schema.getTable()));
 
                 Condition conditions = this.translateElementsToConditions(schema, Collections.singletonList(el));
                 Delete step = deleteStep.where(conditions);
 
-                step.execute();
+                getContextManager().execute(step);
                 logger.debug("removed element. element: {}, schema: {}, command: {}", el, schema, step);
             }
         });
@@ -208,6 +209,13 @@ public class RowController implements SimpleController {
     }
 
     @SuppressWarnings("unchecked")
+    private <E extends Element, S extends JdbcSchema<E>> Iterator<E> search(Function<S, PredicatesHolder> toSearchFunction, Set<? extends S> allSchemas, SearchQuery<E> query) {
+        Map<S, Select> schemas = allSchemas.stream()
+                .map(schema -> Pair.of(schema, toSearchFunction.apply(schema)))
+                .filter(pair -> pair.getRight() != null)
+                .map(pair -> Pair.of(pair.getLeft(), pair.getLeft().getSearch(query, pair.getRight())))
+                .filter(pair -> pair.getRight() != null)
+                .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
     protected <E extends Element, R> Iterator<R> search(UniQuery query, Map<JdbcSchema<E>, Select> selects, SelectCollector<JdbcSchema<E>, Select, R> collector) {
 
         if (bulk.size() != 0){
@@ -224,6 +232,10 @@ public class RowController implements SimpleController {
         Set<R> collect = selects.values().stream()
                 .map(Select::fetch)
                 .flatMap(res -> collector.parse.apply(schemaIterator.next(),res).stream())
+        Iterator<S> schemaIterator = schemas.keySet().iterator();
+        Set<E> collect = schemas.values().stream()
+                .map(select -> this.getContextManager().fetch(select))
+                .flatMap(res -> schemaIterator.next().parseResults(res, query).stream())
                 .distinct().collect(Collectors.toSet());
 
 
@@ -237,6 +249,11 @@ public class RowController implements SimpleController {
         for (JdbcSchema<E> schema : schemas) {
             Query query = schema.getInsertStatement(element);
             if (query == null) continue;
+            int changeSetCount = contextManager.execute(query);
+            if(logger.isDebugEnabled())
+                logger.debug("executed insertion, query: {}", contextManager.render(query));
+            if (changeSetCount == 0) {
+                logger.error("no rows changed on insertion. query: {}, element: {}", contextManager.render(query), element);
             bulk.add(query);
             if (bulk.size() >= 1000){
                 dslContext.batch(bulk).execute();
@@ -256,9 +273,12 @@ public class RowController implements SimpleController {
             Map<Field<?>, Object> fieldMap = Maps.newHashMap();
             row.getFields().entrySet().stream().map(this::mapSet).forEach(en -> fieldMap.put(en.getKey(), en.getValue()));
 
-            Update step = this.getDslContext().update(table(schema.getTable()))
+            Update step = DSL.update(table(schema.getTable()))
                     .set(fieldMap).where(field(schema.getFieldByPropertyKey(T.id.getAccessor())).eq(row.getId()));
 
+            this.getContextManager().execute(step);
+            logger.info("executed update statement with following parameters, step: {}, element: {}, schema: {}", this.getContextManager().render(step), element, schema);
+            contextManager.execute("commit;");
             bulk.add(step);
             if (bulk.size() >= 1000){
                 dslContext.batch(bulk).execute();
@@ -306,14 +326,14 @@ public class RowController implements SimpleController {
         return rowSchemas;
     }
 
-    public DSLContext getDslContext() {
-        return this.dslContext;
+    public ContextManager getContextManager() {
+        return this.contextManager;
     }
 
     @Override
     public String toString() {
         return "RowController{" +
-                "dslContext=" + dslContext +
+                "contextManager=" + contextManager +
                 ", graph=" + graph +
                 ", vertexSchemas=" + vertexSchemas +
                 ", edgeSchemas=" + edgeSchemas +

@@ -2,12 +2,9 @@ package org.unipop.elastic.document.schema;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.google.gson.JsonArray;
-import io.searchbox.core.Search;
-import org.apache.tinkerpop.gremlin.structure.*;
-import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
-import org.apache.tinkerpop.shaded.jackson.databind.JsonNode;
-import org.apache.tinkerpop.shaded.jackson.databind.node.ArrayNode;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AbstractAggregationBuilder;
@@ -98,28 +95,14 @@ public class DocEdgeSchema extends AbstractDocEdgeSchema {
     }
 
     @Override
-    public Search getSearch(SearchVertexQuery query) {
-        return createSearch(query, createQueryBuilder(query));
-    }
-
-    @Override
-    public Search getReduce(ReduceVertexQuery query) {
+    public QueryBuilder getSearch(SearchVertexQuery query) {
         PredicatesHolder edgePredicates = this.toPredicates(query.getPredicates());
         PredicatesHolder vertexPredicates = this.getVertexPredicates(query.getVertices(), query.getDirection());
         PredicatesHolder predicatesHolder = PredicatesHolderFactory.and(edgePredicates, vertexPredicates);
         if (predicatesHolder.isAborted()) return null;
         QueryBuilder queryBuilder = createQueryBuilder(predicatesHolder);
-        SearchSourceBuilder searchBuilder = createSearchBuilder(query, queryBuilder);
-        createReduce(query, searchBuilder);
-        Search.Builder search = new Search.Builder(searchBuilder.toString().replace("\n", ""))
-                .addIndex(index.getIndex(query.getPredicates()))
-                .ignoreUnavailable(true)
-                .allowNoIndices(true);
-
-        if (type != null)
-            search.addType(type);
-
-        return search.build();
+        return queryBuilder;
+//        return createSearch(query, queryBuilder);
     }
 
     @Override

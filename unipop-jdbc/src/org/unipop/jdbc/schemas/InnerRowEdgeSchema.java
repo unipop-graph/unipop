@@ -114,6 +114,8 @@ public class InnerRowEdgeSchema extends RowEdgeSchema {
             allFields[i + fields.length] = vertexFields.get(i);
         }
         SelectJoinStep search = (SelectJoinStep) super.getSearch(query, predicatesHolder, context, allFields);
+    public Select getSearch(SearchQuery<Edge> query, PredicatesHolder predicatesHolder) {
+        SelectJoinStep search = (SelectJoinStep) super.getSearch(query, predicatesHolder);
         if (search == null) return null;
         return search.where(field(this.getFieldByPropertyKey(T.id.getAccessor())).isNotNull());
     }

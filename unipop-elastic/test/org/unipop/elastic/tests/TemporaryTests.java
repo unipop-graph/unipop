@@ -1,36 +1,29 @@
 package org.unipop.elastic.tests;
 
 import org.apache.tinkerpop.gremlin.*;
-import org.apache.tinkerpop.gremlin.process.IgnoreEngine;
-import org.apache.tinkerpop.gremlin.process.traversal.*;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.process.traversal.step.Barrier;
-import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.PartitionStrategy;
-import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.SubgraphStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import test.ElasticGraphProvider;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.List;
+import java.util.Random;
+import java.util.UUID;
 
-import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.GRATEFUL;
 import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
-import static org.apache.tinkerpop.gremlin.process.traversal.Operator.sum;
-import static org.apache.tinkerpop.gremlin.process.traversal.SackFunctions.Barrier.normSack;
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
-import static org.apache.tinkerpop.gremlin.structure.Column.values;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.as;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.out;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertThat;
 
 public class TemporaryTests extends AbstractGremlinTest {
+
+    private static final Logger logger = LoggerFactory.getLogger(AbstractGremlinTest.class);
 
     public TemporaryTests() throws Exception {
         GraphManager.setGraphProvider(new ElasticGraphProvider());
@@ -38,9 +31,50 @@ public class TemporaryTests extends AbstractGremlinTest {
 
     @Test
     @LoadGraphWith(MODERN)
+    public void shouldTraversalResetProperly() {
+        final Traversal<Object, Vertex> traversal = as("a").out().out().has("name", P.within("ripple", "lop")).as("b");
+        if (new Random().nextBoolean()) traversal.asAdmin().reset();
+        assertFalse(traversal.hasNext());
+        traversal.asAdmin().addStarts(traversal.asAdmin().getTraverserGenerator().generateIterator(g.V(), traversal.asAdmin().getSteps().get(0), 1l));
+        assertTrue(traversal.hasNext());
+        assertEquals(2, IteratorUtils.count(traversal));
+
+        if (new Random().nextBoolean()) traversal.asAdmin().reset();
+        traversal.asAdmin().addStarts(traversal.asAdmin().getTraverserGenerator().generateIterator(g.V(), traversal.asAdmin().getSteps().get(0), 1l));
+        assertTrue(traversal.hasNext());
+        traversal.next();
+        assertTrue(traversal.hasNext());
+        traversal.asAdmin().reset();
+        assertFalse(traversal.hasNext());
+
+        traversal.asAdmin().addStarts(traversal.asAdmin().getTraverserGenerator().generateIterator(g.V(), traversal.asAdmin().getSteps().get(0), 1l));
+        assertEquals(2, IteratorUtils.count(traversal));
+
+        assertFalse(traversal.hasNext());
+        if (new Random().nextBoolean()) traversal.asAdmin().reset();
+        assertFalse(traversal.hasNext());
+    }
+
+    @Test
+    @LoadGraphWith(MODERN)
     public void test() {
-        Traversal t = g.V().properties().order().by(T.key, Order.decr).key();
+        Traversal t = g.E();
         check(t);
+    }
+
+    @Test
+    @LoadGraphWith(MODERN)
+    public void test_a() {
+        final Traversal<Object, Vertex> traversal = out().out();
+        assertFalse(traversal.hasNext());
+        traversal.asAdmin().addStarts(traversal.asAdmin().getTraverserGenerator().generateIterator(g.V(), traversal.asAdmin().getSteps().get(0), 1l));
+        assertTrue(traversal.hasNext());
+        assertEquals(2, IteratorUtils.count(traversal));
+    }
+
+    @Test
+    public void nullProperty() {
+        graph.addVertex("abc", null);
     }
 
     private void check(Traversal traversal) {
@@ -51,8 +85,7 @@ public class TemporaryTests extends AbstractGremlinTest {
 
         int count = 0;
         while (traversal.hasNext()) {
-            Object next = traversal.next();
-            System.out.println(next);
+            System.out.println(traversal.next());
             count++;
         }
         System.out.println(count);

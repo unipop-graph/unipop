@@ -15,6 +15,7 @@
         <module name="unipop-core" />
         <module name="unipop-elastic" />
         <module name="unipop-jdbc" />
+        <module name="unipop-rest" />
         <module name="unipop-test" />
       </profile>
     </annotationProcessing>
@@ -23,6 +24,7 @@
       <module name="unipop-core" target="1.8" />
       <module name="unipop-elastic" target="1.8" />
       <module name="unipop-jdbc" target="1.8" />
+      <module name="unipop-rest" target="1.8" />
       <module name="unipop-test" target="1.8" />
     </bytecodeTargetLevel>
   </component>

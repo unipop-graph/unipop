@@ -4,7 +4,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import io.searchbox.action.BulkableAction;
 import io.searchbox.core.DocumentResult;
-import io.searchbox.core.Search;
 import io.searchbox.core.Update;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
@@ -155,12 +154,11 @@ public class NestedEdgeSchema extends AbstractDocEdgeSchema {
     }
 
     @Override
-    public Search getSearch(SearchQuery<Edge> query) {
+    public QueryBuilder getSearch(SearchQuery<Edge> query) {
         PredicatesHolder predicatesHolder = this.toPredicates(query.getPredicates());
         QueryBuilder queryBuilder = createQueryBuilder(predicatesHolder);
         if(queryBuilder == null)  return null;
-        NestedQueryBuilder nestedQuery = QueryBuilders.nestedQuery(this.path, queryBuilder);
-        return createSearch(query, nestedQuery);
+        return QueryBuilders.nestedQuery(this.path, queryBuilder);
     }
 
 
@@ -284,9 +282,10 @@ public class NestedEdgeSchema extends AbstractDocEdgeSchema {
     }
 
     @Override
-    public Search getSearch(SearchVertexQuery query) {
+    public QueryBuilder getSearch(SearchVertexQuery query) {
         QueryBuilder queryBuilder = createQueryBuilder(query);
-        return createSearch(query, queryBuilder);
+
+        return queryBuilder;
     }
 
     @Override
@@ -302,6 +301,7 @@ public class NestedEdgeSchema extends AbstractDocEdgeSchema {
         PredicatesHolder childPredicates = childVertexSchema.toPredicates(query.getVertices());
         childPredicates = PredicatesHolderFactory.and(edgePredicates, childPredicates);
         QueryBuilder childQuery = createNestedQueryBuilder(childPredicates);
+
         if(query.getDirection().equals(parentDirection.opposite())) {
             if (childPredicates.isAborted()) return null;
             return childQuery;
