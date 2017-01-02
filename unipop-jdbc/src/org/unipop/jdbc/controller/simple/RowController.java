@@ -2,7 +2,6 @@ package org.unipop.jdbc.controller.simple;
 
 import com.google.common.collect.Maps;
 import org.apache.commons.collections4.keyvalue.DefaultMapEntry;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
@@ -46,7 +45,6 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import static org.jooq.impl.DSL.field;
-import static org.jooq.impl.DSL.groupingSets;
 import static org.jooq.impl.DSL.table;
 
 /**
@@ -202,7 +200,7 @@ public class RowController implements SimpleController {
     protected <E extends Element, R> Iterator<R> search(UniQuery query, Map<JdbcSchema<E>, Select> selects,
                                                         SelectCollector<JdbcSchema<E>, Select, R> collector) {
 
-        if (bulk.size() != 0){
+        if (bulk.size() != 0) {
             contextManager.batch(bulk);
             bulk.clear();
         }
@@ -215,7 +213,7 @@ public class RowController implements SimpleController {
         Iterator<JdbcSchema<E>> schemaIterator = selects.keySet().iterator();
         Set<R> collect = selects.values().stream()
                 .map(select -> this.getContextManager().fetch(select))
-                .flatMap(res ->collector.parse.apply(schemaIterator.next()).stream())
+                .flatMap(res -> collector.parse.apply(schemaIterator.next(), res).stream())
                 .collect(Collectors.toSet());
 
 
@@ -229,17 +227,20 @@ public class RowController implements SimpleController {
         for (JdbcSchema<E> schema : schemas) {
             Query query = schema.getInsertStatement(element);
             if (query == null) continue;
-            int changeSetCount = contextManager.execute(query);
-            if(logger.isDebugEnabled())
-                logger.debug("executed insertion, query: {}", contextManager.render(query));
-            if (changeSetCount == 0) {
-                logger.error("no rows changed on insertion. query: {}, element: {}", contextManager.render(query), element);
-            bulk.add(query);
-            if (bulk.size() >= 1000){
-                contextManager.batch(bulk);
-                bulk.clear();
-            }
-            return true;
+//            int changeSetCount = contextManager.execute(query);
+//            if (logger.isDebugEnabled())
+//                logger.debug("executed insertion, query: {}", contextManager.render(query));
+//            if (changeSetCount == 0) {
+//                logger.error("no rows changed on insertion. query: {}, element: {}", contextManager.render(query), element);
+//            }
+//            else {
+                bulk.add(query);
+                if (bulk.size() >= 1000) {
+                    contextManager.batch(bulk);
+                    bulk.clear();
+                }
+                return true;
+//            }
         }
         return false;
     }
@@ -256,11 +257,11 @@ public class RowController implements SimpleController {
             Update step = DSL.update(table(schema.getTable()))
                     .set(fieldMap).where(field(schema.getFieldByPropertyKey(T.id.getAccessor())).eq(row.getId()));
 
-            this.getContextManager().execute(step);
+//            this.getContextManager().execute(step);
             logger.info("executed update statement with following parameters, step: {}, element: {}, schema: {}", this.getContextManager().render(step), element, schema);
             contextManager.execute("commit;");
             bulk.add(step);
-            if (bulk.size() >= 1000){
+            if (bulk.size() >= 1000) {
                 contextManager.batch(bulk);
                 bulk.clear();
             }
@@ -325,9 +326,9 @@ public class RowController implements SimpleController {
 
         private final Function<? super K, ? extends V> valueMapper;
 
-        private final BiFunction<? super K, Result, ? extends Collection<R>> parse;
+        private final BiFunction<? super K, List<Map<String, Object>>, ? extends Collection<R>> parse;
 
-        public SelectCollector(Function<? super K, ? extends V> valueMapper, BiFunction<? super K, Result, Collection<R>> parse) {
+        public SelectCollector(Function<? super K, ? extends V> valueMapper, BiFunction<? super K, List<Map<String, Object>>, Collection<R>> parse) {
             this.valueMapper = valueMapper;
             this.parse = parse;
         }

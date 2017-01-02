@@ -56,8 +56,8 @@ public class ContextManager {
                     Class.forName(driver);
                     if (user.isEmpty() && password.isEmpty()) {
                         connections.add(DriverManager.getConnection(url.toString()));
-                    }
-                    connections.add(DriverManager.getConnection(url.toString(), user, password));
+                    } else
+                        connections.add(DriverManager.getConnection(url.toString(), user, password));
                 } catch (SQLException | ClassNotFoundException exception) {
                     logger.error(exception.getMessage());
                 }
@@ -137,6 +137,20 @@ public class ContextManager {
     }
 
     public void batch(List<Query> bulk) {
-
+        for (DSLContext context : contexts) {
+            try{
+                context.batch(bulk).execute();
+                return;
+            }
+            catch (Exception e) {
+                contexts.remove(context);
+            }
+        }
+        reloadContexts();
+        if (contexts.isEmpty()) {
+            logger.error("could not execute batch");
+            return;
+        }
+        batch(bulk);
     }
 }

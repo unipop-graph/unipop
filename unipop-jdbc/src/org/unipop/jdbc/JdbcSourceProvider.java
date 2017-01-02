@@ -45,18 +45,12 @@ public class JdbcSourceProvider implements SourceProvider {
     }
 
     @Override
-    public Set<UniQueryController> init(UniGraph graph, TraversalFilter filter, JSONObject configuration) throws Exception {
-        Connection c = getConnection(configuration);
-        SQLDialect dialect = SQLDialect.valueOf(configuration.getString("sqlDialect"));
+    public Set<UniQueryController> init(UniGraph graph, JSONObject configuration) throws Exception {
 
         boolean optimized = false;
+        SQLDialect dialect = SQLDialect.valueOf(configuration.getString("sqlDialect"));
         if (dialect.equals(SQLDialect.POSTGRES)) optimized = true;
-
-        Configuration conf = new DefaultConfiguration().set(c).set(dialect)
-                .set(new DefaultExecuteListenerProvider(new TimingExecuterListener()));
-
-        this.context = DSL.using(conf);
-    public Set<UniQueryController> init(UniGraph graph, JSONObject configuration) throws Exception {
+        if (configuration.optBoolean("optimized", false)) optimized = true;
         this.contextManager = new ContextManager(configuration);
 
         this.graph = graph;
@@ -66,7 +60,7 @@ public class JdbcSourceProvider implements SourceProvider {
         getList(configuration, "vertices").forEach(vertexJson -> schemas.add(createVertexSchema(vertexJson)));
         getList(configuration, "edges").forEach(edgeJson -> schemas.add(createEdgeSchema(edgeJson)));
 
-        return createControllers(schemas, optimized, filter);
+        return createControllers(schemas, optimized);
     }
 
     @Override
@@ -82,14 +76,12 @@ public class JdbcSourceProvider implements SourceProvider {
         return new RowEdgeSchema(edgeJson, this.graph);
     }
 
-    public Set<UniQueryController> createControllers(Set<JdbcSchema> schemas, boolean optimized, TraversalFilter filter) {
+    public Set<UniQueryController> createControllers(Set<JdbcSchema> schemas, boolean optimized) {
         RowController rowController;
         if (!optimized)
-         rowController = new RowController(this.graph, this.context, schemas, this.predicatesTranslatorSupplier.get(), filter);
+         rowController = new RowController(this.graph, this.contextManager, schemas, this.predicatesTranslatorSupplier.get());
         else
-            rowController = new RowOptimizedController(this.graph, this.context, schemas, this.predicatesTranslatorSupplier.get(), filter);
-    public Set<UniQueryController> createControllers(Set<JdbcSchema> schemas) {
-        RowController rowController = new RowController(this.graph, this.contextManager, schemas, this.predicatesTranslatorSupplier.get());
+            rowController = new RowOptimizedController(this.graph, this.contextManager, schemas, this.predicatesTranslatorSupplier.get());
         return Sets.newHashSet(rowController);
     }
 

@@ -32,7 +32,7 @@ public abstract class AbstractJdbcEdgeSchema extends AbstractRowSchema<Edge> imp
     }
 
     @Override
-    public Select getLocal(LocalQuery query, DSLContext dsl) {
+    public Select getLocal(LocalQuery query) {
         SearchVertexQuery searchQuery = (SearchVertexQuery) query.getSearchQuery();
         PredicatesHolder edgePredicates = this.toPredicates(searchQuery.getPredicates());
         PredicatesHolder vertexPredicates = this.getVertexPredicates(searchQuery.getVertices(), searchQuery.getDirection());
@@ -42,7 +42,7 @@ public abstract class AbstractJdbcEdgeSchema extends AbstractRowSchema<Edge> imp
         // TODO: create select
         Set<String> outId = getOutVertexSchema().getPropertySchema(T.id.getAccessor()).toFields(Collections.emptySet());
         Set<String> id = getPropertySchema(T.id.getAccessor()).toFields(Collections.emptySet());
-        SelectGroupByStep select = ((SelectGroupByStep) createSelect(searchQuery, predicatesHolder, dsl, (Field) DSL.rank().over(DSL.partitionBy(field(outId.iterator().next())).orderBy(field(id.iterator().next()))).as("r1")));
+        SelectGroupByStep select = ((SelectGroupByStep) createSelect(searchQuery, predicatesHolder, (Field) DSL.rank().over(DSL.partitionBy(field(outId.iterator().next())).orderBy(field(id.iterator().next()))).as("r1")));
 
         Set<String> fields = searchQuery.getPropertyKeys();
         if (fields == null)
@@ -50,7 +50,7 @@ public abstract class AbstractJdbcEdgeSchema extends AbstractRowSchema<Edge> imp
         Set<String> props = this.toFields(fields);
         int limit = searchQuery.getLimit();
         int finalLimit = limit == -1 ? Integer.MAX_VALUE : limit + 1;
-        SelectConditionStep<Record> selectf = dsl.select(props.stream().filter(p -> p!=null).map(DSL::field).collect(Collectors.toList())).from(select).where(field("r1").lt(finalLimit));
+        SelectConditionStep<Record> selectf = DSL.select(props.stream().filter(p -> p!=null).map(DSL::field).collect(Collectors.toList())).from(select).where(field("r1").lt(finalLimit));
 
         return selectf;
     }

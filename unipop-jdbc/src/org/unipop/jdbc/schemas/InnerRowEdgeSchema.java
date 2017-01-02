@@ -57,7 +57,7 @@ public class InnerRowEdgeSchema extends RowEdgeSchema {
     }
 
     @Override
-    public Select getLocal(LocalQuery query, DSLContext dsl) {
+    public Select getLocal(LocalQuery query) {
         SearchVertexQuery searchQuery = (SearchVertexQuery) query.getSearchQuery();
         PredicatesHolder edgePredicates = this.toPredicates(searchQuery.getPredicates());
         PredicatesHolder vertexPredicates = this.getVertexPredicates(searchQuery.getVertices(), searchQuery.getDirection());
@@ -75,7 +75,7 @@ public class InnerRowEdgeSchema extends RowEdgeSchema {
             allFields[i] = vertexFields.get(i);
         }
         allFields[vertexFields.size()] = (Field) DSL.rank().over(DSL.partitionBy(field(outId.iterator().next())).orderBy(field(id.iterator().next()))).as("r1");
-        SelectGroupByStep select = ((SelectGroupByStep) createSelect(searchQuery, predicatesHolder, dsl, allFields));
+        SelectGroupByStep select = ((SelectGroupByStep) createSelect(searchQuery, predicatesHolder, allFields));
 
         Set<String> fields = searchQuery.getPropertyKeys();
         if (fields == null)
@@ -85,7 +85,7 @@ public class InnerRowEdgeSchema extends RowEdgeSchema {
         int finalLimit = limit == -1 ? Integer.MAX_VALUE : limit + 1;
         List<Field<Object>> queryFields = props.stream().filter(p -> p != null).map(DSL::field).collect(Collectors.toList());
         queryFields = Stream.of(queryFields, Arrays.asList(allFields)).flatMap(Collection::stream).distinct().collect(Collectors.toList());
-        SelectConditionStep<Record> selectf = dsl.select(queryFields).from(select).where(field("r1").lt(finalLimit));
+        SelectConditionStep<Record> selectf = DSL.select(queryFields).from(select).where(field("r1").lt(finalLimit));
 
         return selectf;
     }
@@ -101,7 +101,7 @@ public class InnerRowEdgeSchema extends RowEdgeSchema {
     }
 
     @Override
-    public Select getSearch(SearchQuery<Edge> query, PredicatesHolder predicatesHolder, DSLContext context, Field... fields) {
+    public Select getSearch(SearchQuery<Edge> query, PredicatesHolder predicatesHolder, Field... fields) {
         List<Field<Object>> vertexFields = Stream.of(parentVertexSchema.toFields(query.getPropertyKeys()),
                 childVertexSchema.toFields(query.getPropertyKeys()))
                 .flatMap(Collection::stream)
@@ -113,12 +113,11 @@ public class InnerRowEdgeSchema extends RowEdgeSchema {
         for (int i = 0; i < vertexFields.size(); i++) {
             allFields[i + fields.length] = vertexFields.get(i);
         }
-        SelectJoinStep search = (SelectJoinStep) super.getSearch(query, predicatesHolder, context, allFields);
-    public Select getSearch(SearchQuery<Edge> query, PredicatesHolder predicatesHolder) {
-        SelectJoinStep search = (SelectJoinStep) super.getSearch(query, predicatesHolder);
+        SelectJoinStep search = (SelectJoinStep) super.getSearch(query, predicatesHolder, allFields);
         if (search == null) return null;
         return search.where(field(this.getFieldByPropertyKey(T.id.getAccessor())).isNotNull());
     }
+
 
     @Override
     public String toString() {

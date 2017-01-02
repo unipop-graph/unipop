@@ -29,8 +29,7 @@ import java.util.stream.Stream;
  * @author Gur Ronen
  * @since 6/13/2016
  */
-public class RowEdgeSchema extends AbstractJdbcEdgeSchema
-{
+public class RowEdgeSchema extends AbstractJdbcEdgeSchema {
     protected VertexSchema inVertexSchema;
     protected VertexSchema outVertexSchema;
 
@@ -96,10 +95,10 @@ public class RowEdgeSchema extends AbstractJdbcEdgeSchema
     }
 
     @Override
-    public Collection<Pair<String, Element>> parseLocal(Result result, LocalQuery query) {
+    public Collection<Pair<String, Element>> parseLocal(List<Map<String, Object>> result, LocalQuery query) {
         SearchVertexQuery searchQuery = (SearchVertexQuery) query.getSearchQuery();
         ArrayList<Pair<String, Element>> finalResult = new ArrayList<>();
-        List<Map<String, Object>> resultMap = result.intoMaps();
+        List<Map<String, Object>> resultMap = result;
         if (searchQuery.getDirection().equals(Direction.OUT) || searchQuery.getDirection().equals(Direction.BOTH)) {
             resultMap.stream().flatMap(map -> {
                 Vertex outVertex = getOutVertexSchema().createElement(map);

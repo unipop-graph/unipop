@@ -1,8 +1,9 @@
 {
   "class": "org.unipop.jdbc.JdbcSourceProvider",
   "driver": "org.postgresql.Driver",
-  "address": "jdbc:postgresql://localhost:5432/postgres",
+  "address": ["jdbc:postgresql://localhost:5432/postgres"],
   "sqlDialect": "POSTGRES",
+  "optimized": true,
   "vertices": [
     {
       "table": "PERSON_MODERN",

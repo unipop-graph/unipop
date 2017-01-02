@@ -15,6 +15,7 @@ import org.unipop.schema.element.VertexSchema;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Gur Ronen
@@ -22,8 +23,8 @@ import java.util.List;
  */
 public interface JdbcEdgeSchema extends JdbcSchema<Edge>, EdgeSchema {
     PredicatesHolder toPredicates(List<Vertex> vertices, Direction direction, PredicatesHolder predicates);
-    Select getLocal(LocalQuery query, DSLContext dsl);
-    Collection<Pair<String, Element>> parseLocal(Result result, LocalQuery query);
+    Select getLocal(LocalQuery query);
+    Collection<Pair<String, Element>> parseLocal(List<Map<String, Object>> result, LocalQuery query);
     VertexSchema getOutVertexSchema();
     VertexSchema getInVertexSchema();
 }

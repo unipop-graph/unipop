@@ -19,9 +19,8 @@ import java.util.stream.Collectors;
  */
 public interface JdbcSchema<E extends Element> extends ElementSchema<E> {
 
-    Select createSelect(SearchQuery<E> query, PredicatesHolder predicatesHolder, DSLContext context, Field... fields);
-    Select getSearch(SearchQuery<E> query, PredicatesHolder predicates, DSLContext context, Field... fields);
-    Select getSearch(SearchQuery<E> query, PredicatesHolder predicates);
+    Select createSelect(SearchQuery<E> query, PredicatesHolder predicatesHolder, Field... fields);
+    Select getSearch(SearchQuery<E> query, PredicatesHolder predicates, Field... fields);
     List<E> parseResults(List<Map<String, Object>> result, PredicateQuery query);
 
     /**

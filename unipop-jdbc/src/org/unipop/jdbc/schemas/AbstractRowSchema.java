@@ -73,7 +73,7 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
     }
 
     @Override
-    public Select getSearch(SearchQuery<E> query, PredicatesHolder predicatesHolder) {
+    public Select createSelect(SearchQuery<E> query, PredicatesHolder predicatesHolder, Field... fields) {
         if (predicatesHolder.isAborted()) {
             return null;
         }
@@ -81,7 +81,7 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
         Condition conditions = new JdbcPredicatesTranslator().translate(predicatesHolder);
         int finalLimit = query.getLimit() < 0 ? Integer.MAX_VALUE : query.getLimit();
 
-        SelectConditionStep<Record> where = createSqlQuery(query.getPropertyKeys())
+        SelectConditionStep<Record> where = createSqlQuery(query.getPropertyKeys(), fields)
                 .where(conditions);
 
         List<Pair<String, Order>> orders = query.getOrders();
@@ -98,28 +98,25 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
     }
 
     @Override
-    public Select getSearch(SearchQuery<E> query, PredicatesHolder predicatesHolder, DSLContext context, Field... fields) {
+    public Select getSearch(SearchQuery<E> query, PredicatesHolder predicatesHolder, Field... fields) {
         if (predicatesHolder.isAborted())
             return null;
         int finalLimit = query.getLimit() < 0 ? Integer.MAX_VALUE : query.getLimit();
-        Select select = createSelect(query, predicatesHolder, context, fields);
+        Select select = createSelect(query, predicatesHolder, fields);
         return ((SelectOrderByStep) select).limit(finalLimit);
     }
 
 
-    private <E extends Element> SelectJoinStep<Record> createSqlQuery(Set<String> columnsToRetrieve) {
+    private <E extends Element> SelectJoinStep<Record> createSqlQuery(Set<String> columnsToRetrieve, Field... fields) {
         if (columnsToRetrieve == null) {
-            return DSL.select().from(this.getTable());
-
             columnsToRetrieve = this.getPropertySchemas().stream().map(PropertySchema::getKey).collect(Collectors.toSet());
-//            return context.select().from(this.getTable());
         }
 
         Set<String> props = this.toFields(columnsToRetrieve);
         Iterator<Field<Object>> fieldIterator = props.stream().filter(p -> p!= null).map(DSL::field).iterator();
         List<Field<Object>> fieldList = IteratorUtils.asList(Iterators.concat(fieldIterator, Arrays.asList(fields).iterator()));
         fieldList = fieldList.stream().distinct().collect(Collectors.toList());
-        return context
+        return DSL
                 .select(fieldList)
                 .from(this.getTable());
     }
