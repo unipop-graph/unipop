@@ -260,13 +260,13 @@ public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<Traver
                 allPropertyFetchersOf = getAllPropertyFetchersOf(selectStep, traversal);
             }
             allPropertyFetchersOf.forEach(propertyFetcher -> {
-                Set<String> scopeKeys = selectStep.getScopeKeys();
-                Set<String> labels = ((Step) propertyFetcher).getLabels();
-                Optional<String> first = labels.stream().filter(scopeKeys::contains).findFirst();
+//                Set<String> scopeKeys = selectStep.getScopeKeys();
+//                Set<String> labels = ((Step) propertyFetcher).getLabels();
+//                Optional<String> first = labels.stream().filter(scopeKeys::contains).findFirst();
                 // TODO: fetch only relevant properties
-                if (first.isPresent()) {
+//                if (first.isPresent()) {
                     propertyFetcher.fetchAllKeys();
-                }
+//                }
             });
         });
 
