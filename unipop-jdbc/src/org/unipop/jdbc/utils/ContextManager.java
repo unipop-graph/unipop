@@ -135,4 +135,8 @@ public class ContextManager {
         }
         return render(query);
     }
+
+    public void batch(List<Query> bulk) {
+
+    }
 }

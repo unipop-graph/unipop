@@ -62,15 +62,8 @@ public abstract class AbstractDocEdgeSchema extends AbstractDocSchema<Edge> impl
     }
 
     @Override
-    public Search getLocal(LocalQuery query) {
+    public List<AggregationBuilder> getLocal(LocalQuery query) {
         SearchVertexQuery searchQuery = (SearchVertexQuery) query.getSearchQuery();
-//        PredicatesHolder edgePredicates = this.toPredicates(searchQuery.getPredicates());
-//        PredicatesHolder vertexPredicates = this.getVertexPredicates(searchQuery.getVertices(), searchQuery.getDirection());
-//        if (edgePredicates.isAborted() || vertexPredicates.isAborted()) return null;
-//        PredicatesHolder predicatesHolder = PredicatesHolderFactory.and(edgePredicates, vertexPredicates);
-//        if (predicatesHolder.isAborted()) return null;
-        QueryBuilder queryBuilder = createQueryBuilder(searchQuery);
-        if (queryBuilder == null) return null;
         Iterator<String> fields;
         List<AggregationBuilder> aggs = new ArrayList<>();
         if (searchQuery.getDirection().equals(Direction.OUT) || searchQuery.getDirection().equals(Direction.BOTH)) {
@@ -87,18 +80,7 @@ public abstract class AbstractDocEdgeSchema extends AbstractDocSchema<Edge> impl
             AggregationBuilder in = createTerms("in", getSubAggregation(query.getSearchQuery(), AggregationBuilders.topHits("hits").setSize(searchQuery.getLimit()), Direction.IN), searchQuery, Direction.IN, fields);
             aggs.add(in);
         }
-        SearchSourceBuilder searchBuilder = this.createSearchBuilder(searchQuery, queryBuilder);
-        aggs.forEach(terms -> searchBuilder.aggregation(terms));
-        searchBuilder.size(0);
-        Search.Builder search = new Search.Builder(searchBuilder.toString().replace("\n", ""))
-                .addIndex(index.getIndex(searchQuery.getPredicates()))
-                .ignoreUnavailable(true)
-                .allowNoIndices(true);
-
-        if (type != null)
-            search.addType(type);
-
-        return search.build();
+        return aggs;
     }
 
     abstract protected AggregationBuilder getSubAggregation(UniQuery query, AbstractAggregationBuilder builder, Direction direction);

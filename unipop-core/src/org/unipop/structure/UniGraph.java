@@ -12,8 +12,6 @@ import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.unipop.schema.property.PropertySchema;
 import org.unipop.schema.property.type.*;
-import org.unipop.structure.traversalfilter.DefaultTraversalFilter;
-import org.unipop.structure.traversalfilter.TraversalFilter;
 import org.unipop.test.UnipopGraphProvider;
 import org.unipop.util.ConversionUtils;
 import org.unipop.process.strategyregistrar.StandardStrategyProvider;
@@ -119,9 +117,7 @@ public class UniGraph implements Graph {
                 }
             }).forEach(thirdPartyPropertySchemas::add);
         }
-        String traversalFilter = configuration.getString("traversalFilter", DefaultTraversalFilter.class.getCanonicalName());
-        TraversalFilter filter = Class.forName(traversalFilter).asSubclass(TraversalFilter.class).newInstance();
-        ConfigurationControllerManager configurationControllerManager = new ConfigurationControllerManager(this, configuration, thirdPartyPropertySchemas, filter);
+        ConfigurationControllerManager configurationControllerManager = new ConfigurationControllerManager(this, configuration, thirdPartyPropertySchemas);
         StrategyProvider strategyProvider = determineStrategyProvider(configuration);
 
         init(configurationControllerManager, strategyProvider);

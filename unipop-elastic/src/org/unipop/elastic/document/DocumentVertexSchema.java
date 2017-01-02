@@ -10,6 +10,5 @@ import java.util.List;
 
 public interface DocumentVertexSchema extends DocumentSchema<Vertex>, VertexSchema {
     QueryBuilder getSearch(DeferredVertexQuery query);
-    Search getSearch(DeferredVertexQuery query);
     PredicatesHolder getVertexPredicates(List<Vertex> vertices);
 }

@@ -11,7 +11,6 @@ import org.unipop.jdbc.schemas.jdbc.JdbcEdgeSchema;
 import org.unipop.jdbc.schemas.jdbc.JdbcSchema;
 import org.unipop.query.aggregation.LocalQuery;
 import org.unipop.structure.UniGraph;
-import org.unipop.structure.traversalfilter.TraversalFilter;
 import org.unipop.util.ConversionUtils;
 
 import java.util.Iterator;

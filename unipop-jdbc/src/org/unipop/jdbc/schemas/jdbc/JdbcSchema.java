@@ -21,7 +21,6 @@ public interface JdbcSchema<E extends Element> extends ElementSchema<E> {
 
     Select createSelect(SearchQuery<E> query, PredicatesHolder predicatesHolder, DSLContext context, Field... fields);
     Select getSearch(SearchQuery<E> query, PredicatesHolder predicates, DSLContext context, Field... fields);
-    List<E> parseResults(Result result, PredicateQuery query);
     Select getSearch(SearchQuery<E> query, PredicatesHolder predicates);
     List<E> parseResults(List<Map<String, Object>> result, PredicateQuery query);
 

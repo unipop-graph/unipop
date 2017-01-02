@@ -101,92 +101,6 @@ public class DocVertexSchema extends AbstractDocSchema<Vertex> implements Docume
         return agg;
     }
 
-    @Override
-    protected void createReduce(ReduceQuery query, SearchSourceBuilder searchBuilder) {
-        searchBuilder.size(0);
-        Iterator<String> fields;
-        switch (query.getOp()) {
-            case Count:
-                AbstractAggregationBuilder builder = null;
-                if (query.getReduceOn() != null) {
-                    builder = AggregationBuilders.count("count").field(query.getReduceOn());
-                }
-                fields = getPropertySchemas().stream()
-                        .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                        .findFirst().get().toFields(Collections.emptySet()).iterator();
-                searchBuilder.aggregation(createTerms("vertex", getSubAggregation(query, builder), fields));
-                break;
-            case Sum:
-                fields = getPropertySchemas().stream()
-                        .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                        .findFirst().get().toFields(Collections.emptySet()).iterator();
-                searchBuilder.aggregation(createTerms("vertex", getSubAggregation(query, AggregationBuilders.sum("sum").field(query.getReduceOn())), fields));
-                break;
-            case Max:
-                fields = getPropertySchemas().stream()
-                        .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                        .findFirst().get().toFields(Collections.emptySet()).iterator();
-                searchBuilder.aggregation(createTerms("vertex", getSubAggregation(query, AggregationBuilders.max("max").field(query.getReduceOn())), fields));
-                break;
-            case Min:
-                fields = getPropertySchemas().stream()
-                        .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                        .findFirst().get().toFields(Collections.emptySet()).iterator();
-                searchBuilder.aggregation(AggregationBuilders.filter("exists").filter(QueryBuilders.existsQuery(query.getReduceOn())).subAggregation(createTerms("vertex", getSubAggregation(query, AggregationBuilders.min("min").field(query.getReduceOn())), fields)));
-                break;
-            case Mean:
-                fields = getPropertySchemas().stream()
-                        .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                        .findFirst().get().toFields(Collections.emptySet()).iterator();
-                searchBuilder.aggregation(createTerms("vertex", getSubAggregation(query, AggregationBuilders.filter("filter").filter(QueryBuilders.existsQuery(query.getReduceOn()))
-                        .subAggregation(AggregationBuilders.avg("avg").field(query.getReduceOn()))), fields));
-                break;
-        }
-    }
-
-    @Override
-    public List<Object> parseReduce(String result, ReduceQuery query) {
-        List<Object> reduceResult = new ArrayList<>();
-        Map<String, Long> idBulk = query.getVertices().stream().map(e -> e.id().toString()).collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
-        List<String> fields;
-        switch (query.getOp()) {
-            case Count:
-                fields = getPropertySchemas().stream()
-                        .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                        .findFirst().get().toFields(Collections.emptySet()).stream().collect(Collectors.toList());
-                if (query.getReduceOn() != null)
-                    parseReduce("aggregations", "filter.count.value", "vertex", result, fields, idBulk).forEach(reduceResult::add);
-                else
-                    parseReduce("aggregations", "filter.doc_count", "vertex", result, fields, idBulk).forEach(reduceResult::add);
-
-                break;
-            case Sum:
-                fields = getPropertySchemas().stream()
-                        .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                        .findFirst().get().toFields(Collections.emptySet()).stream().collect(Collectors.toList());
-                parseReduce("aggregations", "filter.sum.value", "vertex", result, fields, idBulk).forEach(reduceResult::add);
-                break;
-            case Max:
-                fields = getPropertySchemas().stream()
-                        .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                        .findFirst().get().toFields(Collections.emptySet()).stream().collect(Collectors.toList());
-                parseReduce("aggregations", "filter.max.value", "vertex", result, fields, null).stream().map(n -> ((Number)n).intValue() < Integer.MAX_VALUE ? ((Number)n).intValue() : n).forEach(reduceResult::add);
-                break;
-            case Min:
-                fields = getPropertySchemas().stream()
-                        .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                        .findFirst().get().toFields(Collections.emptySet()).stream().collect(Collectors.toList());
-                parseReduce("aggregations.exists", "filter.min.value", "vertex", result, fields, null).stream().map(n -> ((Number)n).intValue() < Integer.MAX_VALUE ? ((Number)n).intValue() : n).forEach(reduceResult::add);
-                break;
-            case Mean:
-                fields = getPropertySchemas().stream()
-                        .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
-                        .findFirst().get().toFields(Collections.emptySet()).stream().collect(Collectors.toList());;
-                parseReduce("aggregations", "filter.filter.avg.value", "vertex", result, fields, idBulk).forEach(reduceResult::add);
-                break;
-        }
-        return reduceResult;
-    }
 
     protected List<Pair<HashMap<String, Object>, JsonNode>> getAllBuckets(JsonNode node, String key, List<String> fields, int start) {
         if(node.get("buckets").size() == 0) return Collections.emptyList();
@@ -250,13 +164,6 @@ public class DocVertexSchema extends AbstractDocSchema<Vertex> implements Docume
             e.printStackTrace();
         }
         return Collections.emptyList();
-    }
-
-    @Override
-    protected PredicatesHolder getReducePredicates(ReduceQuery query) {
-        if (query.getVertices().equals(Collections.emptyList()))
-            return super.getReducePredicates(query);
-        return PredicatesHolderFactory.and(super.getReducePredicates(query), this.toPredicates(query.getVertices()));
     }
 
     @Override

@@ -289,11 +289,6 @@ public class NestedEdgeSchema extends AbstractDocEdgeSchema {
     }
 
     @Override
-    public Search getReduce(ReduceVertexQuery query) {
-        return null;
-    }
-
-    @Override
     public QueryBuilder createQueryBuilder(SearchVertexQuery query) {
         PredicatesHolder edgePredicates = this.toPredicates(query.getPredicates());
         if(edgePredicates.isAborted()) return  null;

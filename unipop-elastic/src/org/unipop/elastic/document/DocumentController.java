@@ -11,18 +11,15 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
-import org.javatuples.Pair;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.javatuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unipop.elastic.common.ElasticClient;
-import org.unipop.query.UniQuery;
 import org.unipop.query.aggregation.LocalQuery;
-import org.unipop.query.aggregation.ReduceQuery;
-import org.unipop.query.aggregation.ReduceVertexQuery;
 import org.unipop.query.controller.SimpleController;
 import org.unipop.query.mutation.AddEdgeQuery;
 import org.unipop.query.mutation.AddVertexQuery;
@@ -38,7 +35,6 @@ import org.unipop.structure.UniElement;
 import org.unipop.structure.UniGraph;
 import org.unipop.structure.UniVertex;
 import org.unipop.util.ConversionUtils;
-import org.unipop.structure.traversalfilter.TraversalFilter;
 import org.unipop.util.MetricsRunner;
 
 import java.util.*;
@@ -47,7 +43,7 @@ import java.util.function.*;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
-public class DocumentController implements SimpleController, ReduceQuery.ReduceController, ReduceVertexQuery.ReduceVertexController, LocalQuery.LocalController {
+public class DocumentController implements SimpleController, LocalQuery.LocalController {
     private static final Logger logger = LoggerFactory.getLogger(DocumentController.class);
 
     private final ElasticClient client;
@@ -56,7 +52,7 @@ public class DocumentController implements SimpleController, ReduceQuery.ReduceC
     private Set<? extends DocumentVertexSchema> vertexSchemas = new HashSet<>();
     private Set<? extends DocumentEdgeSchema> edgeSchemas = new HashSet<>();
 
-    public DocumentController(Set<DocumentSchema> schemas, ElasticClient client, TraversalFilter filter, UniGraph graph) {
+    public DocumentController(Set<DocumentSchema> schemas, ElasticClient client, UniGraph graph) {
         this.client = client;
         this.graph = graph;
 
@@ -100,37 +96,26 @@ public class DocumentController implements SimpleController, ReduceQuery.ReduceC
                 .stream()
                 .map(schema -> ((DocumentSchema<E>) schema))
                 .collect(Collectors.toSet());
-        SearchCollector<DocumentSchema<E>, Search, E> collector = new SearchCollector<>((schema) -> schema.getSearch(uniQuery), (schema, results) -> schema.parseResults(results, uniQuery));
-        Map<DocumentSchema<E>, Search> searches = schemas.stream()
+        SearchCollector<DocumentSchema<E>, QueryBuilder, E> collector = new SearchCollector<>((schema) -> schema.getSearch(uniQuery), (schema, results) -> schema.parseResults(results, uniQuery));
+        Map<DocumentSchema<E>, QueryBuilder> searches = schemas.stream()
                 .collect(collector);
         return search(uniQuery, searches, collector);
-        Set<? extends DocumentSchema<E>> schemas = getSchemas(uniQuery.getReturnType());
-        Map<DocumentSchema<E>, QueryBuilder> searches = schemas.stream()
-                .collect(new SearchCollector<>((schema) -> schema.getSearch(uniQuery)));
-        return search(uniQuery, searches);
     }
 
     @Override
     public Iterator<Edge> search(SearchVertexQuery uniQuery) {
+        SearchCollector<DocumentEdgeSchema, QueryBuilder, Edge> collector = new SearchCollector<>((schema) -> schema.getSearch(uniQuery), (schema, results) -> schema.parseResults(results, uniQuery));
         Map<DocumentEdgeSchema, QueryBuilder> schemas = edgeSchemas.stream()
-                .collect(new SearchCollector<>((schema) -> schema.getSearch(uniQuery)));
-        return search(uniQuery, schemas);
-        SearchCollector<DocumentEdgeSchema, Search, Edge> collector = new SearchCollector<>((schema) -> schema.getSearch(uniQuery), (schema, results) -> schema.parseResults(results, uniQuery));
-        Map<DocumentEdgeSchema, Search> schemas = edgeSchemas.stream().filter(schema -> this.filter.filter(schema, uniQuery.getTraversal()))
                 .collect(collector);
         return search(uniQuery, schemas, collector);
     }
 
     @Override
     public void fetchProperties(DeferredVertexQuery uniQuery) {
-        SearchCollector<DocumentVertexSchema, Search, Vertex> collector = new SearchCollector<>((schema) -> schema.getSearch(uniQuery), (schema, results) -> schema.parseResults(results, uniQuery));
-        Map<DocumentVertexSchema, Search> schemas = vertexSchemas.stream()
-                .filter(schema -> this.filter.filter(schema, uniQuery.getTraversal()))
+        SearchCollector<DocumentVertexSchema, QueryBuilder, Vertex> collector = new SearchCollector<>((schema) -> schema.getSearch(uniQuery), (schema, results) -> schema.parseResults(results, uniQuery));
+        Map<DocumentVertexSchema, QueryBuilder> schemas = vertexSchemas.stream()
                 .collect(collector);
         Iterator<Vertex> search = search(uniQuery, schemas, collector);
-        Map<DocumentVertexSchema, QueryBuilder> schemas = vertexSchemas.stream()
-                .collect(new SearchCollector<>((schema) -> schema.getSearch(uniQuery)));
-        Iterator<Vertex> search = search(uniQuery, schemas);
 
         Map<Object, DeferredVertex> vertexMap = uniQuery.getVertices().stream()
                 .collect(Collectors.toMap(UniElement::id, Function.identity(), (a, b) -> a));
@@ -142,12 +127,13 @@ public class DocumentController implements SimpleController, ReduceQuery.ReduceC
 
     @Override
     public <S extends Element> Iterator<Pair<String, S>> local(LocalQuery<S> query) {
-        SearchCollector<DocumentEdgeSchema, Search, Pair<String, Element>> collector = new SearchCollector<>((schema) -> schema.getLocal(query), (schema, results) -> schema.parseLocal(results, query));
+        SearchCollector<DocumentEdgeSchema, QueryBuilder, Pair<String, Element>> collector =
+                new SearchCollector<>((schema) -> schema.getSearch((SearchQuery<Edge>)query.getSearchQuery()),
+                        (schema, results) -> schema.parseLocal(results, query));
         Set<? extends DocumentEdgeSchema> schemas = edgeSchemas;
-        Map<DocumentEdgeSchema, Search> searches = schemas.stream()
-                .filter(schema -> this.filter.filter(schema, query.getTraversal()))
+        Map<DocumentEdgeSchema, QueryBuilder> searches = schemas.stream()
                 .collect(collector);
-        Iterator<Pair<String, Element>> search = search(query, searches, collector);
+        Iterator<Pair<String, Element>> search = search((SearchQuery<Edge>) query.getSearchQuery(), searches, collector, (schema) -> schema.getLocal(query));
         return ConversionUtils.asStream(search).map(o -> ((Pair<String, S>)o)).iterator();
     }
 
@@ -239,9 +225,7 @@ public class DocumentController implements SimpleController, ReduceQuery.ReduceC
         return Pair.with(kv.getKey(), searchSourceBuilder);
     }
 
-    private <E extends Element, S extends DocumentSchema<E>, R> Iterator<R> search(UniQuery query, Map<S, Search> schemas, SearchCollector<S, Search, R> collector) {
-        MetricsRunner metrics = new MetricsRunner(this, query,
-                schemas.keySet().stream().map(s -> ((ElementSchema) s)).collect(Collectors.toList()));
+
     private <E extends Element, S extends DocumentSchema<E>> Pair<S, Search> createSearch(Pair<S, SearchSourceBuilder> kv, SearchQuery<E> query) {
         Search.Builder builder = new Search.Builder(kv.getValue1().toString().replace("\n", ""))
                 .ignoreUnavailable(true).allowNoIndices(true);
@@ -249,20 +233,26 @@ public class DocumentController implements SimpleController, ReduceQuery.ReduceC
         return Pair.with(kv.getValue0(), builder.build());
     }
 
-    private <E extends Element, S extends DocumentSchema<E>> Iterator<E> search(SearchQuery<E> query, Map<S, QueryBuilder> schemas) {
-//        MetricsRunner metrics = new MetricsRunner(this, query,
-//                schemas.keySet().stream().map(s -> ((ElementSchema) s)).collect(Collectors.toList()));
+    private <E extends Element, S extends DocumentSchema<E>, R> Iterator<R> search(SearchQuery<E> query, Map<S, QueryBuilder> schemas, SearchCollector<S, QueryBuilder, R> collector){
+        return search(query, schemas, collector, null);
+    }
 
+    private <E extends Element, S extends DocumentSchema<E>, R> Iterator<R> search(SearchQuery<E> query, Map<S, QueryBuilder> schemas, SearchCollector<S, QueryBuilder, R> collector, Function<S, List<AggregationBuilder>> aggs) {
         if (schemas.size() == 0) return EmptyIterator.instance();
         logger.debug("Preparing search. Schemas: {}", schemas);
 
         client.refresh();
 
-
-        return responses.stream().filter(this::valid).flatMap(result ->
-                collector.parse.apply(schemaIterator.next(), result.searchResult.getJsonString()).stream()).iterator();
         return schemas.entrySet().parallelStream().filter(Objects::nonNull)
                 .map(kv -> createSearchBuilder(kv, query))
+                .map(kv -> {
+                    if (aggs != null) {
+                        List<AggregationBuilder> aggregationBuilders = aggs.apply(kv.getValue0());
+                        SearchSourceBuilder searchSourceBuilder = kv.getValue1();
+                        aggregationBuilders.forEach(searchSourceBuilder::aggregation);
+                    }
+                    return kv;
+                })
                 .map(kv -> createSearch(kv, query))
                 .map(kv -> {
                     MetricsRunner metrics = new MetricsRunner(this, query,
@@ -270,8 +260,8 @@ public class DocumentController implements SimpleController, ReduceQuery.ReduceC
                     SearchResult results = client.execute(kv.getValue1());
                     metrics.stop((children -> fillChildren(children, results)));
                     if (results == null || !results.isSucceeded()) return new ArrayList<E>();
-                    return kv.getValue0().parseResults(results.getJsonString(), query);
-                }).flatMap(Collection::stream).iterator();
+                    return collector.parse.apply(kv.getValue0(), results.getJsonString());
+                }).flatMap(Collection::stream).map(e -> (R)e).iterator();
 
     }
 

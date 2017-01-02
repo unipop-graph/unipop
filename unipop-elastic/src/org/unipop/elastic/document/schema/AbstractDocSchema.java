@@ -4,18 +4,13 @@ import io.searchbox.action.BulkableAction;
 import io.searchbox.core.Delete;
 import io.searchbox.core.DocumentResult;
 import io.searchbox.core.Index;
+import io.searchbox.core.Search;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.MeanGlobalStep;
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.shaded.jackson.databind.JsonNode;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.*;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.javatuples.Pair;
@@ -26,15 +21,10 @@ import org.unipop.elastic.common.FilterHelper;
 import org.unipop.elastic.document.Document;
 import org.unipop.elastic.document.DocumentSchema;
 import org.unipop.elastic.document.schema.property.IndexPropertySchema;
-import org.unipop.query.aggregation.LocalQuery;
-import org.unipop.query.aggregation.ReduceQuery;
-import org.unipop.query.aggregation.ReduceVertexQuery;
 import org.unipop.query.predicates.PredicateQuery;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.search.SearchQuery;
 import org.unipop.schema.element.AbstractElementSchema;
-import org.unipop.schema.property.PropertySchema;
-import org.unipop.structure.UniElement;
 import org.unipop.structure.UniGraph;
 import org.unipop.util.PropertySchemaFactory;
 
@@ -61,7 +51,6 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
         if (predicatesHolder.getClause().equals(PredicatesHolder.Clause.Abort)) return null;
         QueryBuilder queryBuilder = createQueryBuilder(predicatesHolder);
         return queryBuilder;
-//        return createSearch(query, queryBuilder);
     }
 
     protected QueryBuilder createQueryBuilder(PredicatesHolder predicatesHolder) {
@@ -69,8 +58,6 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
         return FilterHelper.createFilterBuilder(predicatesHolder);
     }
 
-    protected SearchSourceBuilder createSearch(SearchQuery<E> query, QueryBuilder queryBuilder) {
-        if(queryBuilder == null) return null;
     protected SearchSourceBuilder createSearchBuilder(SearchQuery<E> query, QueryBuilder queryBuilder) {
         if (queryBuilder == null) return null;
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(queryBuilder)
@@ -99,7 +86,6 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
             });
         }
 
-        return searchSourceBuilder;
         return searchSourceBuilder;
     }
 
