@@ -20,7 +20,7 @@
             "field": "edgeweight",
             "type": "DOUBLE",
             "nullable": true
-          }
+          },
           "name": "@edgeName"
         },
         "vertex": {
