@@ -1,8 +1,9 @@
 {
   "class": "org.unipop.jdbc.JdbcSourceProvider",
   "driver": "org.postgresql.Driver",
-  "address": "jdbc:postgresql://localhost:5432/postgres",
+  "address": ["jdbc:postgresql://localhost:5432/postgres"],
   "sqlDialect": "POSTGRES",
+  "optimized": true,
   "vertices": [
     {
       "table": "ARTIST_GRATEFUL_DEAD",
@@ -19,7 +20,7 @@
       "properties": {
         "name": "@name",
         "songType": "@songtype",
-        "performances": "@performances"
+        "performances": {"field":"performances", "type": "INT"}
       }
     }
   ],

@@ -1,8 +1,9 @@
 {
   "class": "org.unipop.jdbc.JdbcSourceProvider",
   "driver": "org.postgresql.Driver",
-  "address": "jdbc:postgresql://localhost:5432/postgres",
+  "address": ["jdbc:postgresql://localhost:5432/postgres"],
   "sqlDialect": "POSTGRES",
+  "optimized": true,
   "vertices": [
     {
       "table": "ANIMAL_MODERN",
@@ -10,7 +11,7 @@
       "label": "animal",
       "properties": {
         "name": "@NAME",
-        "age": "@AGE"
+        "age": {"field": "AGE", "type":"INT"}
       }
     },
     {
@@ -24,7 +25,7 @@
       },
       "properties":{
         "name": "@NAME",
-        "age": "@AGE"
+        "age": {"field": "AGE", "type": "INT"}
       },
       "dynamicProperties": false,
       "edges": [
@@ -33,7 +34,7 @@
           "label": "created",
           "direction": "OUT",
           "properties": {
-            "weight": "@EDGEWEIGHT"
+            "weight": {"field": "EDGEWEIGHT", "type": "DOUBLE"}
           },
           "vertex": {
             "ref": false,
@@ -63,7 +64,7 @@
         ]
       },
       "properties": {
-        "weight": "@WEIGHT"
+        "weight": {"field":"WEIGHT", "type": "DOUBLE"}
       },
       "dynamicProperties": {
         "excludeProperties":[

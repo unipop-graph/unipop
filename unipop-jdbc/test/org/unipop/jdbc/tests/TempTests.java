@@ -1,13 +1,17 @@
 package org.unipop.jdbc.tests;
 
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
+import org.apache.tinkerpop.gremlin.FeatureRequirement;
 import org.apache.tinkerpop.gremlin.GraphManager;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
+import org.apache.tinkerpop.gremlin.process.IgnoreEngine;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.TraversalEngine;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
@@ -35,10 +39,22 @@ public class TempTests extends AbstractGremlinTest {
         GraphManager.setGraphProvider(new JdbcOptimizedGraphProvider());
     }
 
+    @Test
+    @LoadGraphWith(MODERN)
+    public void g_V_hasXageX_properties_hasXid_nameIdX_value() {
+        final Traversal<Vertex, Object> traversal = get_g_V_hasXageX_properties_hasXid_nameIdX_value(convertToVertexPropertyId("marko", "name").next());
+        printTraversalForm(traversal);
+        checkResults(Collections.singletonList("marko"), traversal);
+    }
+
+    public Traversal<Vertex, Object> get_g_V_hasXageX_properties_hasXid_nameIdX_value(final Object nameId) {
+        return g.V().has("age").properties().has(T.id, nameId).value();
+    }
+
     @LoadGraphWith(LoadGraphWith.GraphData.MODERN)
     @Test
     public void testA() {
-        Traversal t = g.V();
+        Traversal t = g.V("1").out().path().by("age").by("name");
         check(t);
     }
 

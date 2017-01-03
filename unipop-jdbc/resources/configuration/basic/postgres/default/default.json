@@ -1,7 +1,7 @@
 {
   "class": "org.unipop.jdbc.JdbcSourceProvider",
   "driver": "org.postgresql.Driver",
-  "address": "jdbc:postgresql://localhost:5432/postgres",
+  "address": ["jdbc:postgresql://localhost:5432/postgres"],
   "sqlDialect": "POSTGRES",
   "vertices": [
     {
@@ -28,7 +28,7 @@
       "label": "@label",
       "properties": {
         "year": "@year",
-        "weight": "@weight",
+        "weight": {"field": "weight", "type": "DOUBLE"},
         "data": "@data",
         "location": "@location"
       },

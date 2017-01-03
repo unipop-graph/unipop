@@ -4,6 +4,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
+import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
+import org.apache.tinkerpop.gremlin.process.traversal.util.ConnectiveP;
+import org.apache.tinkerpop.gremlin.process.traversal.util.OrP;
 import org.jooq.Condition;
 import org.jooq.Field;
 import org.jooq.impl.DSL;
@@ -55,24 +58,54 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
         BiPredicate<?, ?> biPredicate = predicate.getBiPredicate();
 
         Field<Object> field = field(key);
-        if (biPredicate instanceof Compare) {
-            return getCompareCondition(value, biPredicate, field);
-        } else if (biPredicate instanceof Contains) {
-            Condition x = getContainsCondition(value, biPredicate, field);
-            if (x != null) return x;
-        } else if (predicate instanceof ExistsP) {
+        if (predicate instanceof ConnectiveP){
+            return handleConnectiveP(key, (ConnectiveP) predicate);
+        }
+        else if (predicate instanceof ExistsP) {
             return field.isNotNull();
-        } else if (biPredicate instanceof Text.TextPredicate) {
-            return getTextCondition(value, biPredicate, field);
+        } else return predicateToQuery(key, value, biPredicate);
+    }
+
+    private Condition handleConnectiveP(String key, ConnectiveP predicate) {
+        List<P> predicates = predicate.getPredicates();
+        List<Condition> queries = predicates.stream().map(p -> {
+            if (p instanceof ConnectiveP) return handleConnectiveP(key, (ConnectiveP) p);
+            Object pValue = p.getValue();
+            BiPredicate pBiPredicate = p.getBiPredicate();
+            return predicateToQuery(key, pValue, pBiPredicate);
+        }).collect(Collectors.toList());
+        Condition condition = queries.get(0);
+        if (predicate instanceof AndP){
+            for (int i = 1; i < queries.size(); i++) {
+                condition = condition.and(queries.get(i));
+            }
+        }
+        else if (predicate instanceof OrP){
+            for (int i = 1; i < queries.size(); i++) {
+                condition = condition.or(queries.get(i));
+            }
+        }
+        else throw new IllegalArgumentException("Connective predicate not supported by unipop");
+        return condition;
+    }
+
+    private Condition predicateToQuery(String field, Object value, BiPredicate<?, ?> biPredicate) {
+        if (biPredicate instanceof Compare) {
+            return getCompareCondition(value, biPredicate, field(field));
+        } else if (biPredicate instanceof Contains) {
+            Condition x = getContainsCondition(value, biPredicate, field(field));
+            if (x != null) return x;
+        }
+        else if (biPredicate instanceof Text.TextPredicate) {
+            return getTextCondition(value, biPredicate, field(field));
         } else if (biPredicate instanceof Date.DatePredicate) {
             try {
-                return getDateCondition(value, biPredicate, field);
+                return getDateCondition(value, biPredicate, field(field));
             } catch (ParseException e) {
                 throw new IllegalArgumentException("cant convert to date");
             }
         }
-
-        throw new IllegalArgumentException("Predicate not supported in JDBC");
+        throw new IllegalArgumentException("can't create condition");
     }
 
     private Condition getDateCondition(Object value, BiPredicate<?, ?> biPredicate, Field<Object> field) throws ParseException {

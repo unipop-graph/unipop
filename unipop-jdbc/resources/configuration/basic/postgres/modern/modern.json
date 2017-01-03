@@ -11,7 +11,7 @@
       "label": "person",
       "properties": {
         "name": "@name",
-        "age": "@age"
+        "age": {"field":"age", "type": "INT"}
       }
     },
     {
@@ -39,7 +39,7 @@
       "id": "@id",
       "label": "@label",
       "properties": {
-        "weight": "@weight",
+        "weight": {"field": "weight", "type":"DOUBLE"},
         "year": "@year"
       },
       "dynamicProperties": false,

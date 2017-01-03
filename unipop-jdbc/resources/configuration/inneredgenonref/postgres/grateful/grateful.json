@@ -1,7 +1,7 @@
 {
   "class": "org.unipop.jdbc.JdbcSourceProvider",
   "driver": "org.postgresql.Driver",
-  "address": "jdbc:postgresql://localhost:5432/postgres",
+  "address": ["jdbc:postgresql://localhost:5432/postgres"],
   "sqlDialect": "POSTGRES",
   "vertices": [
     {
@@ -19,7 +19,7 @@
       "properties": {
         "name": "@NAME",
         "songType": "@SONGTYPE",
-        "performances": "@PERFORMANCES"
+        "performances": {"field":"PERFORMANCES", "type": "INT"}
       }
     }
   ],
@@ -29,7 +29,7 @@
       "id": "@ID",
       "label": "@LABEL",
       "properties": {
-        "weight": "@WEIGHT"
+        "weight": {"field": "WEIGHT", "type":"DOUBLE"}
       },
       "dynamicProperties": false,
       "outVertex": {

@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
  * Created by sbarzilay on 27/12/16.
  */
 public class ContextManager {
-    private final static Logger logger = LoggerFactory.getLogger(RowController.class);
+    private final static Logger logger = LoggerFactory.getLogger(ContextManager.class);
     private Set<DSLContext> contexts;
     private JSONObject conf;
 
@@ -73,6 +73,7 @@ public class ContextManager {
             try {
                 return context.fetch(query).intoMaps();
             } catch (Exception e) {
+                context.close();
                 contexts.remove(context);
             }
         }
@@ -89,6 +90,7 @@ public class ContextManager {
             try {
                 return context.execute(query);
             } catch (Exception e) {
+                context.close();
                 contexts.remove(context);
             }
         }
@@ -105,6 +107,7 @@ public class ContextManager {
             try {
                 return context.execute(query);
             } catch (Exception e) {
+                context.close();
                 contexts.remove(context);
             }
         }
@@ -125,6 +128,7 @@ public class ContextManager {
             try {
                 return context.render(query);
             } catch (Exception e) {
+                context.close();
                 contexts.remove(context);
             }
         }
@@ -143,6 +147,7 @@ public class ContextManager {
                 return;
             }
             catch (Exception e) {
+                context.close();
                 contexts.remove(context);
             }
         }

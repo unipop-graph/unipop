@@ -259,7 +259,7 @@ public class RowController implements SimpleController {
 
 //            this.getContextManager().execute(step);
             logger.info("executed update statement with following parameters, step: {}, element: {}, schema: {}", this.getContextManager().render(step), element, schema);
-            contextManager.execute("commit;");
+//            contextManager.execute("commit;");
             bulk.add(step);
             if (bulk.size() >= 1000) {
                 contextManager.batch(bulk);
@@ -275,7 +275,7 @@ public class RowController implements SimpleController {
     private <E extends Element> Condition translateElementsToConditions(JdbcSchema<E> schema, List<E> elements) {
         return this.predicatesTranslator.translate(
                 new PredicatesHolder(
-                        PredicatesHolder.Clause.Or,
+                        PredicatesHolder.Clause.And,
                         elements.stream()
                                 .map(schema::toFields)
                                 .map(Map::entrySet)

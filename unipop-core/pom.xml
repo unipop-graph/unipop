@@ -11,7 +11,7 @@
     <name>Unipop :: Core</name>
     <properties>
         <tinkerpop.version>3.2.4-SNAPSHOT</tinkerpop.version>
-        <slf4j.version>1.7.19</slf4j.version>
+        <slf4j.version>1.7.21</slf4j.version>
     </properties>
     <dependencies>
         <dependency>
