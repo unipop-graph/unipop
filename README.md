@@ -32,10 +32,13 @@ Our chosen GQL is **Gremlin**, which comes as part of the
 [**Apache Tinkerpop**](http://tinkerpop.incubator.apache.org/) framework.
 Let's compare Gremlin to _**SQL**_, the industry standard:
 
-|           | Schema   | Relationships   | Flexibility   | Usability   |
-|:---------:|----------|-----------------|---------------|-------------|
-| SQL       | _Structured_ - Tables and their fields need to be explicitly defined. | Joins require knowledge of all relationships (PK/FK), and can become [quite complicated](http://sql2gremlin.com/#_recommendation). | Sql's syntax requires very specific, rigid structures. | Queries are loosely-typed "free text", often requiring complicated ORMs. |
-| Gremlin   | _Unstructured_ - Different structures can be created on the fly. | Connections (i.e edges) are "First-class citizens", enabling easy exploration of your data. | Queries are written in a pipelined ("functional") syntax, providing considerable flexibility. | Host Language embedding. Easier to read, write, find errors, and reuse queries. |
+|           | SQL | Gremlin |
+|:---------:|---------------------------|----------------------------|
+| Schema | _Structured_ - Tables and their fields need to be explicitly defined. | _Unstructured_ - Different structures can be created on the fly. |
+| Relationships | Joins require knowledge of all relationships (PK/FK), and can become [quite complicated](http://sql2gremlin.com/#_recommendation). | Connections (i.e edges) are "First-class citizens", enabling easy exploration of your data. | 
+| Flexibility | Sql's syntax requires very specific, rigid structures. | Queries are written in a pipelined ("functional") syntax, providing considerable flexibility. | 
+| Usability | Queries are loosely-typed "free text", often requiring complicated ORMs. | Host Language embedding. Easier to read, write, find errors, and reuse queries. |
+ 
 
 
 The Tinkerpop framework also provides us with other useful features "out of the box":
