@@ -5,7 +5,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
     <parent>
         <artifactId>unipop</artifactId>
         <groupId>unipop</groupId>
-        <version>0.2</version>
+        <version>0.3</version>
     </parent>
     <artifactId>unipop-test</artifactId>
     <name>Unipop :: Integration tests</name>

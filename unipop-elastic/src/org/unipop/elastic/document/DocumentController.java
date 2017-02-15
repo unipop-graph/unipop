@@ -128,7 +128,7 @@ public class DocumentController implements SimpleController, LocalQuery.LocalCon
     @Override
     public <S extends Element> Iterator<Pair<String, S>> local(LocalQuery<S> query) {
         SearchCollector<DocumentEdgeSchema, QueryBuilder, Pair<String, Element>> collector =
-                new SearchCollector<>((schema) -> schema.getSearch((SearchQuery<Edge>)query.getSearchQuery()),
+                new SearchCollector<>((schema) -> schema.getSearch((SearchVertexQuery)query.getSearchQuery()),
                         (schema, results) -> schema.parseLocal(results, query));
         Set<? extends DocumentEdgeSchema> schemas = edgeSchemas;
         Map<DocumentEdgeSchema, QueryBuilder> searches = schemas.stream()

@@ -6,10 +6,10 @@
     <parent>
         <artifactId>unipop</artifactId>
         <groupId>unipop</groupId>
-        <version>0.2</version>
+        <version>0.3</version>
     </parent>
     <artifactId>unipop-rest</artifactId>
-    <version>0.2</version>
+    <version>0.3</version>
     <name>Unipop :: Rest Controllers</name>
     <dependencies>
         <dependency>
@@ -35,7 +35,7 @@
         <dependency>
             <groupId>unipop</groupId>
             <artifactId>unipop-elastic</artifactId>
-            <version>0.2</version>
+            <version>0.3</version>
         </dependency>
     </dependencies>
     <build>
