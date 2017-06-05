@@ -18,9 +18,7 @@ import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.util.MultiDateFormat;
 
 import java.text.ParseException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
@@ -128,6 +126,18 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
                 Object firstItem = convertToSqlDate(items.get(0).toString());
                 Object secondItem = convertToSqlDate(items.get(1).toString());
                 return field.between(firstItem, secondItem);
+            case ("within"):
+                List v = (List) value;
+                List<java.sql.Date> dates = new ArrayList<>();
+                for (Object o : v)
+                    dates.add(convertToSqlDate(o.toString()));
+                return field.in(dates);
+            case ("without"):
+                List v2 = (List) value;
+                List<java.sql.Date> dates2 = new ArrayList<>();
+                for (Object o : v2)
+                    dates2.add(convertToSqlDate(o.toString()));
+                return field.notIn(dates2);
             default:
                 throw new IllegalArgumentException("predicate not supported in has step: " + biPredicate.toString());
         }
@@ -135,7 +145,7 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
 
     private java.sql.Date convertToSqlDate(String dateString) throws ParseException {
         // TODO: make configurable
-        long time = new MultiDateFormat("dd/MM/yyyy HH:mm:ss", "dd/MM/yyyy").parse(dateString).getTime();
+        long time = new MultiDateFormat("dd/MM/yyyy HH:mm:ss", Arrays.asList("dd/MM/yyyy", "yyyy-MM-dd")).parse(dateString).getTime();
         return new java.sql.Date(time);
     }
 
