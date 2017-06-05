@@ -3,11 +3,15 @@ package org.unipop.schema.property.type;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
+import org.apache.tinkerpop.gremlin.process.traversal.util.ConnectiveP;
 import org.unipop.process.predicate.Date;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
 
 /**
  * Created by sbarzilay on 8/19/16.
@@ -56,6 +60,12 @@ public class DateType implements PropertyType {
                     default:
                         throw new IllegalArgumentException("can't convert '" + predicateString + "' to DatePredicate");
             }
+        } else if (predicate instanceof ConnectiveP) {
+            if (predicate instanceof AndP) {
+                List<P> predicates = ((AndP) predicate).getPredicates();
+                List<P> collect = predicates.stream().map(this::translate).collect(Collectors.toList());
+                return new AndP(collect);
+            } else throw new IllegalArgumentException("cant convert '" + predicate.toString() + "' to DatePredicate");
         }
         else throw new IllegalArgumentException("cant convert '" + biPredicate.toString() +"' to DatePredicate");
     }
