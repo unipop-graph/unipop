@@ -6,12 +6,15 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.OrP;
 
+import java.util.Collection;
 import java.util.function.BiPredicate;
 
 /**
  * Created by sbarzilay on 8/18/16.
  */
 public class Date {
+    public static <V> P<V> within(final Collection<V> value) { return new P(DatePredicate.within, value);}
+    public static <V> P<V> without(final Collection<V> value) { return new P(DatePredicate.without, value);}
     public static <V> P<V> eq(final V value) { return new P(DatePredicate.eq, value); }
     public static <V> P<V> neq(final V value) { return new P(DatePredicate.neq, value); }
     public static <V> P<V> lt(final V value) { return new P(DatePredicate.lt, value); }
@@ -93,6 +96,28 @@ public class Date {
             @Override
             public BiPredicate<Object, Object> negate() {
                 return gt;
+            }
+        },
+        within {
+            @Override
+            public boolean test(Object o, Object o2) {
+                return ((Collection) o2).contains(o);
+            }
+
+            @Override
+            public BiPredicate<Object, Object> negate() {
+                return without;
+            }
+        },
+        without {
+            @Override
+            public boolean test(Object o, Object o2) {
+                return !negate().test(o, o2);
+            }
+
+            @Override
+            public BiPredicate<Object, Object> negate() {
+                return within;
             }
         }
     }
