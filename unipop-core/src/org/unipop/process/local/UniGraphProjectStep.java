@@ -17,6 +17,7 @@ import org.unipop.process.traverser.UniGraphTraverserStep;
 import org.unipop.process.vertex.UniGraphVertexStep;
 import org.unipop.query.aggregation.LocalQuery;
 import org.unipop.query.search.SearchVertexQuery;
+import org.unipop.structure.UniElement;
 import org.unipop.structure.UniGraph;
 import org.unipop.structure.UniVertex;
 
@@ -42,17 +43,26 @@ public class UniGraphProjectStep<S, E> extends UniLocalBulkStep<S, E, Map<String
 
     @Override
     protected Iterator<Traverser.Admin<Map<String, E>>> process(List<Traverser.Admin<S>> traversers) {
-        Map<UniVertex, Map<String, E>> maps = new HashMap<>();
+        Map<UniElement, Map<String, E>> maps = new HashMap<>();
         for (int i = 0; i < this.locals.size(); i++) {
             UniGraphLocalStep<S, E> project = locals.get(i);
             project.reset();
             traversers.forEach(project::addStart);
-            List<Pair<UniVertex, E>> projectResult = new ArrayList<>();
+            List<Pair<UniElement, E>> projectResult = new ArrayList<>();
             project.forEachRemaining(a -> projectResult.add(Pair.with(a.getSideEffects().get("prev"), a.get())));
             for (int j = 0; j < projectResult.size(); j++) {
-                Map<String, E> map = maps.containsKey(projectResult.get(j).getValue0()) ? maps.get(projectResult.get(j).getValue0()) : new HashMap<>();
-                map.put(keys[i], projectResult.get(j).getValue1());
-                maps.put(projectResult.get(j).getValue0(), map);
+                Object key = projectResult.get(j).getValue0();
+                if (key instanceof List)
+                    key = ((List) key).get(((List)key).size() -1);
+                Map<String, E> map = maps.containsKey(key) ? maps.get(key) : new HashMap<>();
+                E value = projectResult.get(j).getValue1();
+                if (value instanceof Collection)
+                    if (((Collection) value).isEmpty())
+                        continue;
+                map.put(keys[i], value);
+                if (key instanceof Traverser)
+                    key = ((Traverser) key).get();
+                maps.put((UniElement)key , map);
             }
         }
         List<Traverser.Admin<Map<String, E>>> results = new ArrayList<>();

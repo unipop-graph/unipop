@@ -59,7 +59,7 @@ public class UniGraphLocalStrategy extends AbstractTraversalStrategy<TraversalSt
             UniGraphProjectStep uniGraphProjectStep = new UniGraphProjectStep(traversal, uniGraph,
                     (String[]) projectStep.getProjectKeys().toArray(new String[projectStep.getProjectKeys().size()]),
                     localControllers, nonLocalControllers, projectStep.getLocalChildren());
-
+            projectStep.getLabels().forEach(label -> uniGraphProjectStep.addLabel(label.toString()));
             TraversalHelper.replaceStep(projectStep, uniGraphProjectStep, traversal);
         });
 

@@ -219,6 +219,9 @@ public class UniGraphLocalStep<S, E> extends AbstractStep<S, E> implements Trave
                 if (!localBarriers){
                     while (localTraversal.getEndStep().hasNext()) {
                         Traverser.Admin<E> next = localTraversal.getEndStep().next();
+                        next.setSideEffects(new DefaultTraversalSideEffects());
+                        next.getSideEffects().register("prev", () -> null, (a, b) -> b);
+                        next.getSideEffects().add("prev", next.path("orig"));
                         resultList.add(next);
                     }
                 }
