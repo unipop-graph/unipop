@@ -138,9 +138,9 @@ public class DateFieldPropertySchema extends FieldPropertySchema implements Date
     public DateFormat getDisplayDateFormat() {
         if (this.displayFormat.size() > 1) {
             return new MultiDateFormat(displayFormat.get(0),
-                    displayFormat.subList(1, displayFormat.size() -1).toArray(new String[displayFormat.size() -2]));
+                    displayFormat.subList(1, displayFormat.size() -1));
         }
-        return new MultiDateFormat(displayFormat.get(0));
+        return new MultiDateFormat(displayFormat.get(0), Collections.emptyList());
     }
 
     public static class Builder implements PropertySchemaBuilder {

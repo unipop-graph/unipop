@@ -106,6 +106,7 @@ public class UniGraph implements Graph {
                 IntType.class.getCanonicalName(),
                 DoubleType.class.getCanonicalName(),
                 LongType.class.getCanonicalName(),
+                DefaultType.class.getCanonicalName(),
                 FloatType.class.getCanonicalName()));
         List<PropertySchema.PropertySchemaBuilder> thirdPartyPropertySchemas = new ArrayList<>();
         if(configuration.containsKey("propertySchemas")){

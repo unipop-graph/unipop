@@ -30,7 +30,7 @@ public class FieldPropertySchema implements PropertySchema {
         this.field = field;
         this.nullable = nullable;
         try {
-            this.type = PropertyTypeFactory.getType("STRING");
+            this.type = PropertyTypeFactory.getType("DEFAULT");
         } catch (IllegalAccessException | InstantiationException e) {
             e.printStackTrace();
         }
@@ -46,7 +46,7 @@ public class FieldPropertySchema implements PropertySchema {
         this.include = include.isEmpty() ? null : include;
         Set<Object> exclude = ConversionUtils.toSet(config, "exclude");
         this.exclude = exclude.isEmpty() ? null : exclude;
-        String typeName = config.optString("type", "STRING");
+        String typeName = config.optString("type", "DEFAULT");
         try {
             this.type = PropertyTypeFactory.getType(typeName);
         } catch (IllegalAccessException | InstantiationException e) {

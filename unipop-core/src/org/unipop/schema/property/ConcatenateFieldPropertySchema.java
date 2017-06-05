@@ -119,7 +119,7 @@ public class ConcatenateFieldPropertySchema implements ParentSchemaProperty {
                 List<Object> values = hasContainers.stream().map(HasContainer::getValue)
                         .map(l -> ((Collection) l).iterator().next()).collect(Collectors.toList());
                 predicates.add(PredicatesHolderFactory.predicate(new HasContainer(key,
-                        new P(has.getBiPredicate(), values))));
+                        new P(hasContainers.get(0).getBiPredicate(), values))));
             });
         }
         return PredicatesHolderFactory.and(predicates);

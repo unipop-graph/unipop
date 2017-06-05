@@ -1,9 +1,12 @@
 package org.unipop.schema.property.type;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
+import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.unipop.process.predicate.Date;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.function.BiPredicate;
 
 /**
@@ -17,7 +20,7 @@ public class DateType implements PropertyType {
 
     @Override
     public Object convertToType(Object object) {
-        return object;
+        return object.toString();
     }
 
     @Override
@@ -42,7 +45,18 @@ public class DateType implements PropertyType {
                 default:
                     throw new IllegalArgumentException("cant convert '" + predicateString +"' to DatePredicate");
             }
-        } else
-            throw new IllegalArgumentException("cant convert '" + biPredicate.toString() +"' to DatePredicate");
+        } else if (biPredicate instanceof Contains){
+            String predicateString = biPredicate.toString();
+            V value = predicate.getValue();
+            switch (predicateString) {
+                case "within":
+                    return Date.within((Collection<V>) value);
+                case "without":
+                    return Date.without((Collection<V>) value);
+                    default:
+                        throw new IllegalArgumentException("can't convert '" + predicateString + "' to DatePredicate");
+            }
+        }
+        else throw new IllegalArgumentException("cant convert '" + biPredicate.toString() +"' to DatePredicate");
     }
 }
