@@ -97,6 +97,50 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
         return where;
     }
 
+    public Select createSelectLocal(SearchQuery<E> query, PredicatesHolder predicatesHolder, Field... fields) {
+        if (predicatesHolder.isAborted())
+            return null;
+
+        for (int i = 0; i < fields.length; i++) {
+            if (fields[i].getName().contains("(")) {
+                String name = fields[i].getName();
+                fields[i] = DSL.field(name.substring(name.indexOf("(") + 1, name.indexOf(")")));
+            }
+        }
+        Condition conditions = new JdbcPredicatesTranslator().translate(predicatesHolder);
+        int finalLimit = query.getLimit() < 0 ? Integer.MAX_VALUE : query.getLimit();
+
+        SelectConditionStep<Record> where = createSqlQueryLocal(query.getPropertyKeys(), fields)
+                .where(conditions);
+
+        List<Pair<String, Order>> orders = query.getOrders();
+        if (orders != null) {
+            List<SortField<Object>> orderValues = orders.stream().filter(order -> !order.getValue1().equals(Order.shuffle))
+                    .filter(order -> getFieldByPropertyKey(order.getValue0()) != null)
+                    .map(order -> order.getValue1().equals(Order.incr) ?
+                            field(getFieldByPropertyKey(order.getValue0())).asc() :
+                            field(getFieldByPropertyKey(order.getValue0())).desc()
+                    ).collect(Collectors.toList());
+
+            if (orderValues.size() > 0)
+                return where.orderBy(orderValues);
+        }
+        return where;
+    }
+
+    private <E extends Element> SelectJoinStep<Record> createSqlQueryLocal(Set<String> columnsToRetrive, Field... fields) {
+        if (columnsToRetrive == null)
+            columnsToRetrive = this.getPropertySchemas().stream().map(PropertySchema::getKey).collect(Collectors.toSet());
+
+        Set<String> props = this.toFields(columnsToRetrive);
+        Iterator<Field<Object>> fieldIterator = props.stream().filter(Objects::nonNull).map(DSL::field).iterator();
+        List<Field<Object>> fieldList = IteratorUtils.asList(Iterators.concat(fieldIterator, Arrays.asList(fields).iterator()));
+        fieldList = fieldList.stream().distinct().collect(Collectors.toList());
+        return DSL
+                .select(fieldList)
+                .from(this.getTable());
+    }
+
     @Override
     public Select getSearch(SearchQuery<E> query, PredicatesHolder predicatesHolder, Field... fields) {
         if (predicatesHolder.isAborted())
@@ -114,7 +158,8 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
 
         Set<String> props = this.toFields(columnsToRetrieve);
         Iterator<Field<Object>> fieldIterator = props.stream().filter(p -> p!= null).map(DSL::field).iterator();
-        List<Field<Object>> fieldList = IteratorUtils.asList(Iterators.concat(fieldIterator, Arrays.asList(fields).iterator()));
+        List<Field<Object>> fieldList = IteratorUtils.asList(Iterators.concat(fieldIterator, Arrays.asList(fields)
+                .stream().filter(a -> a.getName() != null).iterator()));
         fieldList = fieldList.stream().distinct().collect(Collectors.toList());
         return DSL
                 .select(fieldList)

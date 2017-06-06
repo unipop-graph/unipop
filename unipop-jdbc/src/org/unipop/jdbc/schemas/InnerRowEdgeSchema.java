@@ -75,7 +75,7 @@ public class InnerRowEdgeSchema extends RowEdgeSchema {
             allFields[i] = vertexFields.get(i);
         }
         allFields[vertexFields.size()] = (Field) DSL.rank().over(DSL.partitionBy(field(outId.iterator().next())).orderBy(field(id.iterator().next()))).as("r1");
-        SelectGroupByStep select = ((SelectGroupByStep) createSelect(searchQuery, predicatesHolder, allFields));
+        SelectGroupByStep select = ((SelectGroupByStep) createSelectLocal(searchQuery, predicatesHolder, allFields));
 
         Set<String> fields = searchQuery.getPropertyKeys();
         if (fields == null)
