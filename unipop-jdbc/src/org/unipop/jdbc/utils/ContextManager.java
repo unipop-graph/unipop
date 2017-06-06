@@ -1,7 +1,10 @@
 package org.unipop.jdbc.utils;
 
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
+import org.javatuples.Pair;
 import org.jooq.*;
+import org.jooq.conf.RenderNameStyle;
+import org.jooq.conf.Settings;
 import org.jooq.impl.DSL;
 import org.jooq.impl.DefaultConfiguration;
 import org.jooq.impl.DefaultExecuteListenerProvider;
@@ -22,7 +25,7 @@ import java.util.stream.Collectors;
  */
 public class ContextManager {
     private final static Logger logger = LoggerFactory.getLogger(ContextManager.class);
-    private Set<DSLContext> contexts;
+    private Set<Pair<DSLContext, Connection>> contexts;
     private JSONObject conf;
 
     public ContextManager(JSONObject conf) throws SQLException, IOException, ClassNotFoundException {
@@ -35,9 +38,12 @@ public class ContextManager {
         SQLDialect dialect = SQLDialect.valueOf(this.conf.getString("sqlDialect"));
         List<Connection> connections = getConnections(this.conf);
         contexts = connections.stream().map(connection -> {
+            Settings settings = new Settings();
+            settings.setRenderNameStyle(RenderNameStyle.AS_IS);
             Configuration conf = new DefaultConfiguration().set(connection).set(dialect)
+                    .set(settings)
                     .set(new DefaultExecuteListenerProvider(new TimingExecuterListener()));
-            return DSL.using(conf);
+            return Pair.with(DSL.using(conf), connection);
         }).collect(Collectors.toSet());
     }
 
@@ -62,18 +68,24 @@ public class ContextManager {
                     logger.error(exception.getMessage());
                 }
             }
-        } catch (IOException exception){
+        } catch (IOException exception) {
             logger.error(exception.getMessage());
         }
         return connections;
     }
 
-    public List<Map<String, Object>> fetch(ResultQuery query){
-        for (DSLContext context : contexts) {
+    public List<Map<String, Object>> fetch(ResultQuery query) {
+        for (Pair<DSLContext, Connection> context : contexts) {
             try {
-                return context.fetch(query).intoMaps();
+                return context.getValue0().fetch(query).intoMaps();
             } catch (Exception e) {
-                context.close();
+                context.getValue0().close();
+                try {
+                    context.getValue1().close();
+                } catch (SQLException e1) {
+                    // TODO: write to log that the connection couldn't be close
+                    e1.printStackTrace();
+                }
                 contexts.remove(context);
             }
         }
@@ -85,12 +97,18 @@ public class ContextManager {
         return fetch(query);
     }
 
-    public int execute(Query query){
-        for (DSLContext context : contexts) {
+    public int execute(Query query) {
+        for (Pair<DSLContext, Connection> context : contexts) {
             try {
-                return context.execute(query);
+                return context.getValue0().execute(query);
             } catch (Exception e) {
-                context.close();
+                context.getValue0().close();
+                try {
+                    context.getValue1().close();
+                } catch (SQLException e1) {
+                    // TODO: write to log that the connection couldn't be close
+                    e1.printStackTrace();
+                }
                 contexts.remove(context);
             }
         }
@@ -102,12 +120,18 @@ public class ContextManager {
         return execute(query);
     }
 
-    public int execute(String query){
-        for (DSLContext context : contexts) {
+    public int execute(String query) {
+        for (Pair<DSLContext, Connection> context : contexts) {
             try {
-                return context.execute(query);
+                return context.getValue0().execute(query);
             } catch (Exception e) {
-                context.close();
+                context.getValue0().close();
+                try {
+                    context.getValue1().close();
+                } catch (SQLException e1) {
+                    // TODO: write to log that the connection couldn't be close
+                    e1.printStackTrace();
+                }
                 contexts.remove(context);
             }
         }
@@ -119,16 +143,30 @@ public class ContextManager {
         return execute(query);
     }
 
-    public void close(){
-        contexts.forEach(DSLContext::close);
+    public void close() {
+        contexts.forEach(p -> {
+            p.getValue0().close();
+            try {
+                p.getValue1().close();
+            } catch (SQLException e1) {
+                // TODO: write to log that the connection couldn't be close
+                e1.printStackTrace();
+            }
+        });
     }
 
     public Object render(Query query) {
-        for (DSLContext context : contexts) {
+        for (Pair<DSLContext, Connection> context : contexts) {
             try {
-                return context.render(query);
+                return context.getValue0().render(query);
             } catch (Exception e) {
-                context.close();
+                context.getValue0().close();
+                try {
+                    context.getValue1().close();
+                } catch (SQLException e1) {
+                    // TODO: write to log that the connection couldn't be close
+                    e1.printStackTrace();
+                }
                 contexts.remove(context);
             }
         }
@@ -141,13 +179,18 @@ public class ContextManager {
     }
 
     public void batch(List<Query> bulk) {
-        for (DSLContext context : contexts) {
-            try{
-                context.batch(bulk).execute();
+        for (Pair<DSLContext, Connection> context : contexts) {
+            try {
+                context.getValue0().batch(bulk).execute();
                 return;
-            }
-            catch (Exception e) {
-                context.close();
+            } catch (Exception e) {
+                context.getValue0().close();
+                try {
+                    context.getValue1().close();
+                } catch (SQLException e1) {
+                    // TODO: write to log that the connection couldn't be close
+                    e1.printStackTrace();
+                }
                 contexts.remove(context);
             }
         }
