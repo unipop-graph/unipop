@@ -223,28 +223,32 @@ public class NestedEdgeSchema extends AbstractDocEdgeSchema {
 //    }
 
     @Override
-    protected AggregationBuilder createTerms(String name, AggregationBuilder subs, VertexQuery searchQuery, Direction direction, Iterator<String> fields){
+    protected AggregationBuilder createTerms(String name, AbstractAggregationBuilder subs, VertexQuery searchQuery, Direction direction, Iterator<String> fields){
+        // TODO: make execution hint configurable
+        PredicatesHolder edgePredicates = PredicatesHolderFactory.empty();
+        PredicatesHolder vertexPredicates = this.getVertexPredicates(searchQuery.getVertices(), direction);
+        QueryBuilder vertexQuery = createQueryBuilder(PredicatesHolderFactory.and(edgePredicates, vertexPredicates));
         String next = fields.next();
         if (next.equals("_id")) next = "_uid";
         else next = path + "." + next;
         AggregationBuilder agg = AggregationBuilders.nested(name).path(path);
-        AggregationBuilder sub = AggregationBuilders.terms(name + "_id").field(next);
-        agg.subAggregation(sub);
-        if (fields.hasNext()) {
-            while (fields.hasNext()) {
-                next = fields.next();
-                if (next.equals("_id")) next = "_uid";
-                else next = path + "." + next;
-                TermsBuilder field = AggregationBuilders.terms(name + "_id").field(next);
-                sub.subAggregation(field);
-                sub = field;
-            }
+        AggregationBuilder filter = AggregationBuilders.filter("filter").filter(vertexQuery);
+        AggregationBuilder sub = AggregationBuilders.terms(name + "_id").executionHint("map").field(next);
+        filter.subAggregation(sub);
+        agg.subAggregation(filter);
+
+        while (fields.hasNext()) {
+            next = fields.next();
+            if (next.equals("_id")) next = "_uid";
+            else next = path + "." + next;
+            TermsBuilder field = AggregationBuilders.terms(name + "_id").executionHint("map").field(next);
+            sub.subAggregation(field);
+            sub = field;
         }
-        if (sub == null) {
+
+        if (sub == null)
             agg.subAggregation(subs);
-        }
-        else
-            sub.subAggregation(subs);
+        else sub.subAggregation(subs);
 
         return agg;
     }

@@ -1,6 +1,7 @@
 package org.unipop.elastic.document.schema;
 
 import io.searchbox.core.Search;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.shaded.jackson.databind.JsonNode;
@@ -9,7 +10,11 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.aggregations.AbstractAggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.metrics.tophits.TopHitsBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.FieldSortBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
+import org.elasticsearch.search.sort.SortOrder;
 import org.javatuples.Pair;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -51,7 +56,7 @@ public abstract class AbstractDocEdgeSchema extends AbstractDocSchema<Edge> impl
         else return PredicatesHolderFactory.abort();
     }
 
-    protected abstract AggregationBuilder createTerms(String name, AggregationBuilder subs, VertexQuery searchQuery, Direction direction, Iterator<String> fields);
+    protected abstract AggregationBuilder createTerms(String name, AbstractAggregationBuilder subs, VertexQuery searchQuery, Direction direction, Iterator<String> fields);
 
     public QueryBuilder createQueryBuilder(SearchVertexQuery query) {
         PredicatesHolder edgePredicates = this.toPredicates(query.getPredicates());
@@ -66,24 +71,36 @@ public abstract class AbstractDocEdgeSchema extends AbstractDocSchema<Edge> impl
         SearchVertexQuery searchQuery = (SearchVertexQuery) query.getSearchQuery();
         Iterator<String> fields;
         List<AggregationBuilder> aggs = new ArrayList<>();
+        List<Pair<String, Order>> orders = searchQuery.getOrders();
+        TopHitsBuilder hits = AggregationBuilders.topHits("hits").setSize(searchQuery.getLimit());
+        if (searchQuery.getPropertyKeys() != null){
+            Set<String> toFields = toFields(searchQuery.getPropertyKeys());
+            hits.setFetchSource(toFields.toArray(new String[toFields.size()]), new String[0]);
+        }
+        if (orders != null && orders.size() > 0){
+            orders.forEach(order -> {
+                SortOrder sort = order.getValue1().equals(Order.incr) ? SortOrder.ASC : SortOrder.DESC;
+                FieldSortBuilder order1 = SortBuilders.fieldSort(getFieldByPropertyKey(order.getValue0())).order(sort);
+            });
+        }
         if (searchQuery.getDirection().equals(Direction.OUT) || searchQuery.getDirection().equals(Direction.BOTH)) {
             fields = ((AbstractPropertyContainer) getOutVertexSchema()).getPropertySchemas().stream()
                     .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
                     .findFirst().get().toFields(Collections.emptySet()).iterator();
-            AggregationBuilder out = createTerms("out", getSubAggregation(query.getSearchQuery(), AggregationBuilders.topHits("hits").setSize(searchQuery.getLimit()), Direction.OUT), searchQuery, Direction.OUT, fields);
+            AggregationBuilder out = createTerms("out", getSubAggregation(query.getSearchQuery(), hits, Direction.OUT), searchQuery, Direction.OUT, fields);
             aggs.add(out);
         }
         if(searchQuery.getDirection().equals(Direction.IN) || searchQuery.getDirection().equals(Direction.BOTH)){
             fields = ((AbstractPropertyContainer) getInVertexSchema()).getPropertySchemas().stream()
                     .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
                     .findFirst().get().toFields(Collections.emptySet()).iterator();
-            AggregationBuilder in = createTerms("in", getSubAggregation(query.getSearchQuery(), AggregationBuilders.topHits("hits").setSize(searchQuery.getLimit()), Direction.IN), searchQuery, Direction.IN, fields);
+            AggregationBuilder in = createTerms("in", getSubAggregation(query.getSearchQuery(), hits, Direction.IN), searchQuery, Direction.IN, fields);
             aggs.add(in);
         }
         return aggs;
     }
 
-    abstract protected AggregationBuilder getSubAggregation(UniQuery query, AbstractAggregationBuilder builder, Direction direction);
+    abstract protected AbstractAggregationBuilder getSubAggregation(UniQuery query, AbstractAggregationBuilder builder, Direction direction);
 
     protected List<Pair<String, Element>> parseTerms(String path, String bottomPath, String name, LocalQuery query, String result, Set<String> fields){
         SearchVertexQuery searchQuery = (SearchVertexQuery) query.getSearchQuery();

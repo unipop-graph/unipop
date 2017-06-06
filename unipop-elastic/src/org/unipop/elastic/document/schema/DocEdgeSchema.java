@@ -14,6 +14,7 @@ import org.javatuples.Pair;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.unipop.elastic.common.ElasticClient;
+import org.unipop.elastic.document.schema.property.IndexPropertySchema;
 import org.unipop.query.UniQuery;
 import org.unipop.query.VertexQuery;
 import org.unipop.query.aggregation.LocalQuery;
@@ -130,18 +131,19 @@ public class DocEdgeSchema extends AbstractDocEdgeSchema {
     }
 
     @Override
-    protected AggregationBuilder createTerms(String name, AggregationBuilder subs, VertexQuery searchQuery, Direction direction, Iterator<String> fields) {
+    protected AggregationBuilder createTerms(String name, AbstractAggregationBuilder subs, VertexQuery searchQuery, Direction direction, Iterator<String> fields) {
+        // TODO: make execution hint configurable
         String next = fields.next();
         if (next.equals("_id")) next = "_uid";
-        AggregationBuilder agg = AggregationBuilders.terms(name + "_id").field(next);
+        AggregationBuilder agg = AggregationBuilders.terms(name + "_id").executionHint("map").field(next);
         AggregationBuilder sub = null;
         if (fields.hasNext()) {
-            sub = AggregationBuilders.terms(name + "_id").field(next);
+            sub = AggregationBuilders.terms(name + "_id").executionHint("map").field(next);
             agg.subAggregation(sub);
             while (fields.hasNext()) {
                 next = fields.next();
                 if (next.equals("_id")) next = "_uid";
-                TermsBuilder field = AggregationBuilders.terms(name + "_id_").field(next);
+                TermsBuilder field = AggregationBuilders.terms(name + "_id_").executionHint("map").field(next);
                 sub.subAggregation(field);
                 sub = field;
             }
@@ -163,14 +165,14 @@ public class DocEdgeSchema extends AbstractDocEdgeSchema {
             fields = ((AbstractPropertyContainer) outVertexSchema).getPropertySchemas().stream()
                     .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
                     .findFirst().get().toFields(Collections.emptySet());
-            List<Pair<String, Element>> out = parseTerms("aggregations", "filter.hits.hits.hits", "out", query, result, fields);
+            List<Pair<String, Element>> out = parseTerms("aggregations", "hits.hits.hits", "out", query, result, fields);
             out.forEach(finalResult::add);
         }
         if (searchQuery.getDirection().equals(Direction.IN) || searchQuery.getDirection().equals(Direction.BOTH)) {
             fields = ((AbstractPropertyContainer) inVertexSchema).getPropertySchemas().stream()
                     .filter(schema -> schema.getKey().equals(T.id.getAccessor()))
                     .findFirst().get().toFields(Collections.emptySet());
-            List<Pair<String, Element>> in = parseTerms("aggregations", "filter.hits.hits.hits", "in", query, result, fields);
+            List<Pair<String, Element>> in = parseTerms("aggregations", "hits.hits.hits", "in", query, result, fields);
             in.forEach(finalResult::add);
         }
         return finalResult;

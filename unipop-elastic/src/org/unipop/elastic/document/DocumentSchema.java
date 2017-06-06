@@ -29,4 +29,6 @@ public interface DocumentSchema<E extends Element> extends ElementSchema<E>{
 
     BulkableAction<DocumentResult> addElement(E element, boolean create);
     Delete.Builder delete(E element);
+
+    String getType();
 }

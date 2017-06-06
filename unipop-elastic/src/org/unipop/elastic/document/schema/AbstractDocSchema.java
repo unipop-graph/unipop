@@ -45,6 +45,13 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
         this.type = json.optString("type", null);
     }
 
+    public AbstractDocSchema(JSONObject configuration, IndexPropertySchema index, ElasticClient client, UniGraph graph) throws JSONException {
+        super(configuration, graph);
+        this.client = client;
+        this.index = index;
+        this.type = json.optString("type", null);
+    }
+
     @Override
     public QueryBuilder getSearch(SearchQuery<E> query) {
         PredicatesHolder predicatesHolder = this.toPredicates(query.getPredicates());
@@ -96,6 +103,11 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
         Search.Builder builder = new Search.Builder(searchBuilder.toString().replace("\n", ""))
                 .addIndex(index.getIndex(query.getPredicates())).ignoreUnavailable(true).allowNoIndices(true);
         return builder.build();
+    }
+
+    @Override
+    public String getType() {
+        return type;
     }
 
     @Override

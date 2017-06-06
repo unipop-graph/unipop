@@ -128,13 +128,13 @@ public class DocumentController implements SimpleController, LocalQuery.LocalCon
     @Override
     public <S extends Element> Iterator<Pair<String, S>> local(LocalQuery<S> query) {
         SearchCollector<DocumentEdgeSchema, QueryBuilder, Pair<String, Element>> collector =
-                new SearchCollector<>((schema) -> schema.getSearch((SearchVertexQuery)query.getSearchQuery()),
+                new SearchCollector<>((schema) -> schema.getSearch((SearchVertexQuery) query.getSearchQuery()),
                         (schema, results) -> schema.parseLocal(results, query));
         Set<? extends DocumentEdgeSchema> schemas = edgeSchemas;
         Map<DocumentEdgeSchema, QueryBuilder> searches = schemas.stream()
                 .collect(collector);
         Iterator<Pair<String, Element>> search = search((SearchQuery<Edge>) query.getSearchQuery(), searches, collector, (schema) -> schema.getLocal(query));
-        return ConversionUtils.asStream(search).map(o -> ((Pair<String, S>)o)).iterator();
+        return ConversionUtils.asStream(search).map(o -> ((Pair<String, S>) o)).iterator();
     }
 
     @Override
@@ -187,7 +187,7 @@ public class DocumentController implements SimpleController, LocalQuery.LocalCon
     //region Elastic Queries
 
     private void fillChildren(List<MutableMetrics> childMetrics, SearchResult result) {
-        if (childMetrics.size() > 0){
+        if (childMetrics.size() > 0) {
             MutableMetrics child = childMetrics.get(0);
             child.setCount(TraversalMetrics.ELEMENT_COUNT_ID, result.getTotal());
             child.setDuration(Long.parseLong(result.getJsonObject().get("took").toString()), TimeUnit.MILLISECONDS);
@@ -208,17 +208,20 @@ public class DocumentController implements SimpleController, LocalQuery.LocalCon
         if (orders != null) {
             orders.forEach(order -> {
                 Order orderValue = order.getValue1();
-                switch (orderValue) {
-                    case decr:
-                        searchSourceBuilder.sort(kv.getKey()
-                                .getFieldByPropertyKey(order.getValue0()), SortOrder.DESC);
-                        break;
-                    case incr:
-                        searchSourceBuilder.sort(kv.getKey()
-                                .getFieldByPropertyKey(order.getValue0()), SortOrder.ASC);
-                        break;
-                    case shuffle:
-                        break;
+                String field = kv.getKey().getFieldByPropertyKey(order.getValue0());
+                if (field != null) {
+                    switch (orderValue) {
+                        case decr:
+                            searchSourceBuilder.sort(kv.getKey()
+                                    .getFieldByPropertyKey(order.getValue0()), SortOrder.DESC);
+                            break;
+                        case incr:
+                            searchSourceBuilder.sort(kv.getKey()
+                                    .getFieldByPropertyKey(order.getValue0()), SortOrder.ASC);
+                            break;
+                        case shuffle:
+                            break;
+                    }
                 }
             });
         }
@@ -230,10 +233,11 @@ public class DocumentController implements SimpleController, LocalQuery.LocalCon
         Search.Builder builder = new Search.Builder(kv.getValue1().toString().replace("\n", ""))
                 .ignoreUnavailable(true).allowNoIndices(true);
         kv.getValue0().getIndex().getIndex(query.getPredicates()).forEach(builder::addIndex);
+        builder.addType(kv.getValue0().getType());
         return Pair.with(kv.getValue0(), builder.build());
     }
 
-    private <E extends Element, S extends DocumentSchema<E>, R> Iterator<R> search(SearchQuery<E> query, Map<S, QueryBuilder> schemas, SearchCollector<S, QueryBuilder, R> collector){
+    private <E extends Element, S extends DocumentSchema<E>, R> Iterator<R> search(SearchQuery<E> query, Map<S, QueryBuilder> schemas, SearchCollector<S, QueryBuilder, R> collector) {
         return search(query, schemas, collector, null);
     }
 
@@ -261,7 +265,7 @@ public class DocumentController implements SimpleController, LocalQuery.LocalCon
                     metrics.stop((children -> fillChildren(children, results)));
                     if (results == null || !results.isSucceeded()) return new ArrayList<E>();
                     return collector.parse.apply(kv.getValue0(), results.getJsonString());
-                }).flatMap(Collection::stream).map(e -> (R)e).iterator();
+                }).flatMap(Collection::stream).map(e -> (R) e).iterator();
 
     }
 
