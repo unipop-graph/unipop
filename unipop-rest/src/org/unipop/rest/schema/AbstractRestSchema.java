@@ -59,6 +59,8 @@ public abstract class AbstractRestSchema<E extends Element> extends AbstractElem
     }
 
     protected BaseRequest createSearch(PredicatesHolder predicatesHolder, int limit) {
+        if (predicatesHolder.isAborted())
+            return null;
         if (limit == -1)
             limit = maxResultSize;
         else
@@ -67,6 +69,7 @@ public abstract class AbstractRestSchema<E extends Element> extends AbstractElem
 
         Map<String, Object> urlMap = new HashMap<>();
         urlMap.put("resource", resource);
+        predicates.put("resource", resource);
         BaseRequest request = templateHolder.getSearch().execute(baseUrl, urlMap, predicates);
 
         try {
