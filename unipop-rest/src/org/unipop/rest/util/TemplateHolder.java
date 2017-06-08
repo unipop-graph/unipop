@@ -30,7 +30,7 @@ public class TemplateHolder {
     }
 
     public static Template createTemplate(String mustache) {
-        return Mustache.compiler().compile(getReader(mustache));
+        return Mustache.compiler().escapeHTML(false).compile(getReader(mustache));
     }
 
     public TemplateHolder(JSONObject configuration) {
