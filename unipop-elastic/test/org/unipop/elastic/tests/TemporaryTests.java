@@ -3,6 +3,7 @@ package org.unipop.elastic.tests;
 import org.apache.tinkerpop.gremlin.*;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.Test;
@@ -58,7 +59,10 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void test() {
-        Traversal t = g.E();
+        Traversal t = g.V().as("a")
+                .out("created")
+                .where(as("a").values("name").is("josh"));
+//                .in("created").values("name");
         check(t);
     }
 
@@ -85,7 +89,8 @@ public class TemporaryTests extends AbstractGremlinTest {
 
         int count = 0;
         while (traversal.hasNext()) {
-            System.out.println(traversal.next());
+            Object next = traversal.next();
+            System.out.println(next);
             count++;
         }
         System.out.println(count);

@@ -120,14 +120,15 @@ public class DocEdgeSchema extends AbstractDocEdgeSchema {
     }
 
     @Override
-    protected AggregationBuilder getSubAggregation(UniQuery query, AbstractAggregationBuilder builder, Direction direction) {
-        VertexQuery searchQuery = (VertexQuery) query;
-        PredicatesHolder edgePredicates = this.toPredicates(((PredicateQuery) searchQuery).getPredicates());
-        PredicatesHolder vertexPredicates = this.getVertexPredicates(searchQuery.getVertices(), direction);
-        QueryBuilder vertexQuery = createQueryBuilder(PredicatesHolderFactory.and(edgePredicates, vertexPredicates));
-        if (builder == null)
-            return AggregationBuilders.filter("filter").filter(vertexQuery);
-        return AggregationBuilders.filter("filter").filter(vertexQuery).subAggregation(builder);
+    protected AbstractAggregationBuilder getSubAggregation(UniQuery query, AbstractAggregationBuilder builder, Direction direction) {
+        return builder;
+        //        VertexQuery searchQuery = (VertexQuery) query;
+//        PredicatesHolder edgePredicates = this.toPredicates(((PredicateQuery) searchQuery).getPredicates());
+//        PredicatesHolder vertexPredicates = this.getVertexPredicates(searchQuery.getVertices(), direction);
+//        QueryBuilder vertexQuery = createQueryBuilder(PredicatesHolderFactory.and(edgePredicates, vertexPredicates));
+//        if (builder == null)
+//            return AggregationBuilders.filter("filter").filter(vertexQuery);
+//        return AggregationBuilders.filter("filter").filter(vertexQuery).subAggregation(builder);
     }
 
     @Override

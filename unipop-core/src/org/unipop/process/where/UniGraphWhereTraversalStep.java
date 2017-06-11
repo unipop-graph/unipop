@@ -98,9 +98,10 @@ public class UniGraphWhereTraversalStep<S extends Element> extends AbstractStep<
 
         @Override
         protected Traverser.Admin processNextStart() throws NoSuchElementException {
+            Traverser.Admin next = starts.next();
             if (null == selectKey)
-                return starts.next();
-            Object scopeValue = getScopeValue(Pop.last, selectKey, starts.next());
+                return next;
+            Object scopeValue = getScopeValue(Pop.last, selectKey, next);
             Traverser.Admin<S> orig = null;
             List<Traverser.Admin<S>> origMaps = new ArrayList<>();
             for (Traverser.Admin<S> original : originals) {
@@ -111,8 +112,8 @@ public class UniGraphWhereTraversalStep<S extends Element> extends AbstractStep<
                         origMaps.add(original);
                     }
                 } else {
-                    if (original.get().equals(scopeValue))
-                        return original;
+                    if (original.get().equals(next.get()))
+                        return next.split(scopeValue, this);
                 }
             }
             if (orig != null) {
@@ -122,7 +123,7 @@ public class UniGraphWhereTraversalStep<S extends Element> extends AbstractStep<
                 }});
                 return split;
             }
-            throw FastNoSuchElementException.instance();
+             throw FastNoSuchElementException.instance();
         }
 
         @Override

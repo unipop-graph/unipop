@@ -24,6 +24,8 @@ import org.unipop.process.edge.UniGraphEdgeOtherVertexStep;
 import org.unipop.process.edge.UniGraphEdgeVertexStep;
 import org.unipop.process.start.UniGraphStartStepStrategy;
 import org.unipop.process.vertex.UniGraphVertexStepStrategy;
+import org.unipop.process.where.UniGraphWhereStepStrategy;
+import org.unipop.process.where.UniGraphWhereTraversalStep;
 import org.unipop.structure.UniGraph;
 
 import java.util.*;
@@ -36,7 +38,7 @@ import java.util.stream.Stream;
 public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy {
     @Override
     public Set<Class<? extends ProviderOptimizationStrategy>> applyPrior() {
-        return Sets.newHashSet(UniGraphStartStepStrategy.class, UniGraphVertexStepStrategy.class, UniGraphRepeatStepStrategy.class, EdgeStepsStrategy.class);
+        return Sets.newHashSet(UniGraphStartStepStrategy.class, UniGraphVertexStepStrategy.class, UniGraphRepeatStepStrategy.class, EdgeStepsStrategy.class, UniGraphWhereStepStrategy.class);
     }
 
     private void handlePropertiesSteps(String[] propertyKeys, PropertyFetcher propertyFetcher) {
@@ -338,6 +340,18 @@ public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<Traver
                         propertyFetcher.fetchAllKeys();
                 });
             }
+        });
+
+        TraversalHelper.getStepsOfAssignableClass(WherePredicateStep.class, traversal).forEach(wherePredicateStep -> {
+            // TODO: fetch only relevant properties
+             getAllPropertyFetchersOf(wherePredicateStep, traversal)
+                     .forEach(propertyFetcher -> handlePropertiesSteps(new String[0], propertyFetcher));
+        });
+
+        TraversalHelper.getStepsOfAssignableClass(UniGraphWhereTraversalStep.class, traversal).forEach(uniGraphWhereTraversalStep -> {
+            // TODO: fetch only relevant properties
+            getAllPropertyFetchersOf(uniGraphWhereTraversalStep, traversal)
+                    .forEach(propertyFetcher -> handlePropertiesSteps(new String[0], propertyFetcher));
         });
     }
 

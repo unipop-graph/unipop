@@ -63,7 +63,7 @@ public class DateType implements PropertyType {
         } else if (predicate instanceof ConnectiveP) {
             if (predicate instanceof AndP) {
                 List<P> predicates = ((AndP) predicate).getPredicates();
-                List<P> collect = predicates.stream().map(this::translate).collect(Collectors.toList());
+                List<P<Object>> collect = (List<P<Object>>) predicates.stream().map(this::translate).collect(Collectors.toList());
                 return new AndP(collect);
             } else throw new IllegalArgumentException("cant convert '" + predicate.toString() + "' to DatePredicate");
         }

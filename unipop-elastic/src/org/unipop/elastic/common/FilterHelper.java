@@ -65,43 +65,43 @@ public class FilterHelper {
 
     private static QueryBuilder handleConnectiveP(String key, ConnectiveP predicate){
         List<P> predicates = predicate.getPredicates();
-        if (predicates.size() == 2) {
-            String op = predicates.get(0).getBiPredicate().toString();
-            if (op.equals("gt") || op.equals("gte") || op.equals("lt") || op.equals("lte")) {
-                P first = predicates.get(0);
-                P second = predicates.get(1);
-                RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(key);
-                switch (first.getBiPredicate().toString()){
-                    case "gt":
-                        rangeQueryBuilder = rangeQueryBuilder.gt(first.getValue());
-                        break;
-                    case "gte":
-                        rangeQueryBuilder = rangeQueryBuilder.gte(first.getValue());
-                        break;
-                    case "lt":
-                        rangeQueryBuilder = rangeQueryBuilder.lt(first.getValue());
-                        break;
-                    case "lte":
-                        rangeQueryBuilder = rangeQueryBuilder.lte(first.getValue());
-                        break;
-                }
-                switch (second.getBiPredicate().toString()){
-                    case "gt":
-                        rangeQueryBuilder = rangeQueryBuilder.gt(second.getValue());
-                        break;
-                    case "gte":
-                        rangeQueryBuilder = rangeQueryBuilder.gte(second.getValue());
-                        break;
-                    case "lt":
-                        rangeQueryBuilder = rangeQueryBuilder.lt(second.getValue());
-                        break;
-                    case "lte":
-                        rangeQueryBuilder = rangeQueryBuilder.lte(second.getValue());
-                        break;
-                }
-                return rangeQueryBuilder;
-            }
-        }
+//        if (predicates.size() == 2) {
+//            String op = predicates.get(0).getBiPredicate().toString();
+//            if (op.equals("gt") || op.equals("gte") || op.equals("lt") || op.equals("lte")) {
+//                P first = predicates.get(0);
+//                P second = predicates.get(1);
+//                RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(key);
+//                switch (first.getBiPredicate().toString()){
+//                    case "gt":
+//                        rangeQueryBuilder = rangeQueryBuilder.gt(first.getValue());
+//                        break;
+//                    case "gte":
+//                        rangeQueryBuilder = rangeQueryBuilder.gte(first.getValue());
+//                        break;
+//                    case "lt":
+//                        rangeQueryBuilder = rangeQueryBuilder.lt(first.getValue());
+//                        break;
+//                    case "lte":
+//                        rangeQueryBuilder = rangeQueryBuilder.lte(first.getValue());
+//                        break;
+//                }
+//                switch (second.getBiPredicate().toString()){
+//                    case "gt":
+//                        rangeQueryBuilder = rangeQueryBuilder.gt(second.getValue());
+//                        break;
+//                    case "gte":
+//                        rangeQueryBuilder = rangeQueryBuilder.gte(second.getValue());
+//                        break;
+//                    case "lt":
+//                        rangeQueryBuilder = rangeQueryBuilder.lt(second.getValue());
+//                        break;
+//                    case "lte":
+//                        rangeQueryBuilder = rangeQueryBuilder.lte(second.getValue());
+//                        break;
+//                }
+//                return rangeQueryBuilder;
+//            }
+//        }
         List<QueryBuilder> queries = predicates.stream().map(p -> {
             if (p instanceof ConnectiveP) return handleConnectiveP(key, (ConnectiveP) p);
             Object pValue = p.getValue();

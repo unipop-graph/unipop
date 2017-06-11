@@ -63,14 +63,14 @@ public class UniGraphLocalStrategy extends AbstractTraversalStrategy<TraversalSt
             TraversalHelper.replaceStep(projectStep, uniGraphProjectStep, traversal);
         });
 
-        TraversalHelper.getStepsOfAssignableClass(GroupStep.class, traversal).forEach(groupStep -> {
-            Traversal.Admin localTraversal = (Traversal.Admin) groupStep.getLocalChildren().get(1);
-            if (TraversalHelper.hasStepOfAssignableClass(SampleGlobalStep.class, localTraversal) ||
-                    TraversalHelper.hasStepOfAssignableClass(SampleLocalStep.class, localTraversal)){
-                return;
-            }
-            UniGraphGroupStep uniGraphGroupStep = new UniGraphGroupStep(traversal, uniGraph, localControllers, nonLocalControllers, groupStep);
-            TraversalHelper.replaceStep(groupStep, uniGraphGroupStep, traversal);
-        });
+//        TraversalHelper.getStepsOfAssignableClass(GroupStep.class, traversal).forEach(groupStep -> {
+//            Traversal.Admin localTraversal = (Traversal.Admin) groupStep.getLocalChildren().get(1);
+//            if (TraversalHelper.hasStepOfAssignableClass(SampleGlobalStep.class, localTraversal) ||
+//                    TraversalHelper.hasStepOfAssignableClass(SampleLocalStep.class, localTraversal)){
+//                return;
+//            }
+//            UniGraphGroupStep uniGraphGroupStep = new UniGraphGroupStep(traversal, uniGraph, localControllers, nonLocalControllers, groupStep);
+//            TraversalHelper.replaceStep(groupStep, uniGraphGroupStep, traversal);
+//        });
     }
 }
