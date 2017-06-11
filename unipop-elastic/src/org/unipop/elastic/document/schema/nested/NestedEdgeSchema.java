@@ -235,7 +235,7 @@ public class NestedEdgeSchema extends AbstractDocEdgeSchema {
         AggregationBuilder filter = AggregationBuilders.filter("filter").filter(vertexQuery);
         AggregationBuilder sub = AggregationBuilders.terms(name + "_id").executionHint("map").field(next);
         filter.subAggregation(sub);
-        agg.subAggregation(filter);
+        agg.subAggregation(sub);
 
         while (fields.hasNext()) {
             next = fields.next();
