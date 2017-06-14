@@ -75,6 +75,13 @@ public class ContextManager {
     }
 
     public List<Map<String, Object>> fetch(ResultQuery query) {
+        return fetch(query, 0);
+    }
+
+    private List<Map<String, Object>> fetch(ResultQuery query, int count) {
+        if (count > 3) {
+            throw new IllegalArgumentException("query can't be fetched");
+        }
         for (Pair<DSLContext, Connection> context : contexts) {
             try {
                 return context.getValue0().fetch(query).intoMaps();
@@ -94,7 +101,7 @@ public class ContextManager {
             // TODO: write to log that no results were returned because no connections were established
             return Collections.emptyList();
         }
-        return fetch(query);
+        return fetch(query, ++count);
     }
 
     public int execute(Query query) {

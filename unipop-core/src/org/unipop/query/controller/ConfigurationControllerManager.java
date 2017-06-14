@@ -27,10 +27,13 @@ public class ConfigurationControllerManager implements ControllerManager {
     protected List<PropertySchema.PropertySchemaBuilder> thirdPartyPropertySchemas;
 
     public ConfigurationControllerManager(UniGraph graph, Configuration configuration, List<PropertySchema.PropertySchemaBuilder> thirdPartyPropertySchemas) throws Exception {
-        path = Paths.get(configuration.getString("providers"));
+        String path = configuration.getString("providers");
+        if (System.getProperty("os.name").toLowerCase().contains("windows"))
+            path = path.substring(1);
+        this.path = Paths.get(path);
         this.graph = graph;
         this.thirdPartyPropertySchemas = thirdPartyPropertySchemas;
-        this.watcher = new DirectoryWatcher(path, configuration.getInt("controllerManager.interval", 10000),
+        this.watcher = new DirectoryWatcher(this.path, configuration.getInt("controllerManager.interval", 10000),
                 (newPath) -> loadControllers());
         loadControllers();
         this.watcher.start();
