@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module org.jetbrains.idea.maven.project.MavenProjectsManager.isMavenModule="true" type="JAVA_MODULE" version="4">
-  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_8">
+  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_8" inherit-compiler-output="false">
     <output url="file://$MODULE_DIR$/target/classes" />
     <output-test url="file://$MODULE_DIR$/target/test-classes" />
     <content url="file://$MODULE_DIR$">
@@ -10,6 +10,19 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="Maven: org.apache.tinkerpop:gremlin-core:3.2.4" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.tinkerpop:gremlin-shaded:3.2.4" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.tinkerpop:gremlin-groovy:3.2.4" level="project" />
+    <orderEntry type="library" name="Maven: org.codehaus.groovy:groovy:indy:2.4.8" level="project" />
+    <orderEntry type="library" name="Maven: org.codehaus.groovy:groovy-groovysh:indy:2.4.8" level="project" />
+    <orderEntry type="library" name="Maven: org.codehaus.groovy:groovy:2.4.8" level="project" />
+    <orderEntry type="library" name="Maven: org.codehaus.groovy:groovy-console:2.4.8" level="project" />
+    <orderEntry type="library" name="Maven: org.codehaus.groovy:groovy-templates:2.4.8" level="project" />
+    <orderEntry type="library" name="Maven: org.codehaus.groovy:groovy-xml:2.4.8" level="project" />
+    <orderEntry type="library" name="Maven: org.codehaus.groovy:groovy-swing:2.4.8" level="project" />
+    <orderEntry type="library" name="Maven: org.codehaus.groovy:groovy-json:indy:2.4.8" level="project" />
+    <orderEntry type="library" name="Maven: org.codehaus.groovy:groovy-jsr223:indy:2.4.8" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.tinkerpop:gremlin-test:3.2.4" level="project" />
     <orderEntry type="library" name="Maven: org.apache.tinkerpop:gremlin-core:3.2.4" level="project" />
     <orderEntry type="library" name="Maven: org.apache.tinkerpop:gremlin-shaded:3.2.4" level="project" />
     <orderEntry type="library" name="Maven: commons-configuration:commons-configuration:1.10" level="project" />

@@ -115,6 +115,7 @@ public class JdbcOptimizedGraphProvider extends UnipopGraphProvider {
                         "OUTLABEL VARCHAR(100), " +
                         "INID VARCHAR(100), " +
                         "INLABEL VARCHAR(100)," +
+                        "LANG VARCHAR(100)," +
                         "year VARCHAR(100)," +
                         "acl VARCHAR(100)," +
                         "time VARCHAR(100)," +
