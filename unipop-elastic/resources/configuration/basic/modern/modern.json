@@ -11,7 +11,8 @@
         "include": "person"
       },
       "properties": {
-        "gremlin.partitionGraphStrategy.partition": "@partition"
+        "gremlin.partitionGraphStrategy.partition": "@partition",
+        "schemaId": "test"
       },
       "dynamicProperties": true
     },
@@ -23,7 +24,8 @@
         "include": "software"
       },
       "properties": {
-        "gremlin.partitionGraphStrategy.partition": "@partition"
+        "gremlin.partitionGraphStrategy.partition": "@partition",
+        "schemaId": "test2"
       },
       "dynamicProperties": true
     },
@@ -35,7 +37,8 @@
         "include": "animal"
       },
       "properties": {
-        "gremlin.partitionGraphStrategy.partition": "@partition"
+        "gremlin.partitionGraphStrategy.partition": "@partition",
+        "schemaId":"test5"
       },
       "dynamicProperties": true
     }
@@ -65,13 +68,17 @@
         "ref": true,
         "id": "@outId",
         "label": "@outLabel",
-        "properties": {}
+        "properties": {
+          "schemaId": "test3"
+        }
       },
       "inVertex": {
         "ref": true,
         "id": "@inId",
         "label": "@inLabel",
-        "properties": {}
+        "properties": {
+          "schemaId": "test4"
+        }
       }
     }
   ]

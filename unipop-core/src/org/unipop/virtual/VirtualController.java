@@ -17,7 +17,9 @@ import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.query.search.SearchQuery;
 import org.unipop.query.search.SearchVertexQuery;
+import org.unipop.schema.element.EdgeSchema;
 import org.unipop.schema.element.ElementSchema;
+import org.unipop.schema.element.VertexSchema;
 import org.unipop.structure.UniEdge;
 import org.unipop.structure.UniGraph;
 import org.unipop.structure.UniVertex;
@@ -101,5 +103,15 @@ public class VirtualController implements SimpleController {
         idsCol.forEach(id -> labelCol.forEach(label -> elements.add(createElement(id, label.toString()))));
 
         return (Iterator<E>) elements.stream().flatMap(fields -> filteredSchemas.stream().flatMap(schema -> Stream.of(schema.createElement(fields)))).filter(v -> v != null).iterator();
+    }
+
+    @Override
+    public Set<? extends VertexSchema> getVertexSchemas() {
+        return vertexSchemas;
+    }
+
+    @Override
+    public Set<? extends EdgeSchema> getEdgeSchemas() {
+        return Collections.emptySet();
     }
 }

@@ -28,7 +28,9 @@ import org.unipop.query.mutation.RemoveQuery;
 import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.query.search.SearchQuery;
 import org.unipop.query.search.SearchVertexQuery;
+import org.unipop.schema.element.EdgeSchema;
 import org.unipop.schema.element.ElementSchema;
+import org.unipop.schema.element.VertexSchema;
 import org.unipop.schema.reference.DeferredVertex;
 import org.unipop.structure.UniEdge;
 import org.unipop.structure.UniElement;
@@ -63,6 +65,16 @@ public class DocumentController implements SimpleController, LocalQuery.LocalCon
                 .map(schema -> ((DocumentEdgeSchema) schema)).collect(Collectors.toSet());
 
         logger.debug("Instantiated DocumentController: {}", this);
+    }
+
+    @Override
+    public Set<? extends VertexSchema> getVertexSchemas() {
+        return vertexSchemas;
+    }
+
+    @Override
+    public Set<? extends EdgeSchema> getEdgeSchemas() {
+        return edgeSchemas;
     }
 
     private Set<DocumentSchema> collectSchemas(Set<? extends ElementSchema> schemas) {

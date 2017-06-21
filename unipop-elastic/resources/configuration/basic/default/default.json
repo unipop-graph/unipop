@@ -4,11 +4,41 @@
   "addresses": "http://localhost:9200",
   "vertices": [
     {
-      "index": "vertex",
+      "index": "person",
       "id": "@_id",
-      "label": "@_type",
+      "label": {
+        "field": "_type",
+        "include": "person"
+      },
       "properties": {
-        "gremlin.partitionGraphStrategy.partition": "@partition"
+        "gremlin.partitionGraphStrategy.partition": "@partition",
+        "schemaId": "test"
+      },
+      "dynamicProperties": true
+    },
+    {
+      "index": "software",
+      "id": "@_id",
+      "label": {
+        "field": "_type",
+        "include": "software"
+      },
+      "properties": {
+        "gremlin.partitionGraphStrategy.partition": "@partition",
+        "schemaId": "test2"
+      },
+      "dynamicProperties": true
+    },
+    {
+      "index": "animal",
+      "id": "@_id",
+      "label": {
+        "field": "_type",
+        "include": "animal"
+      },
+      "properties": {
+        "gremlin.partitionGraphStrategy.partition": "@partition",
+        "schemaId":"test5"
       },
       "dynamicProperties": true
     }
@@ -27,19 +57,28 @@
         }
       },
       "dynamicProperties": {
-        "excludeFields": ["outId", "inId", "outLabel", "inLabel"]
+        "excludeFields": [
+          "outId",
+          "inId",
+          "outLabel",
+          "inLabel"
+        ]
       },
       "outVertex": {
         "ref": true,
         "id": "@outId",
         "label": "@outLabel",
-        "properties": {}
+        "properties": {
+          "schemaId": "test3"
+        }
       },
       "inVertex": {
         "ref": true,
         "id": "@inId",
         "label": "@inLabel",
-        "properties": {}
+        "properties": {
+          "schemaId": "test4"
+        }
       }
     }
   ]
