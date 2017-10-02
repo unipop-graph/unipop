@@ -4,7 +4,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <artifactId>unipop</artifactId>
-        <groupId>unipop</groupId>
+        <groupId>com.github.unipop-graph</groupId>
         <version>0.2</version>
     </parent>
     <artifactId>unipop-elastic</artifactId>
