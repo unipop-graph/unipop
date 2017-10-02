@@ -13,7 +13,7 @@
     </properties>
     <dependencies>
         <dependency>
-            <groupId>unipop</groupId>
+            <groupId>com.github.unipop-graph</groupId>
             <artifactId>unipop-core</artifactId>
             <version>${project.version}</version>
         </dependency>
