@@ -45,8 +45,6 @@
     <orderEntry type="library" name="Maven: org.slf4j:slf4j-api:1.7.19" level="project" />
     <orderEntry type="library" name="Maven: log4j:log4j:1.2.17" level="project" />
     <orderEntry type="library" name="Maven: org.slf4j:jcl-over-slf4j:1.7.19" level="project" />
-    <orderEntry type="library" name="Maven: com.github.stephenc.eaio-uuid:uuid:3.4.0" level="project" />
-    <orderEntry type="library" name="Maven: com.github.stephenc.eaio-grabbag:grabbag:1.8.1" level="project" />
     <orderEntry type="library" name="Maven: org.apache.commons:commons-collections4:4.0" level="project" />
     <orderEntry type="library" name="Maven: org.json:json:20160212" level="project" />
     <orderEntry type="library" name="Maven: org.reflections:reflections:0.9.10" level="project" />

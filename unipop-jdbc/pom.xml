@@ -8,9 +8,6 @@
     </parent>
     <artifactId>unipop-jdbc</artifactId>
     <name>Unipop :: JDBC Controllers</name>
-    <properties>
-        <elasticsearch.version>1.7.2</elasticsearch.version>
-    </properties>
     <dependencies>
         <dependency>
             <groupId>com.github.unipop-graph</groupId>

@@ -20,7 +20,7 @@ public abstract class UniElement implements Element {
         this.id = ObjectUtils.firstNonNull(
                 properties.remove(T.id.getAccessor()),
                 properties.remove(T.id.toString()),
-                new com.eaio.uuid.UUID())
+                UUID.randomUUID())
                 .toString();
 
         this.label = ObjectUtils.firstNonNull(
@@ -116,8 +116,8 @@ public abstract class UniElement implements Element {
         properties.put(T.label.getAccessor(), element.label());
         element.properties().forEachRemaining(property -> properties.put(property.key(), property.value()));
 
-    return properties;
-}
+        return properties;
+    }
 
     @Override
     public String toString() {
