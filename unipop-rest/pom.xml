@@ -33,9 +33,9 @@
             <version>1.13</version>
         </dependency>
         <dependency>
-            <groupId>unipop</groupId>
+            <groupId>com.github.unipop-graph</groupId>
             <artifactId>unipop-elastic</artifactId>
-            <version>0.2</version>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
     <build>

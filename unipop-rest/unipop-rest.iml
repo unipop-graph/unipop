@@ -92,12 +92,6 @@
     <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpcore-nio:4.4.4" level="project" />
     <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpmime:4.5.2" level="project" />
     <orderEntry type="library" name="Maven: com.samskivert:jmustache:1.13" level="project" />
-    <orderEntry type="library" name="Maven: unipop:unipop-elastic:0.2" level="project" />
-    <orderEntry type="library" name="Maven: com.esotericsoftware.yamlbeans:yamlbeans:1.09" level="project" />
-    <orderEntry type="library" name="Maven: com.googlecode.json-simple:json-simple:1.1.1" level="project" />
-    <orderEntry type="library" name="Maven: unipop:unipop-core:0.2" level="project" />
-    <orderEntry type="library" name="Maven: io.searchbox:jest:2.0.0" level="project" />
-    <orderEntry type="library" name="Maven: io.searchbox:jest-common:2.0.0" level="project" />
-    <orderEntry type="library" name="Maven: com.google.code.gson:gson:2.4" level="project" />
+    <orderEntry type="library" name="Maven: com.github.unipop-graph:unipop-elastic" level="project" />
   </component>
 </module>
