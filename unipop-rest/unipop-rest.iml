@@ -11,7 +11,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="unipop-core" />
+    <orderEntry type="library" name="Maven: unipop:unipop-core:0.3" level="project" />
     <orderEntry type="library" name="Maven: org.apache.tinkerpop:gremlin-core:3.2.4" level="project" />
     <orderEntry type="library" name="Maven: org.apache.tinkerpop:gremlin-shaded:3.2.4" level="project" />
     <orderEntry type="library" name="Maven: commons-configuration:commons-configuration:1.10" level="project" />
@@ -92,7 +92,7 @@
     <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpcore-nio:4.4.4" level="project" />
     <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpmime:4.5.2" level="project" />
     <orderEntry type="library" name="Maven: com.samskivert:jmustache:1.13" level="project" />
-    <orderEntry type="module" module-name="unipop-elastic" />
+    <orderEntry type="library" name="Maven: unipop:unipop-elastic:0.3" level="project" />
     <orderEntry type="library" name="Maven: com.esotericsoftware.yamlbeans:yamlbeans:1.09" level="project" />
     <orderEntry type="library" name="Maven: com.googlecode.json-simple:json-simple:1.1.1" level="project" />
     <orderEntry type="library" name="Maven: io.searchbox:jest:2.0.4" level="project" />

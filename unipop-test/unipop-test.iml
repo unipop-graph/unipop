@@ -13,10 +13,10 @@
     <orderEntry type="library" scope="TEST" name="Maven: io.searchbox:jest-common:2.0.4-SNAPSHOT" level="project" />
     <orderEntry type="library" name="Maven: junit:junit:4.12" level="project" />
     <orderEntry type="library" name="Maven: org.hamcrest:hamcrest-core:1.3" level="project" />
-    <orderEntry type="module" module-name="unipop-elastic" scope="TEST" />
+    <orderEntry type="library" scope="TEST" name="Maven: unipop:unipop-elastic:0.3" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: com.esotericsoftware.yamlbeans:yamlbeans:1.09" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: com.googlecode.json-simple:json-simple:1.1.1" level="project" />
-    <orderEntry type="module" module-name="unipop-core" />
+    <orderEntry type="library" name="Maven: unipop:unipop-core:0.3" level="project" />
     <orderEntry type="library" name="Maven: org.apache.tinkerpop:gremlin-core:3.2.4" level="project" />
     <orderEntry type="library" name="Maven: org.apache.tinkerpop:gremlin-shaded:3.2.4" level="project" />
     <orderEntry type="library" name="Maven: commons-configuration:commons-configuration:1.10" level="project" />
@@ -96,7 +96,7 @@
     <orderEntry type="library" scope="TEST" name="Maven: org.apache.httpcomponents:httpasyncclient:4.1.1" level="project" />
     <orderEntry type="library" name="Maven: org.slf4j:slf4j-api:1.7.21" level="project" />
     <orderEntry type="library" name="Maven: org.json:json:20090211" level="project" />
-    <orderEntry type="module" module-name="unipop-jdbc" />
+    <orderEntry type="library" name="Maven: unipop:unipop-jdbc:0.3" level="project" />
     <orderEntry type="library" name="Maven: org.jooq:jooq:3.7.0" level="project" />
     <orderEntry type="library" name="Maven: org.jooq:jooq-meta:3.7.0" level="project" />
     <orderEntry type="library" name="Maven: org.xerial:sqlite-jdbc:3.8.11.2" level="project" />
