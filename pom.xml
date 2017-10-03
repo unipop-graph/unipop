@@ -24,7 +24,7 @@
     </developers>
     <scm>
         <connection>scm:git://github.com/unipop-graph/unipop.git</connection>
-        <developerConnection>scm:git:ssh://github.com:unipop-graph/unipop.git</developerConnection>
+        <developerConnection>scm:git:https://github.com:unipop-graph/unipop.git</developerConnection>
         <url>https://github.com/unipop-graph/unipop/tree/master</url>
     </scm>
     <distributionManagement>
