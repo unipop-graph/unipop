@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.github.unipop-graph</groupId>
     <artifactId>unipop</artifactId>
-    <version>0.2-SNAPSHOT</version>
+    <version>0.2</version>
     <packaging>pom</packaging>
     <name>Unipop</name>
     <description>
@@ -26,7 +26,8 @@
         <connection>scm:git://github.com/unipop-graph/unipop.git</connection>
         <developerConnection>scm:git:https://github.com/unipop-graph/unipop.git</developerConnection>
         <url>https://github.com/unipop-graph/unipop/tree/master</url>
-    </scm>
+      <tag>unipop-0.2</tag>
+  </scm>
     <distributionManagement>
         <snapshotRepository>
             <id>ossrh</id>
