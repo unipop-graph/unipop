@@ -161,4 +161,11 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
     public void setOrders(List<Pair<String, Order>> orders) {
         this.orders = orders;
     }
+
+    @Override
+    public void addPropertyKey(String key) {
+        if (!returnsVertex)
+            super.addPropertyKey(key);
+        else super.fetchAllKeys();
+    }
 }

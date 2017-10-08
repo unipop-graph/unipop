@@ -1,7 +1,10 @@
 package org.unipop.jdbc.utils;
 
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
+import org.javatuples.Pair;
 import org.jooq.*;
+import org.jooq.conf.RenderNameStyle;
+import org.jooq.conf.Settings;
 import org.jooq.impl.DSL;
 import org.jooq.impl.DefaultConfiguration;
 import org.jooq.impl.DefaultExecuteListenerProvider;
@@ -21,8 +24,8 @@ import java.util.stream.Collectors;
  * Created by sbarzilay on 27/12/16.
  */
 public class ContextManager {
-    private final static Logger logger = LoggerFactory.getLogger(RowController.class);
-    private Set<DSLContext> contexts;
+    private final static Logger logger = LoggerFactory.getLogger(ContextManager.class);
+    private Set<Pair<DSLContext, Connection>> contexts;
     private JSONObject conf;
 
     public ContextManager(JSONObject conf) throws SQLException, IOException, ClassNotFoundException {
@@ -35,9 +38,12 @@ public class ContextManager {
         SQLDialect dialect = SQLDialect.valueOf(this.conf.getString("sqlDialect"));
         List<Connection> connections = getConnections(this.conf);
         contexts = connections.stream().map(connection -> {
+            Settings settings = new Settings();
+            settings.setRenderNameStyle(RenderNameStyle.AS_IS);
             Configuration conf = new DefaultConfiguration().set(connection).set(dialect)
+                    .set(settings)
                     .set(new DefaultExecuteListenerProvider(new TimingExecuterListener()));
-            return DSL.using(conf);
+            return Pair.with(DSL.using(conf), connection);
         }).collect(Collectors.toSet());
     }
 
@@ -56,23 +62,37 @@ public class ContextManager {
                     Class.forName(driver);
                     if (user.isEmpty() && password.isEmpty()) {
                         connections.add(DriverManager.getConnection(url.toString()));
-                    }
-                    connections.add(DriverManager.getConnection(url.toString(), user, password));
+                    } else
+                        connections.add(DriverManager.getConnection(url.toString(), user, password));
                 } catch (SQLException | ClassNotFoundException exception) {
                     logger.error(exception.getMessage());
                 }
             }
-        } catch (IOException exception){
+        } catch (IOException exception) {
             logger.error(exception.getMessage());
         }
         return connections;
     }
 
-    public List<Map<String, Object>> fetch(ResultQuery query){
-        for (DSLContext context : contexts) {
+    public List<Map<String, Object>> fetch(ResultQuery query) {
+        return fetch(query, 0);
+    }
+
+    private List<Map<String, Object>> fetch(ResultQuery query, int count) {
+        if (count > 3) {
+            throw new IllegalArgumentException("query can't be fetched");
+        }
+        for (Pair<DSLContext, Connection> context : contexts) {
             try {
-                return context.fetch(query).intoMaps();
+                return context.getValue0().fetch(query).intoMaps();
             } catch (Exception e) {
+                context.getValue0().close();
+                try {
+                    context.getValue1().close();
+                } catch (SQLException e1) {
+                    // TODO: write to log that the connection couldn't be close
+                    e1.printStackTrace();
+                }
                 contexts.remove(context);
             }
         }
@@ -81,14 +101,21 @@ public class ContextManager {
             // TODO: write to log that no results were returned because no connections were established
             return Collections.emptyList();
         }
-        return fetch(query);
+        return fetch(query, ++count);
     }
 
-    public int execute(Query query){
-        for (DSLContext context : contexts) {
+    public int execute(Query query) {
+        for (Pair<DSLContext, Connection> context : contexts) {
             try {
-                return context.execute(query);
+                return context.getValue0().execute(query);
             } catch (Exception e) {
+                context.getValue0().close();
+                try {
+                    context.getValue1().close();
+                } catch (SQLException e1) {
+                    // TODO: write to log that the connection couldn't be close
+                    e1.printStackTrace();
+                }
                 contexts.remove(context);
             }
         }
@@ -100,11 +127,18 @@ public class ContextManager {
         return execute(query);
     }
 
-    public int execute(String query){
-        for (DSLContext context : contexts) {
+    public int execute(String query) {
+        for (Pair<DSLContext, Connection> context : contexts) {
             try {
-                return context.execute(query);
+                return context.getValue0().execute(query);
             } catch (Exception e) {
+                context.getValue0().close();
+                try {
+                    context.getValue1().close();
+                } catch (SQLException e1) {
+                    // TODO: write to log that the connection couldn't be close
+                    e1.printStackTrace();
+                }
                 contexts.remove(context);
             }
         }
@@ -116,15 +150,30 @@ public class ContextManager {
         return execute(query);
     }
 
-    public void close(){
-        contexts.forEach(DSLContext::close);
+    public void close() {
+        contexts.forEach(p -> {
+            p.getValue0().close();
+            try {
+                p.getValue1().close();
+            } catch (SQLException e1) {
+                // TODO: write to log that the connection couldn't be close
+                e1.printStackTrace();
+            }
+        });
     }
 
     public Object render(Query query) {
-        for (DSLContext context : contexts) {
+        for (Pair<DSLContext, Connection> context : contexts) {
             try {
-                return context.render(query);
+                return context.getValue0().render(query);
             } catch (Exception e) {
+                context.getValue0().close();
+                try {
+                    context.getValue1().close();
+                } catch (SQLException e1) {
+                    // TODO: write to log that the connection couldn't be close
+                    e1.printStackTrace();
+                }
                 contexts.remove(context);
             }
         }
@@ -134,5 +183,29 @@ public class ContextManager {
             return "";
         }
         return render(query);
+    }
+
+    public void batch(List<Query> bulk) {
+        for (Pair<DSLContext, Connection> context : contexts) {
+            try {
+                context.getValue0().batch(bulk).execute();
+                return;
+            } catch (Exception e) {
+                context.getValue0().close();
+                try {
+                    context.getValue1().close();
+                } catch (SQLException e1) {
+                    // TODO: write to log that the connection couldn't be close
+                    e1.printStackTrace();
+                }
+                contexts.remove(context);
+            }
+        }
+        reloadContexts();
+        if (contexts.isEmpty()) {
+            logger.error("could not execute batch");
+            return;
+        }
+        batch(bulk);
     }
 }

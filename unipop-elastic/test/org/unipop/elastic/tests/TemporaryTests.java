@@ -15,8 +15,8 @@ import java.util.Random;
 import java.util.UUID;
 
 import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.as;
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.out;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.in;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertThat;
@@ -58,7 +58,14 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void test() {
-        Traversal t = g.E();
+        Traversal t =g.V()
+//                .union(
+                .repeat(union(
+                        out("created"),
+                        in("created"))).times(2);//,
+//                repeat(union(
+//                        in("created"),
+//                        out("created"))).times(2)).label();//.groupCount();
         check(t);
     }
 

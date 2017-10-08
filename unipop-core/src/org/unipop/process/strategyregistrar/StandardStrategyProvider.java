@@ -24,7 +24,6 @@ public class StandardStrategyProvider implements StrategyProvider {
                 new UniGraphPropertiesStrategy(),
                 new UniGraphCoalesceStepStrategy(),
                 new UniGraphWhereStepStrategy(),
-                new UniGraphUnionStepStrategy(),
                 new UniGraphRepeatStepStrategy(),
                 new UniGraphOrderStrategy());
         TraversalStrategies.GlobalCache.getStrategies(Graph.class).toList().forEach(traversalStrategies::addStrategies);

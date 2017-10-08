@@ -18,6 +18,9 @@ import java.util.stream.Collectors;
  * Created by sbarzilay on 6/6/16.
  */
 public class UniGraphUnionStep<S,E> extends UniBulkStep<S,E> implements TraversalParent{
+
+    // TODO: research NoOpBarrierStep and figure out the problem
+
     Iterator<Traverser.Admin<E>> results = EmptyIterator.instance();
     List<Traversal.Admin<?, E>> unionTraversals;
 

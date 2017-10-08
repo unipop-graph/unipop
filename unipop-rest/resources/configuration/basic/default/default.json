@@ -13,7 +13,7 @@
     "template": "resources/search.mustache"
   },
   "delete":{
-    "url" : "/{{_label}}/{{_id}}"
+    "url" : "{{resource}}/{{type}}/{{id}}"
   },
   "resultPath": "hits.hits",
   "opTranslator": {

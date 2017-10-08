@@ -22,6 +22,7 @@ import org.unipop.jdbc.schemas.jdbc.JdbcSchema;
 import org.unipop.jdbc.schemas.jdbc.JdbcVertexSchema;
 import org.unipop.jdbc.utils.ContextManager;
 import org.unipop.jdbc.utils.TimingExecuterListener;
+import org.unipop.query.UniQuery;
 import org.unipop.query.controller.SimpleController;
 import org.unipop.query.mutation.AddEdgeQuery;
 import org.unipop.query.mutation.AddVertexQuery;
@@ -41,7 +42,8 @@ import org.unipop.util.MetricsRunner;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
+import java.util.function.*;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import static org.jooq.impl.DSL.field;
@@ -52,14 +54,15 @@ import static org.jooq.impl.DSL.table;
  * @since 6/12/2016
  */
 public class RowController implements SimpleController {
-    private final static Logger logger = LoggerFactory.getLogger(RowController.class);
+    protected final static Logger logger = LoggerFactory.getLogger(RowController.class);
 
     private final ContextManager contextManager;
     private final UniGraph graph;
 
-    private Set<? extends RowVertexSchema> vertexSchemas;
-    private Set<? extends RowEdgeSchema> edgeSchemas;
+    protected Set<? extends RowVertexSchema> vertexSchemas;
+    protected Set<? extends RowEdgeSchema> edgeSchemas;
 
+    protected List<Query> bulk;
     private final PredicatesTranslator<Condition> predicatesTranslator;
 
     public <E extends Element> RowController(UniGraph graph, ContextManager contextManager, Set<JdbcSchema> schemaSet, PredicatesTranslator<Condition> predicatesTranslator) {
@@ -68,22 +71,35 @@ public class RowController implements SimpleController {
 
         extractRowSchemas(schemaSet);
         this.predicatesTranslator = predicatesTranslator;
+        bulk = new ArrayList<>();
     }
 
     @Override
     public <E extends Element> Iterator<E> search(SearchQuery<E> uniQuery) {
+
+        SelectCollector<JdbcSchema<E>, Select, E> collector = new SelectCollector<>(
+                schema -> schema.getSearch(uniQuery,
+                        schema.toPredicates(uniQuery.getPredicates())),
+                (schema, results) -> schema.parseResults(results, uniQuery)
+        );
         Set<? extends JdbcSchema<E>> schemas = this.getSchemas(uniQuery.getReturnType());
 
-        Function<JdbcSchema<E>, PredicatesHolder> toPredicatesFunction = (schema) -> schema.toPredicates(uniQuery.getPredicates());
+        Map<JdbcSchema<E>, Select> selects = schemas.stream().collect(collector);
 
-        return this.search(toPredicatesFunction, schemas, uniQuery);
+
+        return this.search(uniQuery, selects, collector);
     }
 
     @Override
     public void fetchProperties(DeferredVertexQuery uniQuery) {
-        Function<JdbcVertexSchema, PredicatesHolder> toPredicatesFunction = (schema) ->
-                schema.toPredicates(uniQuery.getVertices());
-        Iterator<Vertex> searchIterator = this.search(toPredicatesFunction, vertexSchemas, uniQuery);
+        SelectCollector<JdbcSchema<Vertex>, Select, Vertex> collector = new SelectCollector<>(
+                schema -> schema.getSearch(uniQuery,
+                        schema.toPredicates(uniQuery.getPredicates())),
+                (schema, results) -> schema.parseResults(results, uniQuery)
+        );
+
+        Map<JdbcSchema<Vertex>, Select> selects = vertexSchemas.stream().collect(collector);
+        Iterator<Vertex> searchIterator = this.search(uniQuery, selects, collector);
 
         Map<Object, DeferredVertex> vertexMap =
                 uniQuery.getVertices().stream().collect(Collectors.toMap(UniElement::id, Function.identity(), (a, b) -> a));
@@ -97,20 +113,22 @@ public class RowController implements SimpleController {
 
     @Override
     public Iterator<Edge> search(SearchVertexQuery uniQuery) {
-        Function<JdbcEdgeSchema, PredicatesHolder> toPredicatesFunction = (schema) -> schema.toPredicates(
-                uniQuery.getVertices(), uniQuery.getDirection(), uniQuery.getPredicates());
-        return this.search(
-                toPredicatesFunction,
-                this.edgeSchemas,
-                uniQuery
+        SelectCollector<JdbcSchema<Edge>, Select, Edge> collector = new SelectCollector<>(
+                schema -> schema.getSearch(uniQuery,
+                        ((JdbcEdgeSchema) schema).toPredicates(uniQuery.getVertices(), uniQuery.getDirection(), uniQuery.getPredicates())),
+                (schema, results) -> schema.parseResults(results, uniQuery)
         );
+
+        Map<JdbcSchema<Edge>, Select> selects = edgeSchemas.stream().collect(collector);
+
+        return this.search(uniQuery, selects, collector);
     }
 
     @Override
     public Edge addEdge(AddEdgeQuery uniQuery) {
         UniEdge edge = new UniEdge(uniQuery.getProperties(), uniQuery.getOutVertex(), uniQuery.getInVertex(), this.graph);
         try {
-            if(this.insert(edgeSchemas, edge)) return edge;
+            if (this.insert(edgeSchemas, edge)) return edge;
         } catch (DataAccessException ex) {
             throw Graph.Exceptions.edgeWithIdAlreadyExists(edge.id());
         }
@@ -122,7 +140,7 @@ public class RowController implements SimpleController {
     public Vertex addVertex(AddVertexQuery uniQuery) {
         UniVertex vertex = new UniVertex(uniQuery.getProperties(), this.graph);
         try {
-            if(this.insert(this.vertexSchemas, vertex)) {
+            if (this.insert(this.vertexSchemas, vertex)) {
                 return vertex;
             }
         } catch (DataAccessException ex) {
@@ -164,7 +182,7 @@ public class RowController implements SimpleController {
         }
     }
 
-    private <E extends Element, S extends JdbcSchema<E>> void fillChildren(List<MutableMetrics> children, Map<S, Select> schemas){
+    private <E extends Element, S extends JdbcSchema<E>> void fillChildren(List<MutableMetrics> children, Map<S, Select> schemas) {
         List<org.javatuples.Pair<Long, Integer>> timing = TimingExecuterListener.timing.values().stream().collect(Collectors.toList());
         List<Map.Entry<S, Select>> sqls = schemas.entrySet().stream().collect(Collectors.toList());
         for (int i = 0; i < sqls.size(); i++) {
@@ -181,29 +199,27 @@ public class RowController implements SimpleController {
     }
 
     @SuppressWarnings("unchecked")
-    private <E extends Element, S extends JdbcSchema<E>> Iterator<E> search(Function<S, PredicatesHolder> toSearchFunction, Set<? extends S> allSchemas, SearchQuery<E> query) {
-        Map<S, Select> schemas = allSchemas.stream()
-                .map(schema -> Pair.of(schema, toSearchFunction.apply(schema)))
-                .filter(pair -> pair.getRight() != null)
-                .map(pair -> Pair.of(pair.getLeft(), pair.getLeft().getSearch(query, pair.getRight())))
-                .filter(pair -> pair.getRight() != null)
-                .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
+    protected <E extends Element, R> Iterator<R> search(UniQuery query, Map<JdbcSchema<E>, Select> selects,
+                                                        SelectCollector<JdbcSchema<E>, Select, R> collector) {
 
+        if (bulk.size() != 0) {
+            contextManager.batch(bulk);
+            bulk.clear();
+        }
         MetricsRunner metrics = new MetricsRunner(this, query,
-                schemas.keySet().stream().map(s-> ((ElementSchema) s)).collect(Collectors.toList()));
+                selects.keySet().stream().map(s -> ((ElementSchema) s)).collect(Collectors.toList()));
 
-        logger.info("mapped schemas for search, schemas: {}", schemas);
-        if(schemas.size() == 0) return EmptyIterator.instance();
+        logger.info("mapped schemas for search, schemas: {}", selects);
+        if (selects.size() == 0) return EmptyIterator.instance();
 
-        Iterator<S> schemaIterator = schemas.keySet().iterator();
-        Set<E> collect = schemas.values().stream()
+        Iterator<JdbcSchema<E>> schemaIterator = selects.keySet().iterator();
+        Set<R> collect = selects.values().stream()
                 .map(select -> this.getContextManager().fetch(select))
-                .flatMap(res -> schemaIterator.next().parseResults(res, query).stream())
-                .distinct().collect(Collectors.toSet());
+                .flatMap(res -> collector.parse.apply(schemaIterator.next(), res).stream())
+                .collect(Collectors.toSet());
 
 
-
-        metrics.stop((children) -> fillChildren(children, schemas));
+        metrics.stop((children) -> fillChildren(children, selects));
 
         logger.info("results: {}", collect);
         return collect.iterator();
@@ -213,13 +229,20 @@ public class RowController implements SimpleController {
         for (JdbcSchema<E> schema : schemas) {
             Query query = schema.getInsertStatement(element);
             if (query == null) continue;
-            int changeSetCount = contextManager.execute(query);
-            if(logger.isDebugEnabled())
-                logger.debug("executed insertion, query: {}", contextManager.render(query));
-            if (changeSetCount == 0) {
-                logger.error("no rows changed on insertion. query: {}, element: {}", contextManager.render(query), element);
+//            int changeSetCount = contextManager.execute(query);
+//            if (logger.isDebugEnabled())
+//                logger.debug("executed insertion, query: {}", contextManager.render(query));
+//            if (changeSetCount == 0) {
+//                logger.error("no rows changed on insertion. query: {}, element: {}", contextManager.render(query), element);
+//            }
+//            else {
+            bulk.add(query);
+            if (bulk.size() >= 1000) {
+                contextManager.batch(bulk);
+                bulk.clear();
             }
             return true;
+//            }
         }
         return false;
     }
@@ -236,9 +259,14 @@ public class RowController implements SimpleController {
             Update step = DSL.update(table(schema.getTable()))
                     .set(fieldMap).where(field(schema.getFieldByPropertyKey(T.id.getAccessor())).eq(row.getId()));
 
-            this.getContextManager().execute(step);
+//            this.getContextManager().execute(step);
             logger.info("executed update statement with following parameters, step: {}, element: {}, schema: {}", this.getContextManager().render(step), element, schema);
-            contextManager.execute("commit;");
+//            contextManager.execute("commit;");
+            bulk.add(step);
+            if (bulk.size() >= 1000) {
+                contextManager.batch(bulk);
+                bulk.clear();
+            }
         }
     }
 
@@ -249,7 +277,7 @@ public class RowController implements SimpleController {
     private <E extends Element> Condition translateElementsToConditions(JdbcSchema<E> schema, List<E> elements) {
         return this.predicatesTranslator.translate(
                 new PredicatesHolder(
-                        PredicatesHolder.Clause.Or,
+                        PredicatesHolder.Clause.And,
                         elements.stream()
                                 .map(schema::toFields)
                                 .map(Map::entrySet)
@@ -262,9 +290,9 @@ public class RowController implements SimpleController {
         logger.debug("extracting row schemas to element schemas, jdbcSchemas: {}", schemas);
         Set<JdbcSchema<E>> JdbcSchemas = collectSchemas(schemas);
         this.vertexSchemas = JdbcSchemas.stream().filter(schema -> schema instanceof RowVertexSchema)
-                .map(schema -> ((RowVertexSchema)schema)).collect(Collectors.toSet());
+                .map(schema -> ((RowVertexSchema) schema)).collect(Collectors.toSet());
         this.edgeSchemas = JdbcSchemas.stream().filter(schema -> schema instanceof RowEdgeSchema)
-                .map(schema -> ((RowEdgeSchema)schema)).collect(Collectors.toSet());
+                .map(schema -> ((RowEdgeSchema) schema)).collect(Collectors.toSet());
         logger.info("extraced row schemas, vertexSchemas: {}, edgeSchemas: {}", this.vertexSchemas, this.edgeSchemas);
     }
 
@@ -272,7 +300,7 @@ public class RowController implements SimpleController {
         Set<JdbcSchema<E>> rowSchemas = new HashSet<>();
 
         schemas.forEach(schema -> {
-            if(schema instanceof JdbcSchema) {
+            if (schema instanceof JdbcSchema) {
                 rowSchemas.add((JdbcSchema<E>) schema);
                 Set<JdbcSchema<E>> childSchemas = collectSchemas(schema.getChildSchemas());
                 rowSchemas.addAll(childSchemas);
@@ -294,5 +322,48 @@ public class RowController implements SimpleController {
                 ", edgeSchemas=" + edgeSchemas +
                 ", predicatesTranslator=" + predicatesTranslator +
                 '}';
+    }
+
+    public class SelectCollector<K, V, R> implements Collector<K, Map<K, V>, Map<K, V>> {
+
+        private final Function<? super K, ? extends V> valueMapper;
+
+        private final BiFunction<? super K, List<Map<String, Object>>, ? extends Collection<R>> parse;
+
+        public SelectCollector(Function<? super K, ? extends V> valueMapper, BiFunction<? super K, List<Map<String, Object>>, Collection<R>> parse) {
+            this.valueMapper = valueMapper;
+            this.parse = parse;
+        }
+
+        @Override
+        public Supplier<Map<K, V>> supplier() {
+            return HashMap<K, V>::new;
+        }
+
+        @Override
+        public BiConsumer<Map<K, V>, K> accumulator() {
+            return (map, t) -> {
+                V value = valueMapper.apply(t);
+                if (value != null) map.put(t, value);
+            };
+        }
+
+        @Override
+        public BinaryOperator<Map<K, V>> combiner() {
+            return (map1, map2) -> {
+                map1.putAll(map2);
+                return map1;
+            };
+        }
+
+        @Override
+        public Function finisher() {
+            return m -> m;
+        }
+
+        @Override
+        public Set<Characteristics> characteristics() {
+            return EnumSet.of(Collector.Characteristics.IDENTITY_FINISH);
+        }
     }
 }
