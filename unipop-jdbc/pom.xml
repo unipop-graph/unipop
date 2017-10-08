@@ -4,7 +4,7 @@
     <parent>
         <artifactId>unipop</artifactId>
         <groupId>com.github.unipop-graph</groupId>
-        <version>0.3-SNAPSHOT</version>
+        <version>0.2.1-SNAPSHOT</version>
     </parent>
     <artifactId>unipop-jdbc</artifactId>
     <name>Unipop :: JDBC Controllers</name>
