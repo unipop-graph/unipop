@@ -1,11 +1,10 @@
 package org.unipop.process.predicate;
 
-import org.apache.commons.lang.StringUtils;
-import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.OrP;
 
+import java.util.Arrays;
 import java.util.function.BiPredicate;
 
 /**
@@ -19,13 +18,13 @@ public class Date {
     public static <V> P<V> gte(final V value) { return new P(DatePredicate.gte, value); }
     public static <V> P<V> lte(final V value) { return new P(DatePredicate.lte, value); }
     public static <V> P<V> inside(final V first, final V second) {
-        return new AndP<>(new P(DatePredicate.gt, first), new P(DatePredicate.lt, second));
+        return new AndP<>(Arrays.asList(new P(DatePredicate.gt, first), new P(DatePredicate.lt, second)));
     }
     public static <V> P<V> outside(final V first, final V second) {
-        return new OrP<>(new P(DatePredicate.lt, first), new P(DatePredicate.gt, second));
+        return new OrP<>(Arrays.asList(new P(DatePredicate.lt, first), new P(DatePredicate.gt, second)));
     }
     public static <V> P<V> between(final V first, final V second) {
-        return new AndP<>(new P(DatePredicate.gte, first), new P(DatePredicate.lt, second));
+        return new AndP<>(Arrays.asList(new P(DatePredicate.gte, first), new P(DatePredicate.lt, second)));
     }
 
     public enum DatePredicate implements BiPredicate<Object, Object> {

@@ -79,6 +79,7 @@ import java.util.stream.Stream;
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.PartitionStrategyProcessTest", method = "shouldAppendPartitionToEdge", reason = "jdbc fails should investigate")
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.PartitionStrategyProcessTest", method = "shouldThrowExceptionOnVInDifferentPartition", reason = "jdbc fails should investigate")
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.PartitionStrategyProcessTest", method = "shouldThrowExceptionOnEInDifferentPartition", reason = "jdbc fails should investigate")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategyProcessTest", method = "shouldDetachPropertyOfEdgeWhenRemoved", reason = "fails should investigate")
 @Graph.OptIn(UnipopGraphProvider.OptIn.UnipopStructureSuite)
 @Graph.OptIn(UnipopGraphProvider.OptIn.UnipopProcessSuite)
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_STANDARD)

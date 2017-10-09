@@ -113,6 +113,14 @@ public class UniGraphWhereTraversalStep<S extends Element> extends AbstractStep<
                 } else {
                     if (original.get().equals(scopeValue))
                         return original;
+                    else {
+                        for (Object o : original.path().objects()) {
+                            if (o.equals(scopeValue)) {
+                                originals.remove(original);
+                                return original.split(scopeValue, this);
+                            }
+                        }
+                    }
                 }
             }
             if (orig != null) {

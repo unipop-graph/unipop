@@ -255,8 +255,7 @@ public class DocumentController implements SimpleController {
                 return true;
             }
         }
-        return false
-                ;
+        return false;
     }
 
     private <E extends Element> void delete(Set<? extends DocumentSchema<E>> schemas, E element) {

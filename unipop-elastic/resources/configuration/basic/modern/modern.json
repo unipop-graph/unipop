@@ -32,7 +32,7 @@
       "id": "@_id",
       "label": {
         "field": "_type",
-        "include": "animal"
+        "include": ["animal", "dog"]
       },
       "properties": {
         "gremlin.partitionGraphStrategy.partition": "@partition"

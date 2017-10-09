@@ -1,30 +1,35 @@
 package org.unipop.plugin;
 
-import org.apache.tinkerpop.gremlin.groovy.plugin.GremlinPlugin;
-import org.apache.tinkerpop.gremlin.groovy.plugin.IllegalEnvironmentException;
-import org.apache.tinkerpop.gremlin.groovy.plugin.PluginAcceptor;
-import org.apache.tinkerpop.gremlin.groovy.plugin.PluginInitializationException;
+import org.apache.tinkerpop.gremlin.jsr223.AbstractGremlinPlugin;
+import org.apache.tinkerpop.gremlin.jsr223.DefaultImportCustomizer;
+import org.apache.tinkerpop.gremlin.jsr223.ImportCustomizer;
 import org.unipop.structure.UniGraph;
 
-import java.util.HashSet;
-import java.util.Set;
+public class UnipopPlugin extends AbstractGremlinPlugin {
+    private static final UnipopPlugin instance = new UnipopPlugin();
+    private static final ImportCustomizer imports;
 
-public class UnipopPlugin implements GremlinPlugin {
+    static {
+        try {
+            imports = DefaultImportCustomizer.build()
+                    .addClassImports(UniGraph.class)
+                    .create();
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+    }
 
-    private static final String IMPORT = "import ";
-    private static final String DOT_STAR = ".*";
 
-    private static final Set<String> IMPORTS = new HashSet<String>() {{
-        add(IMPORT + UniGraph.class.getPackage().getName() + DOT_STAR);
-    }};
+    public UnipopPlugin() {
+        super("unipop", imports);
+    }
 
-    @Override
-    public String getName() {
-        return "unipop";
+    public static UnipopPlugin instance() {
+        return instance;
     }
 
     @Override
-    public void pluginTo(final PluginAcceptor pluginAcceptor) throws PluginInitializationException, IllegalEnvironmentException {
-        pluginAcceptor.addImports(IMPORTS);
+    public boolean requireRestart() {
+        return true;
     }
 }
