@@ -37,12 +37,9 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void test() {
-        final Vertex a = g.V().has("name", "marko").next();
-        final Vertex b = g.V().has("name", "peter").next();
-        Traversal t = g.addE("knows").from(a).to(b).property("weight", 0.1d);
+        Traversal t = g.V("1").optional(addV("dog")).label();
         check(t);
-        t = g.E();
-        check(t);
+        check(g.V());
     }
 
 
