@@ -4,8 +4,10 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.text.*;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by sbarzilay on 8/19/16.
@@ -13,12 +15,10 @@ import java.util.List;
 public class MultiDateFormat extends DateFormat {
     private List<SimpleDateFormat> formats;
 
-    public MultiDateFormat(String format, String... formats) {
+    public MultiDateFormat(String format, Collection<String> formats) {
         this.formats = new ArrayList<>();
         this.formats.add(new SimpleDateFormat(format));
-        for (String f : formats) {
-            this.formats.add(new SimpleDateFormat(f));
-        }
+        this.formats.addAll(formats.stream().map(SimpleDateFormat::new).collect(Collectors.toList()));
     }
 
     @Override

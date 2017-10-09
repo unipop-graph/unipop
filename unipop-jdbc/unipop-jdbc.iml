@@ -11,6 +11,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" scope="TEST" name="Maven: com.h2database:h2:1.4.196" level="project" />
     <orderEntry type="module" module-name="unipop-core" />
     <orderEntry type="library" name="Maven: org.apache.tinkerpop:gremlin-core:3.3.0" level="project" />
     <orderEntry type="library" name="Maven: org.apache.tinkerpop:gremlin-shaded:3.3.0" level="project" />

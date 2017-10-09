@@ -2,6 +2,8 @@ package org.unipop.schema.property;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
+import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
+import org.apache.tinkerpop.gremlin.process.traversal.util.ConnectiveP;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.unipop.query.predicates.PredicatesHolder;
@@ -64,30 +66,37 @@ public class DateFieldPropertySchema extends FieldPropertySchema implements Date
 
     @Override
     public Set<Object> getValues(PredicatesHolder predicatesHolder) {
-        Stream<HasContainer> predicates = predicatesHolder.findKey(this.key);
+        Stream<PredicatesHolder> predicates = predicatesHolder.findKey(this.key).map(this::explodeConnective);
         Map<String, Date> datePredicates = new HashMap<>();
-        predicates.forEach(has -> {
-            String biPredicate = has.getBiPredicate().toString();
-            Object value = has.getValue();
-            switch (biPredicate) {
-                case "eq":
-                    datePredicates.put("eq", fromDisplay(value.toString()));
-                    break;
-                case "gt":
-                    datePredicates.put("gt", fromDisplay(value.toString()));
-                    break;
-                case "lt":
-                    datePredicates.put("lt", fromDisplay(value.toString()));
-                    break;
-                default:
-                    throw new IllegalArgumentException("cant get value");
-            }
-        });
+        predicates.flatMap(p -> p.getPredicates().stream())
+                .forEach(has -> {
+                    String biPredicate = has.getBiPredicate().toString();
+                    Object value = has.getValue();
+                    switch (biPredicate) {
+                        case "eq":
+                            datePredicates.put("eq", fromDisplay(value.toString()));
+                            break;
+                        case "gt":
+                            datePredicates.put("gt", fromDisplay(value.toString()));
+                        case "gte":
+                            datePredicates.put("gte", fromDisplay(value.toString()));
+                            break;
+                        case "lt":
+                            datePredicates.put("lt", fromDisplay(value.toString()));
+                            break;
+                        case "lte":
+                            datePredicates.put("lte", fromDisplay(value.toString()));
+                            break;
+                        default:
+                            throw new IllegalArgumentException("cant get value");
+                    }
+                });
         if (datePredicates.size() == 0) return Collections.emptySet();
         if (datePredicates.containsKey("eq")) return Collections.singleton(toSource(datePredicates.get("eq")));
-        else if (datePredicates.containsKey("gt") && datePredicates.containsKey("lt")) {
-            Date from = datePredicates.get("gt");
-            Date to = datePredicates.get("lt");
+        else if ((datePredicates.containsKey("gt") || datePredicates.containsKey("gte"))
+                && (datePredicates.containsKey("lt") || datePredicates.containsKey("lte"))) {
+            Date from = datePredicates.containsKey("gt") ? datePredicates.get("gt") : datePredicates.get("gte");
+            Date to = datePredicates.containsKey("lt") ? datePredicates.get("lt") : datePredicates.get("lte");
             List<Date> dates = new ArrayList<>();
             long interval = this.interval;
             long endTime = to.getTime();
@@ -99,6 +108,18 @@ public class DateFieldPropertySchema extends FieldPropertySchema implements Date
             return dates.stream().map(this::toSource).collect(Collectors.toSet());
         }
         else throw new IllegalArgumentException("cant get only gt or lt value");
+    }
+
+    public PredicatesHolder explodeConnective(HasContainer has) {
+        if (has.getBiPredicate() instanceof ConnectiveP) {
+            List<P> predicates = ((ConnectiveP) has.getBiPredicate()).getPredicates();
+            PredicatesHolder.Clause clause = has.getPredicate() instanceof AndP ?
+                    PredicatesHolder.Clause.And : PredicatesHolder.Clause.Or;
+            Set<HasContainer> hasContainers = predicates.stream()
+                    .map(p -> new HasContainer(has.getKey(), p)).collect(Collectors.toSet());
+            return PredicatesHolderFactory.createFromPredicates(clause, hasContainers);
+        }
+        return PredicatesHolderFactory.predicate(has);
     }
 
     @Override
@@ -121,12 +142,23 @@ public class DateFieldPropertySchema extends FieldPropertySchema implements Date
 
     @Override
     public PredicatesHolder toPredicate(HasContainer has) {
+        if (has.getPredicate() instanceof ConnectiveP) {
+            List<P> predicates = ((ConnectiveP) has.getPredicate()).getPredicates();
+            predicates.forEach(p -> {
+                Object dateValue = p.getValue();
+                Date parsedDate = fromDisplay(dateValue.toString());
+                String formattedDate = toSource(parsedDate);
+                p.setValue(formattedDate);
+            });
+            return PredicatesHolderFactory
+                    .predicate(new HasContainer(this.field, has.getPredicate()));
+        }
         Object dateValue = has.getValue();
         Date parsedDate = fromDisplay(dateValue.toString());
         String formattedDate = toSource(parsedDate);
-        P predicate = has.getPredicate().clone();
-        predicate.setValue(formattedDate);
-        return PredicatesHolderFactory.predicate(new HasContainer(this.field, predicate));
+        P predicated = has.getPredicate().clone();
+        predicated.setValue(formattedDate);
+        return PredicatesHolderFactory.predicate(new HasContainer(this.field, predicated));
     }
 
     @Override
@@ -138,9 +170,9 @@ public class DateFieldPropertySchema extends FieldPropertySchema implements Date
     public DateFormat getDisplayDateFormat() {
         if (this.displayFormat.size() > 1) {
             return new MultiDateFormat(displayFormat.get(0),
-                    displayFormat.subList(1, displayFormat.size() -1).toArray(new String[displayFormat.size() -2]));
+                    displayFormat.subList(1, displayFormat.size() -1));
         }
-        return new MultiDateFormat(displayFormat.get(0));
+        return new MultiDateFormat(displayFormat.get(0), Collections.emptyList());
     }
 
     public static class Builder implements PropertySchemaBuilder {

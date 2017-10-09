@@ -4,6 +4,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
+import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
+import org.apache.tinkerpop.gremlin.process.traversal.util.ConnectiveP;
+import org.apache.tinkerpop.gremlin.process.traversal.util.OrP;
 import org.jooq.Condition;
 import org.jooq.Field;
 import org.jooq.impl.DSL;
@@ -15,9 +18,7 @@ import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.util.MultiDateFormat;
 
 import java.text.ParseException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
@@ -55,24 +56,54 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
         BiPredicate<?, ?> biPredicate = predicate.getBiPredicate();
 
         Field<Object> field = field(key);
-        if (biPredicate instanceof Compare) {
-            return getCompareCondition(value, biPredicate, field);
-        } else if (biPredicate instanceof Contains) {
-            Condition x = getContainsCondition(value, biPredicate, field);
-            if (x != null) return x;
-        } else if (predicate instanceof ExistsP) {
+        if (predicate instanceof ConnectiveP){
+            return handleConnectiveP(key, (ConnectiveP) predicate);
+        }
+        else if (predicate instanceof ExistsP) {
             return field.isNotNull();
-        } else if (biPredicate instanceof Text.TextPredicate) {
-            return getTextCondition(value, biPredicate, field);
+        } else return predicateToQuery(key, value, biPredicate);
+    }
+
+    private Condition handleConnectiveP(String key, ConnectiveP predicate) {
+        List<P> predicates = predicate.getPredicates();
+        List<Condition> queries = predicates.stream().map(p -> {
+            if (p instanceof ConnectiveP) return handleConnectiveP(key, (ConnectiveP) p);
+            Object pValue = p.getValue();
+            BiPredicate pBiPredicate = p.getBiPredicate();
+            return predicateToQuery(key, pValue, pBiPredicate);
+        }).collect(Collectors.toList());
+        Condition condition = queries.get(0);
+        if (predicate instanceof AndP){
+            for (int i = 1; i < queries.size(); i++) {
+                condition = condition.and(queries.get(i));
+            }
+        }
+        else if (predicate instanceof OrP){
+            for (int i = 1; i < queries.size(); i++) {
+                condition = condition.or(queries.get(i));
+            }
+        }
+        else throw new IllegalArgumentException("Connective predicate not supported by unipop");
+        return condition;
+    }
+
+    private Condition predicateToQuery(String field, Object value, BiPredicate<?, ?> biPredicate) {
+        if (biPredicate instanceof Compare) {
+            return getCompareCondition(value, biPredicate, field(field));
+        } else if (biPredicate instanceof Contains) {
+            Condition x = getContainsCondition(value, biPredicate, field(field));
+            if (x != null) return x;
+        }
+        else if (biPredicate instanceof Text.TextPredicate) {
+            return getTextCondition(value, biPredicate, field(field));
         } else if (biPredicate instanceof Date.DatePredicate) {
             try {
-                return getDateCondition(value, biPredicate, field);
+                return getDateCondition(value, biPredicate, field(field));
             } catch (ParseException e) {
                 throw new IllegalArgumentException("cant convert to date");
             }
         }
-
-        throw new IllegalArgumentException("Predicate not supported in JDBC");
+        throw new IllegalArgumentException("can't create condition");
     }
 
     private Condition getDateCondition(Object value, BiPredicate<?, ?> biPredicate, Field<Object> field) throws ParseException {
@@ -95,6 +126,18 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
                 Object firstItem = convertToSqlDate(items.get(0).toString());
                 Object secondItem = convertToSqlDate(items.get(1).toString());
                 return field.between(firstItem, secondItem);
+            case ("within"):
+                List v = (List) value;
+                List<java.sql.Date> dates = new ArrayList<>();
+                for (Object o : v)
+                    dates.add(convertToSqlDate(o.toString()));
+                return field.in(dates);
+            case ("without"):
+                List v2 = (List) value;
+                List<java.sql.Date> dates2 = new ArrayList<>();
+                for (Object o : v2)
+                    dates2.add(convertToSqlDate(o.toString()));
+                return field.notIn(dates2);
             default:
                 throw new IllegalArgumentException("predicate not supported in has step: " + biPredicate.toString());
         }
@@ -102,7 +145,7 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
 
     private java.sql.Date convertToSqlDate(String dateString) throws ParseException {
         // TODO: make configurable
-        long time = new MultiDateFormat("dd/MM/yyyy HH:mm:ss", "dd/MM/yyyy").parse(dateString).getTime();
+        long time = new MultiDateFormat("dd/MM/yyyy HH:mm:ss", Arrays.asList("dd/MM/yyyy", "yyyy-MM-dd")).parse(dateString).getTime();
         return new java.sql.Date(time);
     }
 

@@ -5,41 +5,32 @@
   "sqlDialect": "H2",
   "vertices": [
     {
-      "table": "PERSON_MODERN",
+      "table": "vertices",
       "id": "@ID",
-      "label": "person",
+      "label": "@LABEL",
       "properties": {
         "name": "@NAME",
-        "age": "@AGE"
-      }
-    },
-    {
-      "table": "ANIMAL_MODERN",
-      "id": "@ID",
-      "label": "animal",
-      "properties": {
-        "name": "@NAME",
-        "age": "@AGE"
-      }
-    },
-    {
-      "table": "SOFTWARE_MODERN",
-      "id": "@ID",
-      "label": "software",
-      "properties": {
-        "name": "@NAME",
-        "lang": "@LANG"
-      }
+        "age": "@AGE",
+        "location": "@LOCATION",
+        "status": "@STATUS",
+        "lang": "@LANG",
+        "oid": "@OID",
+        "test": "@DATA",
+        "communityIndex": "@COMMUNITYINDEX"
+      },
+      "dynamicProperties": false
     }
   ],
   "edges": [
     {
-      "table": "MODERN_EDGES",
+      "table": "edges",
       "id": "@ID",
       "label": "@LABEL",
       "properties": {
+        "year": "@YEAR",
         "weight": "@WEIGHT",
-        "year": "@YEAR"
+        "data": "@DATA",
+        "location": "@LOCATION"
       },
       "dynamicProperties": false,
       "outVertex": {
@@ -54,6 +45,7 @@
         "label": "@INLABEL",
         "properties": {}
       }
+
     }
   ]
 }
