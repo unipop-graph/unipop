@@ -2,6 +2,7 @@ package org.unipop.elastic.tests;
 
 import org.apache.tinkerpop.gremlin.*;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.Scope;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
 import org.apache.tinkerpop.gremlin.structure.*;
@@ -36,7 +37,11 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void test() {
-        Traversal t = g.V().as("a").out("created").where(as("a").values("name").is("josh")).in("created").values("name");
+        final Vertex a = g.V().has("name", "marko").next();
+        final Vertex b = g.V().has("name", "peter").next();
+        Traversal t = g.addE("knows").from(a).to(b).property("weight", 0.1d);
+        check(t);
+        t = g.E();
         check(t);
     }
 

@@ -121,7 +121,6 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
                 .index(document.getIndex())
                 .type(document.getType())
                 .id(document.getId());
-        if(create) builder.setParameter("op_type", "create");
         return builder.build();
     }
 
