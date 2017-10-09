@@ -4,7 +4,7 @@
     <parent>
         <artifactId>unipop</artifactId>
         <groupId>com.github.unipop-graph</groupId>
-        <version>0.2.1</version>
+        <version>0.2.2-SNAPSHOT</version>
     </parent>
     <artifactId>unipop-rest</artifactId>
     <name>Unipop :: Rest Controllers</name>
