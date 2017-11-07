@@ -37,9 +37,9 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void test() {
-        Traversal t = g.V("1").optional(addV("dog")).label();
+        Traversal t = g.V().order().by("name").values("name");
         check(t);
-        check(g.V());
+//        while(true){}
     }
 
 

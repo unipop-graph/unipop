@@ -27,7 +27,7 @@ public class ElasticClient {
     private final static Logger logger = LoggerFactory.getLogger(ElasticClient.class);
 
     private Map<DocumentIdentifier, BulkableAction> bulk;
-    String STRING_NOT_ANALYZED = "{\"dynamic_templates\" : [{\"not_analyzed\" : {\"match\" : \"*\",\"match_mapping_type\" : \"string\", \"mapping\" : {\"type\" : \"string\",\"index\" : \"not_analyzed\"}}}]}";
+    String STRING_NOT_ANALYZED = "{\"dynamic_templates\" : [{\"not_analyzed\" : {\"match\" : \"*\",\"match_mapping_type\" : \"string\", \"mapping\" : {\"type\" : \"text\",\"index\" : \"not_analyzed\", \"fielddata\": true}}}]}";
 
     private final JestClient client;
 
@@ -45,13 +45,13 @@ public class ElasticClient {
             logger.debug("indexExistsRequests result: {}", existsResult);
             if (!existsResult.isSucceeded()) {
                 Settings settings = Settings.builder()
-                        .put("index.analysis.analyzer.default.type", "keyword")
+//                        .put("index.analysis.analyzer.default.type", "keyword")
                         .put("index.store.type", "mmapfs")
                         .build();
                 CreateIndex createIndexRequest = new CreateIndex.Builder(indexName).settings(settings).build();
                 execute(createIndexRequest);
                 //TODO: Make this work. Using the above "keyword" configuration in the meantime.
-                PutMapping putMapping = new PutMapping.Builder(indexName, "*", STRING_NOT_ANALYZED).build();
+                PutMapping putMapping = new PutMapping.Builder(indexName, "_default_", STRING_NOT_ANALYZED).build();
                 execute(putMapping);
                 logger.info("created index with settings: {}, indexName: {}, putMapping: {}", settings, indexName, putMapping);
             }
