@@ -14,6 +14,11 @@
     </properties>
     <dependencies>
         <dependency>
+            <groupId>pl.allegro.tech</groupId>
+            <artifactId>embedded-elasticsearch</artifactId>
+            <version>2.1.0</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.tinkerpop</groupId>
             <artifactId>gremlin-core</artifactId>
             <version>${tinkerpop.version}</version>
