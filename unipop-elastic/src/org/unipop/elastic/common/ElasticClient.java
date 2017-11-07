@@ -44,7 +44,7 @@ public class ElasticClient {
             JestResult existsResult = client.execute(indicesExistsRequest);
             logger.debug("indexExistsRequests result: {}", existsResult);
             if (!existsResult.isSucceeded()) {
-                Settings settings = Settings.settingsBuilder()
+                Settings settings = Settings.builder()
                         .put("index.analysis.analyzer.default.type", "keyword")
                         .put("index.store.type", "mmapfs")
                         .build();

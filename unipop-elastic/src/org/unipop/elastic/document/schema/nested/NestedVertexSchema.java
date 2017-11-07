@@ -2,6 +2,7 @@ package org.unipop.elastic.document.schema.nested;
 
 import io.searchbox.action.BulkableAction;
 import io.searchbox.core.DocumentResult;
+import org.apache.lucene.search.join.ScoreMode;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -90,7 +91,7 @@ public class NestedVertexSchema extends AbstractDocSchema<Vertex> implements Doc
     public QueryBuilder createQueryBuilder(PredicatesHolder predicatesHolder) {
         QueryBuilder queryBuilder = super.createQueryBuilder(predicatesHolder);
         if(queryBuilder == null) return null;
-        return QueryBuilders.nestedQuery(this.path, queryBuilder);
+        return QueryBuilders.nestedQuery(this.path, queryBuilder, ScoreMode.None);
     }
 
     @Override

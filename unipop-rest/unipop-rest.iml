@@ -91,10 +91,19 @@
     <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpmime:4.5.2" level="project" />
     <orderEntry type="library" name="Maven: com.samskivert:jmustache:1.13" level="project" />
     <orderEntry type="module" module-name="unipop-elastic" />
+    <orderEntry type="library" name="Maven: org.apache.logging.log4j:log4j-api:2.9.1" level="project" />
+    <orderEntry type="library" name="Maven: org.elasticsearch.plugin:transport-netty4-client:5.3.1" level="project" />
+    <orderEntry type="library" name="Maven: io.netty:netty-buffer:4.1.7.Final" level="project" />
+    <orderEntry type="library" name="Maven: io.netty:netty-codec:4.1.7.Final" level="project" />
+    <orderEntry type="library" name="Maven: io.netty:netty-codec-http:4.1.7.Final" level="project" />
+    <orderEntry type="library" name="Maven: io.netty:netty-common:4.1.7.Final" level="project" />
+    <orderEntry type="library" name="Maven: io.netty:netty-handler:4.1.7.Final" level="project" />
+    <orderEntry type="library" name="Maven: io.netty:netty-resolver:4.1.7.Final" level="project" />
+    <orderEntry type="library" name="Maven: io.netty:netty-transport:4.1.7.Final" level="project" />
     <orderEntry type="library" name="Maven: com.esotericsoftware.yamlbeans:yamlbeans:1.09" level="project" />
     <orderEntry type="library" name="Maven: com.googlecode.json-simple:json-simple:1.1.1" level="project" />
-    <orderEntry type="library" name="Maven: io.searchbox:jest:2.0.0" level="project" />
-    <orderEntry type="library" name="Maven: io.searchbox:jest-common:2.0.0" level="project" />
-    <orderEntry type="library" name="Maven: com.google.code.gson:gson:2.4" level="project" />
+    <orderEntry type="library" name="Maven: io.searchbox:jest:5.3.3" level="project" />
+    <orderEntry type="library" name="Maven: io.searchbox:jest-common:5.3.3" level="project" />
+    <orderEntry type="library" name="Maven: com.google.code.gson:gson:2.8.0" level="project" />
   </component>
 </module>
