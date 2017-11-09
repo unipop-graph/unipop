@@ -212,8 +212,12 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
             params.put("edgeId", edge.id());
             params.put("idField", idField.iterator().next());
             HashMap<String, Object> docMap = new HashMap<>();
-            docMap.put("params", params);
-            docMap.put("script", UPDATE_SCRIPT);
+            HashMap<String, Object> script = new HashMap<>();
+            script.put("params", params);
+            script.put("inline", UPDATE_SCRIPT);
+            script.put("lang", "groovy");
+            docMap.put("scripted_upsert", true);
+            docMap.put("script", script);
             String json = mapper.writeValueAsString(docMap);
             return new Update.Builder(json).index(parentDoc.getIndex()).type(parentDoc.getType()).id(parentDoc.getId()).build();
         } catch (JsonProcessingException e) {
@@ -224,6 +228,6 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
 
     static String UPDATE_SCRIPT = "if (!ctx._source.containsKey(path)) {ctx._source[path] = [nestedDoc]}; " +
             "else { items_to_remove = []; ctx._source[path].each { item -> if (item[idField] == edgeId) { items_to_remove.add(item); } };" +
-            "items_to_remove.each { item -> ctx._source[path].remove(item) }; ctx._source[path] += nestedDoc;}";
+            "items_to_remove.each { item -> ctx._source[path].remove(item) }; ctx._source[path].add(nestedDoc);}";
 
 }

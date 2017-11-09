@@ -27,7 +27,7 @@ public class ElasticClient {
     private final static Logger logger = LoggerFactory.getLogger(ElasticClient.class);
 
     private Map<DocumentIdentifier, BulkableAction> bulk;
-    String STRING_NOT_ANALYZED = "{\"dynamic_templates\" : [{\"not_analyzed\" : {\"match\" : \"*\",\"match_mapping_type\" : \"string\", \"mapping\" : {\"type\" : \"text\",\"index\" : \"not_analyzed\", \"fielddata\": true}}}]}";
+    String STRING_NOT_ANALYZED = "{\"dynamic_templates\" : [{\"not_analyzed\" : {\"match\" : \"*\",\"match_mapping_type\" : \"string\", \"mapping\" : {\"type\" : \"keyword\",\"index\" : \"not_analyzed\", \"fielddata\": true}}}]}";
 
     private final JestClient client;
 
