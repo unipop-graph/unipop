@@ -4,16 +4,23 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.*;
 
 import java.util.Iterator;
+import java.util.Map;
 
 public class UniVertexProperty<V> implements VertexProperty<V> {
 
     private final UniVertex vertex;
     private final String key;
-    private final V value;
+    private V value;
+    private Map<String, Object> properties;
 
     public UniVertexProperty(final UniVertex vertex, final String key, final V value) {
         this.vertex = vertex;
         this.key = key;
+        if (value instanceof Map &&
+                ((Map) value).containsKey("properties")) {
+            this.properties = (Map<String, Object>) ((Map) value).get("properties");
+            this.value = (V) (((Map) value).get("value"));
+        }
         this.value = value;
     }
 

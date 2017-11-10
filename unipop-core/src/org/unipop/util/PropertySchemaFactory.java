@@ -22,6 +22,7 @@ public class PropertySchemaFactory {
         builders.add(new MultiPropertySchema.Builder());
         builders.add(new ConcatenateFieldPropertySchema.Builder());
         builders.add(new CoalescePropertySchema.Builder());
+        builders.add(new MetaPropertySchema.Builder());
         builders.addAll(providers);
         builders.addAll(thirdParty);
         Collections.reverse(builders);

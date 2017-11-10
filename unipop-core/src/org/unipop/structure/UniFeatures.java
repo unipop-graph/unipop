@@ -207,7 +207,7 @@ public class UniFeatures implements Graph.Features {
 
         @Override
         public boolean supportsMetaProperties() {
-            return false;
+            return true;
         }
 
         @Override
