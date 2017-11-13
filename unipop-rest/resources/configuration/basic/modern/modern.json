@@ -25,7 +25,7 @@
     "within": "terms"
   },
   "complexTranslator":[
-    {"op": "gt", "template": "{ \"range\": { {{key}}: { \"gt\": {{value}} } } }"}
+    {"op": "gt", "template": "{ \"range\": { \"{{key}}\": { \"gt\": {{value}} } } }"}
   ],
   "vertices": [
     {

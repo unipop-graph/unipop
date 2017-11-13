@@ -17,7 +17,7 @@
         <dependency>
             <groupId>org.elasticsearch</groupId>
             <artifactId>elasticsearch</artifactId>
-            <version>2.1.1</version>
+            <version>5.3.1</version>
         </dependency>
         <dependency>
             <groupId>com.mashape.unirest</groupId>
