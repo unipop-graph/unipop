@@ -10,7 +10,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
-import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
+//import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
@@ -122,24 +122,24 @@ public class DocumentController implements SimpleController {
     @Override
     public Edge addEdge(AddEdgeQuery uniQuery) {
         UniEdge edge = new UniEdge(uniQuery.getProperties(), uniQuery.getOutVertex(), uniQuery.getInVertex(), graph);
-        try {
+//        try {
             if (index(this.edgeSchemas, edge, true)) return edge;
-        } catch (DocumentAlreadyExistsException ex) {
-            logger.warn("Document already exists in elastic", ex);
-            throw Graph.Exceptions.edgeWithIdAlreadyExists(edge.id());
-        }
+//        } catch (DocumentAlreadyExistsException ex) {
+//            logger.warn("Document already exists in elastic", ex);
+//            throw Graph.Exceptions.edgeWithIdAlreadyExists(edge.id());
+//        }
         return null;
     }
 
     @Override
     public Vertex addVertex(AddVertexQuery uniQuery) {
         UniVertex vertex = new UniVertex(uniQuery.getProperties(), graph);
-        try {
+//        try {
             if (index(this.vertexSchemas, vertex, true)) return vertex;
-        } catch (DocumentAlreadyExistsException ex) {
-            logger.warn("Document already exists in elastic", ex);
-            throw Graph.Exceptions.vertexWithIdAlreadyExists(vertex.id());
-        }
+//        } catch (DocumentAlreadyExistsException ex) {
+//            logger.warn("Document already exists in elastic", ex);
+//            throw Graph.Exceptions.vertexWithIdAlreadyExists(vertex.id());
+//        }
         return vertex;
     }
 
