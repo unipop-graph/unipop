@@ -5,6 +5,7 @@ import com.google.common.collect.Sets;
 import io.searchbox.action.BulkableAction;
 import io.searchbox.core.DocumentResult;
 import io.searchbox.core.Update;
+import org.apache.lucene.search.join.ScoreMode;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -147,7 +148,7 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
         PredicatesHolder predicatesHolder = this.toPredicates(query.getPredicates());
         QueryBuilder queryBuilder = createQueryBuilder(predicatesHolder);
         if(queryBuilder == null)  return null;
-        return QueryBuilders.nestedQuery(this.path, queryBuilder);
+        return QueryBuilders.nestedQuery(this.path, queryBuilder, ScoreMode.None);
     }
 
     @Override
@@ -176,20 +177,20 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
 //            if (parentPredicates.isAborted()) return null;
             QueryBuilder edgeQuery = createNestedQueryBuilder(edgePredicates);
             if (edgeQuery != null) {
-                parentQuery = QueryBuilders.andQuery(parentQuery, edgeQuery);
+                parentQuery = QueryBuilders.boolQuery().must(parentQuery).must(edgeQuery);
             }
         }
         if(query.getDirection().equals(parentDirection) && parentPredicates.notAborted()) return parentQuery;
         else if(childQuery == null && parentPredicates.notAborted()) return parentQuery;
         else if(parentQuery == null && childPredicates.notAborted()) return childQuery;
         else if(parentPredicates.isAborted() && childPredicates.isAborted()) return null;
-        else return QueryBuilders.orQuery(parentQuery, childQuery);
+        else return QueryBuilders.boolQuery().should(parentQuery).should(childQuery);
     }
 
     private QueryBuilder createNestedQueryBuilder(PredicatesHolder nestedPredicates) {
         QueryBuilder nestedQuery = createQueryBuilder(nestedPredicates);
         if(nestedQuery == null)  return null;
-        return QueryBuilders.nestedQuery(this.path, nestedQuery);
+        return QueryBuilders.nestedQuery(this.path, nestedQuery, ScoreMode.None);
     }
 
     @Override
@@ -211,8 +212,12 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
             params.put("edgeId", edge.id());
             params.put("idField", idField.iterator().next());
             HashMap<String, Object> docMap = new HashMap<>();
-            docMap.put("params", params);
-            docMap.put("script", UPDATE_SCRIPT);
+            HashMap<String, Object> script = new HashMap<>();
+            script.put("params", params);
+            script.put("inline", UPDATE_SCRIPT);
+            script.put("lang", "groovy");
+            docMap.put("scripted_upsert", true);
+            docMap.put("script", script);
             String json = mapper.writeValueAsString(docMap);
             return new Update.Builder(json).index(parentDoc.getIndex()).type(parentDoc.getType()).id(parentDoc.getId()).build();
         } catch (JsonProcessingException e) {
@@ -223,6 +228,6 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
 
     static String UPDATE_SCRIPT = "if (!ctx._source.containsKey(path)) {ctx._source[path] = [nestedDoc]}; " +
             "else { items_to_remove = []; ctx._source[path].each { item -> if (item[idField] == edgeId) { items_to_remove.add(item); } };" +
-            "items_to_remove.each { item -> ctx._source[path].remove(item) }; ctx._source[path] += nestedDoc;}";
+            "items_to_remove.each { item -> ctx._source[path].remove(item) }; ctx._source[path].add(nestedDoc);}";
 
 }
