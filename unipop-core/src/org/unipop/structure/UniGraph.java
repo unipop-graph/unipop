@@ -10,12 +10,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
-import org.unipop.schema.property.PropertySchema;
-import org.unipop.schema.property.type.DateType;
-import org.unipop.schema.property.type.NumberType;
-import org.unipop.schema.property.type.TextType;
-import org.unipop.test.UnipopGraphProvider;
-import org.unipop.util.ConversionUtils;
 import org.unipop.process.strategyregistrar.StandardStrategyProvider;
 import org.unipop.process.strategyregistrar.StrategyProvider;
 import org.unipop.query.controller.ConfigurationControllerManager;
@@ -24,7 +18,12 @@ import org.unipop.query.mutation.AddVertexQuery;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.SearchQuery;
-import org.unipop.util.PropertySchemaFactory;
+import org.unipop.schema.property.PropertySchema;
+import org.unipop.schema.property.type.DateType;
+import org.unipop.schema.property.type.NumberType;
+import org.unipop.schema.property.type.TextType;
+import org.unipop.test.UnipopGraphProvider;
+import org.unipop.util.ConversionUtils;
 import org.unipop.util.PropertyTypeFactory;
 
 import java.util.*;
@@ -119,7 +118,13 @@ public class UniGraph implements Graph {
             }).forEach(thirdPartyPropertySchemas::add);
         }
 
-        ConfigurationControllerManager configurationControllerManager = new ConfigurationControllerManager(this, configuration, thirdPartyPropertySchemas);
+//        ConfigurationControllerManager configurationControllerManager = new ConfigurationControllerManager(this, configuration, thirdPartyPropertySchemas);
+                String configurationControllerManagerName = configuration.getString("controllerManager", ConfigurationControllerManager.class.getCanonicalName().toString());
+        ControllerManager configurationControllerManager = Class.forName(configurationControllerManagerName)
+                .asSubclass(ControllerManager.class)
+                .getConstructor(UniGraph.class, Configuration.class, List.class)
+                .newInstance(this, configuration,thirdPartyPropertySchemas);
+
         StrategyProvider strategyProvider = determineStrategyProvider(configuration);
 
         init(configurationControllerManager, strategyProvider);
