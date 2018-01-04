@@ -5,7 +5,6 @@ jdk:
   - oraclejdk8
 sudo: required
 dist: trusty
-group: deprecated-2017Q4
 addons:
   apt:
     packages:
