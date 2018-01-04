@@ -135,7 +135,7 @@
                                 <environmentVariables>
                                     <conf>nestededge</conf>
                                 </environmentVariables>
-                                <skip>false</skip>
+                                <skip>true</skip>
                                 <reportNameSuffix>NESTEDEDGE</reportNameSuffix>
                             </configuration>
                         </execution>
