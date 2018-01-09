@@ -39,15 +39,7 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void test() {
-        Traversal t = g.V();
-        check(t);
-        while(true){
-            try {
-                Thread.sleep(3000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+        System.out.println(g.V().hasLabel("person").limit(2).id().toList());
     }
 
 
