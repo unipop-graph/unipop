@@ -6,8 +6,13 @@ import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.schema.element.VertexSchema;
 
 /**
- * Created by sbarzilay on 24/11/16.
+ * A schema that represents a vertex in a rest data source.
  */
 public interface RestVertexSchema extends RestSchema<Vertex>, VertexSchema{
+    /**
+     * Converts a Deferred vertex query to a HTTP request
+     * @param query The deferred vertex query
+     * @return A HTTP request
+     */
     BaseRequest getSearch(DeferredVertexQuery query);
 }
