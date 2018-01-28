@@ -25,7 +25,7 @@ public class IntegrationGraphProvider extends UnipopGraphProvider {
     public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName, LoadGraphWith.GraphData loadGraphWith) {
         Map<String, Object> baseConfiguration = super.getBaseConfiguration(graphName, test, testMethodName, loadGraphWith);
         baseConfiguration.put("bulk.max", 1000);
-        baseConfiguration.put("bulk.start", 10);
+        baseConfiguration.put("bulk.graph", 10);
         baseConfiguration.put("bulk.multiplier", 10);
 
         String configurationFile = getSchemaConfiguration(loadGraphWith);

@@ -8,6 +8,7 @@ import org.json.JSONObject;
 import org.unipop.elastic.common.ElasticClient;
 import org.unipop.elastic.document.DocumentVertexSchema;
 import org.unipop.elastic.document.schema.nested.NestedEdgeSchema;
+import org.unipop.elastic.document.schema.property.IndexPropertySchema;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.schema.element.EdgeSchema;
@@ -26,6 +27,17 @@ public class DocVertexSchema extends AbstractDocSchema<Vertex> implements Docume
 
     public DocVertexSchema(JSONObject configuration, ElasticClient client, UniGraph graph) throws JSONException {
         super(configuration, client, graph);
+
+        for(JSONObject edgeJson : getList(json, "edges")) {
+            EdgeSchema docEdgeSchema = getEdgeSchema(edgeJson);
+            edgeSchemas.add(docEdgeSchema);
+        }
+    }
+
+    public DocVertexSchema(JSONObject configuration, ElasticClient client, UniGraph graph, IndexPropertySchema index) throws JSONException {
+        super(configuration, client, graph);
+
+        this.index = index;
 
         for(JSONObject edgeJson : getList(json, "edges")) {
             EdgeSchema docEdgeSchema = getEdgeSchema(edgeJson);
@@ -63,7 +75,7 @@ public class DocVertexSchema extends AbstractDocSchema<Vertex> implements Docume
     @Override
     public String toString() {
         return "DocVertexSchema{" +
-                "index='" + null + '\'' +
+                "index='" + index + '\'' +
                 ", type='" + type + '\'' +
                 '}';
     }

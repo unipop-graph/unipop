@@ -246,11 +246,10 @@ public class UniGraph implements Graph {
     public Vertex addVertex(final Object... keyValues) {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         Optional<String> labelValue = ElementHelper.getLabelValue(keyValues);
-        if (labelValue.isPresent()) ElementHelper.validateLabel(labelValue.get());
-        Map<String, Object> stringObjectMap = ConversionUtils.asMap(keyValues);
+        labelValue.ifPresent(ElementHelper::validateLabel);
         return controllerManager.getControllers(AddVertexQuery.AddVertexController.class).stream()
                 .map(controller -> controller.addVertex(new AddVertexQuery(ConversionUtils.asMap(keyValues), null)))
-                .filter(v -> v != null)
+                .filter(Objects::nonNull)
                 .findFirst().get();
     }
 

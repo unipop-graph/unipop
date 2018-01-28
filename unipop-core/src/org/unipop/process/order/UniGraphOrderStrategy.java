@@ -16,10 +16,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversal
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.javatuples.Pair;
 import org.unipop.process.edge.EdgeStepsStrategy;
-import org.unipop.process.edge.UniGraphEdgeOtherVertexStep;
 import org.unipop.process.predicate.ReceivesPredicatesHolder;
 import org.unipop.process.repeat.UniGraphRepeatStepStrategy;
-import org.unipop.process.start.UniGraphStartStepStrategy;
+import org.unipop.process.graph.UniGraphStepStrategy;
 import org.unipop.process.vertex.UniGraphVertexStepStrategy;
 
 import java.util.*;
@@ -32,7 +31,7 @@ import java.util.stream.Stream;
 public class UniGraphOrderStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy{
     @Override
     public Set<Class<? extends ProviderOptimizationStrategy>> applyPrior() {
-        return Sets.newHashSet(UniGraphStartStepStrategy.class, UniGraphVertexStepStrategy.class, UniGraphRepeatStepStrategy.class, EdgeStepsStrategy.class);
+        return Sets.newHashSet(UniGraphStepStrategy.class, UniGraphVertexStepStrategy.class, UniGraphRepeatStepStrategy.class, EdgeStepsStrategy.class);
     }
 
     @Override

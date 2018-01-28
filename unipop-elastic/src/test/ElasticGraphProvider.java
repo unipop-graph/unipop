@@ -35,7 +35,7 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
             file = file.substring(1);
         baseConfiguration.put("providers", new String[]{file});
         baseConfiguration.put("bulk.max", 1000);
-        baseConfiguration.put("bulk.start", 10);
+        baseConfiguration.put("bulk.graph", 10);
         baseConfiguration.put("bulk.multiplier", 10);
 
         return baseConfiguration;
