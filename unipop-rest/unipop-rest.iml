@@ -11,9 +11,6 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="Maven: io.searchbox:jest:2.0.0" level="project" />
-    <orderEntry type="library" name="Maven: io.searchbox:jest-common:2.0.0" level="project" />
-    <orderEntry type="library" name="Maven: com.google.code.gson:gson:2.4" level="project" />
     <orderEntry type="module" module-name="unipop-core" />
     <orderEntry type="library" name="Maven: org.apache.tinkerpop:gremlin-core:3.3.0" level="project" />
     <orderEntry type="library" name="Maven: org.apache.tinkerpop:gremlin-shaded:3.3.0" level="project" />

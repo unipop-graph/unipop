@@ -7,10 +7,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
-//import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
@@ -42,6 +40,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+
+//import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 
 public class DocumentController implements SimpleController {
     private static final Logger logger = LoggerFactory.getLogger(DocumentController.class);
@@ -140,7 +140,7 @@ public class DocumentController implements SimpleController {
 //            logger.warn("Document already exists in elastic", ex);
 //            throw Graph.Exceptions.vertexWithIdAlreadyExists(vertex.id());
 //        }
-        return vertex;
+        return null;
     }
 
     @Override
@@ -270,7 +270,7 @@ public class DocumentController implements SimpleController {
 
     //endregion
 
-    public class SearchCollector<K, V> implements Collector<K, Map<K, V>, Map<K, V>> {
+    private class SearchCollector<K extends DocumentSchema, V extends QueryBuilder> implements Collector<K, Map<K, V>, Map<K, V>> {
 
         private final Function<? super K, ? extends V> valueMapper;
 

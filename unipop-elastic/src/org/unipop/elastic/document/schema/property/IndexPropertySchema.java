@@ -3,7 +3,6 @@ package org.unipop.elastic.document.schema.property;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.json.JSONObject;
-import org.unipop.elastic.common.ElasticClient;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.schema.property.AbstractPropertyContainer;
@@ -130,5 +129,13 @@ public class IndexPropertySchema implements ParentSchemaProperty {
     @FunctionalInterface
     public interface Validate{
         void validate(String index);
+    }
+
+    @Override
+    public String toString() {
+        return "IndexPropertySchema{" +
+                "schema=" + schema +
+                ", defaultIndex='" + defaultIndex + '\'' +
+                '}';
     }
 }
