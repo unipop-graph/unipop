@@ -8,6 +8,9 @@ import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.query.search.SearchQuery;
 import org.unipop.query.search.SearchVertexQuery;
 
+/**
+ * A simple controller which extends all of the basic controllers
+ */
 public interface SimpleController extends
         SearchQuery.SearchController,
         SearchVertexQuery.SearchVertexController,

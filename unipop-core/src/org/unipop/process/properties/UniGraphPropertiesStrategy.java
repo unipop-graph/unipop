@@ -23,10 +23,9 @@ import org.unipop.process.repeat.UniGraphRepeatStepStrategy;
 import org.unipop.process.edge.EdgeStepsStrategy;
 import org.unipop.process.edge.UniGraphEdgeOtherVertexStep;
 import org.unipop.process.edge.UniGraphEdgeVertexStep;
-import org.unipop.process.start.UniGraphStartStepStrategy;
+import org.unipop.process.graph.UniGraphStepStrategy;
 import org.unipop.process.vertex.UniGraphVertexStepStrategy;
 import org.unipop.process.where.UniGraphWhereTraversalStep;
-import org.unipop.structure.UniGraph;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -38,7 +37,7 @@ import java.util.stream.Stream;
 public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy {
     @Override
     public Set<Class<? extends ProviderOptimizationStrategy>> applyPrior() {
-        return Sets.newHashSet(UniGraphStartStepStrategy.class, UniGraphVertexStepStrategy.class, UniGraphRepeatStepStrategy.class, EdgeStepsStrategy.class);
+        return Sets.newHashSet(UniGraphStepStrategy.class, UniGraphVertexStepStrategy.class, UniGraphRepeatStepStrategy.class, EdgeStepsStrategy.class);
     }
 
     private void handlePropertiesSteps(String[] propertyKeys, PropertyFetcher propertyFetcher) {

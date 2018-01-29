@@ -2,16 +2,12 @@ package org.unipop.process.where;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.step.filter.TraversalFilterStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.WhereTraversalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.MatchStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.PropertiesStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
-import org.unipop.process.start.UniGraphStartStepStrategy;
+import org.unipop.process.graph.UniGraphStepStrategy;
 import org.unipop.process.vertex.UniGraphVertexStepStrategy;
-import org.unipop.process.where.UniGraphWhereTraversalStep;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -24,7 +20,7 @@ public class UniGraphWhereStepStrategy extends AbstractTraversalStrategy<Travers
     @Override
     public Set<Class<? extends ProviderOptimizationStrategy>> applyPrior() {
         Set<Class<? extends TraversalStrategy.ProviderOptimizationStrategy>> priorStrategies = new HashSet<>();
-        priorStrategies.add(UniGraphStartStepStrategy.class);
+        priorStrategies.add(UniGraphStepStrategy.class);
         priorStrategies.add(UniGraphVertexStepStrategy.class);
         return priorStrategies;
     }

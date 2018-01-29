@@ -10,7 +10,7 @@
       "id": "@_id",
       "label": {
         "field": "_type",
-        "include": ["animal", "dog"]
+        "include": ["animal", "dog", "vertex"]
       },
       "dynamicProperties": {
         "excludeFields":[

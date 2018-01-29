@@ -1,7 +1,6 @@
-package org.unipop.process.start;
+package org.unipop.process.graph;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
-import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.Profiling;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
@@ -24,8 +23,8 @@ import org.unipop.structure.UniGraph;
 import java.util.*;
 import java.util.stream.Stream;
 
-public class UniGraphStartStep<S,E extends Element> extends GraphStep<S,E> implements ReceivesPredicatesHolder<S, E>, PropertyFetcher, Orderable, Profiling{
-    private static final Logger logger = LoggerFactory.getLogger(UniGraphStartStep.class);
+public class UniGraphStep<S,E extends Element> extends GraphStep<S,E> implements ReceivesPredicatesHolder<S, E>, PropertyFetcher, Orderable, Profiling{
+    private static final Logger logger = LoggerFactory.getLogger(UniGraphStep.class);
     private StepDescriptor stepDescriptor;
     private List<SearchQuery.SearchController>  controllers;
     private PredicatesHolder predicates = PredicatesHolderFactory.empty();
@@ -33,7 +32,7 @@ public class UniGraphStartStep<S,E extends Element> extends GraphStep<S,E> imple
     private int limit;
     private List<Pair<String, Order>> orders;
 
-    public UniGraphStartStep(GraphStep<S, E> originalStep, ControllerManager controllerManager) {
+    public UniGraphStep(GraphStep<S, E> originalStep, ControllerManager controllerManager) {
         super(originalStep.getTraversal(), originalStep.getReturnClass(), originalStep.isStartStep(), originalStep.getIds());
         originalStep.getLabels().forEach(this::addLabel);
         this.predicates = UniGraph.createIdPredicate(originalStep.getIds(), originalStep.getReturnClass());
