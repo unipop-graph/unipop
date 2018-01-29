@@ -6,7 +6,6 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
-import org.unipop.structure.UniVertex;
 
 import java.util.*;
 import java.util.stream.Collectors;

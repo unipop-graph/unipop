@@ -5,16 +5,15 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.SampleGlobalStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.GroupStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.ProjectStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.SampleLocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.unipop.process.UniQueryStep;
 import org.unipop.process.edge.EdgeStepsStrategy;
+import org.unipop.process.graph.UniGraphStepStrategy;
 import org.unipop.process.properties.UniGraphPropertiesStrategy;
 import org.unipop.process.reduce.UniGraphReduceStrategy;
-import org.unipop.process.start.UniGraphStartStepStrategy;
 import org.unipop.process.vertex.UniGraphVertexStep;
 import org.unipop.query.aggregation.LocalQuery;
 import org.unipop.query.search.SearchVertexQuery;
@@ -30,7 +29,7 @@ import java.util.stream.Collectors;
 public class UniGraphLocalStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy {
     @Override
     public Set<Class<? extends ProviderOptimizationStrategy>> applyPrior() {
-        return Sets.newHashSet(UniGraphStartStepStrategy.class, UniGraphPropertiesStrategy.class, UniGraphReduceStrategy.class, EdgeStepsStrategy.class);
+        return Sets.newHashSet(UniGraphStepStrategy.class, UniGraphPropertiesStrategy.class, UniGraphReduceStrategy.class, EdgeStepsStrategy.class);
     }
 
     @Override

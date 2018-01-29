@@ -21,8 +21,8 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.unipop.process.edge.EdgeStepsStrategy;
 import org.unipop.process.properties.PropertyFetcher;
 import org.unipop.process.properties.UniGraphPropertiesStrategy;
-import org.unipop.process.start.UniGraphStartStep;
-import org.unipop.process.start.UniGraphStartStepStrategy;
+import org.unipop.process.graph.UniGraphStep;
+import org.unipop.process.graph.UniGraphStepStrategy;
 import org.unipop.process.vertex.UniGraphVertexStep;
 import org.unipop.query.aggregation.ReduceQuery;
 import org.unipop.query.aggregation.ReduceVertexQuery;
@@ -162,11 +162,11 @@ public class UniGraphReduceStrategy extends AbstractTraversalStrategy<TraversalS
     }
 
     private void setUpReduceStep(ReducingBarrierStep reduceStep, ReduceQuery.ReduceOperator op, String reduceOn, Traversal.Admin traversal) {
-        Collection<UniGraphStartStep> graphStepStepOf = getGraphStepStepOf(reduceStep, traversal);
+        Collection<UniGraphStep> graphStepStepOf = getGraphStepStepOf(reduceStep, traversal);
         if (graphStepStepOf != null && graphStepStepOf.size() == 1) {
-            UniGraphStartStep<?, ?> uniGraphStartStep = graphStepStepOf.iterator().next();
-            if (uniGraphStartStep.returnsEdge()){
-                Step next = uniGraphStartStep.getNextStep();
+            UniGraphStep<?, ?> UniGraphStep = graphStepStepOf.iterator().next();
+            if (UniGraphStep.returnsEdge()){
+                Step next = UniGraphStep.getNextStep();
                 while(next != reduceStep){
                     if (next instanceof PropertyFetcher)
                         return;
@@ -174,7 +174,7 @@ public class UniGraphReduceStrategy extends AbstractTraversalStrategy<TraversalS
                 }
             }
             DefaultTraversal reduceTraversal = new DefaultTraversal<>();
-            TraversalHelper.removeToTraversal(uniGraphStartStep, reduceStep, reduceTraversal);
+            TraversalHelper.removeToTraversal(UniGraphStep, reduceStep, reduceTraversal);
             UniGraph uniGraph = (UniGraph) traversal.getGraph().get();
             List<ReduceQuery.ReduceController> reduceControllers = uniGraph.getControllerManager()
                     .getControllers(ReduceQuery.ReduceController.class);
@@ -182,19 +182,19 @@ public class UniGraphReduceStrategy extends AbstractTraversalStrategy<TraversalS
 
             traversal.removeStep(TraversalHelper.stepIndex(reduceStep, traversal));
 
-            uniGraphStartStep.setControllers(uniGraph.getControllerManager()
+            UniGraphStep.setControllers(uniGraph.getControllerManager()
                     .getControllers(SearchQuery.SearchController.class)
                     .stream().filter(controller -> !reduceControllers.contains(controller))
                     .collect(Collectors.toList()));
 
-            UniGraphReduceStep uniGraphReduceStep = new UniGraphReduceStep(uniGraphStartStep.getPredicates(), uniGraphStartStep.getKeys(), reduceOn, uniGraphStartStep.getLimit(), reduceControllers, uniGraphStartStep.getReturnClass(), reduceStep.getBiOperator(), reduceStep.getSeedSupplier(), op, reduceTraversal, traversal, uniGraph);
+            UniGraphReduceStep uniGraphReduceStep = new UniGraphReduceStep(UniGraphStep.getPredicates(), UniGraphStep.getKeys(), reduceOn, UniGraphStep.getLimit(), reduceControllers, UniGraphStep.getReturnClass(), reduceStep.getBiOperator(), reduceStep.getSeedSupplier(), op, reduceTraversal, traversal, uniGraph);
             traversal.addStep(0, uniGraphReduceStep);
         }
     }
 
     @Override
     public Set<Class<? extends ProviderOptimizationStrategy>> applyPrior() {
-        return Sets.newHashSet(UniGraphStartStepStrategy.class, UniGraphPropertiesStrategy.class, EdgeStepsStrategy.class);
+        return Sets.newHashSet(UniGraphStepStrategy.class, UniGraphPropertiesStrategy.class, EdgeStepsStrategy.class);
     }
 
     private Collection<UniGraphVertexStep> getVertexStepStepOf(Step step, Traversal.Admin<?, ?> traversal) {
@@ -230,29 +230,29 @@ public class UniGraphReduceStrategy extends AbstractTraversalStrategy<TraversalS
         return Collections.singleton((UniGraphVertexStep) previous);
     }
 
-    private Collection<UniGraphStartStep> getGraphStepStepOf(Step step, Traversal.Admin<?, ?> traversal) {
+    private Collection<UniGraphStep> getGraphStepStepOf(Step step, Traversal.Admin<?, ?> traversal) {
         Step previous = step.getPreviousStep();
-        while (!(previous instanceof UniGraphStartStep)) {
+        while (!(previous instanceof UniGraphStep)) {
             if (previous instanceof DedupGlobalStep || previous instanceof OrderGlobalStep)
                 previous = previous.getPreviousStep();
             else if (previous instanceof EmptyStep) {
                 TraversalParent parent = traversal.getParent();
-                List<UniGraphStartStep> propertyFetchers = parent.getLocalChildren().stream()
-                        .flatMap(child -> TraversalHelper.getStepsOfAssignableClassRecursively(UniGraphStartStep.class, child)
+                List<UniGraphStep> propertyFetchers = parent.getLocalChildren().stream()
+                        .flatMap(child -> TraversalHelper.getStepsOfAssignableClassRecursively(UniGraphStep.class, child)
                                 .stream()).collect(Collectors.toList());
                 if (propertyFetchers.size() > 0)
                     previous = propertyFetchers.get(propertyFetchers.size() - 1);
                 else
                     return null;
             } else if (previous instanceof TraversalParent) {
-                List<UniGraphStartStep> uniGraphStartSteps = Stream.concat(
+                List<UniGraphStep> UniGraphSteps = Stream.concat(
                         ((TraversalParent) previous).getLocalChildren().stream(),
                         ((TraversalParent) previous).getGlobalChildren().stream())
                         .flatMap(child ->
-                                TraversalHelper.getStepsOfAssignableClassRecursively(UniGraphStartStep.class, child)
+                                TraversalHelper.getStepsOfAssignableClassRecursively(UniGraphStep.class, child)
                                         .stream()).collect(Collectors.toList());
-                if (uniGraphStartSteps.size() > 0)
-                    return uniGraphStartSteps;
+                if (UniGraphSteps.size() > 0)
+                    return UniGraphSteps;
                 else
                     return null;
             } else if (previous instanceof WhereTraversalStep.WhereStartStep)
@@ -260,7 +260,7 @@ public class UniGraphReduceStrategy extends AbstractTraversalStrategy<TraversalS
             else
                 previous = previous.getPreviousStep();
         }
-        return Collections.singleton((UniGraphStartStep) previous);
+        return Collections.singleton((UniGraphStep) previous);
     }
 
     private Collection<PropertiesStep> getPropertiesStepStepOf(Step step, Traversal.Admin<?, ?> traversal) {

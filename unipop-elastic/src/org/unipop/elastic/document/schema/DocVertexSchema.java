@@ -1,18 +1,15 @@
 package org.unipop.elastic.document.schema;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.shaded.jackson.databind.JsonNode;
 import org.apache.tinkerpop.shaded.jackson.databind.node.ArrayNode;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AbstractAggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.javatuples.Pair;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -20,26 +17,18 @@ import org.unipop.elastic.common.ElasticClient;
 import org.unipop.elastic.document.DocumentVertexSchema;
 import org.unipop.elastic.document.schema.nested.NestedEdgeSchema;
 import org.unipop.elastic.document.schema.property.IndexPropertySchema;
-import org.unipop.elastic.document.schema.property.IndexPropertySchema;
 import org.unipop.query.UniQuery;
-import org.unipop.query.VertexQuery;
-import org.unipop.query.aggregation.LocalQuery;
-import org.unipop.query.aggregation.ReduceQuery;
-import org.unipop.query.aggregation.ReduceVertexQuery;
 import org.unipop.query.predicates.PredicateQuery;
 import org.unipop.query.predicates.PredicatesHolder;
-import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.schema.element.EdgeSchema;
 import org.unipop.schema.element.ElementSchema;
-import org.unipop.schema.property.AbstractPropertyContainer;
 import org.unipop.structure.UniGraph;
 import org.unipop.structure.UniVertex;
 import org.unipop.util.ConversionUtils;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.unipop.util.ConversionUtils.getList;
@@ -86,8 +75,8 @@ public class DocVertexSchema extends AbstractDocSchema<Vertex> implements Docume
         PredicatesHolder vertexPredicates = this.toPredicates(((PredicateQuery) query).getPredicates());
         QueryBuilder vertexQuery = createQueryBuilder(vertexPredicates);
         if (builder == null)
-            return AggregationBuilders.filter("filter").filter(vertexQuery);
-        return AggregationBuilders.filter("filter").filter(vertexQuery).subAggregation(builder);
+            return AggregationBuilders.filter("filter", vertexQuery);
+        return AggregationBuilders.filter("filter", vertexQuery).subAggregation(builder);
     }
 
     protected AggregationBuilder createTerms(String name, AggregationBuilder subs, Iterator<String> fields) {
@@ -101,7 +90,7 @@ public class DocVertexSchema extends AbstractDocSchema<Vertex> implements Docume
             while (fields.hasNext()) {
                 next = fields.next();
                 if (next.equals("_id")) next = "_uid";
-                TermsBuilder field = AggregationBuilders.terms(name + "_id_").field(next);
+                TermsAggregationBuilder field = AggregationBuilders.terms(name + "_id_").field(next);
                 sub.subAggregation(field);
                 sub = field;
             }

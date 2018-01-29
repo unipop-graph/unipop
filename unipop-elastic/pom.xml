@@ -1,18 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <artifactId>unipop</artifactId>
         <groupId>com.github.unipop-graph</groupId>
-        <version>0.3</version>
+        <version>0.2.2-SNAPSHOT</version>
     </parent>
     <artifactId>unipop-elastic</artifactId>
     <name>Unipop :: Elasticsearch Controllers</name>
     <properties>
-        <elasticsearch.version>2.1.1</elasticsearch.version>
+        <elasticsearch.version>5.3.1</elasticsearch.version>
     </properties>
     <dependencies>
+        <dependency>
+            <groupId>pl.allegro.tech</groupId>
+            <artifactId>embedded-elasticsearch</artifactId>
+            <version>2.1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.elasticsearch.client</groupId>
+            <artifactId>transport</artifactId>
+            <version>${elasticsearch.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>2.9.1</version>
+        </dependency>
+        <dependency><!-- required by elasticsearch -->
+            <groupId>org.elasticsearch.plugin</groupId>
+            <artifactId>transport-netty4-client</artifactId>
+            <version>5.3.1</version>
+        </dependency>
         <dependency>
             <groupId>com.esotericsoftware.yamlbeans</groupId>
             <artifactId>yamlbeans</artifactId>
@@ -30,7 +49,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>unipop</groupId>
+            <groupId>com.github.unipop-graph</groupId>
             <artifactId>unipop-core</artifactId>
             <version>${project.version}</version>
             <exclusions>
@@ -48,7 +67,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
         <dependency>
             <groupId>io.searchbox</groupId>
             <artifactId>jest</artifactId>
-            <version>2.0.4</version>
+            <version>5.3.3</version>
         </dependency>
         <dependency>
             <groupId>org.json</groupId>
@@ -116,7 +135,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
                                 <environmentVariables>
                                     <conf>nestededge</conf>
                                 </environmentVariables>
-                                <skip>false</skip>
+                                <skip>true</skip>
                                 <reportNameSuffix>NESTEDEDGE</reportNameSuffix>
                             </configuration>
                         </execution>

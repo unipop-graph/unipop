@@ -4,7 +4,7 @@
     <parent>
         <artifactId>unipop</artifactId>
         <groupId>com.github.unipop-graph</groupId>
-        <version>0.3</version>
+        <version>0.2.2-SNAPSHOT</version>
     </parent>
     <artifactId>unipop-jdbc</artifactId>
     <name>Unipop :: JDBC Controllers</name>
@@ -13,7 +13,12 @@
     </properties>
     <dependencies>
         <dependency>
-            <groupId>unipop</groupId>
+            <groupId>commons-dbcp</groupId>
+            <artifactId>commons-dbcp</artifactId>
+            <version>1.4</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.unipop-graph</groupId>
             <artifactId>unipop-core</artifactId>
             <version>${project.version}</version>
         </dependency>

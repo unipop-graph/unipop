@@ -1,8 +1,9 @@
 package org.unipop.jdbc.schemas.jdbc;
 
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.jooq.*;
-import org.unipop.jdbc.utils.ContextManager;
+import org.jooq.Field;
+import org.jooq.Query;
+import org.jooq.Select;
 import org.unipop.query.predicates.PredicateQuery;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.search.SearchQuery;
@@ -19,22 +20,24 @@ import java.util.stream.Collectors;
  */
 public interface JdbcSchema<E extends Element> extends ElementSchema<E> {
 
+
+
+    // TODO: add javaDoc
+    Select createSelect(SearchQuery<E> query, PredicatesHolder predicatesHolder, Field... fields);
     /**
      * Converts a SearchQuery to a select statement
      * @param query A search query
      * @param predicates A predicates holder
+     * @param fields TODO: add javaDoc
      * @return A select statement
      */
-    Select getSearch(SearchQuery<E> query, PredicatesHolder predicates);
-
+    Select getSearch(SearchQuery<E> query, PredicatesHolder predicates, Field... fields);
     /**
      * Returns a list of elements
      * @param result The query results
      * @param query The UniQuery
      * @return A list of elements
      */
-    Select createSelect(SearchQuery<E> query, PredicatesHolder predicatesHolder, Field... fields);
-    Select getSearch(SearchQuery<E> query, PredicatesHolder predicates, Field... fields);
     List<E> parseResults(List<Map<String, Object>> result, PredicateQuery query);
 
     /**

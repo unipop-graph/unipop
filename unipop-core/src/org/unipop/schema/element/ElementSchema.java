@@ -3,9 +3,11 @@ package org.unipop.schema.element;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.schema.property.PropertySchema;
-import org.unipop.structure.UniGraph;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * A schema representing an element
@@ -46,6 +48,12 @@ public interface ElementSchema<E extends Element> {
      * @return Field name
      */
     String getFieldByPropertyKey(String key);
+
+    /**
+     * TODO: add java doc
+     * @param key
+     * @return
+     */
     PropertySchema getPropertySchema(String key);
 
     /**

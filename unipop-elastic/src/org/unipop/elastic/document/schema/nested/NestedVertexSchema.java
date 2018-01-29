@@ -2,26 +2,17 @@ package org.unipop.elastic.document.schema.nested;
 
 import io.searchbox.action.BulkableAction;
 import io.searchbox.core.DocumentResult;
-import io.searchbox.core.Search;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.MeanGlobalStep;
+import org.apache.lucene.search.join.ScoreMode;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
-import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.support.QueryInnerHitBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.bucket.nested.NestedBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.javatuples.Pair;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.unipop.elastic.common.ElasticClient;
 import org.unipop.elastic.document.DocumentVertexSchema;
 import org.unipop.elastic.document.schema.AbstractDocSchema;
 import org.unipop.elastic.document.schema.property.IndexPropertySchema;
-import org.unipop.query.aggregation.LocalQuery;
-import org.unipop.query.aggregation.ReduceQuery;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.structure.UniElement;
@@ -100,7 +91,7 @@ public class NestedVertexSchema extends AbstractDocSchema<Vertex> implements Doc
     public QueryBuilder createQueryBuilder(PredicatesHolder predicatesHolder) {
         QueryBuilder queryBuilder = super.createQueryBuilder(predicatesHolder);
         if (queryBuilder == null) return null;
-        return QueryBuilders.nestedQuery(this.path, queryBuilder);
+        return QueryBuilders.nestedQuery(this.path, queryBuilder, ScoreMode.None);
     }
 
     @Override

@@ -101,7 +101,9 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
         if (searchBuilder == null) return null;
 
         Search.Builder builder = new Search.Builder(searchBuilder.toString().replace("\n", ""))
-                .addIndex(index.getIndex(query.getPredicates())).ignoreUnavailable(true).allowNoIndices(true);
+                .ignoreUnavailable(true).allowNoIndices(true);
+
+        index.getIndex(query.getPredicates()).forEach(builder::addIndex);
         return builder.build();
     }
 

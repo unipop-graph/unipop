@@ -9,16 +9,14 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.aggregations.AbstractAggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.javatuples.Pair;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.unipop.elastic.common.ElasticClient;
-import org.unipop.elastic.document.schema.property.IndexPropertySchema;
 import org.unipop.query.UniQuery;
 import org.unipop.query.VertexQuery;
 import org.unipop.query.aggregation.LocalQuery;
-import org.unipop.query.predicates.PredicateQuery;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.SearchVertexQuery;
@@ -144,7 +142,7 @@ public class DocEdgeSchema extends AbstractDocEdgeSchema {
             while (fields.hasNext()) {
                 next = fields.next();
                 if (next.equals("_id")) next = "_uid";
-                TermsBuilder field = AggregationBuilders.terms(name + "_id_").executionHint("map").field(next);
+                TermsAggregationBuilder field = AggregationBuilders.terms(name + "_id_").executionHint("map").field(next);
                 sub.subAggregation(field);
                 sub = field;
             }

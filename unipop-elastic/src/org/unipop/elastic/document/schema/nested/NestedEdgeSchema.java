@@ -5,34 +5,28 @@ import com.google.common.collect.Sets;
 import io.searchbox.action.BulkableAction;
 import io.searchbox.core.DocumentResult;
 import io.searchbox.core.Update;
-import org.apache.commons.lang.NotImplementedException;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.shaded.jackson.core.JsonProcessingException;
-import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AbstractAggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.javatuples.Pair;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.unipop.elastic.common.ElasticClient;
 import org.unipop.elastic.document.Document;
-import org.unipop.elastic.document.DocumentEdgeSchema;
 import org.unipop.elastic.document.schema.AbstractDocEdgeSchema;
-import org.unipop.elastic.document.schema.AbstractDocSchema;
 import org.unipop.elastic.document.schema.DocVertexSchema;
 import org.unipop.elastic.document.schema.property.IndexPropertySchema;
 import org.unipop.query.UniQuery;
 import org.unipop.query.VertexQuery;
-import org.unipop.query.aggregation.AggregateVertexQuery;
 import org.unipop.query.aggregation.LocalQuery;
-import org.unipop.query.aggregation.ReduceVertexQuery;
 import org.unipop.query.predicates.PredicateQuery;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
@@ -164,15 +158,15 @@ public class NestedEdgeSchema extends AbstractDocEdgeSchema {
 
 
     @Override
-    protected AggregationBuilder getSubAggregation(UniQuery query, AbstractAggregationBuilder builder, Direction direction) {
+    protected AbstractAggregationBuilder<FilterAggregationBuilder> getSubAggregation(UniQuery query, AbstractAggregationBuilder builder, Direction direction) {
         VertexQuery searchQuery = (VertexQuery) query;
         PredicatesHolder edgePredicates = super.toPredicates(((PredicateQuery) searchQuery).getPredicates());
         PredicatesHolder VertexPredicates = this.getVertexPredicates(searchQuery.getVertices(), direction);
         QueryBuilder vertexQuery = createQueryBuilder(PredicatesHolderFactory.and(edgePredicates, VertexPredicates));
         if (builder == null)
-            return AggregationBuilders.filter("filter").filter(vertexQuery)
+            return AggregationBuilders.filter("filter",vertexQuery)
                     .subAggregation(AggregationBuilders.reverseNested("reverse"));
-        return AggregationBuilders.filter("filter").filter(vertexQuery)
+        return AggregationBuilders.filter("filter", vertexQuery)
                 .subAggregation(AggregationBuilders.reverseNested("reverse")
                         .subAggregation(builder));
     }
@@ -232,8 +226,8 @@ public class NestedEdgeSchema extends AbstractDocEdgeSchema {
         String next = fields.next();
         if (next.equals("_id")) next = "_uid";
         else next = path + "." + next;
-        AggregationBuilder agg = AggregationBuilders.nested(name).path(path);
-        AggregationBuilder filter = AggregationBuilders.filter("filter").filter(vertexQuery);
+        AggregationBuilder agg = AggregationBuilders.nested(name, path);
+        AggregationBuilder filter = AggregationBuilders.filter("filter", vertexQuery);
         AggregationBuilder sub = AggregationBuilders.terms(name + "_id").executionHint("map").field(next);
         filter.subAggregation(sub);
         agg.subAggregation(sub);
@@ -242,7 +236,7 @@ public class NestedEdgeSchema extends AbstractDocEdgeSchema {
             next = fields.next();
             if (next.equals("_id")) next = "_uid";
             else next = path + "." + next;
-            TermsBuilder field = AggregationBuilders.terms(name + "_id").executionHint("map").field(next);
+            TermsAggregationBuilder field = AggregationBuilders.terms(name + "_id").executionHint("map").field(next);
             sub.subAggregation(field);
             sub = field;
         }

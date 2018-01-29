@@ -6,21 +6,20 @@
     <parent>
         <artifactId>unipop</artifactId>
         <groupId>com.github.unipop-graph</groupId>
-        <version>0.3</version>
+        <version>0.2.2-SNAPSHOT</version>
     </parent>
     <artifactId>unipop-rest</artifactId>
-    <version>0.3</version>
     <name>Unipop :: Rest Controllers</name>
     <dependencies>
         <dependency>
-            <groupId>unipop</groupId>
+            <groupId>com.github.unipop-graph</groupId>
             <artifactId>unipop-core</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.elasticsearch</groupId>
             <artifactId>elasticsearch</artifactId>
-            <version>2.1.1</version>
+            <version>5.3.1</version>
         </dependency>
         <dependency>
             <groupId>com.mashape.unirest</groupId>
@@ -33,9 +32,9 @@
             <version>1.13</version>
         </dependency>
         <dependency>
-            <groupId>unipop</groupId>
+            <groupId>com.github.unipop-graph</groupId>
             <artifactId>unipop-elastic</artifactId>
-            <version>0.3</version>
+            <version>0.2.2-SNAPSHOT</version>
         </dependency>
     </dependencies>
     <build>

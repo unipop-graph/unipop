@@ -5,7 +5,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
     <parent>
         <artifactId>unipop</artifactId>
         <groupId>com.github.unipop-graph</groupId>
-        <version>0.3</version>
+        <version>0.2.2-SNAPSHOT</version>
     </parent>
     <artifactId>unipop-test</artifactId>
     <name>Unipop :: Integration tests</name>
@@ -16,7 +16,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
             <version>4.12</version>
         </dependency>
         <dependency>
-            <groupId>unipop</groupId>
+            <groupId>com.github.unipop-graph</groupId>
             <artifactId>unipop-elastic</artifactId>
             <version>${project.version}</version>
             <exclusions>
@@ -28,7 +28,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>unipop</groupId>
+            <groupId>com.github.unipop-graph</groupId>
             <artifactId>unipop-jdbc</artifactId>
             <version>${project.version}</version>
         </dependency>

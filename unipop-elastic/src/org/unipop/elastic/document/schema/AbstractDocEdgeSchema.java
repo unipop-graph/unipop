@@ -1,8 +1,6 @@
 package org.unipop.elastic.document.schema;
 
-import io.searchbox.core.Search;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.shaded.jackson.databind.JsonNode;
 import org.apache.tinkerpop.shaded.jackson.databind.node.ArrayNode;
@@ -10,8 +8,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.aggregations.AbstractAggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.metrics.tophits.TopHitsBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.aggregations.metrics.tophits.TopHitsAggregationBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
@@ -32,7 +29,6 @@ import org.unipop.structure.UniGraph;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Created by sbarzilay on 9/14/16.
@@ -72,10 +68,10 @@ public abstract class AbstractDocEdgeSchema extends AbstractDocSchema<Edge> impl
         Iterator<String> fields;
         List<AggregationBuilder> aggs = new ArrayList<>();
         List<Pair<String, Order>> orders = searchQuery.getOrders();
-        TopHitsBuilder hits = AggregationBuilders.topHits("hits").setSize(searchQuery.getLimit());
+        TopHitsAggregationBuilder hits = AggregationBuilders.topHits("hits").size(searchQuery.getLimit());
         if (searchQuery.getPropertyKeys() != null){
             Set<String> toFields = toFields(searchQuery.getPropertyKeys());
-            hits.setFetchSource(toFields.toArray(new String[toFields.size()]), new String[0]);
+            hits.fetchSource(toFields.toArray(new String[toFields.size()]), new String[0]);
         }
         if (orders != null && orders.size() > 0){
             orders.forEach(order -> {

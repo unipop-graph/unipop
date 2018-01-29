@@ -7,9 +7,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.ConnectiveP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.OrP;
-import org.elasticsearch.common.geo.builders.ShapeBuilder;
-import org.elasticsearch.common.xcontent.XContentParser;
-import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.index.query.*;
 import org.unipop.process.predicate.ExistsP;
 import org.unipop.process.predicate.Text;
@@ -122,7 +119,7 @@ public class FilterHelper {
     private static QueryBuilder predicateToQuery(String key, Object value, BiPredicate<?, ?> biPredicate) {
         if (biPredicate instanceof Compare) return getCompareFilter(key, value, biPredicate.toString());
         else if (biPredicate instanceof Contains) return getContainsFilter(key, value, biPredicate);
-        else if (biPredicate instanceof Geo) return getGeoFilter(key, value, (Geo) biPredicate);
+//        else if (biPredicate instanceof Geo) return getGeoFilter(key, value, (Geo) biPredicate);
         else if (biPredicate instanceof Text.TextPredicate)
             return getTextFilter(key, value, (Text.TextPredicate) biPredicate);
         else throw new IllegalArgumentException("predicate not supported by unipop: " + biPredicate.toString());
@@ -216,16 +213,16 @@ public class FilterHelper {
         } else throw new IllegalArgumentException("predicate not supported by unipop: " + biPredicate.toString());
     }
 
-    private static QueryBuilder getGeoFilter(String key, Object value, Geo biPredicate) {
-        try {
-            String geoJson = value.toString();
-            XContentParser parser = JsonXContent.jsonXContent.createParser(geoJson);
-            parser.nextToken();
-
-            ShapeBuilder shape = ShapeBuilder.parse(parser);
-            return new GeoShapeQueryBuilder(key, shape, biPredicate.getRelation());
-        } catch (Exception e) {
-            return null;
-        }
-    }
+//    private static QueryBuilder getGeoFilter(String key, Object value, Geo biPredicate) {
+//        try {
+//            String geoJson = value.toString();
+//            XContentParser parser = JsonXContent.jsonXContent.createParser(geoJson);
+//            parser.nextToken();
+//
+//            ShapeBuilder shape = ShapeBuilder.parse(parser);
+//            return new GeoShapeQueryBuilder(key, shape, biPredicate.getRelation());
+//        } catch (Exception e) {
+//            return null;
+//        }
+//    }
 }
