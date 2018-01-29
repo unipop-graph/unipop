@@ -30,9 +30,12 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
         Map<String, Object> baseConfiguration = super.getBaseConfiguration(graphName, test, testMethodName, loadGraphWith);
         String configurationFile = getSchemaConfiguration(loadGraphWith);
         URL url = this.getClass().getResource(configurationFile);
-        baseConfiguration.put("providers", new String[]{url.getFile()});
+        String file = url.getFile();
+        if (System.getProperty("os.name").toLowerCase().contains("windows"))
+            file = file.substring(1);
+        baseConfiguration.put("providers", new String[]{file});
         baseConfiguration.put("bulk.max", 1000);
-        baseConfiguration.put("bulk.start", 10);
+        baseConfiguration.put("bulk.graph", 10);
         baseConfiguration.put("bulk.multiplier", 10);
 
         return baseConfiguration;

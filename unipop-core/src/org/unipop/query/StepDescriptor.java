@@ -3,9 +3,7 @@ package org.unipop.query;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
-import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.unipop.process.start.UniGraphStartStep;
 
 import java.util.Optional;
 import java.util.Set;

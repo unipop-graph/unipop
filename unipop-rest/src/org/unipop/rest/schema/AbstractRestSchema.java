@@ -178,7 +178,18 @@ public abstract class AbstractRestSchema<E extends Element> extends AbstractElem
     @Override
     public BaseRequest delete(E element) {
         if(templateHolder.isDelete()) {
-            return templateHolder.getDelete().execute(baseUrl, element, element);
+            Map<String, Object> fields = toFields(element);
+            if (fields == null) throw new NoSuchElementException();
+            Map<String, Object> stringObjectMap = fields
+                    .entrySet().stream()
+                    .map(entry -> {
+                        String[] split = entry.getKey().split("\\.");
+                        return new HashMap.SimpleEntry<>(split[split.length - 1], entry.getValue());
+                    }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            Map<String, Object> urlMap = new HashMap<>();
+            urlMap.putAll(stringObjectMap);
+            urlMap.put("resource", this.resource);
+            return templateHolder.getDelete().execute(baseUrl, urlMap, element);
         }
         return null;
     }

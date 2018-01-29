@@ -6,19 +6,14 @@ import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.UnionStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.GroupStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectOneStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.unipop.process.edge.EdgeStepsStrategy;
-import org.unipop.process.predicate.PredicatesUtil;
 import org.unipop.process.properties.UniGraphPropertiesStrategy;
 import org.unipop.process.repeat.UniGraphRepeatStepStrategy;
-import org.unipop.process.start.UniGraphStartStepStrategy;
-import org.unipop.process.vertex.UniGraphVertexStep;
+import org.unipop.process.graph.UniGraphStepStrategy;
 import org.unipop.process.vertex.UniGraphVertexStepStrategy;
 import org.unipop.structure.UniGraph;
 
@@ -30,7 +25,7 @@ import java.util.Set;
 public class UniGraphUnionStepStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy {
     @Override
     public Set<Class<? extends ProviderOptimizationStrategy>> applyPrior() {
-        return Sets.newHashSet(UniGraphStartStepStrategy.class, UniGraphVertexStepStrategy.class, UniGraphRepeatStepStrategy.class, EdgeStepsStrategy.class, UniGraphPropertiesStrategy.class);
+        return Sets.newHashSet(UniGraphStepStrategy.class, UniGraphVertexStepStrategy.class, UniGraphRepeatStepStrategy.class, EdgeStepsStrategy.class, UniGraphPropertiesStrategy.class);
     }
 
     @Override

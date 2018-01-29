@@ -1,0 +1,35 @@
+{
+  "class": "org.unipop.elastic.ElasticSourceProvider",
+  "clusterName": "unipop",
+  "addresses": "http://localhost:9200",
+  "edges": [
+    {
+      "index": "edge",
+      "id": "@_id",
+      "label": "@_type",
+      "properties": {
+        "gremlin.partitionGraphStrategy.partition": "@partition"
+      },
+      "dynamicProperties": {
+        "excludeFields": [
+          "outId",
+          "inId",
+          "outLabel",
+          "inLabel"
+        ]
+      },
+      "outVertex": {
+        "ref": true,
+        "id": "@outId",
+        "label": "@outLabel",
+        "properties": {}
+      },
+      "inVertex": {
+        "ref": true,
+        "id": "@inId",
+        "label": "@inLabel",
+        "properties": {}
+      }
+    }
+  ]
+}

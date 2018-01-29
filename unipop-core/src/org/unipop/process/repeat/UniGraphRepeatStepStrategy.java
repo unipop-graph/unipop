@@ -6,10 +6,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.UnionStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
-import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.ConnectiveStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.unipop.process.start.UniGraphStartStepStrategy;
+import org.unipop.process.graph.UniGraphStepStrategy;
 import org.unipop.process.vertex.UniGraphVertexStepStrategy;
 import org.unipop.structure.UniGraph;
 
@@ -23,7 +22,7 @@ public class UniGraphRepeatStepStrategy extends AbstractTraversalStrategy<Traver
     @Override
     public Set<Class<? extends ProviderOptimizationStrategy>> applyPrior() {
         Set<Class<? extends TraversalStrategy.ProviderOptimizationStrategy>> priorStrategies = new HashSet<>();
-        priorStrategies.add(UniGraphStartStepStrategy.class);
+        priorStrategies.add(UniGraphStepStrategy.class);
         priorStrategies.add(UniGraphVertexStepStrategy.class);
         return priorStrategies;
     }

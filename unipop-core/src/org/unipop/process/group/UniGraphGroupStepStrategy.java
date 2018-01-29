@@ -15,7 +15,7 @@
 //import org.unipop.process.group.traversal.SemanticKeyTraversal;
 //import org.unipop.process.group.traversal.SemanticReducerTraversal;
 //import org.unipop.process.group.traversal.SemanticValuesTraversal;
-//import org.unipop.process.start.UniGraphStartStep;
+//import org.unipop.process.graph.UniGraphStep;
 //import org.unipop.process.vertex.UniGraphVertexStep;
 //import org.unipop.structure.UniGraph;
 //
@@ -61,8 +61,8 @@
 //                        elasticVertexStep.getEdgeLabels(),
 //                        Optional.of(elasticVertexStep.getDirection()), elasticGraph.getControllerManager());
 //
-//            } else if (UniGraphStartStep.class.isAssignableFrom(step.getPreviousStep().getClass())) {
-//                UniGraphStartStep elasticGraphStep = (UniGraphStartStep) step.getPreviousStep();
+//            } else if (UniGraphStep.class.isAssignableFrom(step.getPreviousStep().getClass())) {
+//                UniGraphStep elasticGraphStep = (UniGraphStep) step.getPreviousStep();
 //                elasticGroupStep = new UniGraphGroupStep(
 //                        traversal,
 //                        elasticGraphStep.getReturnClass(),

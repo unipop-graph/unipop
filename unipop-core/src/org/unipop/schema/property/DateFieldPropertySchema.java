@@ -70,27 +70,27 @@ public class DateFieldPropertySchema extends FieldPropertySchema implements Date
         Map<String, Date> datePredicates = new HashMap<>();
         predicates.flatMap(p -> p.getPredicates().stream())
                 .forEach(has -> {
-            String biPredicate = has.getBiPredicate().toString();
-            Object value = has.getValue();
-            switch (biPredicate) {
-                case "eq":
-                    datePredicates.put("eq", fromDisplay(value.toString()));
-                    break;
-                case "gt":
-                    datePredicates.put("gt", fromDisplay(value.toString()));
-                case "gte":
-                    datePredicates.put("gte", fromDisplay(value.toString()));
-                    break;
-                case "lt":
-                    datePredicates.put("lt", fromDisplay(value.toString()));
-                    break;
-                case "lte":
-                    datePredicates.put("lte", fromDisplay(value.toString()));
-                    break;
-                default:
-                    throw new IllegalArgumentException("cant get value");
-            }
-        });
+                    String biPredicate = has.getBiPredicate().toString();
+                    Object value = has.getValue();
+                    switch (biPredicate) {
+                        case "eq":
+                            datePredicates.put("eq", fromDisplay(value.toString()));
+                            break;
+                        case "gt":
+                            datePredicates.put("gt", fromDisplay(value.toString()));
+                        case "gte":
+                            datePredicates.put("gte", fromDisplay(value.toString()));
+                            break;
+                        case "lt":
+                            datePredicates.put("lt", fromDisplay(value.toString()));
+                            break;
+                        case "lte":
+                            datePredicates.put("lte", fromDisplay(value.toString()));
+                            break;
+                        default:
+                            throw new IllegalArgumentException("cant get value");
+                    }
+                });
         if (datePredicates.size() == 0) return Collections.emptySet();
         if (datePredicates.containsKey("eq")) return Collections.singleton(toSource(datePredicates.get("eq")));
         else if ((datePredicates.containsKey("gt") || datePredicates.containsKey("gte"))

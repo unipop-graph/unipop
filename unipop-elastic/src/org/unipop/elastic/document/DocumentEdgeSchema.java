@@ -14,11 +14,20 @@ import org.unipop.schema.element.VertexSchema;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * A schema that represents an edge as a document in ES
+ */
 public interface DocumentEdgeSchema extends DocumentSchema<Edge>, EdgeSchema {
     List<AggregationBuilder> getLocal(LocalQuery query);
     Collection<Pair<String, Element>> parseLocal(String result, LocalQuery query);
     VertexSchema getOutVertexSchema();
     VertexSchema getInVertexSchema();
 
+
+    /**
+     * Converts a Search vertex query to a query builder
+     * @param query The search vertex query
+     * @return A query builder
+     */
     QueryBuilder getSearch(SearchVertexQuery query);
 }

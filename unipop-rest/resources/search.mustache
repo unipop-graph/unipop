@@ -1,12 +1,12 @@
 {
 	{{#limit}}
 	"size":{{.}},
+    "query":{
 	{{/limit}}
 	{{^predicates}}
-	"query":{"match_all":{}}
+	"match_all":{}
 	{{/predicates}}
 	{{#predicates}}
-	"query":{
 		"bool":{
 			"must":[
 			{{#and}}
@@ -96,7 +96,7 @@
                 {{/predicates}}
 			{{/or}}
 			]
-		}
 	}
 	{{/predicates}}
+    {{#limit}} } {{/limit}}
 }

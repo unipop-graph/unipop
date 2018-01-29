@@ -9,5 +9,7 @@ addons:
   apt:
     packages:
       - oracle-java8-installer
+install:
+  - mvn package -DskipTests=true -Dmaven.javadoc.skip=true -B -V
 script: 
-- "mvn clean install -Dci"
+- "mvn test"

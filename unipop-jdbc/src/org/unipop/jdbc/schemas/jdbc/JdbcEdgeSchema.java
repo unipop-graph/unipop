@@ -18,10 +18,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author Gur Ronen
- * @since 3/7/2016
+ * A schema that represents an edge as a JDBC row
  */
 public interface JdbcEdgeSchema extends JdbcSchema<Edge>, EdgeSchema {
+
+    /**
+     * Converts a list of vertices to a predicates holder
+     * @param vertices The vertices
+     * @param direction The direction of the query
+     * @param predicates The predicates of the query
+     * @return A predicates holder
+     */
     PredicatesHolder toPredicates(List<Vertex> vertices, Direction direction, PredicatesHolder predicates);
     Select getLocal(LocalQuery query);
     Collection<Pair<String, Element>> parseLocal(List<Map<String, Object>> result, LocalQuery query);

@@ -7,10 +7,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
-import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -140,25 +138,25 @@ public class DocumentController implements SimpleController, LocalQuery.LocalCon
     @Override
     public Edge addEdge(AddEdgeQuery uniQuery) {
         UniEdge edge = new UniEdge(uniQuery.getProperties(), uniQuery.getOutVertex(), uniQuery.getInVertex(), graph);
-        try {
+//        try {
             if (index(this.edgeSchemas, edge, true)) return edge;
-        } catch (DocumentAlreadyExistsException ex) {
-            logger.warn("Document already exists in elastic", ex);
-            throw Graph.Exceptions.edgeWithIdAlreadyExists(edge.id());
-        }
+//        } catch (DocumentAlreadyExistsException ex) {
+//            logger.warn("Document already exists in elastic", ex);
+//            throw Graph.Exceptions.edgeWithIdAlreadyExists(edge.id());
+//        }
         return null;
     }
 
     @Override
     public Vertex addVertex(AddVertexQuery uniQuery) {
         UniVertex vertex = new UniVertex(uniQuery.getProperties(), graph);
-        try {
+//        try {
             if (index(this.vertexSchemas, vertex, true)) return vertex;
-        } catch (DocumentAlreadyExistsException ex) {
-            logger.warn("Document already exists in elastic", ex);
-            throw Graph.Exceptions.vertexWithIdAlreadyExists(vertex.id());
-        }
-        return vertex;
+//        } catch (DocumentAlreadyExistsException ex) {
+//            logger.warn("Document already exists in elastic", ex);
+//            throw Graph.Exceptions.vertexWithIdAlreadyExists(vertex.id());
+//        }
+        return null;
     }
 
     @Override
@@ -286,8 +284,7 @@ public class DocumentController implements SimpleController, LocalQuery.LocalCon
                 return true;
             }
         }
-        return false
-                ;
+        return false;
     }
 
     private <E extends Element> void delete(Set<? extends DocumentSchema<E>> schemas, E element) {
