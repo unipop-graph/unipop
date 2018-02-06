@@ -11,10 +11,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.Attachable;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.javatuples.Pair;
-import org.unipop.process.UniBulkStep;
 import org.unipop.process.UniPredicatesStep;
 import org.unipop.process.order.Orderable;
-import org.unipop.process.properties.PropertyFetcher;
 import org.unipop.query.StepDescriptor;
 import org.unipop.query.controller.ControllerManager;
 import org.unipop.query.search.DeferredVertexQuery;
@@ -55,7 +53,7 @@ public class UniGraphEdgeOtherVertexStep extends UniPredicatesStep<Edge, Vertex>
                     .filter(DeferredVertex::isDeferred)
                     .collect(Collectors.toList());
             if (v.size() > 0) {
-                DeferredVertexQuery query = new DeferredVertexQuery(v, propertyKeys, orders, stepDescriptor);
+                DeferredVertexQuery query = new DeferredVertexQuery(v, propertyKeys, orders, stepDescriptor, traversal);
                 deferredVertexControllers.forEach(deferredVertexController -> deferredVertexController.fetchProperties(query));
             }
         }

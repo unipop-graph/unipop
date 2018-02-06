@@ -1,5 +1,6 @@
 package org.unipop.query.predicates;
 
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.unipop.query.StepDescriptor;
@@ -7,10 +8,12 @@ import org.unipop.query.UniQuery;
 
 public class PredicateQuery<E extends Element> extends UniQuery {
     private final PredicatesHolder predicates;
+    private Traversal traversal;
 
-    public PredicateQuery(PredicatesHolder predicates, StepDescriptor stepDescriptor) {
+    public PredicateQuery(PredicatesHolder predicates, StepDescriptor stepDescriptor, Traversal traversal) {
         super(stepDescriptor);
         this.predicates = predicates;
+        this.traversal = traversal;
     }
 
     public PredicatesHolder getPredicates(){
@@ -35,6 +38,10 @@ public class PredicateQuery<E extends Element> extends UniQuery {
             }
             return false;
         }
+    }
+
+    public Traversal getTraversal() {
+        return traversal;
     }
 
     @Override

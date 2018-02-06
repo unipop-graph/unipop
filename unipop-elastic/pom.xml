@@ -119,7 +119,7 @@
                                 <environmentVariables>
                                     <conf>inner</conf>
                                 </environmentVariables>
-                                <skip>false</skip>
+                                <skip>true</skip>
                                 <reportNameSuffix>INNEREDGE</reportNameSuffix>
                             </configuration>
                         </execution>

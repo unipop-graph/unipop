@@ -4,14 +4,12 @@ import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import com.mashape.unirest.request.BaseRequest;
-import com.samskivert.mustache.Template;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.unipop.elastic.document.DocumentSchema;
 import org.unipop.query.UniQuery;
 import org.unipop.query.controller.SimpleController;
 import org.unipop.query.mutation.AddEdgeQuery;
@@ -21,14 +19,13 @@ import org.unipop.query.mutation.RemoveQuery;
 import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.query.search.SearchQuery;
 import org.unipop.query.search.SearchVertexQuery;
-import org.unipop.rest.schema.RestVertex;
 import org.unipop.schema.element.ElementSchema;
 import org.unipop.schema.reference.DeferredVertex;
+import org.unipop.structure.TraversalFilter.TraversalFilter;
 import org.unipop.structure.UniEdge;
 import org.unipop.structure.UniElement;
 import org.unipop.structure.UniGraph;
 import org.unipop.structure.UniVertex;
-import org.unipop.util.MetricsRunner;
 
 import java.util.*;
 import java.util.function.*;
@@ -46,7 +43,11 @@ public class RestController implements SimpleController {
     private Set<? extends RestVertexSchema> vertexSchemas = new HashSet<>();
     private Set<? extends RestEdgeSchema> edgeSchemas = new HashSet<>();
 
-    public RestController(UniGraph graph, Set<RestSchema> schemas) {
+    TraversalFilter traversalFilter;
+
+    public RestController(UniGraph graph, Set<RestSchema> schemas, TraversalFilter traversalFilter) {
+
+        this.traversalFilter = traversalFilter;
         this.graph = graph;
         Set<RestSchema> documentSchemas = collectSchemas(schemas);
         this.vertexSchemas = documentSchemas.stream().filter(schema -> schema instanceof RestVertexSchema)
@@ -76,7 +77,8 @@ public class RestController implements SimpleController {
                 new RestCollector<>(schema -> schema.getSearch(uniQuery),
                         (schema, result) -> schema.parseResults(result, uniQuery));
 
-        Map<RestEdgeSchema, BaseRequest> schemas = edgeSchemas.stream().collect(collector);
+        Map<RestEdgeSchema, BaseRequest> schemas = edgeSchemas.stream()
+                .filter(schema -> this.traversalFilter.filter(schema, uniQuery.getTraversal())).collect(collector);
 
         return search(uniQuery, schemas, collector);
     }
@@ -87,19 +89,21 @@ public class RestController implements SimpleController {
                 new RestCollector<>(schema -> schema.getSearch(uniQuery),
                         (schema, result) -> schema.parseResults(result, uniQuery));
         Set<? extends RestSchema<E>> schemas = getSchemas(uniQuery.getReturnType());
-        Map<RestSchema<E>, BaseRequest> collect = schemas.stream().collect(collector);
+        Map<RestSchema<E>, BaseRequest> collect = schemas.stream()
+                .filter(schema -> this.traversalFilter.filter(schema,uniQuery.getTraversal())).collect(collector);
         return search(uniQuery, collect, collector);
     }
 
 
     @Override
-    public void fetchProperties(DeferredVertexQuery query) {
+    public void fetchProperties(DeferredVertexQuery uniQuery) {
         RestCollector<RestVertexSchema, BaseRequest, Vertex> collector =
-                new RestCollector<>(schema -> schema.getSearch(query),
-                        (schema, result) -> schema.parseResults(result, query));
-        Map<RestVertexSchema, BaseRequest> schemas = vertexSchemas.stream().collect(collector);
-        Iterator<Vertex> iterator = search(query, schemas, collector);
-        Map<Object, DeferredVertex> vertexMap = query.getVertices().stream()
+                new RestCollector<>(schema -> schema.getSearch(uniQuery),
+                        (schema, result) -> schema.parseResults(result, uniQuery));
+        Map<RestVertexSchema, BaseRequest> schemas = vertexSchemas.stream()
+                .filter(schema -> this.traversalFilter.filter(schema,uniQuery.getTraversal())).collect(collector);
+        Iterator<Vertex> iterator = search(uniQuery, schemas, collector);
+        Map<Object, DeferredVertex> vertexMap = uniQuery.getVertices().stream()
                 .collect(Collectors.toMap(UniElement::id, Function.identity(), (a, b) -> a));
         iterator.forEachRemaining(newVertex -> {
             DeferredVertex deferredVertex = vertexMap.get(newVertex.id());

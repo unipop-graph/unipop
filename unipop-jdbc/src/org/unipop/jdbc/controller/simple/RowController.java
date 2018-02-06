@@ -2,7 +2,6 @@ package org.unipop.jdbc.controller.simple;
 
 import com.google.common.collect.Maps;
 import org.apache.commons.collections4.keyvalue.DefaultMapEntry;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
@@ -19,7 +18,6 @@ import org.unipop.jdbc.schemas.RowEdgeSchema;
 import org.unipop.jdbc.schemas.RowVertexSchema;
 import org.unipop.jdbc.schemas.jdbc.JdbcEdgeSchema;
 import org.unipop.jdbc.schemas.jdbc.JdbcSchema;
-import org.unipop.jdbc.schemas.jdbc.JdbcVertexSchema;
 import org.unipop.jdbc.utils.ContextManager;
 import org.unipop.jdbc.utils.TimingExecuterListener;
 import org.unipop.query.UniQuery;
@@ -34,6 +32,7 @@ import org.unipop.query.search.SearchQuery;
 import org.unipop.query.search.SearchVertexQuery;
 import org.unipop.schema.element.ElementSchema;
 import org.unipop.schema.reference.DeferredVertex;
+import org.unipop.structure.TraversalFilter.TraversalFilter;
 import org.unipop.structure.UniEdge;
 import org.unipop.structure.UniElement;
 import org.unipop.structure.UniGraph;
@@ -65,13 +64,17 @@ public class RowController implements SimpleController {
     protected List<Query> bulk;
     private final PredicatesTranslator<Condition> predicatesTranslator;
 
-    public <E extends Element> RowController(UniGraph graph, ContextManager contextManager, Set<JdbcSchema> schemaSet, PredicatesTranslator<Condition> predicatesTranslator) {
+    private TraversalFilter traversalFilter;
+
+    public <E extends Element> RowController(UniGraph graph, ContextManager contextManager, Set<JdbcSchema> schemaSet, PredicatesTranslator<Condition> predicatesTranslator, TraversalFilter traversalFilter) {
         this.graph = graph;
         this.contextManager = contextManager;
 
         extractRowSchemas(schemaSet);
         this.predicatesTranslator = predicatesTranslator;
         bulk = new ArrayList<>();
+
+        this.traversalFilter = traversalFilter;
     }
 
     @Override
@@ -84,7 +87,8 @@ public class RowController implements SimpleController {
         );
         Set<? extends JdbcSchema<E>> schemas = this.getSchemas(uniQuery.getReturnType());
 
-        Map<JdbcSchema<E>, Select> selects = schemas.stream().collect(collector);
+        Map<JdbcSchema<E>, Select> selects = schemas.stream()
+                .filter(schema -> this.traversalFilter.filter(schema, uniQuery.getTraversal())).collect(collector);
 
 
         return this.search(uniQuery, selects, collector);
@@ -98,7 +102,8 @@ public class RowController implements SimpleController {
                 (schema, results) -> schema.parseResults(results, uniQuery)
         );
 
-        Map<JdbcSchema<Vertex>, Select> selects = vertexSchemas.stream().collect(collector);
+        Map<JdbcSchema<Vertex>, Select> selects = vertexSchemas.stream()
+                .filter(schema -> this.traversalFilter.filter(schema, uniQuery.getTraversal())).collect(collector);
         Iterator<Vertex> searchIterator = this.search(uniQuery, selects, collector);
 
         Map<Object, DeferredVertex> vertexMap =
@@ -119,7 +124,8 @@ public class RowController implements SimpleController {
                 (schema, results) -> schema.parseResults(results, uniQuery)
         );
 
-        Map<JdbcSchema<Edge>, Select> selects = edgeSchemas.stream().collect(collector);
+        Map<JdbcSchema<Edge>, Select> selects = edgeSchemas.stream()
+                .filter(schema -> this.traversalFilter.filter(schema, uniQuery.getTraversal())).collect(collector);
 
         return this.search(uniQuery, selects, collector);
     }
