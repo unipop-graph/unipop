@@ -22,6 +22,8 @@ import org.unipop.schema.property.PropertySchema;
 import org.unipop.schema.property.type.DateType;
 import org.unipop.schema.property.type.NumberType;
 import org.unipop.schema.property.type.TextType;
+import org.unipop.structure.TraversalFilter.DefaultTraversalFilter;
+import org.unipop.structure.TraversalFilter.TraversalFilter;
 import org.unipop.test.UnipopGraphProvider;
 import org.unipop.util.ConversionUtils;
 import org.unipop.util.PropertyTypeFactory;
@@ -118,12 +120,14 @@ public class UniGraph implements Graph {
             }).forEach(thirdPartyPropertySchemas::add);
         }
 
-//        ConfigurationControllerManager configurationControllerManager = new ConfigurationControllerManager(this, configuration, thirdPartyPropertySchemas);
+        String traversalFilter = configuration.getString("traversalFilter", DefaultTraversalFilter.class.getCanonicalName());
+        TraversalFilter filter = Class.forName(traversalFilter).asSubclass(TraversalFilter.class).newInstance();
+
                 String configurationControllerManagerName = configuration.getString("controllerManager", ConfigurationControllerManager.class.getCanonicalName().toString());
         ControllerManager configurationControllerManager = Class.forName(configurationControllerManagerName)
                 .asSubclass(ControllerManager.class)
-                .getConstructor(UniGraph.class, Configuration.class, List.class)
-                .newInstance(this, configuration,thirdPartyPropertySchemas);
+                .getConstructor(UniGraph.class, Configuration.class, List.class, TraversalFilter.class)
+                .newInstance(this, configuration,thirdPartyPropertySchemas, filter);
 
         StrategyProvider strategyProvider = determineStrategyProvider(configuration);
 
@@ -220,8 +224,8 @@ public class UniGraph implements Graph {
 
     private <E extends Element, C extends Comparable> Iterator<E> query(Class<E> returnType, Object[] ids) {
         PredicatesHolder idPredicate = createIdPredicate(ids, returnType);
-        // TODO: check order
-        SearchQuery<E> uniQuery = new SearchQuery<>(returnType, idPredicate, -1, null, null, null);
+
+        SearchQuery<E> uniQuery = new SearchQuery<>(returnType, idPredicate, -1, null, null, null, null);
         return queryControllers.stream().<E>flatMap(controller -> ConversionUtils.asStream(controller.search(uniQuery))).iterator();
     }
 

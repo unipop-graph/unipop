@@ -2,6 +2,7 @@ package org.unipop.query.controller;
 
 import org.json.JSONObject;
 import org.unipop.schema.property.PropertySchema;
+import org.unipop.structure.TraversalFilter.TraversalFilter;
 import org.unipop.structure.UniGraph;
 
 import java.util.Collections;
@@ -19,7 +20,7 @@ public interface SourceProvider {
      * @return A set of controllers
      * @throws Exception
      */
-    Set<UniQueryController> init(UniGraph graph, JSONObject configuration) throws Exception;
+    Set<UniQueryController> init(UniGraph graph, JSONObject configuration, TraversalFilter filter) throws Exception;
 
     /**
      * Returns a list of additional provider property schema builders
