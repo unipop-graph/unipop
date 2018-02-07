@@ -3,7 +3,7 @@ package org.unipop.query.controller;
 import org.apache.commons.configuration.Configuration;
 import org.json.JSONObject;
 import org.unipop.schema.property.PropertySchema;
-import org.unipop.structure.TraversalFilter.TraversalFilter;
+import org.unipop.structure.traversalfilter.TraversalFilter;
 import org.unipop.structure.UniGraph;
 import org.unipop.util.DirectoryWatcher;
 import org.unipop.util.PropertySchemaFactory;

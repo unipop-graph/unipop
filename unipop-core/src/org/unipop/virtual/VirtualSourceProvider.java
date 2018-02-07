@@ -5,7 +5,7 @@ import org.json.JSONObject;
 import org.unipop.query.controller.SourceProvider;
 import org.unipop.query.controller.UniQueryController;
 import org.unipop.schema.element.ElementSchema;
-import org.unipop.structure.TraversalFilter.TraversalFilter;
+import org.unipop.structure.traversalfilter.TraversalFilter;
 import org.unipop.structure.UniGraph;
 
 import java.util.Collections;

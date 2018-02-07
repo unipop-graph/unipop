@@ -22,8 +22,8 @@ import org.unipop.schema.property.PropertySchema;
 import org.unipop.schema.property.type.DateType;
 import org.unipop.schema.property.type.NumberType;
 import org.unipop.schema.property.type.TextType;
-import org.unipop.structure.TraversalFilter.DefaultTraversalFilter;
-import org.unipop.structure.TraversalFilter.TraversalFilter;
+import org.unipop.structure.traversalfilter.DefaultTraversalFilter;
+import org.unipop.structure.traversalfilter.TraversalFilter;
 import org.unipop.test.UnipopGraphProvider;
 import org.unipop.util.ConversionUtils;
 import org.unipop.util.PropertyTypeFactory;
@@ -99,7 +99,7 @@ public class UniGraph implements Graph {
 
     private UniFeatures features = new UniFeatures();
     private Configuration configuration;
-    private TraversalStrategies strategies;
+    protected TraversalStrategies strategies;
     private ControllerManager controllerManager;
     private List<SearchQuery.SearchController> queryControllers;
 

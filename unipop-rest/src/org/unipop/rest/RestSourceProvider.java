@@ -12,7 +12,7 @@ import org.unipop.rest.util.matchers.KeyMatcher;
 import org.unipop.rest.util.matchers.Matcher;
 import org.unipop.rest.util.matchers.MultiOpMatcher;
 import org.unipop.rest.util.matchers.OpMatcher;
-import org.unipop.structure.TraversalFilter.TraversalFilter;
+import org.unipop.structure.traversalfilter.TraversalFilter;
 import org.unipop.structure.UniGraph;
 
 import java.util.*;

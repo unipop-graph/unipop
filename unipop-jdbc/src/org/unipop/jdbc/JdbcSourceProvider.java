@@ -12,7 +12,7 @@ import org.unipop.jdbc.utils.ContextManager;
 import org.unipop.jdbc.utils.JdbcPredicatesTranslator;
 import org.unipop.query.controller.SourceProvider;
 import org.unipop.query.controller.UniQueryController;
-import org.unipop.structure.TraversalFilter.TraversalFilter;
+import org.unipop.structure.traversalfilter.TraversalFilter;
 import org.unipop.structure.UniGraph;
 
 import java.util.Set;
