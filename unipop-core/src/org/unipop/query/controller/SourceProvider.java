@@ -2,7 +2,7 @@ package org.unipop.query.controller;
 
 import org.json.JSONObject;
 import org.unipop.schema.property.PropertySchema;
-import org.unipop.structure.TraversalFilter.TraversalFilter;
+import org.unipop.structure.traversalfilter.TraversalFilter;
 import org.unipop.structure.UniGraph;
 
 import java.util.Collections;

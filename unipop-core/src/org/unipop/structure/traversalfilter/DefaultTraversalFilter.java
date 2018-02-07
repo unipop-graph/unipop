@@ -1,4 +1,4 @@
-package org.unipop.structure.TraversalFilter;
+package org.unipop.structure.traversalfilter;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.unipop.schema.element.ElementSchema;

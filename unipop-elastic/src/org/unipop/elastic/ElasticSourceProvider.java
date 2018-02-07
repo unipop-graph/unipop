@@ -13,7 +13,7 @@ import org.unipop.elastic.document.schema.property.InnerPropertySchema;
 import org.unipop.query.controller.SourceProvider;
 import org.unipop.query.controller.UniQueryController;
 import org.unipop.schema.property.PropertySchema;
-import org.unipop.structure.TraversalFilter.TraversalFilter;
+import org.unipop.structure.traversalfilter.TraversalFilter;
 import org.unipop.structure.UniGraph;
 import org.unipop.util.ConversionUtils;
 
