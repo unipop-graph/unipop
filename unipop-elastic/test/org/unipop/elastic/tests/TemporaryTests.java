@@ -4,6 +4,7 @@ import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.GraphManager;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -27,10 +28,8 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void test() {
-        final Traversal<Vertex, String> traversal = g.withSideEffect("a", "marko").addV().property("name", select("a")).values("name");
-        printTraversalForm(traversal);
-        assertEquals("marko", traversal.next());
-        assertFalse(traversal.hasNext());
+        Traversal t = g.V();
+        check(t);
     }
 
 

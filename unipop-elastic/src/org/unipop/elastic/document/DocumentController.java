@@ -1,5 +1,6 @@
 package org.unipop.elastic.document;
 
+import com.google.gson.Gson;
 import io.searchbox.action.BulkableAction;
 import io.searchbox.core.*;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
@@ -41,6 +42,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 //import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 
@@ -133,7 +135,7 @@ public class DocumentController implements SimpleController {
     public Edge addEdge(AddEdgeQuery uniQuery) {
         UniEdge edge = new UniEdge(uniQuery.getProperties(), uniQuery.getOutVertex(), uniQuery.getInVertex(), graph);
 //        try {
-            if (index(this.edgeSchemas, edge, true)) return edge;
+        if (index(this.edgeSchemas, edge, true)) return edge;
 //        } catch (DocumentAlreadyExistsException ex) {
 //            logger.warn("Document already exists in elastic", ex);
 //            throw Graph.Exceptions.edgeWithIdAlreadyExists(edge.id());
@@ -145,7 +147,7 @@ public class DocumentController implements SimpleController {
     public Vertex addVertex(AddVertexQuery uniQuery) {
         UniVertex vertex = new UniVertex(uniQuery.getProperties(), graph);
 //        try {
-            if (index(this.vertexSchemas, vertex, true)) return vertex;
+        if (index(this.vertexSchemas, vertex, true)) return vertex;
 //        } catch (DocumentAlreadyExistsException ex) {
 //            logger.warn("Document already exists in elastic", ex);
 //            throw Graph.Exceptions.vertexWithIdAlreadyExists(vertex.id());
@@ -179,7 +181,7 @@ public class DocumentController implements SimpleController {
     //region Elastic Queries
 
     private void fillChildren(List<MutableMetrics> childMetrics, SearchResult result) {
-        if (childMetrics.size() > 0){
+        if (childMetrics.size() > 0) {
             MutableMetrics child = childMetrics.get(0);
             child.setCount(TraversalMetrics.ELEMENT_COUNT_ID, result.getTotal());
             child.setDuration(Long.parseLong(result.getJsonObject().get("took").toString()), TimeUnit.MILLISECONDS);
@@ -234,17 +236,19 @@ public class DocumentController implements SimpleController {
         client.refresh();
 
 
-        return schemas.entrySet().parallelStream().filter(Objects::nonNull)
+        Map<Search, List<Pair<S, Search>>> groupedQueries = schemas.entrySet().parallelStream().filter(Objects::nonNull)
                 .map(kv -> createSearchBuilder(kv, query))
                 .map(kv -> createSearch(kv, query))
-                .map(kv -> {
-                    MetricsRunner metrics = new MetricsRunner(this, query,
-                            Collections.singletonList(kv.getValue0()));
-                    SearchResult results = client.execute(kv.getValue1());
-                    metrics.stop((children -> fillChildren(children, results)));
-                    if (results == null || !results.isSucceeded()) return new ArrayList<E>();
-                    return kv.getValue0().parseResults(results.getJsonString(), query);
-                }).flatMap(Collection::stream).iterator();
+                .collect(Collectors.groupingBy(Pair::getValue1
+                ));
+
+        return groupedQueries.entrySet().stream().flatMap(entry -> {
+            Search search = entry.getKey();
+            List<S> searchSchemas = entry.getValue().stream().map(Pair::getValue0).collect(Collectors.toList());
+            SearchResult results = client.execute(search);
+            if (results == null || !results.isSucceeded()) return Stream.empty();
+            return searchSchemas.stream().map(s -> s.parseResults(results.getJsonString(), query));
+        }).flatMap(Collection::stream).iterator();
 
     }
 

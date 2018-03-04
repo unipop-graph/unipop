@@ -4,7 +4,7 @@
   "addresses": "http://localhost:9200",
   "vertices": [
     {
-      "index": "person",
+      "index": "vertex",
       "id": "@_id",
       "label": {
         "field": "_type",
@@ -16,7 +16,7 @@
       "dynamicProperties": true
     },
     {
-      "index": "software",
+      "index": "vertex",
       "id": "@_id",
       "label": {
         "field": "_type",
