@@ -53,8 +53,8 @@ public class FilterHelper {
         P predicate = container.getPredicate();
         Object value = predicate.getValue();
         BiPredicate<?, ?> biPredicate = predicate.getBiPredicate();
-        if (key.equals("id") || key.equals("_id")) return getIdsFilter(value);
-        else if (key.equals("type") || key.equals("_type")) return getTypeFilter(container);
+        if (key.equals("_id")) return getIdsFilter(value);
+        else if (key.equals("_type")) return getTypeFilter(container);
         else if (predicate instanceof ConnectiveP) {
             return handleConnectiveP(key, (ConnectiveP) predicate);
         } else if (biPredicate != null) {
