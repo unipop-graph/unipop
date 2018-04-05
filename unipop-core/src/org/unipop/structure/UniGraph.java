@@ -19,9 +19,7 @@ import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.SearchQuery;
 import org.unipop.schema.property.PropertySchema;
-import org.unipop.schema.property.type.DateType;
-import org.unipop.schema.property.type.NumberType;
-import org.unipop.schema.property.type.TextType;
+import org.unipop.schema.property.type.*;
 import org.unipop.structure.traversalfilter.DefaultTraversalFilter;
 import org.unipop.structure.traversalfilter.TraversalFilter;
 import org.unipop.test.UnipopGraphProvider;
@@ -108,7 +106,11 @@ public class UniGraph implements Graph {
         this.configuration = configuration;
         PropertyTypeFactory.init(Arrays.asList(TextType.class.getCanonicalName(),
                 DateType.class.getCanonicalName(),
-                NumberType.class.getCanonicalName()));
+                NumberType.class.getCanonicalName(),
+                DoubleType.class.getCanonicalName(),
+                FloatType.class.getCanonicalName(),
+                IntType.class.getCanonicalName(),
+                LongType.class.getCanonicalName()));
         List<PropertySchema.PropertySchemaBuilder> thirdPartyPropertySchemas = new ArrayList<>();
         if(configuration.containsKey("propertySchemas")){
             Stream.of(configuration.getStringArray("propertiesSchemas")).map(classString -> {
