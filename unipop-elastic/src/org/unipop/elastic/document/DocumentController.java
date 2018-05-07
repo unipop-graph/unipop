@@ -46,6 +46,7 @@ import java.util.stream.Stream;
 
 //import org.elasticsearch.index.engine.DocumentAlreadyExistsException;
 
+
 public class DocumentController implements SimpleController {
     private static final Logger logger = LoggerFactory.getLogger(DocumentController.class);
 
@@ -133,7 +134,7 @@ public class DocumentController implements SimpleController {
 
     @Override
     public Edge addEdge(AddEdgeQuery uniQuery) {
-        UniEdge edge = new UniEdge(uniQuery.getProperties(), uniQuery.getOutVertex(), uniQuery.getInVertex(), graph);
+        UniEdge edge = new UniEdge(uniQuery.getProperties(), uniQuery.getOutVertex(), uniQuery.getInVertex(), null, graph);
 //        try {
         if (index(this.edgeSchemas, edge, true)) return edge;
 //        } catch (DocumentAlreadyExistsException ex) {
@@ -145,7 +146,7 @@ public class DocumentController implements SimpleController {
 
     @Override
     public Vertex addVertex(AddVertexQuery uniQuery) {
-        UniVertex vertex = new UniVertex(uniQuery.getProperties(), graph);
+        UniVertex vertex = new UniVertex(uniQuery.getProperties(), null, graph);
 //        try {
         if (index(this.vertexSchemas, vertex, true)) return vertex;
 //        } catch (DocumentAlreadyExistsException ex) {

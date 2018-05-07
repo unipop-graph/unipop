@@ -56,7 +56,7 @@ public class RowEdgeSchema extends AbstractRowSchema<Edge> implements JdbcEdgeSc
         if(outVertex == null) return null;
         Vertex inVertex = inVertexSchema.createElement(fields);
         if(inVertex == null) return null;
-        UniEdge uniEdge = new UniEdge(edgeProperties, outVertex, inVertex, graph);
+        UniEdge uniEdge = new UniEdge(edgeProperties, outVertex, inVertex, this, graph);
         return Collections.singleton(uniEdge);
     }
 

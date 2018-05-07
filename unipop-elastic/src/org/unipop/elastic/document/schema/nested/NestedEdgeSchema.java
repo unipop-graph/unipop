@@ -98,7 +98,7 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
         if (childVertex == null) return null;
         UniEdge edge = new UniEdge(edgeProperties,
                 parentDirection.equals(Direction.OUT) ? parentVertex : childVertex,
-                parentDirection.equals(Direction.IN) ? parentVertex : childVertex, graph);
+                parentDirection.equals(Direction.IN) ? parentVertex : childVertex, this, graph);
         return edge;
     }
 

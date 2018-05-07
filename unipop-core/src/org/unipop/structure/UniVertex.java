@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
+import org.unipop.schema.element.ElementSchema;
 import org.unipop.util.ConversionUtils;
 import org.unipop.query.mutation.AddEdgeQuery;
 import org.unipop.query.mutation.PropertyQuery;
@@ -21,8 +22,8 @@ public class UniVertex extends UniElement implements Vertex {
 
     protected Map<String, List<VertexProperty>> properties;
 
-    public UniVertex(Map<String, Object> keyValues, UniGraph graph) {
-        super(keyValues, graph);
+    public UniVertex(Map<String, Object> keyValues, ElementSchema schema, UniGraph graph) {
+        super(keyValues, schema, graph);
         this.properties = new ConcurrentHashMap<>();
         keyValues.forEach((key, value) -> {
             List<VertexProperty> props;

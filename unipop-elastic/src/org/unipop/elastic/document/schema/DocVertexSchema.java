@@ -64,7 +64,7 @@ public class DocVertexSchema extends AbstractDocSchema<Vertex> implements Docume
     public Vertex createElement(Map<String, Object> fields) {
         Map<String, Object> properties = getProperties(fields);
         if(properties == null) return null;
-        return new UniVertex(properties, graph);
+        return new UniVertex(properties, this, graph);
     }
 
     @Override

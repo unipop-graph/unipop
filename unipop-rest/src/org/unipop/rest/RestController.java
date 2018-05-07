@@ -130,7 +130,7 @@ public class RestController implements SimpleController {
 
     @Override
     public Vertex addVertex(AddVertexQuery uniQuery) {
-        UniVertex vertex = new UniVertex(uniQuery.getProperties(), graph);
+        UniVertex vertex = new UniVertex(uniQuery.getProperties(), null, graph);
         for (RestVertexSchema vertexSchema : vertexSchemas) {
             try {
                 BaseRequest baseRequest = vertexSchema.addElement(vertex);
@@ -172,7 +172,8 @@ public class RestController implements SimpleController {
 
     @Override
     public Edge addEdge(AddEdgeQuery uniQuery) {
-        UniEdge edge = new UniEdge(uniQuery.getProperties(), uniQuery.getOutVertex(), uniQuery.getInVertex(), graph);
+        UniEdge edge = new UniEdge(uniQuery.getProperties(), uniQuery.getOutVertex(), uniQuery.getInVertex(), null,
+                graph);
         for (RestEdgeSchema edgeSchema : edgeSchemas) {
             try {
                 BaseRequest baseRequest = edgeSchema.addElement(edge);

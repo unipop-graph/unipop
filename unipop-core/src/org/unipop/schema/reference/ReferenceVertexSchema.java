@@ -20,6 +20,6 @@ public class ReferenceVertexSchema extends AbstractElementSchema<Vertex> impleme
     public Vertex createElement(Map<String, Object> fields) {
         Map<String, Object> properties = getProperties(fields);
         if(properties == null) return null;
-        return new DeferredVertex(properties, graph);
+        return new DeferredVertex(properties, this, graph);
     }
 }
