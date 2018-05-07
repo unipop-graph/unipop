@@ -11,7 +11,7 @@ import java.util.*;
 public class DeferredVertex extends UniVertex {
 
     public DeferredVertex(Map<String, Object> properties, ElementSchema schema, UniGraph graph) {
-        super(properties, graph);
+        super(properties, schema, graph);
     }
 
     boolean deferred = true;
