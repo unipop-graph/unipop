@@ -83,6 +83,8 @@ public class DirectoryWatcher {
                                     onFileChange.onFileChange(newPath);
                             }
                         }
+                        service = fs.newWatchService();
+                        path.register(service, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE);
                     }
                     catch (Exception ignored){
                     }
