@@ -66,7 +66,7 @@ public class TemplateRequest {
     }
 
     private BaseRequest executePost(String baseUrl, Object urlMap, Object bodyMap) {
-        return Unirest.post(baseUrl + urlTemplate.execute(urlMap)).body(bodyTemplate.execute(bodyMap));
+        return Unirest.post(baseUrl + urlTemplate.execute(urlMap)).header("Content-type", "application/json").body(bodyTemplate.execute(bodyMap));
     }
 
     private BaseRequest executeGet(String baseUrl, Object urlMap, Object bodyMap) {

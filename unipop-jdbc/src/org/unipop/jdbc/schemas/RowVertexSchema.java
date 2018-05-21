@@ -49,7 +49,7 @@ public class RowVertexSchema extends AbstractRowSchema<Vertex> implements JdbcVe
     public Vertex createElement(Map<String, Object> fields) {
         Map<String, Object> properties = getProperties(fields);
         if(properties == null) return null;
-        return new UniVertex(properties, graph);
+        return new UniVertex(properties, this, graph);
     }
     @Override
     public String toString() {

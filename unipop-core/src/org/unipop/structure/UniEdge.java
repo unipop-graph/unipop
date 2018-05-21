@@ -5,6 +5,7 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.unipop.query.mutation.PropertyQuery;
+import org.unipop.schema.element.ElementSchema;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -17,8 +18,8 @@ public class UniEdge extends UniElement implements Edge {
     protected Vertex inVertex;
     protected Vertex outVertex;
 
-    public UniEdge(Map<String, Object> keyValues, Vertex outV, Vertex inV, final UniGraph graph) {
-        super(keyValues, graph);
+    public UniEdge(Map<String, Object> keyValues, Vertex outV, Vertex inV, ElementSchema schema, final UniGraph graph) {
+        super(keyValues, schema, graph);
 
         this.outVertex = outV;
         this.inVertex = inV;

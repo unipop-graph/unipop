@@ -47,7 +47,7 @@ public class VirtualController implements SimpleController {
 
     @Override
     public Vertex addVertex(AddVertexQuery uniQuery) {
-        return new UniVertex(uniQuery.getProperties(), graph);
+        return new UniVertex(uniQuery.getProperties(), null, graph);
     }
 
     @Override

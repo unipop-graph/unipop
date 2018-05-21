@@ -52,6 +52,20 @@ public abstract class AbstractRestSchema<E extends Element> extends AbstractElem
         this.valuesToString = valuesToString;
     }
 
+    public AbstractRestSchema(JSONObject configuration, UniGraph graph, String url, String resource, TemplateHolder templateHolder, String resultPath, JSONObject opTranslator, int maxResultSize, MatcherHolder complexTranslator, boolean valuesToString) {
+        super(configuration, graph);
+        this.resource = resource;
+        this.templateHolder = templateHolder;
+        this.baseUrl = url;
+        this.resultPath = resultPath;
+        this.opTranslator = opTranslator;
+        this.maxResultSize = maxResultSize;
+        this.bulk = new ArrayList<>();
+        this.bulkSize = 1000;
+        this.complexTranslator = complexTranslator;
+        this.valuesToString = valuesToString;
+    }
+
     @Override
     public BaseRequest getSearch(SearchQuery<E> query) {
         int limit = query.getOrders() == null || query.getOrders().size() > 0 ? -1 : query.getLimit();

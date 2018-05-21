@@ -6,16 +6,19 @@ import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.unipop.query.mutation.PropertyQuery;
 import org.unipop.query.mutation.RemoveQuery;
+import org.unipop.schema.element.ElementSchema;
 
 import java.util.*;
 
 public abstract class UniElement implements Element {
     protected String id;
     protected String label;
+    protected ElementSchema schema;
     protected UniGraph graph;
 
-    public UniElement(Map<String, Object> properties, UniGraph graph) {
+    public UniElement(Map<String, Object> properties, ElementSchema schema, UniGraph graph) {
         this.graph = graph;
+        this.schema = schema;
 
         this.id = ObjectUtils.firstNonNull(
                 properties.remove(T.id.getAccessor()),
@@ -117,6 +120,10 @@ public abstract class UniElement implements Element {
         element.properties().forEachRemaining(property -> properties.put(property.key(), property.value()));
 
         return properties;
+    }
+
+    public ElementSchema getSchema(){
+        return this.schema;
     }
 
     @Override

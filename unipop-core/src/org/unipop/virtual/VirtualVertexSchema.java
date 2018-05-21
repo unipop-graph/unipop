@@ -38,6 +38,6 @@ public class VirtualVertexSchema extends AbstractElementSchema<Vertex> implement
     @Override
     public Vertex createElement(Map<String, Object> fields) {
         Map<String, Object> properties = getProperties(fields);
-        return new UniVertex(properties, graph);
+        return new UniVertex(properties, this, graph);
     }
 }

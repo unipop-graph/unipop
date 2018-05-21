@@ -38,13 +38,19 @@ public class RestEdge extends AbstractRestSchema<Edge> implements RestEdgeSchema
         JSONObject vertexConfiguration = this.json.optJSONObject(key);
         if (vertexConfiguration == null) return null;
         if (vertexConfiguration.optBoolean("ref", false)) return new ReferenceVertexSchema(vertexConfiguration, graph);
+        return new RestVertex(vertexConfiguration, baseUrl, resource, graph, templateHolder, resultPath, opTranslator, maxResultSize, complexTranslator, valuesToString);
+    }
+
+    protected VertexSchema createVertexSchema(String key, String resource) throws JSONException {
+        JSONObject vertexConfiguration = this.json.optJSONObject(key);
+        if (vertexConfiguration == null) return null;
+        if (vertexConfiguration.optBoolean("ref", false)) return new ReferenceVertexSchema(vertexConfiguration, graph);
         return new RestVertex(vertexConfiguration, baseUrl, graph, templateHolder, resultPath, opTranslator, maxResultSize, complexTranslator, valuesToString);
     }
 
-
     @Override
     protected Edge create(Map<String, Object> fields) {
-        return new UniEdge(getProperties(fields), outVertexSchema.createElement(fields), inVertexSchema.createElement(fields), graph);
+        return new UniEdge(getProperties(fields), outVertexSchema.createElement(fields), inVertexSchema.createElement(fields), this, graph);
     }
 
     @Override

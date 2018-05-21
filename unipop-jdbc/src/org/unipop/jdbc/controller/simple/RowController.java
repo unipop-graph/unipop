@@ -132,7 +132,7 @@ public class RowController implements SimpleController {
 
     @Override
     public Edge addEdge(AddEdgeQuery uniQuery) {
-        UniEdge edge = new UniEdge(uniQuery.getProperties(), uniQuery.getOutVertex(), uniQuery.getInVertex(), this.graph);
+        UniEdge edge = new UniEdge(uniQuery.getProperties(), uniQuery.getOutVertex(), uniQuery.getInVertex(), null, this.graph);
         try {
             if (this.insert(edgeSchemas, edge)) return edge;
         } catch (DataAccessException ex) {
@@ -144,7 +144,7 @@ public class RowController implements SimpleController {
 
     @Override
     public Vertex addVertex(AddVertexQuery uniQuery) {
-        UniVertex vertex = new UniVertex(uniQuery.getProperties(), this.graph);
+        UniVertex vertex = new UniVertex(uniQuery.getProperties(), null, this.graph);
         try {
             if (this.insert(this.vertexSchemas, vertex)) {
                 return vertex;
