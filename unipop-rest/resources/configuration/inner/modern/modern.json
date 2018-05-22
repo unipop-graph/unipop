@@ -1,0 +1,84 @@
+{
+  "class": "org.unipop.rest.RestSourceProvider",
+  "baseUrl": "http://localhost:9200/",
+  "add":{
+    "url": "/{{resource}}/{{type}}/{{id}}",
+    "template": "{ {{#prop}}\"{{key}}\":\"{{value}}\"{{^-last}}, {{/-last}}{{/prop}} }",
+    "commit": {
+      "url":"/{{resource}}/_refresh"
+    },
+    "bulk":{
+      "url": "/_bulk",
+      "template": "resources/bulk.mustache"
+    }
+  },
+  "search":{
+    "url": "{{resource}}/_search",
+    "template": "resources/search.mustache"
+  },
+  "delete":{
+    "url" : "{{resource}}/{{type}}/{{id}}"
+  },
+  "resultPath": "hits.hits",
+  "opTranslator": {
+    "eq": "term",
+    "within": "terms"
+  },
+  "complexTranslator":[
+    {"op": "gt", "template": "{ \"range\": { \"{{key}}\": { \"gt\": {{value}} } } }"}
+  ],
+  "vertices": [
+    {
+      "resource": "vertex",
+      "id": "@_source.id",
+      "label": "@_source.type",
+      "properties": {
+        "name": "@_source.name",
+        "age": "@_source.age",
+        "lang": "@_source.lang"
+      },
+      "dynamicProperties": false,
+      "edges": [{
+        "id": "@_source.edgeId",
+        "label": "knows",
+        "direction": "IN",
+        "properties": {
+          "weight": "@_source.edgeWeight",
+          "name": "@_source.edgeName"
+        },
+        "vertex": {
+          "ref": true,
+          "id": "@_source.knownBy",
+          "label": "person"
+        }
+      }]
+    }
+  ],
+  "edges": [
+    {
+      "resource": "edge",
+      "id": "@_source.id",
+      "label": {
+        "field": "_source.type",
+        "exclude": ["knows"]
+      },
+      "properties": {
+        "weight": "@_source.edgeWeight",
+        "name": "@_source.edgeName"
+      },
+      "dynamicProperties": false,
+      "outVertex": {
+        "ref": true,
+        "id": "@_source.outId",
+        "label": "@_source.outLabel",
+        "properties": {}
+      },
+      "inVertex": {
+        "ref": true,
+        "id": "@_source.inId",
+        "label": "@_source.inLabel",
+        "properties": {}
+      }
+    }
+  ]
+}

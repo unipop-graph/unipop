@@ -50,7 +50,9 @@ public class RestEdge extends AbstractRestSchema<Edge> implements RestEdgeSchema
 
     @Override
     protected Edge create(Map<String, Object> fields) {
-        return new UniEdge(getProperties(fields), outVertexSchema.createElement(fields), inVertexSchema.createElement(fields), this, graph);
+        Map<String, Object> properties = getProperties(fields);
+        if (properties == null) return null;
+        return new UniEdge(properties, outVertexSchema.createElement(fields), inVertexSchema.createElement(fields), this, graph);
     }
 
     @Override
