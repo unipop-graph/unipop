@@ -25,19 +25,19 @@ import static org.unipop.util.ConversionUtils.getList;
  * Created by sbarzilay on 24/11/16.
  */
 public class RestVertex extends AbstractRestSchema<Vertex> implements RestVertexSchema {
-    protected Set<ElementSchema> edgeSchemas = new HashSet<>();
+    private Set<ElementSchema> edgeSchemas = new HashSet<>();
 
     public RestVertex(JSONObject configuration, String url, UniGraph graph, TemplateHolder templateHolder, String resultPath, JSONObject opTranslator, int maxResultSize, MatcherHolder complexTranslator, boolean valuesToString) {
         super(configuration, graph, url, templateHolder, resultPath, opTranslator, maxResultSize, complexTranslator, valuesToString);
-        for (JSONObject edgeJson : getList(json, "edge")){
+        for (JSONObject edgeJson : getList(json, "edges")){
             EdgeSchema docEdgeSchema = getEdgeSchema(edgeJson);
             edgeSchemas.add(docEdgeSchema);
         }
     }
 
-    public RestVertex(JSONObject configuration, String url, String resource, UniGraph graph, TemplateHolder templateHolder, String resultPath, JSONObject opTranslator, int maxResultSize, MatcherHolder complexTranslator, boolean valuesToString) {
+    RestVertex(JSONObject configuration, String url, String resource, UniGraph graph, TemplateHolder templateHolder, String resultPath, JSONObject opTranslator, int maxResultSize, MatcherHolder complexTranslator, boolean valuesToString) {
         super(configuration, graph, url, resource, templateHolder, resultPath, opTranslator, maxResultSize, complexTranslator, valuesToString);
-        for (JSONObject edgeJson : getList(json, "edge")){
+        for (JSONObject edgeJson : getList(json, "edges")){
             EdgeSchema docEdgeSchema = getEdgeSchema(edgeJson);
             edgeSchemas.add(docEdgeSchema);
         }
