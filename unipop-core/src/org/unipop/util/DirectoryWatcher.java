@@ -1,7 +1,5 @@
 package org.unipop.util;
 
-import org.apache.commons.configuration.Configuration;
-
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.Timer;
@@ -67,7 +65,8 @@ public class DirectoryWatcher {
                     WatchKey key = null;
                     try {
                         key = service.take();
-
+                        service = fs.newWatchService();
+                        path.register(service, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE);
                         // Dequeueing events
                         WatchEvent.Kind<?> kind = null;
                         for (WatchEvent<?> watchEvent : key.pollEvents()) {
@@ -83,8 +82,6 @@ public class DirectoryWatcher {
                                     onFileChange.onFileChange(newPath);
                             }
                         }
-                        service = fs.newWatchService();
-                        path.register(service, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE);
                     }
                     catch (Exception ignored){
                     }
