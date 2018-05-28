@@ -13,6 +13,7 @@ import static java.nio.file.StandardWatchEventKinds.*;
  */
 public class DirectoryWatcher {
     private WatchService service;
+    private NeedUpdate needUpdate;
     private OnFileChange onFileChange;
     private Timer timer;
     private TimerTask timerTask;
@@ -23,6 +24,10 @@ public class DirectoryWatcher {
         this.onFileChange = onFileChange;
         timer = new Timer();
         this.interval = interval;
+    }
+    public DirectoryWatcher(Path path, int interval, OnFileChange onFileChange, NeedUpdate needUpdate) {
+        this(path, interval, onFileChange);
+        this.needUpdate = needUpdate;
     }
 
     public void start() {
@@ -64,27 +69,30 @@ public class DirectoryWatcher {
                 public void run() {
                     WatchKey key = null;
                     try {
-                        key = service.take();
-                        service = fs.newWatchService();
-                        path.register(service, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE);
-                        // Dequeueing events
-                        WatchEvent.Kind<?> kind = null;
-                        for (WatchEvent<?> watchEvent : key.pollEvents()) {
-                            // Get the type of the event
-                            kind = watchEvent.kind();
-                            if (OVERFLOW == kind) {
-                                continue; // loop
-                            } else if (ENTRY_CREATE == kind || ENTRY_MODIFY == kind || ENTRY_DELETE == kind) {
-                                // A new Path was created
-                                Path newPath = ((WatchEvent<Path>) watchEvent)
-                                        .context();
-                                if (notSwap(newPath))
-                                    onFileChange.onFileChange(newPath);
+                        if(needUpdate == null || needUpdate.needUpdate()) {
+                            key = service.take();
+                            service = fs.newWatchService();
+                            path.register(service, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE);
+                            // Dequeueing events
+                            WatchEvent.Kind<?> kind = null;
+                            for (WatchEvent<?> watchEvent : key.pollEvents()) {
+                                // Get the type of the event
+                                kind = watchEvent.kind();
+                                if (OVERFLOW == kind) {
+                                    continue; // loop
+                                } else if (ENTRY_CREATE == kind || ENTRY_MODIFY == kind || ENTRY_DELETE == kind) {
+                                    // A new Path was created
+                                    Path newPath = ((WatchEvent<Path>) watchEvent)
+                                            .context();
+                                    if (notSwap(newPath))
+                                        onFileChange.onFileChange(newPath);
+                                }
                             }
                         }
                     }
                     catch (Exception ignored){
                     }
+
                 }
 
             };
@@ -102,5 +110,9 @@ public class DirectoryWatcher {
     @FunctionalInterface
     public interface OnFileChange {
         void onFileChange(Path path) throws IOException;
+    }
+    @FunctionalInterface
+    public interface NeedUpdate {
+        boolean needUpdate() throws IOException;
     }
 }

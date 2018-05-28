@@ -6,6 +6,7 @@ import org.unipop.schema.property.PropertySchema;
 import org.unipop.structure.traversalfilter.TraversalFilter;
 import org.unipop.structure.UniGraph;
 import org.unipop.util.DirectoryWatcher;
+import org.unipop.util.GitWatcher;
 import org.unipop.util.PropertySchemaFactory;
 
 import java.io.BufferedReader;
@@ -23,27 +24,35 @@ public class ConfigurationControllerManager implements ControllerManager {
     protected Set<SourceProvider> sourceProviders = new HashSet<>();
     protected Set<UniQueryController> controllers = new HashSet<>();
     protected DirectoryWatcher watcher;
+    protected GitWatcher gitWatcher;
     protected Path path;
     protected UniGraph graph;
     protected List<PropertySchema.PropertySchemaBuilder> thirdPartyPropertySchemas;
     protected TraversalFilter filter;
 
     public ConfigurationControllerManager(UniGraph graph, Configuration configuration, List<PropertySchema.PropertySchemaBuilder> thirdPartyPropertySchemas, TraversalFilter filter) throws Exception {
-        path = Paths.get(configuration.getString("providers"));
+        // path = Paths.get(configuration.getString("providers"));
+
+        // need to check where the properties coming from
+        path = Paths.get("../unipop-core/resources-git");
+        String gitRemote = "https://github.com/edeneliel/unipop-resources.git";
+
         this.graph = graph;
         this.thirdPartyPropertySchemas = thirdPartyPropertySchemas;
         this.filter = filter;
+        this.gitWatcher = new GitWatcher(gitRemote, path, 10000);
         this.watcher = new DirectoryWatcher(path, configuration.getInt("controllerManager.interval", 10000),
-                (newPath) -> loadControllers());
+                (newPath) -> loadControllers(), () -> gitWatcher.isNeedUpdateAndReset());
         loadControllers();
         this.watcher.start();
+        this.gitWatcher.start();
     }
 
     private void loadControllers() throws IOException {
         controllers.clear();
         sourceProviders.forEach(SourceProvider::close);
         sourceProviders.clear();
-        Files.walk(path).forEach(filePath -> {
+        Files.walk(path).filter((file) -> file.toString().endsWith(".json")).forEach(filePath -> {
             if (Files.isRegularFile(filePath)){
                 String providerJson = readFile(filePath.toAbsolutePath().toString());
                 JSONObject providerConfig = new JSONObject(providerJson);
