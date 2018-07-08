@@ -38,7 +38,7 @@ public interface DocumentSchema<E extends Element> extends ElementSchema<E>{
      * @param query The UniQuery itself
      * @return A list of elements
      */
-    List<E> parseResults(String result, PredicateQuery query);
+    List<E> parseResults(List<String> result, PredicateQuery query);
 
     /**
      * Returns an action to insert or update a document

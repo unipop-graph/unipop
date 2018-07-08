@@ -10,7 +10,6 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.shaded.jackson.databind.JsonNode;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.javatuples.Pair;
@@ -91,27 +90,62 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
     }
 
     @Override
-    public List<E> parseResults(String result, PredicateQuery query) {
+    public List<E> parseResults(List<String> resultList, PredicateQuery query) {
         List<E> results = new ArrayList<>();
-        try {
-            JsonNode hits = mapper.readTree(result).get("hits").get("hits");
-            for (JsonNode hit : hits) {
-                Map<String, Object> source = hit.has("_source") ? mapper.readValue(hit.get("_source").toString(), Map.class) : new HashMap<>();
-                Document document = new Document(hit.get("_index").asText(), hit.get("_type").asText(), hit.get("_id").asText(), source);
-                Collection<E> elements = fromDocument(document);
-                if(elements != null) {
-                    elements.forEach(element -> {
-                        if(element != null && query.test(element, query.getPredicates()))
-                            results.add(element);
-                    });
+        for( String result : resultList)
+            try {
+                JsonNode hits = mapper.readTree(result).get("hits").get("hits");
+                for (JsonNode hit : hits) {
+                    Map<String, Object> source = hit.has("_source") ? mapper.readValue(hit.get("_source").toString(), Map.class) : new HashMap<>();
+                    Document document = new Document(hit.get("_index").asText(), hit.get("_type").asText(), hit.get("_id").asText(), source);
+                    Collection<E> elements = fromDocument(document);
+                    if(elements != null) {
+                        elements.forEach(element -> {
+                            if(element != null && query.test(element, query.getPredicates()))
+                                results.add(element);
+                        });
+                    }
                 }
             }
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
+            catch (IOException e) {
+                e.printStackTrace();
+            }
         return results;
     }
+//    public List<E> parseResults(List<JestResult> resultList, PredicateQuery query) {
+//        List<E> results = new ArrayList<>();
+//
+//        for(JestResult result : resultList)
+//        {
+//            try
+//            {
+//                JsonArray hits = result.getJsonObject().get("hits").getAsJsonObject().get("hits").getAsJsonArray();
+//                for(JsonElement hit:hits)
+//                {
+//                    hit.getAsJsonObject().get("_source") ? hit.getAsJsonObject().get("_source") :
+//                }
+//            }
+//
+//        }
+//        try {
+//            JsonNode hits = mapper.readTree(result).get("hits").get("hits");
+//            for (JsonNode hit : hits) {
+//                Map<String, Object> source = hit.has("_source") ? mapper.readValue(hit.get("_source").toString(), Map.class) : new HashMap<>();
+//                Document document = new Document(hit.get("_index").asText(), hit.get("_type").asText(), hit.get("_id").asText(), source);
+//                Collection<E> elements = fromDocument(document);
+//                if(elements != null) {
+//                    elements.forEach(element -> {
+//                        if(element != null && query.test(element, query.getPredicates()))
+//                            results.add(element);
+//                    });
+//                }
+//            }
+//        }
+//        catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        return results;
+//    }
 
     @Override
     public BulkableAction<DocumentResult> addElement(E element, boolean create) {
