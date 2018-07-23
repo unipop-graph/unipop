@@ -54,6 +54,8 @@ public class DocumentController implements SimpleController {
     private final ElasticClient client;
     private final UniGraph graph;
 
+    private final int maxLimit = 10000;
+
     private Set<? extends DocumentVertexSchema> vertexSchemas = new HashSet<>();
     private Set<? extends DocumentEdgeSchema> edgeSchemas = new HashSet<>();
 
@@ -192,7 +194,7 @@ public class DocumentController implements SimpleController {
 
     private <E extends Element, S extends DocumentSchema<E>> Pair<S, SearchSourceBuilder> createSearchBuilder(Map.Entry<S, QueryBuilder> kv, SearchQuery<E> query) {
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(kv.getValue())
-                .size(query.getLimit() == -1 ? 1 : query.getLimit());
+                .size(query.getLimit() == -1 ? maxLimit : query.getLimit());
         if (query.getPropertyKeys() == null) searchSourceBuilder.fetchSource(true);
         else {
             Set<String> fields = kv.getKey().toFields(query.getPropertyKeys());
@@ -256,11 +258,9 @@ public class DocumentController implements SimpleController {
             resultsList.add(results.getJsonString());
 
             if(scroll_id != null) {
-//                JestResult execute = client.execute(new SearchScroll.Builder(scroll_id.getAsString(), "1m").build());
-                while (results.getJsonObject().get("hits").getAsJsonObject().get("hits").getAsJsonArray().size() > 0) {
+                while (results.getJsonObject().get("hits").getAsJsonObject().get("hits").getAsJsonArray().size() == maxLimit) {
                     results = client.execute(new SearchScroll.Builder(scroll_id.getAsString(), "1m").build());
                     resultsList.add(results.getJsonString());
-                    scroll_id = results.getJsonObject().get("_scroll_id");
                 }
             }
             return searchSchemas.stream().map(s -> s.parseResults(resultsList, query));
