@@ -1,6 +1,7 @@
 package org.unipop.elastic.document;
 
 import io.searchbox.action.BulkableAction;
+import io.searchbox.client.JestResult;
 import io.searchbox.core.Delete;
 import io.searchbox.core.DocumentResult;
 
@@ -39,6 +40,7 @@ public interface DocumentSchema<E extends Element> extends ElementSchema<E>{
      * @return A list of elements
      */
     List<E> parseResults(List<String> result, PredicateQuery query);
+    List<E> parseResultsOptimized(List<JestResult> resultList, PredicateQuery query);
 
     /**
      * Returns an action to insert or update a document

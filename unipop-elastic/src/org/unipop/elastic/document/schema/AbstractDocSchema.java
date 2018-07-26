@@ -1,6 +1,10 @@
 package org.unipop.elastic.document.schema;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import io.searchbox.action.BulkableAction;
+import io.searchbox.client.JestResult;
 import io.searchbox.core.Delete;
 import io.searchbox.core.DocumentResult;
 import io.searchbox.core.Index;
@@ -112,40 +116,39 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
             }
         return results;
     }
-//    public List<E> parseResults(List<JestResult> resultList, PredicateQuery query) {
-//        List<E> results = new ArrayList<>();
-//
-//        for(JestResult result : resultList)
-//        {
-//            try
-//            {
-//                JsonArray hits = result.getJsonObject().get("hits").getAsJsonObject().get("hits").getAsJsonArray();
-//                for(JsonElement hit:hits)
-//                {
-//                    hit.getAsJsonObject().get("_source") ? hit.getAsJsonObject().get("_source") :
-//                }
-//            }
-//
-//        }
-//        try {
-//            JsonNode hits = mapper.readTree(result).get("hits").get("hits");
-//            for (JsonNode hit : hits) {
-//                Map<String, Object> source = hit.has("_source") ? mapper.readValue(hit.get("_source").toString(), Map.class) : new HashMap<>();
-//                Document document = new Document(hit.get("_index").asText(), hit.get("_type").asText(), hit.get("_id").asText(), source);
-//                Collection<E> elements = fromDocument(document);
-//                if(elements != null) {
-//                    elements.forEach(element -> {
-//                        if(element != null && query.test(element, query.getPredicates()))
-//                            results.add(element);
-//                    });
-//                }
-//            }
-//        }
-//        catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//        return results;
-//    }
+    public List<E> parseResultsOptimized(List<JestResult> resultList, PredicateQuery query) {
+        List<E> results = new ArrayList<>();
+        Map<String, Object> source;
+
+        for(JestResult result : resultList) {
+            try {
+                JsonArray hits = result.getJsonObject().get("hits").getAsJsonObject().get("hits").getAsJsonArray();
+                for (JsonElement hit : hits) {
+                    JsonObject hitJson = hit.getAsJsonObject();
+                    JsonElement tempSource = hitJson.get("_source");
+                    if (tempSource != null) {
+                        String sTempSource = tempSource.toString();
+                        source = mapper.readValue(sTempSource, Map.class);
+                    }
+                    else
+                        source = new HashMap<>();
+                    Document document = new Document(hitJson.get("_index").getAsString(),hitJson.get("_type").getAsString(),hitJson.get("_id").getAsString(),source);
+                    Collection<E> elements = fromDocument(document);
+                    if(elements != null) {
+                        elements.forEach(element -> {
+                            if(element != null && query.test(element, query.getPredicates()))
+                                results.add(element);
+                        });
+                    }
+                }
+            }
+            catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return results;
+    }
 
     @Override
     public BulkableAction<DocumentResult> addElement(E element, boolean create) {

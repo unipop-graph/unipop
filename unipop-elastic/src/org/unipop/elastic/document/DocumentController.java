@@ -254,16 +254,16 @@ public class DocumentController implements SimpleController {
             JestResult results = client.execute(search);
             if (results == null || !results.isSucceeded()) return Stream.empty();
             JsonElement scroll_id = results.getJsonObject().get("_scroll_id");
-            List<String> resultsList = new LinkedList<>();
-            resultsList.add(results.getJsonString());
+            List<JestResult> resultsList = new LinkedList<>();
+            resultsList.add(results);
 
             if(scroll_id != null) {
                 while (results.getJsonObject().get("hits").getAsJsonObject().get("hits").getAsJsonArray().size() == maxLimit) {
                     results = client.execute(new SearchScroll.Builder(scroll_id.getAsString(), "1m").build());
-                    resultsList.add(results.getJsonString());
+                    resultsList.add(results);
                 }
             }
-            return searchSchemas.stream().map(s -> s.parseResults(resultsList, query));
+            return searchSchemas.stream().map(s -> s.parseResultsOptimized(resultsList, query));
         }).flatMap(Collection::stream).iterator();
 
     }
