@@ -1,5 +1,6 @@
 package org.unipop.elastic.document;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import io.searchbox.action.BulkableAction;
 import io.searchbox.client.JestResult;
@@ -194,7 +195,7 @@ public class DocumentController implements SimpleController {
 
     private <E extends Element, S extends DocumentSchema<E>> Pair<S, SearchSourceBuilder> createSearchBuilder(Map.Entry<S, QueryBuilder> kv, SearchQuery<E> query) {
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(kv.getValue())
-                .size(query.getLimit() == -1 ? maxLimit : query.getLimit());
+                .size(query.getLimit() == -1 || query.getLimit() > 10000 ? maxLimit : query.getLimit());
         if (query.getPropertyKeys() == null) searchSourceBuilder.fetchSource(true);
         else {
             Set<String> fields = kv.getKey().toFields(query.getPropertyKeys());
@@ -225,7 +226,7 @@ public class DocumentController implements SimpleController {
 
     private <E extends Element, S extends DocumentSchema<E>> Pair<S, Search> createSearch(Pair<S, SearchSourceBuilder> kv, SearchQuery<E> query) {
         Search.Builder builder = new Search.Builder(kv.getValue1().toString().replace("\n", ""))
-                .ignoreUnavailable(true).allowNoIndices(true).setParameter(Parameters.SCROLL, "1m");
+                .ignoreUnavailable(true).allowNoIndices(true).setParameter(Parameters.SCROLL, "6m");
         kv.getValue0().getIndex().getIndex(query.getPredicates()).forEach(builder::addIndex);
         return Pair.with(kv.getValue0(), builder.build());
     }
@@ -254,13 +255,19 @@ public class DocumentController implements SimpleController {
             JestResult results = client.execute(search);
             if (results == null || !results.isSucceeded()) return Stream.empty();
             JsonElement scroll_id = results.getJsonObject().get("_scroll_id");
-            List<JestResult> resultsList = new LinkedList<>();
-            resultsList.add(results);
+            List<JsonElement> resultsList = new LinkedList<>();
+            results.getJsonObject().get("hits").getAsJsonObject().get("hits").getAsJsonArray().forEach(hit->((LinkedList) resultsList).add(hit));
 
-            if(scroll_id != null) {
-                while (results.getJsonObject().get("hits").getAsJsonObject().get("hits").getAsJsonArray().size() == maxLimit) {
-                    results = client.execute(new SearchScroll.Builder(scroll_id.getAsString(), "1m").build());
-                    resultsList.add(results);
+            if(scroll_id != null && resultsList.size() > 0 && resultsList.size() == maxLimit) {
+                while (resultsList.size() < query.getLimit() || query.getLimit() == -1) {
+                    results = client.execute(new SearchScroll.Builder(scroll_id.getAsString(), "6m").build());
+                    scroll_id = results.getJsonObject().get("_scroll_id");
+                    JsonArray thisResultAsJsonArray = results.getJsonObject().get("hits").getAsJsonObject().get("hits").getAsJsonArray();
+                    thisResultAsJsonArray.forEach(hit-> ((LinkedList) resultsList).add(hit));
+
+                    if(thisResultAsJsonArray.size() != maxLimit)
+                        break;
+
                 }
             }
             return searchSchemas.stream().map(s -> s.parseResultsOptimized(resultsList, query));

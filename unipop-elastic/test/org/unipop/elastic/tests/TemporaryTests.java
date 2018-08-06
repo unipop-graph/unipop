@@ -3,7 +3,6 @@ package org.unipop.elastic.tests;
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.GraphManager;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -25,7 +24,7 @@ public class TemporaryTests extends AbstractGremlinTest {
     @LoadGraphWith(MODERN)
     public void test() {
 
-        Traversal t = g.V().has("age", P.gt(30)).has("name","josh");
+        Traversal t = g.V().count();
         check(t);
     }
 

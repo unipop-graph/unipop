@@ -1,10 +1,9 @@
 package org.unipop.elastic.document;
 
+import com.google.gson.JsonElement;
 import io.searchbox.action.BulkableAction;
-import io.searchbox.client.JestResult;
 import io.searchbox.core.Delete;
 import io.searchbox.core.DocumentResult;
-
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.unipop.elastic.document.schema.property.IndexPropertySchema;
@@ -40,7 +39,7 @@ public interface DocumentSchema<E extends Element> extends ElementSchema<E>{
      * @return A list of elements
      */
     List<E> parseResults(List<String> result, PredicateQuery query);
-    List<E> parseResultsOptimized(List<JestResult> resultList, PredicateQuery query);
+    List<E> parseResultsOptimized(List<JsonElement> hits, PredicateQuery query);
 
     /**
      * Returns an action to insert or update a document
