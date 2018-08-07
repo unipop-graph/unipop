@@ -1,8 +1,11 @@
 package org.unipop.elastic.document;
 
-import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import io.searchbox.action.BulkableAction;
+import io.searchbox.client.JestResult;
 import io.searchbox.core.*;
+import io.searchbox.params.Parameters;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
@@ -27,12 +30,11 @@ import org.unipop.query.search.SearchQuery;
 import org.unipop.query.search.SearchVertexQuery;
 import org.unipop.schema.element.ElementSchema;
 import org.unipop.schema.reference.DeferredVertex;
-import org.unipop.structure.traversalfilter.TraversalFilter;
 import org.unipop.structure.UniEdge;
 import org.unipop.structure.UniElement;
 import org.unipop.structure.UniGraph;
 import org.unipop.structure.UniVertex;
-import org.unipop.util.MetricsRunner;
+import org.unipop.structure.traversalfilter.TraversalFilter;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -52,6 +54,8 @@ public class DocumentController implements SimpleController {
 
     private final ElasticClient client;
     private final UniGraph graph;
+
+    private final int maxLimit = 10000;
 
     private Set<? extends DocumentVertexSchema> vertexSchemas = new HashSet<>();
     private Set<? extends DocumentEdgeSchema> edgeSchemas = new HashSet<>();
@@ -191,7 +195,7 @@ public class DocumentController implements SimpleController {
 
     private <E extends Element, S extends DocumentSchema<E>> Pair<S, SearchSourceBuilder> createSearchBuilder(Map.Entry<S, QueryBuilder> kv, SearchQuery<E> query) {
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(kv.getValue())
-                .size(query.getLimit() == -1 ? 10000 : query.getLimit());
+                .size(query.getLimit() == -1 || query.getLimit() > 10000 ? maxLimit : query.getLimit());
         if (query.getPropertyKeys() == null) searchSourceBuilder.fetchSource(true);
         else {
             Set<String> fields = kv.getKey().toFields(query.getPropertyKeys());
@@ -222,7 +226,7 @@ public class DocumentController implements SimpleController {
 
     private <E extends Element, S extends DocumentSchema<E>> Pair<S, Search> createSearch(Pair<S, SearchSourceBuilder> kv, SearchQuery<E> query) {
         Search.Builder builder = new Search.Builder(kv.getValue1().toString().replace("\n", ""))
-                .ignoreUnavailable(true).allowNoIndices(true);
+                .ignoreUnavailable(true).allowNoIndices(true).setParameter(Parameters.SCROLL, "6m");
         kv.getValue0().getIndex().getIndex(query.getPredicates()).forEach(builder::addIndex);
         return Pair.with(kv.getValue0(), builder.build());
     }
@@ -230,6 +234,8 @@ public class DocumentController implements SimpleController {
     private <E extends Element, S extends DocumentSchema<E>> Iterator<E> search(SearchQuery<E> query, Map<S, QueryBuilder> schemas) {
 //        MetricsRunner metrics = new MetricsRunner(this, query,
 //                schemas.keySet().stream().map(s -> ((ElementSchema) s)).collect(Collectors.toList()));
+
+        //https://www.elastic.co/guide/en/elasticsearch/client/java-rest/master/java-rest-high-search-scroll.html
 
         if (schemas.size() == 0) return EmptyIterator.instance();
         logger.debug("Preparing search. Schemas: {}", schemas);
@@ -246,9 +252,25 @@ public class DocumentController implements SimpleController {
         return groupedQueries.entrySet().stream().flatMap(entry -> {
             Search search = entry.getKey();
             List<S> searchSchemas = entry.getValue().stream().map(Pair::getValue0).collect(Collectors.toList());
-            SearchResult results = client.execute(search);
+            JestResult results = client.execute(search);
             if (results == null || !results.isSucceeded()) return Stream.empty();
-            return searchSchemas.stream().map(s -> s.parseResults(results.getJsonString(), query));
+            JsonElement scroll_id = results.getJsonObject().get("_scroll_id");
+            List<JsonElement> resultsList = new LinkedList<>();
+            results.getJsonObject().get("hits").getAsJsonObject().get("hits").getAsJsonArray().forEach(hit->((LinkedList) resultsList).add(hit));
+
+            if(scroll_id != null && resultsList.size() > 0 && resultsList.size() == maxLimit) {
+                while (resultsList.size() < query.getLimit() || query.getLimit() == -1) {
+                    results = client.execute(new SearchScroll.Builder(scroll_id.getAsString(), "6m").build());
+                    scroll_id = results.getJsonObject().get("_scroll_id");
+                    JsonArray thisResultAsJsonArray = results.getJsonObject().get("hits").getAsJsonObject().get("hits").getAsJsonArray();
+                    thisResultAsJsonArray.forEach(hit-> ((LinkedList) resultsList).add(hit));
+
+                    if(thisResultAsJsonArray.size() != maxLimit)
+                        break;
+
+                }
+            }
+            return searchSchemas.stream().map(s -> s.parseResultsOptimized(resultsList, query));
         }).flatMap(Collection::stream).iterator();
 
     }

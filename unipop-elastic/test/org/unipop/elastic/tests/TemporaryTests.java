@@ -24,7 +24,7 @@ public class TemporaryTests extends AbstractGremlinTest {
     @LoadGraphWith(MODERN)
     public void test() {
 
-        Traversal t = g.V(convertToVertexId("marko")).out();
+        Traversal t = g.V().count();
         check(t);
     }
 

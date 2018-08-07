@@ -3,6 +3,7 @@ package org.unipop.rest.test;
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.GraphManager;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.junit.Test;
 import test.RestGraphProvider;
@@ -21,8 +22,8 @@ public class TemporaryTests extends AbstractGremlinTest {
     @Test
     @LoadGraphWith(MODERN)
     public void test() {
-//        Traversal t = g.V().has("age", P.gt(30));
-        Traversal t = g.V(this.convertToVertexId("marko")).out().values();
+        Traversal t = g.V().has("age", P.gt(30));
+        //Traversal t = g.V(this.convertToVertexId("marko")).out().values();
         check(t);
     }
 

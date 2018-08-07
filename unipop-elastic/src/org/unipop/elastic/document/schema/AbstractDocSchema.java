@@ -1,5 +1,7 @@
 package org.unipop.elastic.document.schema;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import io.searchbox.action.BulkableAction;
 import io.searchbox.core.Delete;
 import io.searchbox.core.DocumentResult;
@@ -10,7 +12,6 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.shaded.jackson.databind.JsonNode;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.javatuples.Pair;
@@ -91,13 +92,44 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
     }
 
     @Override
-    public List<E> parseResults(String result, PredicateQuery query) {
+    public List<E> parseResults(List<String> resultList, PredicateQuery query) {
         List<E> results = new ArrayList<>();
+        for( String result : resultList)
+            try {
+                JsonNode hits = mapper.readTree(result).get("hits").get("hits");
+                for (JsonNode hit : hits) {
+                    Map<String, Object> source = hit.has("_source") ? mapper.readValue(hit.get("_source").toString(), Map.class) : new HashMap<>();
+                    Document document = new Document(hit.get("_index").asText(), hit.get("_type").asText(), hit.get("_id").asText(), source);
+                    Collection<E> elements = fromDocument(document);
+                    if(elements != null) {
+                        elements.forEach(element -> {
+                            if(element != null && query.test(element, query.getPredicates()))
+                                results.add(element);
+                        });
+                    }
+                }
+            }
+            catch (IOException e) {
+                e.printStackTrace();
+            }
+        return results;
+    }
+    public List<E> parseResultsOptimized(List<JsonElement> hits, PredicateQuery query) {
+        List<E> results = new ArrayList<>();
+        Map<String, Object> source;
+
         try {
-            JsonNode hits = mapper.readTree(result).get("hits").get("hits");
-            for (JsonNode hit : hits) {
-                Map<String, Object> source = hit.has("_source") ? mapper.readValue(hit.get("_source").toString(), Map.class) : new HashMap<>();
-                Document document = new Document(hit.get("_index").asText(), hit.get("_type").asText(), hit.get("_id").asText(), source);
+
+            for (JsonElement hit : hits) {
+                JsonObject hitJson = hit.getAsJsonObject();
+                JsonElement tempSource = hitJson.get("_source");
+                if (tempSource != null) {
+                    String sTempSource = tempSource.toString();
+                    source = mapper.readValue(sTempSource, Map.class);
+                }
+                else
+                    source = new HashMap<>();
+                Document document = new Document(hitJson.get("_index").getAsString(),hitJson.get("_type").getAsString(),hitJson.get("_id").getAsString(),source);
                 Collection<E> elements = fromDocument(document);
                 if(elements != null) {
                     elements.forEach(element -> {
@@ -110,6 +142,8 @@ public abstract class AbstractDocSchema<E extends Element> extends AbstractEleme
         catch (IOException e) {
             e.printStackTrace();
         }
+
+
         return results;
     }
 
