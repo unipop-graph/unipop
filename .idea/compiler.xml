@@ -20,7 +20,7 @@
       <module name="unipop-elastic" target="1.8" />
       <module name="unipop-jdbc" target="1.8" />
       <module name="unipop-rest" target="1.8" />
-      <module name="unipop-test" target="1.8" />
+      <module name="unipop-test" target="1.5" />
     </bytecodeTargetLevel>
   </component>
 </project>
