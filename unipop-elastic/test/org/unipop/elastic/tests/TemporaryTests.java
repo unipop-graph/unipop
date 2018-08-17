@@ -24,7 +24,7 @@ public class TemporaryTests extends AbstractGremlinTest {
     @LoadGraphWith(MODERN)
     public void test() {
 
-        Traversal t = g.V().count();
+        Traversal t = g.V(new Object[0]).out(new String[0]).out(new String[0]);
         check(t);
     }
 
