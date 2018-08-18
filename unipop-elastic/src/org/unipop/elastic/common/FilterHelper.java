@@ -83,12 +83,11 @@ public class FilterHelper {
     }
 
     private static QueryBuilder predicateToQuery(String key, Object value, BiPredicate<?, ?> biPredicate) {
-        String keyWordkey = key;
-        if (biPredicate instanceof Compare) return getCompareFilter(keyWordkey, value, biPredicate.toString());
-        else if (biPredicate instanceof Contains) return getContainsFilter(keyWordkey, value, biPredicate);
+        if (biPredicate instanceof Compare) return getCompareFilter(key, value, biPredicate.toString());
+        else if (biPredicate instanceof Contains) return getContainsFilter(key, value, biPredicate);
 //        else if (biPredicate instanceof Geo) return getGeoFilter(key, value, (Geo) biPredicate);
         else if (biPredicate instanceof Text.TextPredicate)
-            return getTextFilter(keyWordkey, value, (Text.TextPredicate) biPredicate);
+            return getTextFilter(key, value, (Text.TextPredicate) biPredicate);
         else throw new IllegalArgumentException("predicate not supported by unipop: " + biPredicate.toString());
     }
 

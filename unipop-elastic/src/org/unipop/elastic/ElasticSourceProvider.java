@@ -10,6 +10,7 @@ import org.unipop.elastic.document.schema.DocEdgeSchema;
 import org.unipop.elastic.document.schema.DocVertexSchema;
 import org.unipop.elastic.document.schema.property.IndexPropertySchema;
 import org.unipop.elastic.document.schema.property.InnerPropertySchema;
+import org.unipop.elastic.document.schema.property.KeywordPropertySchema;
 import org.unipop.query.controller.SourceProvider;
 import org.unipop.query.controller.UniQueryController;
 import org.unipop.schema.property.PropertySchema;
@@ -37,10 +38,10 @@ public class ElasticSourceProvider implements SourceProvider {
         this.client = new ElasticClient(addresses);
 
         Set<DocumentSchema> schemas = new HashSet<>();
-        for(JSONObject json : getList(configuration, "vertices")) {
+        for (JSONObject json : getList(configuration, "vertices")) {
             schemas.add(createVertexSchema(json));
         }
-        for(JSONObject json : getList(configuration, "edges")) {
+        for (JSONObject json : getList(configuration, "edges")) {
             schemas.add(createEdgeSchema(json));
         }
 
@@ -50,7 +51,7 @@ public class ElasticSourceProvider implements SourceProvider {
 
     @Override
     public List<PropertySchema.PropertySchemaBuilder> providerBuilders() {
-        return Arrays.asList(new IndexPropertySchema.Builder(), new InnerPropertySchema.Builder());
+        return Arrays.asList(new KeywordPropertySchema.Builder(), new IndexPropertySchema.Builder(), new InnerPropertySchema.Builder());
     }
 
     protected DocVertexSchema createVertexSchema(JSONObject vertexJson) throws JSONException {
