@@ -1,5 +1,3 @@
-_**`This project is in active development. A stable version will be released soon.`**_
-
 # <img src="https://raw.githubusercontent.com/rmagen/unipop/master/docs/images/unipop-logo.png" width=70 style="vertical-align:middle;"> <span style="vertical-align:middle;">Unipop</span>
 [![Build Status](https://travis-ci.org/unipop-graph/unipop.svg?branch=master)](https://travis-ci.org/unipop-graph/unipop)
 
