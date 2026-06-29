@@ -16,12 +16,24 @@ import java.util.Map;
  * @since 6/20/2016
  */
 public class JdbcGraphProvider extends UnipopGraphProvider {
+    static {
+        // This provider is test-only but lives in main source, while the embedded PostgreSQL
+        // server lives in test source (it needs the test-scope zonky dependency). Start it
+        // reflectively here so there is no main->test/zonky compile dependency. A static
+        // initializer runs on first instantiation, before this constructor body and before any
+        // caller (suite runner / JdbcWorld) connects — so Postgres is always up in time.
+        try {
+            Class.forName("org.unipop.jdbc.suite.EmbeddedPostgresServer")
+                    .getMethod("ensureStarted").invoke(null);
+        } catch (final ReflectiveOperationException e) {
+            throw new IllegalStateException("Could not start embedded PostgreSQL for tests", e);
+        }
+    }
+
     private final Connection jdbcConnection;
 
     public JdbcGraphProvider() throws SQLException, ClassNotFoundException {
         Class.forName("org.postgresql.Driver");
-        // Embedded PostgreSQL is started (fixed port) by the test suites / JdbcWorld before any
-        // provider is constructed (see EmbeddedPostgresServer). Connect with java.sql only.
         this.jdbcConnection = DriverManager.getConnection(
                 "jdbc:postgresql://localhost:54329/postgres", "postgres", "");
 

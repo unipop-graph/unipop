@@ -38,10 +38,6 @@ import org.junit.runner.RunWith;
         plugin = { "progress", "junit:target/cucumber.xml" })
 public class JdbcFeatureTest {
 
-    static {
-        EmbeddedPostgresServer.ensureStarted();
-    }
-
     public static final class JdbcGuiceFactory extends AbstractGuiceFactory {
         public JdbcGuiceFactory() {
             super(Guice.createInjector(Stage.PRODUCTION, CucumberModules.createScenarioModule(), new ServiceModule()));

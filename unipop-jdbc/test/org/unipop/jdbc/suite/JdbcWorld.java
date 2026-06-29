@@ -27,7 +27,6 @@ public class JdbcWorld implements World {
 
     @Override
     public GraphTraversalSource getGraphTraversalSource(final LoadGraphWith.GraphData graphData) {
-        EmbeddedPostgresServer.ensureStarted();
         try {
             final JdbcGraphProvider provider = new JdbcGraphProvider();
             final Map<String, Object> baseConf =
