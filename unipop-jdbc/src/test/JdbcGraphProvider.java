@@ -19,9 +19,11 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
     private final Connection jdbcConnection;
 
     public JdbcGraphProvider() throws SQLException, ClassNotFoundException {
-        Class.forName("org.h2.Driver");
-        // H2 2.x made YEAR/TIME reserved keywords; the test schema uses them as column names.
-        this.jdbcConnection = DriverManager.getConnection("jdbc:h2:mem:gremlin;NON_KEYWORDS=YEAR,TIME");
+        Class.forName("org.postgresql.Driver");
+        // Embedded PostgreSQL is started (fixed port) by the test suites / JdbcWorld before any
+        // provider is constructed (see EmbeddedPostgresServer). Connect with java.sql only.
+        this.jdbcConnection = DriverManager.getConnection(
+                "jdbc:postgresql://localhost:54329/postgres", "postgres", "");
 
         createTables();
     }
@@ -77,7 +79,7 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
                         "CREATEDBY VARCHAR (100)," +
                         "EDGEID VARCHAR (100)," +
                         "EDGELANG VARCHAR (100)," +
-                        "EDGEWEIGHT DOUBLE," +
+                        "EDGEWEIGHT DOUBLE PRECISION," +
                         "EDGENAME VARCHAR(100))"
         );
 
@@ -108,7 +110,7 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
                         "time VARCHAR(100)," +
                         "location VARCHAR(100)," +
                         "data VARCHAR(100)," +
-                        "weight DOUBLE)");
+                        "weight DOUBLE PRECISION)");
         //endregion
 
         //region modern tables
@@ -139,7 +141,7 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
                         "inId VARCHAR(100), " +
                         "inLabel VARCHAR(100)," +
                         "year int," +
-                        "weight DOUBLE)");
+                        "weight DOUBLE PRECISION)");
         //endregion
 
         //region crew tables
@@ -197,7 +199,7 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
                         "outLabel VARCHAR(100), " +
                         "inId VARCHAR(100), " +
                         "inLabel VARCHAR(100)," +
-                        "weight DOUBLE)"
+                        "weight DOUBLE PRECISION)"
         );
         //endregion
     }
