@@ -9,8 +9,7 @@
       "table": "mdocs",
       "id": "@id",
       "label": "@label",
-      "properties": { "name": "@name" },
-      "jsonbColumns": ["data", "meta"]
+      "properties": { "name": "@name", "data": { "type": "jsonb" }, "meta": { "type": "jsonb" } }
     }
   ],
   "edges": []

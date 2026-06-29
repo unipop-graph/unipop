@@ -54,15 +54,15 @@ public class JdbcJsonbTest {
     public void shouldStoreQueryAndReadSchemalessJsonb() {
         Map<String, Object> address = Collections.singletonMap("city", "NYC");
         g.addV("doc").property(T.id, "1").property("name", "a")
-                .property("status", "active").property("address", address).next();
+                .property("data.status", "active").property("data.address", address).next();
 
         // top-level key query
-        assertEquals(1L, (long) g.V().has("status", "active").count().next());
+        assertEquals(1L, (long) g.V().has("data.status", "active").count().next());
         // nested-path key query
-        assertEquals(1L, (long) g.V().has("address.city", "NYC").count().next());
+        assertEquals(1L, (long) g.V().has("data.address.city", "NYC").count().next());
         // read-back
-        assertEquals("active", g.V("1").values("status").next());
+        assertEquals("active", g.V("1").values("data.status").next());
         // negative
-        assertEquals(0L, (long) g.V().has("status", "inactive").count().next());
+        assertEquals(0L, (long) g.V().has("data.status", "inactive").count().next());
     }
 }

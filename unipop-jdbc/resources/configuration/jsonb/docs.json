@@ -9,8 +9,7 @@
       "table": "docs",
       "id": "@id",
       "label": "@label",
-      "properties": { "name": "@name" },
-      "dynamicProperties": { "jsonb": "data" }
+      "properties": { "name": "@name", "data": { "type": "jsonb" } }
     }
   ],
   "edges": []
