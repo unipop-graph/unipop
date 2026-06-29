@@ -52,7 +52,7 @@ public class UniGraphOrderStrategy extends AbstractTraversalStrategy<TraversalSt
                 if (nextStep instanceof RangeGlobalStep){
                     if (step instanceof ReceivesPredicatesHolder) {
                         RangeGlobalStep rangeGlobalStep = (RangeGlobalStep) nextStep;
-                        int limit = rangeGlobalStep.getHighRange() > Integer.MAX_VALUE ? -1 : (int)(long) rangeGlobalStep.getHighRange();
+                        int limit = rangeGlobalStep.getHighRange() > Integer.MAX_VALUE ? -1 : rangeGlobalStep.getHighRange().intValue();
                         ((ReceivesPredicatesHolder) step).setLimit(limit);
                     }
                 }

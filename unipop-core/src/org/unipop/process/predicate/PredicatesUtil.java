@@ -56,7 +56,7 @@ public class PredicatesUtil {
 //            }
             else if(nextStep instanceof RangeGlobalStep) {
                 RangeGlobalStep rangeGlobalStep = (RangeGlobalStep) nextStep;
-                int limit = rangeGlobalStep.getHighRange() > Integer.MAX_VALUE ? -1 : (int)(long) rangeGlobalStep.getHighRange();
+                int limit = rangeGlobalStep.getHighRange() > Integer.MAX_VALUE ? -1 : rangeGlobalStep.getHighRange().intValue();
                 step.setLimit(limit);
                 collectLabels(nextStep, step);
                 break;
