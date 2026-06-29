@@ -32,15 +32,38 @@ import static org.jooq.impl.DSL.table;
  */
 public abstract class AbstractRowSchema<E extends Element> extends AbstractElementSchema<E> implements JdbcSchema<E> {
     protected String table;
+    // column -> PostgreSQL enum type name, declared via the "enums" config object.
+    private final Map<String, String> enumTypes;
 
     public AbstractRowSchema(JSONObject configuration, UniGraph graph) {
         super(configuration, graph);
         this.table = configuration.optString("table");
+        final JSONObject enumsJson = configuration.optJSONObject("enums");
+        final Map<String, String> enums = new HashMap<>();
+        if (enumsJson != null) {
+            for (String column : enumsJson.keySet()) {
+                final String enumType = enumsJson.getString(column);
+                if (!enumType.matches("^[A-Za-z_][A-Za-z0-9_]*$"))
+                    throw new IllegalArgumentException("Invalid enum type name in config: " + enumType);
+                enums.put(column, enumType);
+            }
+        }
+        this.enumTypes = Collections.unmodifiableMap(enums);
     }
 
     @Override
     public String getTable() {
         return this.table;
+    }
+
+    /** @return the PostgreSQL enum type name for the given column, or {@code null} if not an enum column. */
+    public String getEnumType(String column) {
+        return enumTypes.get(column);
+    }
+
+    /** @return the set of column names declared as PostgreSQL enum columns. */
+    public Set<String> getEnumColumns() {
+        return enumTypes.keySet();
     }
 
     @Override
@@ -86,7 +109,7 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
         // (PostgreSQL won't compare varchar = bigint the way H2 did).
         String idField = getFieldByPropertyKey(T.id.getAccessor());
         Set<String> idFields = idField == null ? Collections.emptySet() : Collections.singleton(idField);
-        Condition conditions = new JdbcPredicatesTranslator(idFields).translate(predicatesHolder);
+        Condition conditions = new JdbcPredicatesTranslator(idFields, getEnumColumns()).translate(predicatesHolder);
         int finalLimit = query.getLimit() < 0 ? Integer.MAX_VALUE : query.getLimit();
 
         SelectConditionStep<Record> where = createSqlQuery(query.getPropertyKeys())

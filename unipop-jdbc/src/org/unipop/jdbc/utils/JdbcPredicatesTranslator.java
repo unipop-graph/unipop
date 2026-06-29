@@ -31,13 +31,29 @@ import static org.jooq.impl.DSL.field;
 public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition> {
 
     private final Set<String> idFields;
+    private final Set<String> enumColumns;
 
     public JdbcPredicatesTranslator() {
-        this(Collections.emptySet());
+        this(Collections.emptySet(), Collections.emptySet());
     }
 
     public JdbcPredicatesTranslator(Set<String> idFields) {
+        this(idFields, Collections.emptySet());
+    }
+
+    public JdbcPredicatesTranslator(Set<String> idFields, Set<String> enumColumns) {
         this.idFields = idFields == null ? Collections.emptySet() : idFields;
+        this.enumColumns = enumColumns == null ? Collections.emptySet() : enumColumns;
+    }
+
+    /**
+     * The jOOQ field for a column. PostgreSQL enum columns are cast to text so they compare
+     * against the (String) predicate value — Postgres won't apply {@code enum = varchar}.
+     */
+    private Field<Object> columnField(String key) {
+        return enumColumns.contains(key)
+                ? DSL.field("{0}::text", Object.class, DSL.field(DSL.name(key)))
+                : field(key);
     }
 
     /**
@@ -80,7 +96,7 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
 
         BiPredicate<?, ?> biPredicate = predicate.getBiPredicate();
 
-        Field<Object> field = field(key);
+        Field<Object> field = columnField(key);
         if (predicate instanceof ConnectiveP){
             return handleConnectiveP(key, (ConnectiveP) predicate);
         }
@@ -88,17 +104,18 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
             return field.isNotNull();
         } else {
             if (idFields.contains(key)) value = stringifyValue(value);
-            return predicateToQuery(key, value, biPredicate);
+            return predicateToQuery(field, value, biPredicate);
         }
     }
 
     private Condition handleConnectiveP(String key, ConnectiveP predicate) {
+        Field<Object> field = columnField(key);
         List<P> predicates = predicate.getPredicates();
         List<Condition> queries = predicates.stream().map(p -> {
             if (p instanceof ConnectiveP) return handleConnectiveP(key, (ConnectiveP) p);
             Object pValue = p.getValue();
             BiPredicate pBiPredicate = p.getBiPredicate();
-            return predicateToQuery(key, pValue, pBiPredicate);
+            return predicateToQuery(field, pValue, pBiPredicate);
         }).collect(Collectors.toList());
         Condition condition = queries.get(0);
         if (predicate instanceof AndP){
@@ -115,18 +132,18 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
         return condition;
     }
 
-    private Condition predicateToQuery(String field, Object value, BiPredicate<?, ?> biPredicate) {
+    private Condition predicateToQuery(Field<Object> field, Object value, BiPredicate<?, ?> biPredicate) {
         if (biPredicate instanceof Compare) {
-            return getCompareCondition(value, biPredicate, field(field));
+            return getCompareCondition(value, biPredicate, field);
         } else if (biPredicate instanceof Contains) {
-            Condition x = getContainsCondition(value, biPredicate, field(field));
+            Condition x = getContainsCondition(value, biPredicate, field);
             if (x != null) return x;
         }
         else if (biPredicate instanceof Text.TextPredicate) {
-            return getTextCondition(value, biPredicate, field(field));
+            return getTextCondition(value, biPredicate, field);
         } else if (biPredicate instanceof Date.DatePredicate) {
             try {
-                return getDateCondition(value, biPredicate, field(field));
+                return getDateCondition(value, biPredicate, field);
             } catch (ParseException e) {
                 throw new IllegalArgumentException("cant convert to date");
             }
