@@ -14,4 +14,7 @@ import org.unipop.test.UnipopStructureSuite;
 @RunWith(UnipopStructureSuite.class)
 @GraphProviderClass(provider = JdbcGraphProvider.class, graph = UniGraph.class)
 public class JdbcStructureSuite {
+    static {
+        EmbeddedPostgresServer.ensureStarted();
+    }
 }

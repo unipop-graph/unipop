@@ -13,12 +13,12 @@ import java.lang.annotation.Annotation;
 import java.util.Map;
 
 /**
- * TinkerPop 3.8 Gherkin/Cucumber {@link World} for the JDBC (H2-backed) Unipop provider.
+ * TinkerPop 3.8 Gherkin/Cucumber {@link World} for the JDBC (PostgreSQL-backed) Unipop provider.
  *
  * <p>The old JUnit {@code ProcessStandardSuite} process tests were removed in TinkerPop 3.8;
  * the process compliance suite is now driven by the shared {@code .feature} files in
  * {@code gremlin-test}. This World reuses Unipop's existing {@link JdbcGraphProvider}
- * machinery to build a {@code UniGraph} federated over H2 and to load the standard test
+ * machinery to build a {@code UniGraph} federated over PostgreSQL and to load the standard test
  * graph data (modern/grateful) for each scenario.</p>
  */
 public class JdbcWorld implements World {
@@ -27,6 +27,7 @@ public class JdbcWorld implements World {
 
     @Override
     public GraphTraversalSource getGraphTraversalSource(final LoadGraphWith.GraphData graphData) {
+        EmbeddedPostgresServer.ensureStarted();
         try {
             final JdbcGraphProvider provider = new JdbcGraphProvider();
             final Map<String, Object> baseConf =
@@ -34,8 +35,8 @@ public class JdbcWorld implements World {
             final Configuration configuration = new MapConfiguration(baseConf);
             final Graph graph = provider.openTestGraph(configuration);
 
-            // The H2 in-memory database is shared per-JVM; clear any state left by a prior
-            // scenario before loading this scenario's data.
+            // The embedded PostgreSQL database is shared per-JVM; clear any state left by a
+            // prior scenario before loading this scenario's data.
             provider.truncateTables();
             if (graphData != null) {
                 provider.loadGraphData(graph, loadGraphWith(graphData), this.getClass(), "feature");
