@@ -82,6 +82,6 @@ public class InnerRowEdgeSchema extends RowEdgeSchema {
         Map<Field<Object>, Object> fields = row.getFields().entrySet().stream()
                 .collect(Collectors.toMap((entry) -> field(entry.getKey()), Map.Entry::getValue));
 //        return DSL.update(table(getTable())).set(fields).where(field(this.getFieldByPropertyKey(T.id.getAccessor())).eq(row.getId()));
-        return DSL.insertInto(table(getTable())).set(fields);
+        return DSL.insertInto(table(getTable())).set(fields).onDuplicateKeyIgnore();
     }
 }
