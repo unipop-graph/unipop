@@ -46,13 +46,15 @@ public class JsonbPropertySchema implements PropertySchema, JsonbColumnSchema {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Map<String, Object> toProperties(Map<String, Object> source) {
         Object raw = source.get(column);
         if (raw == null) return Collections.emptyMap();
         try {
-            Map<String, Object> parsed = MAPPER.readValue(raw.toString(), Map.class);
+            Object parsed = MAPPER.readValue(raw.toString(), Object.class);
+            if (!(parsed instanceof Map)) return Collections.emptyMap();
             Map<String, Object> props = new HashMap<>();
-            parsed.forEach((k, v) -> {
+            ((Map<String, Object>) parsed).forEach((k, v) -> {
                 if (v != null) props.put(column + "." + k, v);
             });
             return props;
