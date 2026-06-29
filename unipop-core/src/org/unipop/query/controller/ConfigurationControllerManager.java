@@ -1,6 +1,6 @@
 package org.unipop.query.controller;
 
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.json.JSONObject;
 import org.unipop.schema.property.PropertySchema;
 import org.unipop.structure.traversalfilter.TraversalFilter;

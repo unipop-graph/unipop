@@ -22,3 +22,11 @@ build/
 
 */test.sqlite*
 .idea/dictionaries/
+
+# Stray artifact from the TinkerPop structure IO tests (shouldReadWrite*ToFileWithHelpers):
+# a "file:/..." URI is resolved into a literal directory named "file:" at the module root.
+file:/
+
+# Cucumber/JUnit test output written outside target/
+cucumber.xml
+*.log

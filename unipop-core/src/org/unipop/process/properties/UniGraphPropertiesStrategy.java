@@ -6,7 +6,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.lambda.ElementValueTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.lambda.ValueTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.*;
@@ -60,8 +60,8 @@ public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<Traver
                     if ((traversal.getParent() instanceof ConnectiveStep) || TraversalHelper.hasStepOfClass(MatchStep.MatchStartStep.class, traversal)) {
                         propertyFetcher.fetchAllKeys();
                     } else orderGlobalStep.getLocalChildren().forEach(t -> {
-                        if (t instanceof ElementValueTraversal) {
-                            String propertyKey = ((ElementValueTraversal) t).getPropertyKey();
+                        if (t instanceof ValueTraversal) {
+                            String propertyKey = ((ValueTraversal) t).getPropertyKey();
                             handlePropertiesSteps(new String[]{propertyKey}, propertyFetcher);
                         }
                     });
@@ -76,8 +76,8 @@ public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<Traver
                     if ((traversal.getParent() instanceof ConnectiveStep) || TraversalHelper.hasStepOfClass(MatchStep.MatchStartStep.class, traversal)) {
                         propertyFetcher.fetchAllKeys();
                     } else if (dedupGlobalStep.getLocalChildren().size() > 0)
-                        if (dedupGlobalStep.getLocalChildren().get(0) instanceof ElementValueTraversal) {
-                            String propertyKey = ((ElementValueTraversal) dedupGlobalStep.getLocalChildren().get(0)).getPropertyKey();
+                        if (dedupGlobalStep.getLocalChildren().get(0) instanceof ValueTraversal) {
+                            String propertyKey = ((ValueTraversal) dedupGlobalStep.getLocalChildren().get(0)).getPropertyKey();
                             handlePropertiesSteps(new String[]{propertyKey}, propertyFetcher);
                         }
                 });
@@ -156,8 +156,8 @@ public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<Traver
         TraversalHelper.getStepsOfClass(PathStep.class, traversal).forEach(pathStep -> {
             List<PropertyFetcher> propertyFetchers = getAllPropertyFetchersOf(pathStep, traversal);
             pathStep.getLocalChildren().forEach(t -> {
-                if (t instanceof ElementValueTraversal) {
-                    String propertyKey = ((ElementValueTraversal) t).getPropertyKey();
+                if (t instanceof ValueTraversal) {
+                    String propertyKey = ((ValueTraversal) t).getPropertyKey();
                     propertyFetchers.forEach(propertyFetcher -> handlePropertiesSteps(new String[]{propertyKey}, propertyFetcher));
                 }
             });
@@ -166,8 +166,8 @@ public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<Traver
         TraversalHelper.getStepsOfClass(TreeStep.class, traversal).forEach(treeStep -> {
             List<PropertyFetcher> propertyFetchers = getAllPropertyFetchersOf(treeStep, traversal);
             treeStep.getLocalChildren().forEach(t -> {
-                if (t instanceof ElementValueTraversal) {
-                    String propertyKey = ((ElementValueTraversal) t).getPropertyKey();
+                if (t instanceof ValueTraversal) {
+                    String propertyKey = ((ValueTraversal) t).getPropertyKey();
                     propertyFetchers.forEach(propertyFetcher -> handlePropertiesSteps(new String[]{propertyKey}, propertyFetcher));
                 }
             });
@@ -176,8 +176,8 @@ public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<Traver
         TraversalHelper.getStepsOfClass(TreeSideEffectStep.class, traversal).forEach(treeStep -> {
             List<PropertyFetcher> propertyFetchers = getAllPropertyFetchersOf(treeStep, traversal);
             treeStep.getLocalChildren().forEach(t -> {
-                if (t instanceof ElementValueTraversal) {
-                    String propertyKey = ((ElementValueTraversal) t).getPropertyKey();
+                if (t instanceof ValueTraversal) {
+                    String propertyKey = ((ValueTraversal) t).getPropertyKey();
                     propertyFetchers.forEach(propertyFetcher -> handlePropertiesSteps(new String[]{propertyKey}, propertyFetcher));
                 }
             });
@@ -196,16 +196,16 @@ public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<Traver
             groupStep.getLocalChildren().forEach(t -> {
                 if (propertyFetchers != null)
                 propertyFetchers.forEach(propertyFetcher -> {
-                    if (t instanceof ElementValueTraversal) {
-                        String propertyKey = ((ElementValueTraversal) t).getPropertyKey();
+                    if (t instanceof ValueTraversal) {
+                        String propertyKey = ((ValueTraversal) t).getPropertyKey();
                         handlePropertiesSteps(new String[]{propertyKey}, propertyFetcher);
                     } else if (t instanceof DefaultGraphTraversal) {
                         List<Step> steps = ((DefaultGraphTraversal) t).getSteps();
                         steps.forEach(step -> {
                             if (step instanceof TraversalMapStep) {
                                 ((TraversalMapStep) step).getLocalChildren().forEach(t2 -> {
-                                    if (t2 instanceof ElementValueTraversal) {
-                                        String propertyKey = ((ElementValueTraversal) t2).getPropertyKey();
+                                    if (t2 instanceof ValueTraversal) {
+                                        String propertyKey = ((ValueTraversal) t2).getPropertyKey();
                                         handlePropertiesSteps(new String[]{propertyKey}, propertyFetcher);
                                     }
                                 });
@@ -229,8 +229,8 @@ public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<Traver
         TraversalHelper.getStepsOfAssignableClass(GroupCountStep.class, traversal).forEach(groupCountStep -> {
             Collection<PropertyFetcher> propertyFetchers = getPropertyFetcherStepOf(groupCountStep, traversal);
             groupCountStep.getLocalChildren().forEach(t -> {
-                if (t instanceof ElementValueTraversal) {
-                    String propertyKey = ((ElementValueTraversal) t).getPropertyKey();
+                if (t instanceof ValueTraversal) {
+                    String propertyKey = ((ValueTraversal) t).getPropertyKey();
                     propertyFetchers.forEach(propertyFetcher -> handlePropertiesSteps(new String[]{propertyKey}, propertyFetcher));
                 }
             });

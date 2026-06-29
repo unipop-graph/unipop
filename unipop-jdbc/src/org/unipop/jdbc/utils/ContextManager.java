@@ -1,9 +1,10 @@
 package org.unipop.jdbc.utils;
 
-import org.apache.commons.dbcp.BasicDataSource;
+import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
 import org.jooq.*;
-import org.jooq.conf.RenderNameStyle;
+import org.jooq.conf.RenderNameCase;
+import org.jooq.conf.RenderQuotedNames;
 import org.jooq.conf.Settings;
 import org.jooq.impl.DSL;
 import org.jooq.impl.DefaultConfiguration;
@@ -24,6 +25,7 @@ import java.util.Map;
 public class ContextManager {
     private final static Logger logger = LoggerFactory.getLogger(ContextManager.class);
     private DSLContext context;
+    private BasicDataSource ds;
     private JSONObject conf;
 
     public ContextManager(JSONObject conf) throws SQLException, IOException, ClassNotFoundException, NamingException {
@@ -33,7 +35,8 @@ public class ContextManager {
 
     private void reloadContexts() throws IOException {
         SQLDialect dialect = SQLDialect.valueOf(this.conf.getString("sqlDialect"));
-        BasicDataSource ds = new BasicDataSource();
+        closeQuietly();
+        ds = new BasicDataSource();
         ds.setUrl(new ObjectMapper()
                 .readValue(conf.getJSONArray("address").toString(), List.class).get(0).toString());
         ds.setDriverClassName(conf.getString("driver"));
@@ -42,7 +45,9 @@ public class ContextManager {
         if (!user.isEmpty()) ds.setUsername(user);
         if (!password.isEmpty()) ds.setPassword(password);
         Settings settings = new Settings();
-        settings.setRenderNameStyle(RenderNameStyle.AS_IS);
+        // jOOQ 3.12+ replaced RenderNameStyle.AS_IS with RenderNameCase + RenderQuotedNames.
+        settings.setRenderNameCase(RenderNameCase.AS_IS);
+        settings.setRenderQuotedNames(RenderQuotedNames.NEVER);
         Configuration conf = new DefaultConfiguration().set(ds).set(dialect)
                 .set(settings)
                 .set(new DefaultExecuteListenerProvider(new TimingExecuterListener()));
@@ -60,7 +65,7 @@ public class ContextManager {
         try {
             return context.fetch(query).intoMaps();
         } catch (Exception e) {
-            context.close();
+            closeQuietly();
         }
         try {
             reloadContexts();
@@ -74,7 +79,7 @@ public class ContextManager {
         try {
             return context.execute(query);
         } catch (Exception e) {
-            context.close();
+            closeQuietly();
         }
         try {
             reloadContexts();
@@ -88,7 +93,7 @@ public class ContextManager {
         try {
             return context.execute(query);
         } catch (Exception e) {
-            context.close();
+            closeQuietly();
         }
         try {
             reloadContexts();
@@ -99,14 +104,28 @@ public class ContextManager {
     }
 
     public void close() {
-        context.close();
+        closeQuietly();
+    }
+
+    /**
+     * jOOQ 3.19's DSLContext is no longer AutoCloseable; the underlying pooled
+     * BasicDataSource owns the connections, so close it on reload/shutdown.
+     */
+    private void closeQuietly() {
+        if (ds != null) {
+            try {
+                ds.close();
+            } catch (SQLException ignored) {
+            }
+            ds = null;
+        }
     }
 
     public Object render(Query query) {
         try {
             return context.render(query);
         } catch (Exception e) {
-            context.close();
+            closeQuietly();
         }
         try {
             reloadContexts();
@@ -121,7 +140,7 @@ public class ContextManager {
             context.batch(bulk).execute();
             return;
         } catch (Exception e) {
-            context.close();
+            closeQuietly();
         }
         try {
             reloadContexts();

@@ -1,6 +1,6 @@
 package test;
 
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.unipop.test.UnipopGraphProvider;
@@ -20,7 +20,8 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
 
     public JdbcGraphProvider() throws SQLException, ClassNotFoundException {
         Class.forName("org.h2.Driver");
-        this.jdbcConnection = DriverManager.getConnection("jdbc:h2:mem:gremlin;");
+        // H2 2.x made YEAR/TIME reserved keywords; the test schema uses them as column names.
+        this.jdbcConnection = DriverManager.getConnection("jdbc:h2:mem:gremlin;NON_KEYWORDS=YEAR,TIME");
 
         createTables();
     }

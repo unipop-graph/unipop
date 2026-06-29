@@ -1,6 +1,7 @@
 package org.unipop.schema.property;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.PBiPredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -119,7 +120,7 @@ public class ConcatenateFieldPropertySchema implements ParentSchemaProperty {
                 List<Object> values = hasContainers.stream().map(HasContainer::getValue)
                         .map(l -> ((Collection) l).iterator().next()).collect(Collectors.toList());
                 predicates.add(PredicatesHolderFactory.predicate(new HasContainer(key,
-                        new P(has.getBiPredicate(), values))));
+                        new P((PBiPredicate) has.getBiPredicate(), values))));
             });
         }
         return PredicatesHolderFactory.and(predicates);

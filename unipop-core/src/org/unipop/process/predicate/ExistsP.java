@@ -7,7 +7,7 @@ package org.unipop.process.predicate;
 public class ExistsP<V> extends org.apache.tinkerpop.gremlin.process.traversal.P<V> {
     //region Constructor
     public ExistsP() {
-        super(null, null);
+        super((org.apache.tinkerpop.gremlin.process.traversal.PBiPredicate<V, V>) null, (V) null);
     }
     //endregion
 }
