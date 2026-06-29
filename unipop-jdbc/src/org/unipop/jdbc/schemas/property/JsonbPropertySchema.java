@@ -91,6 +91,8 @@ public class JsonbPropertySchema implements PropertySchema, JsonbColumnSchema {
 
     @Override
     public Set<Object> getValues(PredicatesHolder predicatesHolder) {
+        // null matches DynamicPropertySchema/Coalesce; this schema is never nested as a Multi child,
+        // so the null-unsafe MultiPropertySchema.getValues path is unreachable.
         return null;
     }
 

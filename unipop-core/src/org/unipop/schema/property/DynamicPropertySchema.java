@@ -78,6 +78,7 @@ public class DynamicPropertySchema implements PropertySchema {
         return "DynamicPropertySchema{" +
                 "excludeFields=" + excludeFields +
                 ", excludeProperties=" + excludeProperties +
+                ", excludePropertyPrefixes=" + excludePropertyPrefixes +
                 '}';
     }
 }
