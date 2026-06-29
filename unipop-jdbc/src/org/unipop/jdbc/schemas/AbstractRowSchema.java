@@ -10,6 +10,7 @@ import org.jooq.Record;
 import org.jooq.impl.DSL;
 import org.json.JSONObject;
 import org.unipop.jdbc.schemas.jdbc.JdbcSchema;
+import org.unipop.jdbc.schemas.property.JsonbColumnSchema;
 import org.unipop.jdbc.utils.ContextManager;
 import org.unipop.jdbc.utils.JdbcPredicatesTranslator;
 import org.unipop.query.predicates.PredicateQuery;
@@ -109,7 +110,10 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
         // (PostgreSQL won't compare varchar = bigint the way H2 did).
         String idField = getFieldByPropertyKey(T.id.getAccessor());
         Set<String> idFields = idField == null ? Collections.emptySet() : Collections.singleton(idField);
-        Set<String> jsonbColumns = dynamicProperties.getJsonbColumns();
+        Set<String> jsonbColumns = getPropertySchemas().stream()
+                .filter(s -> s instanceof JsonbColumnSchema)
+                .map(s -> ((JsonbColumnSchema) s).getJsonbColumn())
+                .collect(Collectors.toSet());
         Condition conditions = new JdbcPredicatesTranslator(idFields, getEnumColumns(), jsonbColumns).translate(predicatesHolder);
         int finalLimit = query.getLimit() < 0 ? Integer.MAX_VALUE : query.getLimit();
 
