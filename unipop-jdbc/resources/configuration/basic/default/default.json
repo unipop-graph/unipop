@@ -1,8 +1,9 @@
 {
   "class": "org.unipop.jdbc.JdbcSourceProvider",
-  "driver": "org.h2.Driver",
-  "address": ["jdbc:h2:mem:gremlin;NON_KEYWORDS=YEAR,TIME"],
-  "sqlDialect": "H2",
+  "driver": "org.postgresql.Driver",
+  "address": ["jdbc:postgresql://localhost:54329/postgres"],
+  "user": "postgres",
+  "sqlDialect": "POSTGRES",
   "vertices": [
     {
       "table": "vertices",
