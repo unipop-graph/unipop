@@ -117,7 +117,7 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
                         "outLabel VARCHAR(100), " +
                         "inId VARCHAR(100), " +
                         "inLabel VARCHAR(100)," +
-                        "year VARCHAR(100)," +
+                        "year INT," +
                         "acl VARCHAR(100)," +
                         "time VARCHAR(100)," +
                         "location VARCHAR(100)," +
