@@ -81,6 +81,15 @@ public interface PropertySchema {
     default Set<String> excludeDynamicProperties() { return Collections.singleton(getKey()); }
 
     /**
+     * Property-key namespaces this schema owns. The dynamic catch-all excludes any property key
+     * whose first dotted segment matches one of these, so a namespaced keyed schema (e.g. a JSONB
+     * column addressed {@code col.path}) is neither double-handled nor aborted by the dynamic slot.
+     * Empty by default.
+     * @return A set of owned key prefixes
+     */
+    default Set<String> excludeDynamicPropertyPrefixes() { return Collections.emptySet(); }
+
+    /**
      * Property schema builder
      */
     interface PropertySchemaBuilder {
