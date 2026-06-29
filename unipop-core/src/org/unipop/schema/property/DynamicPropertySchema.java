@@ -7,7 +7,9 @@ import org.unipop.util.ConversionUtils;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class DynamicPropertySchema implements PropertySchema {
@@ -69,11 +71,6 @@ public class DynamicPropertySchema implements PropertySchema {
         if (excludeProperties.contains(propertyKey)) return true;
         int dot = propertyKey.indexOf('.');
         return dot > 0 && excludePropertyPrefixes.contains(propertyKey.substring(0, dot));
-    }
-
-    /** The JSONB column(s) this dynamic schema is backed by (empty unless a jsonb variant). */
-    public Set<String> getJsonbColumns() {
-        return Collections.emptySet();
     }
 
     @Override

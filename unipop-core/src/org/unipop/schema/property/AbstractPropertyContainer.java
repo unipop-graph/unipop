@@ -1,7 +1,6 @@
 package org.unipop.schema.property;
 
 import org.apache.tinkerpop.gremlin.structure.T;
-import org.json.JSONArray;
 import org.json.JSONObject;
 import org.unipop.structure.UniGraph;
 import org.unipop.util.PropertySchemaFactory;
@@ -34,18 +33,11 @@ public abstract class AbstractPropertyContainer {
             properties.keys().forEachRemaining(key -> addPropertySchema(key, properties.get(key)));
         }
 
-        Object jsonbColumnsConfig = json.opt("jsonbColumns");
         Object dynamicPropertiesConfig = json.opt("dynamicProperties");
-        if (jsonbColumnsConfig instanceof JSONArray)
-            this.dynamicProperties = new MultiJsonbPropertySchema(propertySchemas, (JSONArray) jsonbColumnsConfig);
-        else if (dynamicPropertiesConfig instanceof Boolean && (boolean) dynamicPropertiesConfig)
+        if (dynamicPropertiesConfig instanceof Boolean && (boolean) dynamicPropertiesConfig)
             this.dynamicProperties = new DynamicPropertySchema(propertySchemas);
-        else if (dynamicPropertiesConfig instanceof JSONObject) {
-            JSONObject dpc = (JSONObject) dynamicPropertiesConfig;
-            this.dynamicProperties = dpc.has("jsonb")
-                    ? new JsonbPropertySchema(propertySchemas, dpc)
-                    : new DynamicPropertySchema(propertySchemas, dpc);
-        }
+        else if (dynamicPropertiesConfig instanceof JSONObject)
+            this.dynamicProperties = new DynamicPropertySchema(propertySchemas, (JSONObject) dynamicPropertiesConfig);
         else this.dynamicProperties = new NonDynamicPropertySchema(propertySchemas);
 
         propertySchemas.add(this.dynamicProperties);
