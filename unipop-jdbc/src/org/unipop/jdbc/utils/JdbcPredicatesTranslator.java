@@ -9,6 +9,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.ConnectiveP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.OrP;
 import org.jooq.Condition;
 import org.jooq.Field;
+import org.jooq.QueryPart;
 import org.jooq.impl.DSL;
 import org.unipop.common.util.PredicatesTranslator;
 import org.unipop.process.predicate.Date;
@@ -32,25 +33,49 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
 
     private final Set<String> idFields;
     private final Set<String> enumColumns;
+    private final Set<String> jsonbColumns;
 
     public JdbcPredicatesTranslator() {
-        this(Collections.emptySet(), Collections.emptySet());
+        this(Collections.emptySet(), Collections.emptySet(), Collections.emptySet());
     }
 
     public JdbcPredicatesTranslator(Set<String> idFields) {
-        this(idFields, Collections.emptySet());
+        this(idFields, Collections.emptySet(), Collections.emptySet());
     }
 
     public JdbcPredicatesTranslator(Set<String> idFields, Set<String> enumColumns) {
+        this(idFields, enumColumns, Collections.emptySet());
+    }
+
+    public JdbcPredicatesTranslator(Set<String> idFields, Set<String> enumColumns, Set<String> jsonbColumns) {
         this.idFields = idFields == null ? Collections.emptySet() : idFields;
         this.enumColumns = enumColumns == null ? Collections.emptySet() : enumColumns;
+        this.jsonbColumns = jsonbColumns == null ? Collections.emptySet() : jsonbColumns;
+    }
+
+    /** A dotted key whose first segment is a JSONB column, e.g. {@code data.address.city}. */
+    private boolean isJsonbKey(String key) {
+        int dot = key.indexOf('.');
+        return dot > 0 && jsonbColumns.contains(key.substring(0, dot));
     }
 
     /**
-     * The jOOQ field for a column. PostgreSQL enum columns are cast to text so they compare
-     * against the (String) predicate value — Postgres won't apply {@code enum = varchar}.
+     * The jOOQ field for a column. PostgreSQL enum columns are cast to text; JSONB catch-all keys
+     * render as path extraction (col->>'k' / col->'a'->>'b'), comparing the (String) value as text.
+     * Key segments are bound as parameters (no SQL injection).
      */
     private Field<Object> columnField(String key) {
+        if (isJsonbKey(key)) {
+            String[] parts = key.split("\\.", -1);
+            QueryPart[] qps = new QueryPart[parts.length];
+            qps[0] = DSL.field(DSL.name(parts[0]));
+            StringBuilder sql = new StringBuilder("{0}");
+            for (int i = 1; i < parts.length; i++) {
+                qps[i] = DSL.val(parts[i]);
+                sql.append(i == parts.length - 1 ? " ->> {" + i + "}" : " -> {" + i + "}");
+            }
+            return DSL.field(sql.toString(), Object.class, qps);
+        }
         return enumColumns.contains(key)
                 ? DSL.field("{0}::text", Object.class, DSL.field(DSL.name(key)))
                 : field(key);
@@ -103,7 +128,7 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
         else if (predicate instanceof ExistsP) {
             return field.isNotNull();
         } else {
-            if (idFields.contains(key)) value = stringifyValue(value);
+            if (idFields.contains(key) || isJsonbKey(key)) value = stringifyValue(value);
             return predicateToQuery(field, value, biPredicate);
         }
     }

@@ -109,7 +109,10 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
         // (PostgreSQL won't compare varchar = bigint the way H2 did).
         String idField = getFieldByPropertyKey(T.id.getAccessor());
         Set<String> idFields = idField == null ? Collections.emptySet() : Collections.singleton(idField);
-        Condition conditions = new JdbcPredicatesTranslator(idFields, getEnumColumns()).translate(predicatesHolder);
+        Set<String> jsonbColumns = (dynamicProperties instanceof org.unipop.schema.property.JsonbPropertySchema)
+                ? Collections.singleton(((org.unipop.schema.property.JsonbPropertySchema) dynamicProperties).getJsonbColumn())
+                : Collections.emptySet();
+        Condition conditions = new JdbcPredicatesTranslator(idFields, getEnumColumns(), jsonbColumns).translate(predicatesHolder);
         int finalLimit = query.getLimit() < 0 ? Integer.MAX_VALUE : query.getLimit();
 
         SelectConditionStep<Record> where = createSqlQuery(query.getPropertyKeys())
