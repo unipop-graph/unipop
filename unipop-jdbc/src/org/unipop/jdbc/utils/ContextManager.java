@@ -55,52 +55,41 @@ public class ContextManager {
     }
 
     public List<Map<String, Object>> fetch(ResultQuery query) {
-        return fetch(query, 0);
+        return withRetry("fetch", () -> context.fetch(query).intoMaps());
     }
 
-    private List<Map<String, Object>> fetch(ResultQuery query, int count) {
-        if (count > 3) {
-            throw new IllegalArgumentException("query can't be fetched");
+    /**
+     * Run a jOOQ operation, transparently closing and rebuilding the context on failure.
+     * Retries are BOUNDED: execute/render/batch were previously unbounded recursions that
+     * spin forever when an operation persistently fails (e.g. an incompatible statement),
+     * so the original cause is logged each attempt and rethrown after the cap rather than
+     * hanging.
+     */
+    private <T> T withRetry(final String op, final java.util.function.Supplier<T> action) {
+        Exception last = null;
+        for (int attempt = 1; attempt <= 4; attempt++) {
+            try {
+                return action.get();
+            } catch (final Exception e) {
+                last = e;
+                logger.warn("jOOQ {} failed (attempt {}/4), reconnecting", op, attempt, e);
+                closeQuietly();
+                try {
+                    reloadContexts();
+                } catch (final IOException re) {
+                    logger.error("Failed to reload jOOQ context", re);
+                }
+            }
         }
-        try {
-            return context.fetch(query).intoMaps();
-        } catch (Exception e) {
-            closeQuietly();
-        }
-        try {
-            reloadContexts();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return fetch(query, ++count);
+        throw new IllegalStateException("jOOQ " + op + " failed after 4 attempts", last);
     }
 
     public int execute(Query query) {
-        try {
-            return context.execute(query);
-        } catch (Exception e) {
-            closeQuietly();
-        }
-        try {
-            reloadContexts();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return execute(query);
+        return withRetry("execute", () -> context.execute(query));
     }
 
     public int execute(String query) {
-        try {
-            return context.execute(query);
-        } catch (Exception e) {
-            closeQuietly();
-        }
-        try {
-            reloadContexts();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return execute(query);
+        return withRetry("execute", () -> context.execute(query));
     }
 
     public void close() {
@@ -122,31 +111,13 @@ public class ContextManager {
     }
 
     public Object render(Query query) {
-        try {
-            return context.render(query);
-        } catch (Exception e) {
-            closeQuietly();
-        }
-        try {
-            reloadContexts();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return render(query);
+        return withRetry("render", () -> context.render(query));
     }
 
     public void batch(List<Query> bulk) {
-        try {
+        withRetry("batch", () -> {
             context.batch(bulk).execute();
-            return;
-        } catch (Exception e) {
-            closeQuietly();
-        }
-        try {
-            reloadContexts();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        batch(bulk);
+            return null;
+        });
     }
 }
