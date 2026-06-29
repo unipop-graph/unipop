@@ -34,6 +34,11 @@ public class JsonbPropertySchema extends DynamicPropertySchema {
     }
 
     @Override
+    public Set<String> getJsonbColumns() {
+        return Collections.singleton(jsonbColumn);
+    }
+
+    @Override
     public Map<String, Object> toProperties(Map<String, Object> source) {
         Object raw = source.get(jsonbColumn);
         if (raw == null) return Collections.emptyMap();

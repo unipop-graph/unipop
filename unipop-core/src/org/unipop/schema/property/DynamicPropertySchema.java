@@ -62,6 +62,11 @@ public class DynamicPropertySchema implements PropertySchema {
         return PredicatesHolderFactory.createFromPredicates(predicatesHolder.getClause(), hasContainers);
     }
 
+    /** The JSONB column(s) this dynamic schema is backed by (empty unless a jsonb variant). */
+    public Set<String> getJsonbColumns() {
+        return Collections.emptySet();
+    }
+
     @Override
     public String toString() {
         return "DynamicPropertySchema{" +
