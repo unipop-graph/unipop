@@ -118,6 +118,7 @@
                         <include>**/JdbcFeatureTest.java</include>
                         <include>**/JdbcStructureSuite.java</include>
                         <include>**/JdbcEnumTest.java</include>
+                        <include>**/JdbcJsonbTest.java</include>
                     </includes>
                     <environmentVariables>
                         <conf>basic</conf>
