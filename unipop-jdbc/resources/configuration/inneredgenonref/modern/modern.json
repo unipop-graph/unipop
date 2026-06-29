@@ -1,12 +1,13 @@
 {
   "class": "org.unipop.jdbc.JdbcSourceProvider",
-  "driver": "org.h2.Driver",
-  "address": ["jdbc:h2:mem:gremlin;NON_KEYWORDS=YEAR,TIME"],
-  "sqlDialect": "H2",
+  "driver": "org.postgresql.Driver",
+  "address": ["jdbc:postgresql://localhost:54329/postgres"],
+  "user": "postgres",
+  "sqlDialect": "POSTGRES",
   "vertices": [
     {
       "table": "vertex_inner",
-      "id": "@ID",
+      "id": "@id",
       "label": {
         "field": "LABEL",
         "exclude": [
@@ -14,14 +15,14 @@
         ]
       },
       "properties": {
-        "name": "@NAME",
-        "lang": "@LANG"
+        "name": "@name",
+        "lang": "@lang"
       },
       "dynamicProperties": true
     },
     {
       "table": "vertex_inner",
-      "id": "@ID",
+      "id": "@id",
       "label": {
         "field": "LABEL",
         "include": [
@@ -29,8 +30,8 @@
         ]
       },
       "properties":{
-        "name": "@NAME",
-        "age": "@AGE"
+        "name": "@name",
+        "age": "@age"
       },
       "dynamicProperties": {
         "excludeFields": [
@@ -43,11 +44,11 @@
       },
       "edges": [
         {
-          "id": "@EDGEID",
+          "id": "@edgeid",
           "label": "created",
           "direction": "OUT",
           "properties": {
-            "weight": "@EDGEWEIGHT"
+            "weight": "@edgeweight"
           },
           "vertex": {
             "ref": false,
@@ -57,8 +58,8 @@
             },
             "label": "software",
             "properties":{
-              "name": "@EDGENAME",
-              "lang": "@EDGELANG"
+              "name": "@edgename",
+              "lang": "@edgelang"
             }
           }
         }
@@ -68,7 +69,7 @@
   "edges": [
     {
       "table": "edges",
-      "id": "@ID",
+      "id": "@id",
       "label": {
         "field": "LABEL",
         "exclude": [
@@ -76,7 +77,7 @@
         ]
       },
       "properties": {
-        "weight": "@WEIGHT"
+        "weight": "@weight"
       },
       "dynamicProperties": {
         "excludeProperties":[
@@ -91,15 +92,15 @@
       },
       "outVertex": {
         "ref": true,
-        "id": "@OUTID",
-        "label": "@OUTLABEL",
+        "id": "@outid",
+        "label": "@outlabel",
         "properties":{
         }
       },
       "inVertex": {
         "ref": true,
-        "id": "@INID",
-        "label": "@INLABEL",
+        "id": "@inid",
+        "label": "@inlabel",
         "properties":{
         }
       }

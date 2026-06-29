@@ -30,3 +30,6 @@ file:/
 # Cucumber/JUnit test output written outside target/
 cucumber.xml
 *.log
+
+# Local design specs & implementation plans (superpowers) — not committed
+docs/superpowers/

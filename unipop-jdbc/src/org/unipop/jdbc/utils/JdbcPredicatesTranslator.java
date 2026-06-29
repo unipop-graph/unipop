@@ -30,6 +30,31 @@ import static org.jooq.impl.DSL.field;
  */
 public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition> {
 
+    private final Set<String> idFields;
+
+    public JdbcPredicatesTranslator() {
+        this(Collections.emptySet());
+    }
+
+    public JdbcPredicatesTranslator(Set<String> idFields) {
+        this.idFields = idFields == null ? Collections.emptySet() : idFields;
+    }
+
+    /**
+     * Coerce id-column predicate values to String. The id column is VARCHAR but Gremlin ids
+     * arrive as numbers (e.g. g.V(1)); PostgreSQL refuses to compare {@code varchar = bigint}
+     * (H2 coerced implicitly). Only id-column values are stringified — numeric value columns
+     * such as age/weight must keep their type.
+     */
+    private static Object stringifyValue(Object value) {
+        if (value instanceof Collection) {
+            return ((Collection<?>) value).stream()
+                    .map(v -> v == null ? null : v.toString())
+                    .collect(Collectors.toList());
+        }
+        return value == null ? null : value.toString();
+    }
+
     @Override
     public Condition translate(PredicatesHolder predicatesHolder) {
         Set<Condition> predicateFilters = predicatesHolder.getPredicates().stream()
@@ -61,7 +86,10 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
         }
         else if (predicate instanceof ExistsP) {
             return field.isNotNull();
-        } else return predicateToQuery(key, value, biPredicate);
+        } else {
+            if (idFields.contains(key)) value = stringifyValue(value);
+            return predicateToQuery(key, value, biPredicate);
+        }
     }
 
     private Condition handleConnectiveP(String key, ConnectiveP predicate) {

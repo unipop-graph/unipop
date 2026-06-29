@@ -16,12 +16,26 @@ import java.util.Map;
  * @since 6/20/2016
  */
 public class JdbcGraphProvider extends UnipopGraphProvider {
+    static {
+        // This provider is test-only but lives in main source, while the embedded PostgreSQL
+        // server lives in test source (it needs the test-scope zonky dependency). Start it
+        // reflectively here so there is no main->test/zonky compile dependency. A static
+        // initializer runs on first instantiation, before this constructor body and before any
+        // caller (suite runner / JdbcWorld) connects — so Postgres is always up in time.
+        try {
+            Class.forName("org.unipop.jdbc.suite.EmbeddedPostgresServer")
+                    .getMethod("ensureStarted").invoke(null);
+        } catch (final ReflectiveOperationException e) {
+            throw new IllegalStateException("Could not start embedded PostgreSQL for tests", e);
+        }
+    }
+
     private final Connection jdbcConnection;
 
     public JdbcGraphProvider() throws SQLException, ClassNotFoundException {
-        Class.forName("org.h2.Driver");
-        // H2 2.x made YEAR/TIME reserved keywords; the test schema uses them as column names.
-        this.jdbcConnection = DriverManager.getConnection("jdbc:h2:mem:gremlin;NON_KEYWORDS=YEAR,TIME");
+        Class.forName("org.postgresql.Driver");
+        this.jdbcConnection = DriverManager.getConnection(
+                "jdbc:postgresql://localhost:54329/postgres", "postgres", "");
 
         createTables();
     }
@@ -77,7 +91,7 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
                         "CREATEDBY VARCHAR (100)," +
                         "EDGEID VARCHAR (100)," +
                         "EDGELANG VARCHAR (100)," +
-                        "EDGEWEIGHT DOUBLE," +
+                        "EDGEWEIGHT DOUBLE PRECISION," +
                         "EDGENAME VARCHAR(100))"
         );
 
@@ -108,7 +122,7 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
                         "time VARCHAR(100)," +
                         "location VARCHAR(100)," +
                         "data VARCHAR(100)," +
-                        "weight DOUBLE)");
+                        "weight DOUBLE PRECISION)");
         //endregion
 
         //region modern tables
@@ -139,7 +153,7 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
                         "inId VARCHAR(100), " +
                         "inLabel VARCHAR(100)," +
                         "year int," +
-                        "weight DOUBLE)");
+                        "weight DOUBLE PRECISION)");
         //endregion
 
         //region crew tables
@@ -197,7 +211,7 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
                         "outLabel VARCHAR(100), " +
                         "inId VARCHAR(100), " +
                         "inLabel VARCHAR(100)," +
-                        "weight DOUBLE)"
+                        "weight DOUBLE PRECISION)"
         );
         //endregion
     }

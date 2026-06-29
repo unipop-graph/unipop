@@ -115,3 +115,36 @@ test harness; `unipop-rest` has no direct ES source imports and is light):
 - drop the abandoned `io.searchbox:jest`.
 
 To re-enable, restore the three `<module>` entries in the root `pom.xml`.
+
+---
+
+# Follow-on: jdbc tests on embedded PostgreSQL (replacing H2)
+
+The jdbc test suites were switched from H2 to **embedded PostgreSQL** (zonky
+`io.zonky.test:embedded-postgres`, a real Postgres binary run in-process — no Docker), to test
+against the database Unipop targets in production. Test-only deps/config; production jOOQ is
+dialect-agnostic.
+
+- `EmbeddedPostgresServer` (test source) starts one Postgres per JVM on a fixed port (54329),
+  triggered from `JdbcGraphProvider`'s static initializer (annotation reflection does not run
+  suite static blocks, so the trigger lives where the provider is *instantiated*).
+- Config JSONs → `org.postgresql.Driver` / `jdbc:postgresql://localhost:54329/postgres` /
+  `sqlDialect: POSTGRES`; column refs lowercased (Postgres folds unquoted identifiers to lower,
+  and `FieldPropertySchema` looks up result columns case-sensitively); DDL `DOUBLE` → `DOUBLE PRECISION`.
+
+Postgres exposed several issues H2 had masked, now fixed:
+- **Infinite-retry hang**: `ContextManager.execute/render/batch` recursed unboundedly on persistent
+  failure (only `fetch` was capped) — now a shared bounded helper logs the cause and rethrows.
+- **Duplicate-key on insert**: plain `INSERT` re-inserting a PK now uses jOOQ `onDuplicateKeyIgnore()`
+  (portable `ON CONFLICT DO NOTHING`); updates still go through `RowController.update`.
+- **`varchar = bigint` on `g.V(id)`**: the predicate translator now stringifies values targeted at
+  the VARCHAR id column only (numeric value columns keep their type).
+
+**Results (Java 17, embedded Postgres):** feature suite at **H2 parity (~963 pass / 1913)**,
+structure suite clean of DB errors (**~508 pass, 31 fail = H2**). Both suites run with no hang.
+
+**Known residual:** ~13 feature scenarios hit `varchar = integer` on the test edges table's
+`year` VARCHAR column queried numerically — the same type-impedance class in a non-id column. A
+general fix needs accurate per-property type declarations in the configs (the test configs leave
+properties untyped, so text-vs-numeric columns can't be distinguished generically); these are in
+already-failing crew-graph scenarios and do not affect H2 parity.

@@ -3,6 +3,7 @@ package org.unipop.jdbc.schemas;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.javatuples.Pair;
 import org.jooq.*;
 import org.jooq.Record;
@@ -52,9 +53,14 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
         JdbcSchema.Row row = toRow(element);
         if (row == null) return null;
 
+        // ON CONFLICT DO NOTHING (dialect-portable via jOOQ): inserting an already-present
+        // primary key must be idempotent. A plain INSERT throws a duplicate-key error on
+        // strict databases like PostgreSQL (H2 tolerated the re-insert pattern); updates to
+        // existing rows go through the separate update path in RowController.
         return DSL.insertInto(table(getTable()),
                     CollectionUtils.collect(row.getFields().keySet(), DSL::field))
-                    .values(row.getFields().values());
+                    .values(row.getFields().values())
+                    .onDuplicateKeyIgnore();
     }
 
     @Override
@@ -76,7 +82,11 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
             return null;
         }
 
-        Condition conditions = new JdbcPredicatesTranslator().translate(predicatesHolder);
+        // The id column is VARCHAR; tell the translator so it stringifies numeric Gremlin ids
+        // (PostgreSQL won't compare varchar = bigint the way H2 did).
+        String idField = getFieldByPropertyKey(T.id.getAccessor());
+        Set<String> idFields = idField == null ? Collections.emptySet() : Collections.singleton(idField);
+        Condition conditions = new JdbcPredicatesTranslator(idFields).translate(predicatesHolder);
         int finalLimit = query.getLimit() < 0 ? Integer.MAX_VALUE : query.getLimit();
 
         SelectConditionStep<Record> where = createSqlQuery(query.getPropertyKeys())

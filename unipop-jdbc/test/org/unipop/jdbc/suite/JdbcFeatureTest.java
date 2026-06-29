@@ -12,7 +12,7 @@ import org.junit.runner.RunWith;
 
 /**
  * Cucumber runner for the TinkerPop 3.8 process-compliance feature suite, executed against the
- * JDBC (H2) Unipop provider. Replaces the removed {@code ProcessStandardSuite} JUnit process tests.
+ * JDBC (PostgreSQL) Unipop provider. Replaces the removed {@code ProcessStandardSuite} JUnit process tests.
  *
  * <p>Tags are excluded for capabilities Unipop's JDBC federation provider does not support:
  * graph computer, null/list/set/map/uuid/date-time property values, meta/multi-properties,
