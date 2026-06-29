@@ -1,11 +1,11 @@
 package org.unipop.process.predicate;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.PBiPredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.OrP;
 
 import java.util.Arrays;
-import java.util.function.BiPredicate;
 
 /**
  * Created by sbarzilay on 8/18/16.
@@ -27,7 +27,7 @@ public class Date {
         return new AndP<>(Arrays.asList(new P(DatePredicate.gte, first), new P(DatePredicate.lt, second)));
     }
 
-    public enum DatePredicate implements BiPredicate<Object, Object> {
+    public enum DatePredicate implements PBiPredicate<Object, Object> {
         eq {
             @Override
             public boolean test(Object o, Object o2) {
@@ -35,7 +35,7 @@ public class Date {
             }
 
             @Override
-            public BiPredicate<Object, Object> negate() {
+            public PBiPredicate<Object, Object> negate() {
                 return neq;
             }
         },
@@ -46,7 +46,7 @@ public class Date {
             }
 
             @Override
-            public BiPredicate<Object, Object> negate() {
+            public PBiPredicate<Object, Object> negate() {
                 return eq;
             }
         },
@@ -57,7 +57,7 @@ public class Date {
             }
 
             @Override
-            public BiPredicate<Object, Object> negate() {
+            public PBiPredicate<Object, Object> negate() {
                 return lte;
             }
         },
@@ -68,7 +68,7 @@ public class Date {
             }
 
             @Override
-            public BiPredicate<Object, Object> negate() {
+            public PBiPredicate<Object, Object> negate() {
                 return gte;
             }
         },
@@ -79,7 +79,7 @@ public class Date {
             }
 
             @Override
-            public BiPredicate<Object, Object> negate() {
+            public PBiPredicate<Object, Object> negate() {
                 return lt;
             }
         },
@@ -90,7 +90,7 @@ public class Date {
             }
 
             @Override
-            public BiPredicate<Object, Object> negate() {
+            public PBiPredicate<Object, Object> negate() {
                 return gt;
             }
         }

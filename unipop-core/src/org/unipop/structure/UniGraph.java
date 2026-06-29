@@ -1,6 +1,6 @@
 package org.unipop.structure;
 
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -232,7 +232,7 @@ public class UniGraph implements Graph {
     }
 
     public static <E extends Element> PredicatesHolder createIdPredicate(Object[] ids, Class<E> returnType) {
-        ElementHelper.validateMixedElementIds(returnType, ids);
+        // ElementHelper.validateMixedElementIds was removed in TinkerPop 3.6 (mixed id/element args are now allowed).
         //if (ids.length > 0 && Vertex.class.isAssignableFrom(ids[0].getClass()))  return new ArrayIterator<>(ids);
         if (ids.length > 0) {
             List<Object> collect = Stream.of(ids).map(id -> {

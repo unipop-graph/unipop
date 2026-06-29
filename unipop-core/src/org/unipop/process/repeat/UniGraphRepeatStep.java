@@ -156,7 +156,7 @@ public class UniGraphRepeatStep<S> extends UniBulkStep<S, S> implements Traversa
         protected Iterator<Traverser.Admin<S>> standardAlgorithm() throws NoSuchElementException {
             while (true) {
                 final Traverser.Admin<S> start = this.starts.next();
-                start.incrLoops(this.getId());
+                start.incrLoops();
                 if (repeatStep.doUntil(start, false)) {
                     start.resetLoops();
                     return IteratorUtils.of(start);
@@ -178,7 +178,7 @@ public class UniGraphRepeatStep<S> extends UniBulkStep<S, S> implements Traversa
         protected Iterator<Traverser.Admin<S>> computerAlgorithm() throws NoSuchElementException {
             final RepeatStep<S> repeatStep = (RepeatStep<S>) this.getTraversal().getParent();
             final Traverser.Admin<S> start = this.starts.next();
-            start.incrLoops(repeatStep.getId());
+            start.incrLoops();
             if (repeatStep.doUntil(start, false)) {
                 start.resetLoops();
                 start.setStepId(repeatStep.getNextStep().getId());

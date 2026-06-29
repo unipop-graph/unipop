@@ -5,6 +5,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.javatuples.Pair;
 import org.jooq.*;
+import org.jooq.Record;
 import org.jooq.impl.DSL;
 import org.json.JSONObject;
 import org.unipop.jdbc.schemas.jdbc.JdbcSchema;
@@ -85,7 +86,7 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
         if (orders != null){
             List<SortField<Object>> orderValues = orders.stream().filter(order -> !order.getValue1().equals(Order.shuffle))
                     .filter(order -> getFieldByPropertyKey(order.getValue0()) != null)
-                    .map(order -> order.getValue1().equals(Order.incr) ?
+                    .map(order -> order.getValue1().equals(Order.asc) ?
                             field(getFieldByPropertyKey(order.getValue0())).asc() :
                             field(getFieldByPropertyKey(order.getValue0())).desc()).collect(Collectors.toList());
             if (orderValues.size() > 0)

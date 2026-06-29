@@ -100,7 +100,12 @@ public class UniGraphWhereTraversalStep<S extends Element> extends AbstractStep<
         protected Traverser.Admin processNextStart() throws NoSuchElementException {
             if (null == selectKey)
                 return starts.next();
-            Object scopeValue = getScopeValue(Pop.last, selectKey, starts.next());
+            final Object scopeValue;
+            try {
+                scopeValue = getScopeValue(Pop.last, selectKey, starts.next());
+            } catch (Scoping.KeyNotFoundException e) {
+                throw FastNoSuchElementException.instance();
+            }
             Traverser.Admin<S> orig = null;
             List<Traverser.Admin<S>> origMaps = new ArrayList<>();
             for (Traverser.Admin<S> original : originals) {

@@ -19,7 +19,7 @@ public class PredicatesUtil {
 
         while(true) {
             if(nextStep instanceof HasContainerHolder) {
-                HasContainerHolder hasContainerHolder = (HasContainerHolder) nextStep;
+                HasContainerHolder<?, ?> hasContainerHolder = (HasContainerHolder<?, ?>) nextStep;
                 hasContainerHolder.getHasContainers().stream().map(PredicatesHolderFactory::predicate)
                         .forEach(predicates::add);
                 traversal.removeStep(nextStep);
@@ -56,7 +56,7 @@ public class PredicatesUtil {
 //            }
             else if(nextStep instanceof RangeGlobalStep) {
                 RangeGlobalStep rangeGlobalStep = (RangeGlobalStep) nextStep;
-                int limit = rangeGlobalStep.getHighRange() > Integer.MAX_VALUE ? -1 : (int) rangeGlobalStep.getHighRange();
+                int limit = rangeGlobalStep.getHighRange() > Integer.MAX_VALUE ? -1 : rangeGlobalStep.getHighRange().intValue();
                 step.setLimit(limit);
                 collectLabels(nextStep, step);
                 break;

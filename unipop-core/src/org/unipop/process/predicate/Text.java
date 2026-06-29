@@ -3,8 +3,7 @@ package org.unipop.process.predicate;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
-
-import java.util.function.BiPredicate;
+import org.apache.tinkerpop.gremlin.process.traversal.PBiPredicate;
 
 /**
  * Created by sbarzilay on 12/15/15.
@@ -19,7 +18,7 @@ public class Text {
     public static <V> P<V> prefix(final V value) { return new P(TextPredicate.PREFIX, value); }
     public static <V> P<V> unprefix(final V value) { return new P(TextPredicate.UNPREFIX, value); }
 
-    public enum TextPredicate implements BiPredicate<Object, Object> {
+    public enum TextPredicate implements PBiPredicate<Object, Object> {
         PREFIX {
             @Override
             public boolean test(final Object first, final Object second) {
