@@ -7,7 +7,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.elasticsearch.common.StopWatch;
+import org.apache.commons.lang3.time.StopWatch;
 import org.junit.Test;
 import org.unipop.integration.IntegrationGraphProvider;
 import test.ElasticGraphProvider;
