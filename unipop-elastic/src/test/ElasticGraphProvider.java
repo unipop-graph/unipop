@@ -1,28 +1,30 @@
 package test;
 
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.elasticsearch.client.Client;
 import org.unipop.test.UnipopGraphProvider;
 
-import java.io.File;
 import java.net.URL;
 import java.util.Map;
 
 public class ElasticGraphProvider extends UnipopGraphProvider {
 
-    private final File dataPath;
-    private LocalNode node;
+    private static final Class<?> SERVER;
+
+    static {
+        try {
+            SERVER = Class.forName("org.unipop.elastic.suite.EmbeddedElasticsearchServer");
+            SERVER.getMethod("ensureStarted").invoke(null);
+        } catch (final ReflectiveOperationException e) {
+            throw new IllegalStateException("Could not start Testcontainers Elasticsearch for tests", e);
+        }
+    }
 
     public ElasticGraphProvider() throws Exception {
         //patch for failing IO tests that write to disk
         System.setProperty("build.dir", System.getProperty("user.dir") + "/build");
-
-        String path = new java.io.File(".").getCanonicalPath() + "/data";
-        this.dataPath = new File(path);
-        this.node = new LocalNode(dataPath);
     }
 
     @Override
@@ -37,14 +39,32 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
         baseConfiguration.put("bulk.max", 1000);
         baseConfiguration.put("bulk.graph", 10);
         baseConfiguration.put("bulk.multiplier", 10);
+        baseConfiguration.put("addresses", getHttpAddress());
 
         return baseConfiguration;
+    }
+
+    private static String getHttpAddress() {
+        try {
+            return (String) SERVER.getMethod("getHttpAddress").invoke(null);
+        } catch (final ReflectiveOperationException e) {
+            throw new IllegalStateException("Could not get Elasticsearch HTTP address", e);
+        }
     }
 
     @Override
     public void loadGraphData(Graph graph, LoadGraphWith loadGraphWith, Class testClass, String testName) {
         super.loadGraphData(graph, loadGraphWith, testClass, testName);
-        node.getClient().admin().indices().prepareRefresh().get();
+        try {
+            Object client = SERVER.getMethod("getClient").invoke(null);
+            // indices().refresh() — refresh all indices via the ES 8 Java client
+            Object indicesClient = client.getClass().getMethod("indices").invoke(client);
+            indicesClient.getClass().getMethod("refresh").invoke(indicesClient);
+        } catch (final ReflectiveOperationException e) {
+            throw new IllegalStateException("Failed to refresh Elasticsearch indices", e);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to refresh Elasticsearch indices", e);
+        }
     }
 
     public String getSchemaConfiguration(LoadGraphWith.GraphData loadGraphWith) {
@@ -64,17 +84,15 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
     @Override
     public void clear(Graph g, Configuration configuration) throws Exception {
         super.clear(g, configuration);
-        if (node != null) {
-            node.deleteIndices();
+        try {
+            SERVER.getMethod("deleteAllIndices").invoke(null);
+        } catch (final ReflectiveOperationException e) {
+            throw new IllegalStateException("Failed to delete Elasticsearch indices", e);
         }
     }
 
     @Override
     public Object convertId(Object id, Class<? extends Element> c) {
         return id.toString();
-    }
-
-    public Client getClient() {
-        return node.getClient();
     }
 }
