@@ -4,7 +4,7 @@
   "add":{
     "method": "PUT",
     "url": "{{resource}}/{{_id}}",
-    "template": "{ {{#prop}}\"{{key}}\":\"{{value}}\"{{^-last}}, {{/-last}}{{/prop}} }",
+    "template": "{ {{#prop}}\"{{key}}\":\"{{value}}\"{{^-last}}, {{/-last}}{{/prop}} }"
   },
   "search":{
     "method": "GET",
