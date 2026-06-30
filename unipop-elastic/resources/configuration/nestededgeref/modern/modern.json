@@ -1,31 +1,27 @@
 {
   "class": "org.unipop.elastic.ElasticSourceProvider",
-  "clusterName": "unipop",
   "addresses": [
     "http://localhost:9200"
   ],
   "vertices": [
     {
-      "index": "vertex",
+      "index": "@label",
       "id": "@_id",
       "label": {
-        "field": "_type",
+        "field": "label",
         "include": ["animal", "dog", "vertex"]
       },
       "dynamicProperties": {
-        "excludeFields":[
-          "_type"
-        ]
+        "excludeFields": []
       }
     },
     {
-      "index": "vertex",
+      "index": "@label",
       "type": "person",
       "id": "@_id",
       "label": "person",
       "dynamicProperties": {
-        "excludeFields":[
-          "_type",
+        "excludeFields": [
           "creations"
         ]
       },
@@ -48,23 +44,21 @@
       ]
     },
     {
-      "index": "vertex",
+      "index": "@label",
       "type": "software",
       "id": "@_id",
       "label": "software",
       "dynamicProperties": {
-        "excludeFields": [
-          "_type"
-        ]
+        "excludeFields": []
       }
     }
   ],
   "edges": [
     {
-      "index": "edge",
+      "index": "@label",
       "id": "@_id",
       "label": {
-        "field": "_type",
+        "field": "label",
         "exclude": [
           "created"
         ]
