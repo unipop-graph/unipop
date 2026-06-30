@@ -105,8 +105,18 @@
                         </includes>
                         <environmentVariables>
                             <conf>basic</conf>
+                            <!-- Docker Engine >= API 1.40 (Docker Desktop 4.78 / engine 29.x)
+                                 rejects requests carrying a pre-1.40 API version with HTTP 400.
+                                 The docker-java config shaded into Testcontainers 1.20.4 otherwise
+                                 negotiates from an older default, so its initial /info probe is
+                                 rejected and "Could not find a valid Docker environment" is thrown.
+                                 We pin api.version (argLine system property) >= 1.40, point at the
+                                 active Docker Desktop socket explicitly, and disable Ryuk (the
+                                 per-JVM container is torn down via a JVM shutdown hook). -->
+                            <DOCKER_HOST>unix://${user.home}/.docker/run/docker.sock</DOCKER_HOST>
+                            <TESTCONTAINERS_RYUK_DISABLED>true</TESTCONTAINERS_RYUK_DISABLED>
                         </environmentVariables>
-                        <argLine>--add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.lang.invoke=ALL-UNNAMED --add-opens java.base/java.lang.reflect=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.util.concurrent=ALL-UNNAMED --add-opens java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens java.base/java.io=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED --add-opens java.base/sun.nio.ch=ALL-UNNAMED</argLine>
+                        <argLine>-Dapi.version=1.41 --add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.lang.invoke=ALL-UNNAMED --add-opens java.base/java.lang.reflect=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.util.concurrent=ALL-UNNAMED --add-opens java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens java.base/java.io=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED --add-opens java.base/sun.nio.ch=ALL-UNNAMED</argLine>
                         <testFailureIgnore>true</testFailureIgnore>
                         <trimStackTrace>false</trimStackTrace>
                         <reuseForks>false</reuseForks>
