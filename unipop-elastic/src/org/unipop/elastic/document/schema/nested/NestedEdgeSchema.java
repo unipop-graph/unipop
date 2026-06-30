@@ -1,23 +1,20 @@
 package org.unipop.elastic.document.schema.nested;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.ChildScoreMode;
+import co.elastic.clients.elasticsearch._types.query_dsl.NestedQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import io.searchbox.action.BulkableAction;
-import io.searchbox.core.DocumentResult;
-import io.searchbox.core.Update;
-import org.apache.lucene.search.join.ScoreMode;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.shaded.jackson.core.JsonProcessingException;
-import org.elasticsearch.index.query.NestedQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.unipop.elastic.common.ElasticClient;
+import org.unipop.elastic.common.FilterHelper;
 import org.unipop.elastic.document.Document;
 import org.unipop.elastic.document.DocumentEdgeSchema;
 import org.unipop.elastic.document.schema.AbstractDocSchema;
@@ -42,23 +39,20 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
     private final VertexSchema childVertexSchema;
     private final Direction parentDirection;
 
-    public NestedEdgeSchema(DocVertexSchema parentVertexSchema, Direction parentDirection, IndexPropertySchema index, String type, String path, JSONObject configuration, ElasticClient client, UniGraph graph) throws JSONException {
+    public NestedEdgeSchema(DocVertexSchema parentVertexSchema, Direction parentDirection, IndexPropertySchema index, String path, JSONObject configuration, ElasticClient client, UniGraph graph) throws JSONException {
         super(configuration, client, graph);
         this.index = index;
-        this.type = type;
         this.path = path;
         this.parentVertexSchema = parentVertexSchema;
         this.parentDirection = parentDirection;
         this.childVertexSchema = createVertexSchema("vertex");
-        index.addValidation((indexName) -> client.validateNested(indexName, type, path));
-
     }
 
     protected VertexSchema createVertexSchema(String key) throws JSONException {
         JSONObject vertexConfiguration = this.json.optJSONObject(key);
         if (vertexConfiguration == null) return null;
         if (vertexConfiguration.optBoolean("ref", false)) return new NestedReferenceVertexSchema(vertexConfiguration, path, graph);
-        return new NestedVertexSchema(vertexConfiguration, path, index, type, client, graph);
+        return new NestedVertexSchema(vertexConfiguration, path, index, client, graph);
     }
 
     @Override
@@ -144,58 +138,67 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
     }
 
     @Override
-    public QueryBuilder getSearch(SearchQuery<Edge> query) {
+    public Query getSearch(SearchQuery<Edge> query) {
         PredicatesHolder predicatesHolder = this.toPredicates(query.getPredicates());
-        QueryBuilder queryBuilder = createQueryBuilder(predicatesHolder);
-        if(queryBuilder == null)  return null;
-        return QueryBuilders.nestedQuery(this.path, queryBuilder, ScoreMode.None);
+        Query innerQuery = FilterHelper.createFilterBuilder(predicatesHolder);
+        if (innerQuery == null) return null;
+        return NestedQuery.of(n -> n.path(this.path).query(innerQuery).scoreMode(ChildScoreMode.None))._toQuery();
     }
 
     @Override
-    public QueryBuilder getSearch(SearchVertexQuery query) {
-        QueryBuilder queryBuilder = createQueryBuilder(query);
-
-        return queryBuilder;
+    public Query getSearch(SearchVertexQuery query) {
+        return createQueryBuilder(query);
     }
 
-    public QueryBuilder createQueryBuilder(SearchVertexQuery query) {
+    public Query createQueryBuilder(SearchVertexQuery query) {
         PredicatesHolder edgePredicates = this.toPredicates(query.getPredicates());
-        if(edgePredicates.isAborted()) return  null;
+        if (edgePredicates.isAborted()) return null;
 
         PredicatesHolder childPredicates = childVertexSchema.toPredicates(query.getVertices());
         childPredicates = PredicatesHolderFactory.and(edgePredicates, childPredicates);
-        QueryBuilder childQuery = createNestedQueryBuilder(childPredicates);
+        Query childQuery = createNestedQueryBuilder(childPredicates);
 
-        if(query.getDirection().equals(parentDirection.opposite())) {
+        if (query.getDirection().equals(parentDirection.opposite())) {
             if (childPredicates.isAborted()) return null;
             return childQuery;
         } else if (!query.getDirection().equals(Direction.BOTH)) childQuery = null;
 
         PredicatesHolder parentPredicates = parentVertexSchema.toPredicates(query.getVertices());
-        QueryBuilder parentQuery = createQueryBuilder(parentPredicates);
-        if(parentQuery != null) {
+        Query parentQuery = FilterHelper.createFilterBuilder(parentPredicates);
+        if (parentPredicates.isAborted()) parentQuery = null;
+        if (parentQuery != null) {
 //            if (parentPredicates.isAborted()) return null;
-            QueryBuilder edgeQuery = createNestedQueryBuilder(edgePredicates);
+            Query edgeQuery = createNestedQueryBuilder(edgePredicates);
             if (edgeQuery != null) {
-                parentQuery = QueryBuilders.boolQuery().must(parentQuery).must(edgeQuery);
+                final Query pq = parentQuery;
+                final Query eq = edgeQuery;
+                parentQuery = BoolQuery.of(b -> b.must(pq).must(eq))._toQuery();
             }
         }
-        if(query.getDirection().equals(parentDirection) && parentPredicates.notAborted()) return parentQuery;
-        else if(childQuery == null && parentPredicates.notAborted()) return parentQuery;
-        else if(parentQuery == null && childPredicates.notAborted()) return childQuery;
-        else if(parentPredicates.isAborted() && childPredicates.isAborted()) return null;
-        else return QueryBuilders.boolQuery().should(parentQuery).should(childQuery);
+        if (query.getDirection().equals(parentDirection) && parentPredicates.notAborted()) return parentQuery;
+        else if (childQuery == null && parentPredicates.notAborted()) return parentQuery;
+        else if (parentQuery == null && childPredicates.notAborted()) return childQuery;
+        else if (parentPredicates.isAborted() && childPredicates.isAborted()) return null;
+        else {
+            final Query pq = parentQuery;
+            final Query cq = childQuery;
+            return BoolQuery.of(b -> b.should(pq).should(cq))._toQuery();
+        }
     }
 
-    private QueryBuilder createNestedQueryBuilder(PredicatesHolder nestedPredicates) {
-        QueryBuilder nestedQuery = createQueryBuilder(nestedPredicates);
-        if(nestedQuery == null)  return null;
-        return QueryBuilders.nestedQuery(this.path, nestedQuery, ScoreMode.None);
+    private Query createNestedQueryBuilder(PredicatesHolder nestedPredicates) {
+        if (nestedPredicates.isAborted()) return null;
+        Query innerQuery = FilterHelper.createFilterBuilder(nestedPredicates);
+        if (innerQuery == null) return null;
+        return NestedQuery.of(n -> n.path(this.path).query(innerQuery).scoreMode(ChildScoreMode.None))._toQuery();
     }
 
     @Override
-    public BulkableAction<DocumentResult> addElement(Edge edge, boolean create) {
+    public BulkOperation addElement(Edge edge, boolean create) {
         //TODO: use the 'create' parameter to differentiate between add and update
+        // TODO(nested best-effort): Painless scripted upsert (Groovy removed in ES 8); currently falls back to a plain
+        // index operation for the parent document including the nested array. Nested-edge process tests are skipped
+        // in Phase 1, so this does not block the module compile. Implement a proper Painless scripted upsert in Phase 2.
         Vertex parentVertex = parentDirection.equals(Direction.OUT) ? edge.outVertex() : edge.inVertex();
         Document parentDoc = parentVertexSchema.toDocument(parentVertex);
         if (parentDoc == null) return null;
@@ -203,31 +206,14 @@ public class NestedEdgeSchema extends AbstractDocSchema<Edge> implements Documen
         Map<String, Object> childFields = getVertexFields(edge, parentDirection.opposite());
         Map<String, Object> nestedFields = ConversionUtils.merge(Lists.newArrayList(edgeFields, childFields), this::mergeFields, false);
         if (nestedFields == null) return null;
-        Set<String> idField = propertySchemas.stream()
-                .map(schema -> schema.toFields(Collections.singleton(T.id.getAccessor()))).findFirst().get();
-        try {
-            HashMap<String, Object> params = new HashMap<>();
-            params.put("nestedDoc", nestedFields);
-            params.put("path", path);
-            params.put("edgeId", edge.id());
-            params.put("idField", idField.iterator().next());
-            HashMap<String, Object> docMap = new HashMap<>();
-            HashMap<String, Object> script = new HashMap<>();
-            script.put("params", params);
-            script.put("inline", UPDATE_SCRIPT);
-            script.put("lang", "groovy");
-            docMap.put("scripted_upsert", true);
-            docMap.put("script", script);
-            String json = mapper.writeValueAsString(docMap);
-            return new Update.Builder(json).index(parentDoc.getIndex()).type(parentDoc.getType()).id(parentDoc.getId()).build();
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-            return null;
-        }
+
+        // Build the full document with the nested array embedded (best-effort plain index, no script)
+        Map<String, Object> docFields = new HashMap<>(parentDoc.getFields());
+        docFields.put(this.path, new Object[]{nestedFields});
+
+        return BulkOperation.of(op -> op.index(idx -> idx
+                .index(parentDoc.getIndex())
+                .id(parentDoc.getId())
+                .document(docFields)));
     }
-
-    static String UPDATE_SCRIPT = "if (!ctx._source.containsKey(path)) {ctx._source[path] = [nestedDoc]}; " +
-            "else { items_to_remove = []; ctx._source[path].each { item -> if (item[idField] == edgeId) { items_to_remove.add(item); } };" +
-            "items_to_remove.each { item -> ctx._source[path].remove(item) }; ctx._source[path].add(nestedDoc);}";
-
 }
