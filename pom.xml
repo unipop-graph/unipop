@@ -46,8 +46,8 @@
         <module>unipop-core</module>
         <module>unipop-jdbc</module>
         <module>unipop-elastic</module>
-        <!-- Deferred to later #143 phases:
         <module>unipop-rest</module>
+        <!-- Deferred to later #143 phases:
         <module>unipop-test</module>
         -->
     </modules>

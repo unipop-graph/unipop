@@ -2,7 +2,7 @@
   "class": "org.unipop.rest.RestSourceProvider",
   "baseUrl": "http://localhost:9200/",
   "add":{
-    "url": "/{{resource}}/{{type}}/{{id}}",
+    "url": "/{{resource}}/_doc/{{id}}",
     "template": "{ {{#prop}}\"{{key}}\":\"{{value}}\"{{^-last}}, {{/-last}}{{/prop}} }",
     "commit": {
       "url":"/{{resource}}/_refresh"
