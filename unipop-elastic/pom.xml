@@ -109,16 +109,16 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <configuration>
                         <includes>
-                            <!-- Default run: the fast per-label CRUD smoke test validates the ES 8
-                                 Testcontainers harness end-to-end (vertex+edge round-trip on real ES 8).
-                                 ElasticFeatureTest (Gherkin process compliance) and ElasticStructureSuite
-                                 are fully wired and ready, but excluded from the default build pending a
-                                 follow-up: TinkerPop's shouldNotGetConcurrentModificationException runs
-                                 away on this federated provider (no iteration-snapshot semantics) and
-                                 would hang the structure suite to the fork timeout, and the full
-                                 ~1900-scenario feature suite is a slow run best baselined separately.
-                                 See #143 Phase-2 notes / PR. -->
+                            <!-- Full ES 8 compliance run (REQUIRES Docker for the Testcontainers ES node).
+                                 ElasticSmokeTest is a fast per-label CRUD sanity check; ElasticStructureSuite
+                                 and ElasticFeatureTest are the TinkerPop structure + Gherkin process-compliance
+                                 suites. testFailureIgnore keeps the build green on the expected partial-
+                                 federation-provider failures — see the #143 Phase-2 PR for the recorded
+                                 parity baselines. Both suites run to completion (~105s and ~280s); the one
+                                 pathological N*N-edge test is handled by a @Graph.OptOut on UniGraph. -->
                             <include>**/ElasticSmokeTest.java</include>
+                            <include>**/ElasticStructureSuite.java</include>
+                            <include>**/ElasticFeatureTest.java</include>
                         </includes>
                         <environmentVariables>
                             <conf>basic</conf>
