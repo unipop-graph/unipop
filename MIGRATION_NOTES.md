@@ -7,7 +7,9 @@ This document records the upgrade of Unipop to Apache TinkerPop **3.8.1** on **J
 TinkerPop 3.8.0 dropped Java 8 and requires **Java 11+** (Java 17 supported), so the Gremlin
 bump and the JVM bump are aligned. The upgrade now covers **all five modules** —
 **`unipop-core`**, **`unipop-jdbc`**, **`unipop-elastic`**, **`unipop-rest`**, and
-**`unipop-test`** — which build and package cleanly, and the full reactor is restored.
+**`unipop-test`** — which build and package cleanly (full reactor restored). The test suites
+*run* against the live ES 8 + Postgres stack at the partial-provider parity recorded below (the
+runs are tolerant — `testFailureIgnore=true` — so a partial pass rate does not fail the build).
 
 The Elasticsearch-backed modules required a real port off Elasticsearch 5.3.1 (Lucene 6 + the
 removed transport client cannot run on Java 17) to **Elasticsearch 8.x** via the Elasticsearch
@@ -173,8 +175,9 @@ for the test module is **compiles + runs + a representative parity recorded**, n
   (`PERSON_MODERN`/`SOFTWARE_MODERN`/`MODERN_EDGES`) — so jdbc-backed loads fail
   (`relation … does not exist`). A real port (person→ES, software+edges→jdbc) with aligned table
   names is the dominant federation follow-up.
-- **`name_age` multi-field schema** returns no data on ES 8 (`MultiFieldTests` builds + runs but
-  asserts 0 results) — a niche, best-effort Unipop feature to revisit.
+- **`name_age` multi-field schema** returns no data on ES 8 (`MultiFieldTests` builds the graph and
+  runs, but the field comes back empty so its non-zero assertions fail — tolerated by
+  `testFailureIgnore=true`) — a niche, best-effort Unipop feature to revisit.
 - **`*StructureSuite` GraphMigrator deadlock**: `RestStructureSuite` and `IntegStructureSuite` hang
   on the GraphML IO migrate tests (partial provider throws mid-migration → piped writer dies →
   reader deadlocks on `PipedInputStream`). Both are excluded from the default run with documentation;
