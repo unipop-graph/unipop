@@ -1,11 +1,13 @@
 package test;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.unipop.test.UnipopGraphProvider;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.Map;
 
@@ -56,13 +58,10 @@ public class ElasticGraphProvider extends UnipopGraphProvider {
     public void loadGraphData(Graph graph, LoadGraphWith loadGraphWith, Class testClass, String testName) {
         super.loadGraphData(graph, loadGraphWith, testClass, testName);
         try {
-            Object client = SERVER.getMethod("getClient").invoke(null);
-            // indices().refresh() — refresh all indices via the ES 8 Java client
-            Object indicesClient = client.getClass().getMethod("indices").invoke(client);
-            indicesClient.getClass().getMethod("refresh").invoke(indicesClient);
-        } catch (final ReflectiveOperationException e) {
-            throw new IllegalStateException("Failed to refresh Elasticsearch indices", e);
-        } catch (Exception e) {
+            Object clientObj = SERVER.getMethod("getClient").invoke(null);
+            ElasticsearchClient client = (ElasticsearchClient) clientObj;
+            client.indices().refresh();
+        } catch (final ReflectiveOperationException | IOException e) {
             throw new IllegalStateException("Failed to refresh Elasticsearch indices", e);
         }
     }
