@@ -10,6 +10,7 @@ import org.jooq.Record;
 import org.jooq.impl.DSL;
 import org.json.JSONObject;
 import org.unipop.jdbc.schemas.jdbc.JdbcSchema;
+import org.unipop.jdbc.schemas.property.EnumColumnSchema;
 import org.unipop.jdbc.schemas.property.JsonbColumnSchema;
 import org.unipop.jdbc.utils.ContextManager;
 import org.unipop.jdbc.utils.JdbcPredicatesTranslator;
@@ -33,38 +34,15 @@ import static org.jooq.impl.DSL.table;
  */
 public abstract class AbstractRowSchema<E extends Element> extends AbstractElementSchema<E> implements JdbcSchema<E> {
     protected String table;
-    // column -> PostgreSQL enum type name, declared via the "enums" config object.
-    private final Map<String, String> enumTypes;
 
     public AbstractRowSchema(JSONObject configuration, UniGraph graph) {
         super(configuration, graph);
         this.table = configuration.optString("table");
-        final JSONObject enumsJson = configuration.optJSONObject("enums");
-        final Map<String, String> enums = new HashMap<>();
-        if (enumsJson != null) {
-            for (String column : enumsJson.keySet()) {
-                final String enumType = enumsJson.getString(column);
-                if (!enumType.matches("^[A-Za-z_][A-Za-z0-9_]*$"))
-                    throw new IllegalArgumentException("Invalid enum type name in config: " + enumType);
-                enums.put(column, enumType);
-            }
-        }
-        this.enumTypes = Collections.unmodifiableMap(enums);
     }
 
     @Override
     public String getTable() {
         return this.table;
-    }
-
-    /** @return the PostgreSQL enum type name for the given column, or {@code null} if not an enum column. */
-    public String getEnumType(String column) {
-        return enumTypes.get(column);
-    }
-
-    /** @return the set of column names declared as PostgreSQL enum columns. */
-    public Set<String> getEnumColumns() {
-        return enumTypes.keySet();
     }
 
     @Override
@@ -114,7 +92,11 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
                 .filter(s -> s instanceof JsonbColumnSchema)
                 .map(s -> ((JsonbColumnSchema) s).getJsonbColumn())
                 .collect(Collectors.toSet());
-        Condition conditions = new JdbcPredicatesTranslator(idFields, getEnumColumns(), jsonbColumns).translate(predicatesHolder);
+        Set<String> enumColumns = getPropertySchemas().stream()
+                .filter(s -> s instanceof EnumColumnSchema)
+                .map(s -> ((EnumColumnSchema) s).getEnumColumn())
+                .collect(Collectors.toSet());
+        Condition conditions = new JdbcPredicatesTranslator(idFields, enumColumns, jsonbColumns).translate(predicatesHolder);
         int finalLimit = query.getLimit() < 0 ? Integer.MAX_VALUE : query.getLimit();
 
         SelectConditionStep<Record> where = createSqlQuery(query.getPropertyKeys())
