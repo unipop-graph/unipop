@@ -5,11 +5,13 @@ This document records the upgrade of Unipop to Apache TinkerPop **3.8.1** on **J
 ## Summary
 
 TinkerPop 3.8.0 dropped Java 8 and requires **Java 11+** (Java 17 supported), so the Gremlin
-bump and the JVM bump are aligned. The upgrade was applied to the modules that can run on
-Java 17 today — **`unipop-core`** and **`unipop-jdbc`** — which now build and package cleanly.
+bump and the JVM bump are aligned. The upgrade now covers **all five modules** —
+**`unipop-core`**, **`unipop-jdbc`**, **`unipop-elastic`**, **`unipop-rest`**, and
+**`unipop-test`** — which build and package cleanly, and the full reactor is restored.
 
-The Elasticsearch-backed modules are **deferred** (see below): Elasticsearch 5.3.1 (Lucene 6 +
-the removed transport client) cannot run on a Java 17 JVM.
+The Elasticsearch-backed modules required a real port off Elasticsearch 5.3.1 (Lucene 6 + the
+removed transport client cannot run on Java 17) to **Elasticsearch 8.x** via the Elasticsearch
+Java API Client — see *Elasticsearch modules — ES 5.3.1 → 8.x port* below.
 
 ## Build / toolchain
 
@@ -98,23 +100,92 @@ Harness-level fixes required for Java 17 (these make the suite *run*, independen
   (`java.base/java.lang`, `…/java.util.concurrent.atomic`, etc.) — otherwise `InaccessibleObjectException`.
 - `JdbcWorld.convertIdToScript` quotes String/UUID ids so injected Gremlin string queries parse.
 
-## Deferred — Elasticsearch modules (follow-up)
+## Elasticsearch modules — ES 5.3.1 → 8.x port (#143)
 
-`unipop-elastic`, `unipop-rest`, and `unipop-test` are temporarily removed from the Maven reactor
-(kept on disk). Reason: **Elasticsearch 5.3.1 cannot run on Java 17** — its bundled Lucene 6 uses
-`sun.misc.Unsafe`/MMap reflection sealed by the Java 16/17 module system, ES 5.x predates JPMS and
-needs the JDK-removed JAXB, and the 5.x **transport client** was removed entirely in ES 8.
-`embedded-elasticsearch` 2.1.0 is archived and would launch an ES 5.3.1 node under Java 17 (fails).
+`unipop-elastic`, `unipop-rest`, and `unipop-test` were deferred from the core/jdbc migration
+because **Elasticsearch 5.3.1 cannot run on Java 17** (Lucene 6 uses module-sealed
+`sun.misc.Unsafe`/MMap reflection, ES 5.x predates JPMS and needs the JDK-removed JAXB, and the
+5.x transport client was removed in ES 8). Clearing this was a genuine port, delivered in four
+phased PRs (#150 elastic core, #151 elastic tests, #152 rest, this PR for test + reactor).
 
-Clearing this is a genuine port (concentrated in ~a dozen `unipop-elastic` source files, plus the
-test harness; `unipop-rest` has no direct ES source imports and is light):
-- ES 5.3.1 → **ES 8.x** (or 7.17 interim).
-- transport client / `PreBuiltTransportClient` → **Elasticsearch Java API Client** over the REST client.
-- `embedded-elasticsearch` → **Testcontainers** (`org.testcontainers:elasticsearch`).
-- rewrite query construction (`QueryBuilders`/`SearchSourceBuilder`/`XContent`/geo `ShapeBuilder`).
-- drop the abandoned `io.searchbox:jest`.
+**Client & query layer (`unipop-elastic`).**
+- Elasticsearch **5.3.1 → 8.15.3**. `io.searchbox:jest` and the transport client
+  (`PreBuiltTransportClient`) are dropped in favour of the **Elasticsearch Java API Client**
+  (`co.elastic.clients:elasticsearch-java`) over the low-level `RestClient`
+  (`RestClientTransport` + `JacksonJsonpMapper` → `ElasticsearchClient`).
+- `FilterHelper` rebuilt on the typed `Query` DSL (`BoolQuery`/`TermQuery`/`RangeQuery.untyped()`/…);
+  bulk writes use `BulkOperation`; scans switch on `SearchResponse<Map>` vs `ScrollResponse<Map>`
+  (`client.scroll()` returns the latter — a porting gotcha).
+- **`_type` is gone in ES 8** → an **index-per-label** model: the Gremlin label is stored in
+  `_source`, `"index":"@label"` routes per label, and an unfiltered `IndexPropertySchema` (`"*"`)
+  fans a scan across labels. `IndexPropertySchema` was null-guarded (unfiltered scans yield no
+  `values`) and given a `ConcurrentHashMap.newKeySet()` created-index cache (the prior code did a
+  synchronous `exists()` round-trip on every write — the load-time "runaway").
+- Geo/shape queries stay **disabled** (deferred); nested-edge upsert is best-effort.
 
-To re-enable, restore the three `<module>` entries in the root `pom.xml`.
+**Test harness (Testcontainers + Gherkin).**
+- `embedded-elasticsearch` → **Testcontainers** `ElasticsearchContainer`
+  (`docker.elastic.co/elasticsearch/elasticsearch:8.15.3`, `xpack.security.enabled=false`,
+  single-node, fixed host port 9200). `EmbeddedElasticsearchServer` starts one container per JVM;
+  `ElasticGraphProvider` triggers it from a static initializer (annotation reflection doesn't run
+  suite static blocks).
+- Gherkin/Cucumber harness (cucumber 7.21.1, guice 4.2.3, junit 4.13.1) per module:
+  `World` + `FeatureTest` + the SPI file `META-INF/services/io.cucumber.core.backend.ObjectFactory`,
+  plus the 9-flag `--add-opens` surefire `argLine` for Java 17.
+- **Cross-module harness reuse via test-jars**: `unipop-elastic` and `unipop-jdbc` publish
+  `test-jar`s (maven-jar-plugin `test-jar` goal) so `unipop-rest` and `unipop-test` reuse
+  `EmbeddedElasticsearchServer` / `EmbeddedPostgresServer` and the `*GraphProvider`s. Test-jar deps
+  are **not** transitive, so each downstream module re-declares Testcontainers, Cucumber, and (for
+  the federation path) the zonky embedded-Postgres deps.
+- **`World` leak discipline**: assign `currentGraph` *before* `loadGraphData`, so
+  `afterEachScenario` always closes the graph (and its `ControllerManager` `DirectoryWatcher`
+  thread) even when a scenario throws during load — otherwise failing scenarios leak threads until
+  `OutOfMemoryError: unable to create native thread`.
+
+**`unipop-rest`.** Production code is ES-free (unirest + jmustache over ES's REST API); the work was
+dependency/build cleanup (drop the stale `elasticsearch:5.3.1` dep, Java 17, reuse the elastic
+test-jar) and ES-8 template fixes (drop `_type`; `add`/`delete` use `/_doc/{id}`).
+
+**`unipop-test` (federation).** `IntegrationGraphProvider` federates jdbc + elastic in one
+`UniGraph`. The TinkerPop-3.8.1 migration had rewritten `ConfigurationControllerManager` to the
+**folder-walk** model (`Files.walk` over a single `"providers"` folder), dropping the pre-migration
+semicolon-joined file list — so federation is now expressed as one folder holding both provider
+JSONs (`configuration/integration/modern/{jdbc,elastic}.json`). `unipop-test/resources` is declared
+as a test-resource so `/configuration/**` is on the classpath.
+
+### Parity baselines (live ES 8 + Docker; embedded Postgres for the jdbc side)
+
+| Module / suite | Tests | Pass | Notes |
+|---|---|---|---|
+| `unipop-elastic` structure | ~935 | ~769 | partial provider |
+| `unipop-elastic` feature (Gherkin) | 1913 | ~741 | partial provider |
+| `unipop-rest` feature (Gherkin) | 1913 | ~662 | most partial (HTTP/template over ES REST); 0 OOM after the leak fix |
+| `unipop-test` feature (federated) | 1913 | ~413 | jdbc + elastic in one graph; most partial combo |
+
+A lower pass rate downstream is expected — each layer is a more partial federation provider. The bar
+for the test module is **compiles + runs + a representative parity recorded**, not full compliance.
+
+### Known follow-ups (tracked)
+
+- **Federation partition**: `integration/modern` co-locates both providers, but they currently
+  *overlap* (both claim every element) and `jdbc/modern.json` references tables
+  (`person`/`software`/`knows`/`created`) that don't match `JdbcGraphProvider.createTables()`
+  (`PERSON_MODERN`/`SOFTWARE_MODERN`/`MODERN_EDGES`) — so jdbc-backed loads fail
+  (`relation … does not exist`). A real port (person→ES, software+edges→jdbc) with aligned table
+  names is the dominant federation follow-up.
+- **`name_age` multi-field schema** returns no data on ES 8 (`MultiFieldTests` builds + runs but
+  asserts 0 results) — a niche, best-effort Unipop feature to revisit.
+- **`*StructureSuite` GraphMigrator deadlock**: `RestStructureSuite` and `IntegStructureSuite` hang
+  on the GraphML IO migrate tests (partial provider throws mid-migration → piped writer dies →
+  reader deadlocks on `PipedInputStream`). Both are excluded from the default run with documentation;
+  a `@Graph.OptOut` on `UniGraph` was tried but `AbstractGremlinSuite` doesn't honor it for the
+  outer `IoGraphTest` class.
+- **Docker portability**: the surefire `DOCKER_HOST` is pinned to the local Docker Desktop socket and
+  Ryuk is disabled (per-JVM container torn down via shutdown hook); a killed/hung run leaks the
+  fixed-port-9200 container and must be `docker rm -f`'d before the next run.
+- **Nested-edge upsert** is append-only best-effort; **geo** queries stay disabled.
+
+The root `pom.xml` reactor is fully restored — all five `<module>` entries active.
 
 ---
 
