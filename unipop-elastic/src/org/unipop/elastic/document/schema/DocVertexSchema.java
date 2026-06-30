@@ -1,11 +1,12 @@
 package org.unipop.elastic.document.schema;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.unipop.elastic.common.ElasticClient;
+import org.unipop.elastic.common.FilterHelper;
 import org.unipop.elastic.document.DocumentVertexSchema;
 import org.unipop.elastic.document.schema.nested.NestedEdgeSchema;
 import org.unipop.elastic.document.schema.property.IndexPropertySchema;
@@ -49,15 +50,15 @@ public class DocVertexSchema extends AbstractDocSchema<Vertex> implements Docume
         String path = edgeJson.optString("path", null);
         Direction direction = Direction.valueOf(edgeJson.optString("direction"));
 
-        if(path == null) return new InnerEdgeSchema(this, direction, index, type, edgeJson, client, graph);
-        return new NestedEdgeSchema(this, direction, index, type, path, edgeJson, client, graph);
+        if(path == null) return new InnerEdgeSchema(this, direction, index, edgeJson, client, graph);
+        return new NestedEdgeSchema(this, direction, index, null, path, edgeJson, client, graph);
     }
 
     @Override
-    public QueryBuilder getSearch(DeferredVertexQuery query) {
+    public Query getSearch(DeferredVertexQuery query) {
         PredicatesHolder predicatesHolder = this.toPredicates(query.getVertices());
-        QueryBuilder queryBuilder = createQueryBuilder(predicatesHolder);
-        return queryBuilder;
+        if (predicatesHolder.isAborted()) return null;
+        return FilterHelper.createFilterBuilder(predicatesHolder);
     }
 
     @Override
@@ -76,7 +77,6 @@ public class DocVertexSchema extends AbstractDocSchema<Vertex> implements Docume
     public String toString() {
         return "DocVertexSchema{" +
                 "index='" + index + '\'' +
-                ", type='" + type + '\'' +
                 '}';
     }
 }
