@@ -47,9 +47,7 @@
         <module>unipop-jdbc</module>
         <module>unipop-elastic</module>
         <module>unipop-rest</module>
-        <!-- Deferred to later #143 phases:
         <module>unipop-test</module>
-        -->
     </modules>
     <build>
         <sourceDirectory>${basedir}/src</sourceDirectory>
