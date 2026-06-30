@@ -7,17 +7,21 @@ import org.unipop.util.ConversionUtils;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class DynamicPropertySchema implements PropertySchema {
 
     protected final Set<String> excludeFields;
     protected final Set<String> excludeProperties;
+    protected final Set<String> excludePropertyPrefixes;
 
     public DynamicPropertySchema(ArrayList<PropertySchema> otherSchemas) {
         this.excludeFields = otherSchemas.stream().flatMap(schema -> schema.excludeDynamicFields().stream()).collect(Collectors.toSet());
         this.excludeProperties = otherSchemas.stream().flatMap(schema -> schema.excludeDynamicProperties().stream()).collect(Collectors.toSet());
+        this.excludePropertyPrefixes = otherSchemas.stream().flatMap(schema -> schema.excludeDynamicPropertyPrefixes().stream()).collect(Collectors.toSet());
     }
 
     public DynamicPropertySchema(ArrayList<PropertySchema> otherSchemas, JSONObject config) {
@@ -39,13 +43,13 @@ public class DynamicPropertySchema implements PropertySchema {
 
     @Override
     public Map<String, Object> toFields(Map<String, Object> properties) {
-        return properties.entrySet().stream().filter(entry -> !excludeProperties.contains(entry.getKey()))
+        return properties.entrySet().stream().filter(entry -> !isExcluded(entry.getKey()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     @Override
     public Set<String> toFields(Set<String> propertyKeys) {
-        return propertyKeys.stream().filter(key -> !excludeProperties.contains(key))
+        return propertyKeys.stream().filter(key -> !isExcluded(key))
                 .collect(Collectors.toSet());
     }
 
@@ -57,9 +61,16 @@ public class DynamicPropertySchema implements PropertySchema {
     @Override
     public PredicatesHolder toPredicates(PredicatesHolder predicatesHolder) {
         Set<HasContainer> hasContainers = predicatesHolder.getPredicates().stream().filter(has ->
-                !excludeProperties.contains(has.getKey())).collect(Collectors.toSet());
+                !isExcluded(has.getKey())).collect(Collectors.toSet());
 
         return PredicatesHolderFactory.createFromPredicates(predicatesHolder.getClause(), hasContainers);
+    }
+
+    /** A property key is dynamically excluded if named exactly or owned by a prefix namespace. */
+    protected boolean isExcluded(String propertyKey) {
+        if (excludeProperties.contains(propertyKey)) return true;
+        int dot = propertyKey.indexOf('.');
+        return dot > 0 && excludePropertyPrefixes.contains(propertyKey.substring(0, dot));
     }
 
     @Override
@@ -67,6 +78,7 @@ public class DynamicPropertySchema implements PropertySchema {
         return "DynamicPropertySchema{" +
                 "excludeFields=" + excludeFields +
                 ", excludeProperties=" + excludeProperties +
+                ", excludePropertyPrefixes=" + excludePropertyPrefixes +
                 '}';
     }
 }
