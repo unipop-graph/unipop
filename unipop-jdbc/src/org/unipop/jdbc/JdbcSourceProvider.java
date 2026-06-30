@@ -8,6 +8,7 @@ import org.unipop.jdbc.controller.simple.RowController;
 import org.unipop.jdbc.schemas.RowEdgeSchema;
 import org.unipop.jdbc.schemas.RowVertexSchema;
 import org.unipop.jdbc.schemas.jdbc.JdbcSchema;
+import org.unipop.jdbc.schemas.property.EnumPropertySchema;
 import org.unipop.jdbc.schemas.property.JsonbPropertySchema;
 import org.unipop.jdbc.utils.ContextManager;
 import org.unipop.jdbc.utils.JdbcPredicatesTranslator;
@@ -17,7 +18,7 @@ import org.unipop.schema.property.PropertySchema;
 import org.unipop.structure.traversalfilter.TraversalFilter;
 import org.unipop.structure.UniGraph;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -57,7 +58,7 @@ public class JdbcSourceProvider implements SourceProvider {
 
     @Override
     public List<PropertySchema.PropertySchemaBuilder> providerBuilders() {
-        return Collections.singletonList(new JsonbPropertySchema.Builder());
+        return Arrays.asList(new JsonbPropertySchema.Builder(), new EnumPropertySchema.Builder());
     }
 
     @Override

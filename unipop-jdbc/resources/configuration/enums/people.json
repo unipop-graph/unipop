@@ -11,9 +11,8 @@
       "label": "@label",
       "properties": {
         "name": "@name",
-        "status": "@status"
+        "status": { "type": "enum", "enumType": "mood" }
       },
-      "enums": { "status": "mood" },
       "dynamicProperties": false
     }
   ],

@@ -148,3 +148,22 @@ structure suite clean of DB errors (**~508 pass, 31 fail = H2**). Both suites ru
 general fix needs accurate per-property type declarations in the configs (the test configs leave
 properties untyped, so text-vs-numeric columns can't be distinguished generically); these are in
 already-failing crew-graph scenarios and do not affect H2 parity.
+
+# Provider property-schema types (jdbc)
+
+Provider-specific PostgreSQL column behaviors are declared as **keyed property schemas** under a
+vertex/edge's `properties`, contributed through `SourceProvider.providerBuilders()` (so they live in
+`unipop-jdbc`, not core):
+
+- **Enum column** — `"<col>": {"type": "enum"}` (optional `"enumType": "<name>"`, validated but
+  metadata-only; optional `"field"` to alias the column). Backed by `EnumPropertySchema` (extends
+  `FieldPropertySchema`); the query comparison renders `col::text = ?`.
+- **JSONB column** — `"<col>": {"type": "jsonb"}`. Schemaless catch-all addressed `<col>.<path>`
+  (any key, nested paths, text comparison). Backed by `JsonbPropertySchema`.
+
+**Breaking change (enum):** the earlier element-level `"enums": {column: typeName}` object is
+**removed** and no longer parsed. Migrate each entry to a keyed declaration on that column, e.g.
+`"status": "@status"` + `"enums": {"status": "mood"}` → `"status": {"type": "enum", "enumType": "mood"}`.
+A stale `"enums"` key is now silently ignored: the column falls back to a plain text column, so an
+enum comparison fails at **query time** with a `PSQLException` (enum vs varchar) rather than at config
+load — update configs when upgrading.
