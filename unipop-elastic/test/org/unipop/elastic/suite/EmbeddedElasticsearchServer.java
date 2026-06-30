@@ -10,11 +10,19 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import java.io.IOException;
+import java.util.List;
 
 /** One Testcontainers ES 8 node per JVM (mirrors jdbc's EmbeddedPostgresServer). */
 public final class EmbeddedElasticsearchServer {
 
     public static final String IMAGE = "docker.elastic.co/elasticsearch/elasticsearch:8.15.3";
+
+    /** Fixed host port. The provider config files (and production ElasticClient built from them)
+     *  use a hardcoded http://localhost:9200 address. UniGraph's ConfigurationControllerManager
+     *  reads addresses from each provider JSON file and ignores the base-config "addresses" the
+     *  GraphProvider injects, so the container MUST bind to this fixed port for the production
+     *  client to reach it (mirrors jdbc's fixed EmbeddedPostgresServer.PORT = 54329). */
+    public static final int PORT = 9200;
 
     private static volatile ElasticsearchContainer container;
     private static volatile ElasticsearchClient client;
@@ -28,6 +36,9 @@ public final class EmbeddedElasticsearchServer {
                 .withEnv("xpack.security.enabled", "false")
                 .withEnv("action.destructive_requires_name", "false")
                 .withEnv("discovery.type", "single-node");
+        // Bind container 9200 -> fixed host 9200 so the hardcoded localhost:9200 in the
+        // provider config files resolves (see PORT javadoc above).
+        c.setPortBindings(List.of(PORT + ":9200"));
         c.start();
         String host = c.getHost();
         int port = c.getMappedPort(9200);
