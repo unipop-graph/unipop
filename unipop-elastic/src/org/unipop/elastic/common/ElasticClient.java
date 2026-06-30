@@ -7,6 +7,7 @@ import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.ClearScrollRequest;
 import co.elastic.clients.elasticsearch.core.ScrollRequest;
+import co.elastic.clients.elasticsearch.core.ScrollResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
@@ -104,7 +105,7 @@ public class ElasticClient {
         }
     }
 
-    public SearchResponse<Map> scroll(String scrollId) {
+    public ScrollResponse<Map> scroll(String scrollId) {
         try {
             ScrollRequest request = ScrollRequest.of(s -> s.scrollId(scrollId).scroll(Time.of(t -> t.time("6m"))));
             return client.scroll(request, Map.class);

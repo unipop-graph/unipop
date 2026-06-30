@@ -127,6 +127,9 @@
                     <version>3.13.0</version>
                     <configuration>
                         <release>17</release>
+                        <excludes>
+                            <exclude>test/**</exclude>
+                        </excludes>
                     </configuration>
                 </plugin>
             </plugins>
