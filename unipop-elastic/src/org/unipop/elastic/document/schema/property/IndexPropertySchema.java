@@ -38,7 +38,7 @@ public class IndexPropertySchema implements ParentSchemaProperty {
         if (predicatesHolder.getClause().equals(PredicatesHolder.Clause.Abort))
             return null;
         Set<Object> values = schema.getValues(predicatesHolder);
-        Set<String> indices = values.size() > 0 ?
+        Set<String> indices = values != null && !values.isEmpty() ?
                 values.stream().map(Object::toString).collect(Collectors.toSet()) :
                 Collections.singleton(defaultIndex);
         return PredicatesHolderFactory
@@ -78,7 +78,7 @@ public class IndexPropertySchema implements ParentSchemaProperty {
 
     private Set<String> predicatesToIndices(PredicatesHolder predicatesHolder) {
         Set<Object> values = schema.getValues(predicatesHolder);
-        return values.size() > 0 ? values.stream().map(Object::toString).collect(Collectors.toSet())
+        return values != null && !values.isEmpty() ? values.stream().map(Object::toString).collect(Collectors.toSet())
                 : Collections.singleton(defaultIndex);
     }
 
