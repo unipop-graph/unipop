@@ -1,15 +1,14 @@
 package org.unipop.elastic.document.schema.nested;
 
-import io.searchbox.action.BulkableAction;
-import io.searchbox.core.DocumentResult;
-import org.apache.lucene.search.join.ScoreMode;
+import co.elastic.clients.elasticsearch._types.query_dsl.ChildScoreMode;
+import co.elastic.clients.elasticsearch._types.query_dsl.NestedQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.unipop.elastic.common.ElasticClient;
+import org.unipop.elastic.common.FilterHelper;
 import org.unipop.elastic.document.DocumentVertexSchema;
 import org.unipop.elastic.document.schema.AbstractDocSchema;
 import org.unipop.elastic.document.schema.property.IndexPropertySchema;
@@ -26,11 +25,10 @@ import java.util.stream.Collectors;
 public class NestedVertexSchema extends AbstractDocSchema<Vertex> implements DocumentVertexSchema {
     private String path;
 
-    public NestedVertexSchema(JSONObject configuration, String path, IndexPropertySchema index, String type, ElasticClient client, UniGraph graph) throws JSONException {
+    public NestedVertexSchema(JSONObject configuration, String path, IndexPropertySchema index, ElasticClient client, UniGraph graph) throws JSONException {
         super(configuration, client, graph);
         this.path = path;
         this.index = index;
-        this.type = type;
     }
 
     @Override
@@ -83,15 +81,15 @@ public class NestedVertexSchema extends AbstractDocSchema<Vertex> implements Doc
     }
 
     @Override
-    public BulkableAction<DocumentResult> addElement(Vertex element, boolean create) {
+    public co.elastic.clients.elasticsearch.core.bulk.BulkOperation addElement(Vertex element, boolean create) {
         return null;
     }
 
-    @Override
-    public QueryBuilder createQueryBuilder(PredicatesHolder predicatesHolder) {
-        QueryBuilder queryBuilder = super.createQueryBuilder(predicatesHolder);
-        if(queryBuilder == null) return null;
-        return QueryBuilders.nestedQuery(this.path, queryBuilder, ScoreMode.None);
+    /** Build a nested query wrapping an inner ES 8 Query for this path. */
+    protected Query createNestedQuery(PredicatesHolder predicatesHolder) {
+        Query innerQuery = FilterHelper.createFilterBuilder(predicatesHolder);
+        if (innerQuery == null) return null;
+        return NestedQuery.of(n -> n.path(this.path).query(innerQuery).scoreMode(ChildScoreMode.None))._toQuery();
     }
 
     @Override
@@ -100,9 +98,9 @@ public class NestedVertexSchema extends AbstractDocSchema<Vertex> implements Doc
     }
 
     @Override
-    public QueryBuilder getSearch(DeferredVertexQuery query) {
+    public Query getSearch(DeferredVertexQuery query) {
         PredicatesHolder predicatesHolder = this.toPredicates(query.getVertices());
-        QueryBuilder queryBuilder = createQueryBuilder(predicatesHolder);
-        return queryBuilder;
+        if (predicatesHolder.isAborted()) return null;
+        return createNestedQuery(predicatesHolder);
     }
 }

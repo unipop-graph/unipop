@@ -1,15 +1,14 @@
 {
   "class": "org.unipop.elastic.ElasticSourceProvider",
-  "clusterName": "unipop",
   "addresses": ["http://localhost:9200"],
   "vertices": [
     {
-      "index": "vertex",
+      "index": "@label",
       "type": "person",
       "id": "@_id",
       "label": "person",
       "dynamicProperties": {
-        "excludeFields": ["edgeId", "knownBy", "edgeWeight", "edgeName", "_type"]
+        "excludeFields": ["edgeId", "knownBy", "edgeWeight", "edgeName"]
       },
       "edges": [{
         "id": "@edgeId",
@@ -27,10 +26,10 @@
       }]
     },
     {
-      "index": "vertex",
+      "index": "@label",
       "id": "@_id",
       "label": {
-        "field": "_type",
+        "field": "label",
         "exclude": ["person"]
       },
       "properties": {},
@@ -39,10 +38,10 @@
   ],
   "edges": [
     {
-      "index": "edge",
+      "index": "@label",
       "id": "@_id",
       "label": {
-        "field": "_type",
+        "field": "label",
         "exclude": ["knows"]
       },
       "properties": {},

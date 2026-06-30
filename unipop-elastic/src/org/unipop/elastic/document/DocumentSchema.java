@@ -1,23 +1,23 @@
 package org.unipop.elastic.document;
 
-import com.google.gson.JsonElement;
-import io.searchbox.action.BulkableAction;
-import io.searchbox.core.Delete;
-import io.searchbox.core.DocumentResult;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.unipop.elastic.document.schema.property.IndexPropertySchema;
 import org.unipop.query.predicates.PredicateQuery;
 import org.unipop.query.search.SearchQuery;
 import org.unipop.schema.element.ElementSchema;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * A schema that is represented by a document in ES.
  * @param <E> Element
  */
-public interface DocumentSchema<E extends Element> extends ElementSchema<E>{
+public interface DocumentSchema<E extends Element> extends ElementSchema<E> {
 
     /**
      * Returns the index property schema of the document schema
@@ -26,33 +26,41 @@ public interface DocumentSchema<E extends Element> extends ElementSchema<E>{
     IndexPropertySchema getIndex();
 
     /**
-     * Converts a Search query to a Query builder
+     * Converts a Search query to an ES 8 Query
      * @param query A search query
-     * @return A query builder
+     * @return A Query
      */
-    QueryBuilder getSearch(SearchQuery<E> query);
+    Query getSearch(SearchQuery<E> query);
 
     /**
-     * Return a list of elements
-     * @param result The result of the ES query
+     * Builds an ES 8 SearchRequest.Builder for the given query and ES query.
+     * Handles size, source filtering, and sort ordering.
+     * @param query The search query
+     * @param q     The ES query (from getSearch)
+     * @return A SearchRequest.Builder ready for index/routing configuration by the controller
+     */
+    SearchRequest.Builder buildSearch(SearchQuery<E> query, Query q);
+
+    /**
+     * Return a list of elements from ES 8 search hits
+     * @param hits  The hits returned by the ES query
      * @param query The UniQuery itself
      * @return A list of elements
      */
-    List<E> parseResults(List<String> result, PredicateQuery query);
-    List<E> parseResultsOptimized(List<JsonElement> hits, PredicateQuery query);
+    List<E> parseResults(List<Hit<Map<String, Object>>> hits, PredicateQuery query);
 
     /**
-     * Returns an action to insert or update a document
+     * Returns a BulkOperation to insert or update a document
      * @param element The element to add or update
-     * @param create Whether to create or update
-     * @return An action
+     * @param create  Whether to create or update
+     * @return A BulkOperation
      */
-    BulkableAction<DocumentResult> addElement(E element, boolean create);
+    BulkOperation addElement(E element, boolean create);
 
     /**
-     * Deletes a document from ES
+     * Returns a BulkOperation to delete a document from ES
      * @param element The element to delete
-     * @return A delete builder
+     * @return A BulkOperation
      */
-    Delete.Builder delete(E element);
+    BulkOperation delete(E element);
 }

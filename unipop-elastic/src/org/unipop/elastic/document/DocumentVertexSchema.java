@@ -1,7 +1,7 @@
 package org.unipop.elastic.document;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.schema.element.VertexSchema;
 
@@ -11,9 +11,9 @@ import org.unipop.schema.element.VertexSchema;
 public interface DocumentVertexSchema extends DocumentSchema<Vertex>, VertexSchema {
 
     /**
-     * Converts a Deferred vertex query to a query builder
+     * Converts a Deferred vertex query to a Query
      * @param query The deferred vertex query
-     * @return A query builder
+     * @return A Query
      */
-    QueryBuilder getSearch(DeferredVertexQuery query);
+    Query getSearch(DeferredVertexQuery query);
 }

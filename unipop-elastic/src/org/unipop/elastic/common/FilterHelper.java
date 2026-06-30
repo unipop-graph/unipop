@@ -1,5 +1,20 @@
 package org.unipop.elastic.common;
 
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.ConstantScoreQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.ExistsQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.FuzzyQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.IdsQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.MatchAllQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.PrefixQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.RegexpQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.TermQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.WildcardQuery;
+import co.elastic.clients.json.JsonData;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -7,14 +22,11 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.ConnectiveP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.OrP;
-import org.elasticsearch.common.geo.builders.ShapeBuilder;
-import org.elasticsearch.common.xcontent.XContentParser;
-import org.elasticsearch.common.xcontent.json.JsonXContent;
-import org.elasticsearch.index.query.*;
 import org.unipop.process.predicate.ExistsP;
 import org.unipop.process.predicate.Text;
 import org.unipop.query.predicates.PredicatesHolder;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -25,64 +37,68 @@ import java.util.stream.Collectors;
  * TODO: Cleanup and create implementation of PredicatesTranslator with logs.
  */
 public class FilterHelper {
-    public static QueryBuilder createFilterBuilder(PredicatesHolder predicatesHolder) {
+    public static Query createFilterBuilder(PredicatesHolder predicatesHolder) {
 
-        Set<QueryBuilder> predicateFilters = predicatesHolder.getPredicates().stream()
+        Set<Query> predicateFilters = predicatesHolder.getPredicates().stream()
                 .map(FilterHelper::createFilter).collect(Collectors.toSet());
-        Set<QueryBuilder> childFilters = predicatesHolder.getChildren().stream()
+        Set<Query> childFilters = predicatesHolder.getChildren().stream()
                 .map(FilterHelper::createFilterBuilder).collect(Collectors.toSet());
         predicateFilters.addAll(childFilters);
 
 
-        if (predicateFilters.size() == 0) return QueryBuilders.matchAllQuery();
+        if (predicateFilters.size() == 0) return MatchAllQuery.of(m -> m)._toQuery();
         if (predicateFilters.size() == 1) return predicateFilters.iterator().next();
 
 
-        BoolQueryBuilder predicatesQuery = QueryBuilders.boolQuery();
+        List<Query> must = new ArrayList<>();
+        List<Query> should = new ArrayList<>();
         if (predicatesHolder.getClause().equals(PredicatesHolder.Clause.And)) {
-            predicateFilters.forEach(predicatesQuery::must);
+            must.addAll(predicateFilters);
         } else if (predicatesHolder.getClause().equals(PredicatesHolder.Clause.Or)) {
-            predicateFilters.forEach(predicatesQuery::should);
+            should.addAll(predicateFilters);
         } else throw new IllegalArgumentException("Unexpected clause in predicatesHolder: " + predicatesHolder);
 
-        return QueryBuilders.constantScoreQuery(predicatesQuery);
+        Query boolQuery = BoolQuery.of(b -> b.must(must).should(should))._toQuery();
+        return ConstantScoreQuery.of(c -> c.filter(boolQuery))._toQuery();
     }
 
-    public static QueryBuilder createFilter(HasContainer container) {
+    public static Query createFilter(HasContainer container) {
         String key = container.getKey();
         P predicate = container.getPredicate();
         Object value = predicate.getValue();
         BiPredicate<?, ?> biPredicate = predicate.getBiPredicate();
         if (key.equals("_id")) return getIdsFilter(value);
-        else if (key.equals("_type")) return getTypeFilter(container);
+        // _type queries are removed in ES 8 — type discrimination is by index
+        else if (key.equals("_type")) return MatchAllQuery.of(m -> m)._toQuery();
         else if (predicate instanceof ConnectiveP) {
             return handleConnectiveP(key, (ConnectiveP) predicate);
         } else if (biPredicate != null) {
             return predicateToQuery(key, value, biPredicate);
-        } else if (predicate instanceof ExistsP) return QueryBuilders.existsQuery(key);
+        } else if (predicate instanceof ExistsP) return ExistsQuery.of(e -> e.field(key))._toQuery();
         else throw new IllegalArgumentException("HasContainer not supported by unipop");
     }
 
-    private static QueryBuilder handleConnectiveP(String key, ConnectiveP predicate){
+    private static Query handleConnectiveP(String key, ConnectiveP predicate) {
         List<P> predicates = predicate.getPredicates();
-        List<QueryBuilder> queries = predicates.stream().map(p -> {
+        List<Query> queries = predicates.stream().map(p -> {
             if (p instanceof ConnectiveP) return handleConnectiveP(key, (ConnectiveP) p);
             Object pValue = p.getValue();
             BiPredicate pBiPredicate = p.getBiPredicate();
             return predicateToQuery(key, pValue, pBiPredicate);
         }).collect(Collectors.toList());
 
-        BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+        List<Query> must = new ArrayList<>();
+        List<Query> should = new ArrayList<>();
         if (predicate instanceof AndP)
-            queries.forEach(boolQueryBuilder::must);
+            must.addAll(queries);
         else if (predicate instanceof OrP)
-            queries.forEach(boolQueryBuilder::should);
+            should.addAll(queries);
         else throw new IllegalArgumentException("Connective predicate not supported by unipop");
 
-        return boolQueryBuilder;
+        return BoolQuery.of(b -> b.must(must).should(should))._toQuery();
     }
 
-    private static QueryBuilder predicateToQuery(String key, Object value, BiPredicate<?, ?> biPredicate) {
+    private static Query predicateToQuery(String key, Object value, BiPredicate<?, ?> biPredicate) {
         if (biPredicate instanceof Compare) return getCompareFilter(key, value, biPredicate.toString());
         else if (biPredicate instanceof Contains) return getContainsFilter(key, value, biPredicate);
 //        else if (biPredicate instanceof Geo) return getGeoFilter(key, value, (Geo) biPredicate);
@@ -91,95 +107,91 @@ public class FilterHelper {
         else throw new IllegalArgumentException("predicate not supported by unipop: " + biPredicate.toString());
     }
 
-    private static QueryBuilder getTextFilter(String key, Object value, Text.TextPredicate biPredicate) {
+    private static Query getTextFilter(String key, Object value, Text.TextPredicate biPredicate) {
         String predicate = biPredicate.toString();
         switch (predicate) {
             case "LIKE":
-                return QueryBuilders.wildcardQuery(key, value.toString());
+                return WildcardQuery.of(w -> w.field(key).value(value.toString()))._toQuery();
             case "UNLIKE":
-                return QueryBuilders.boolQuery().mustNot(QueryBuilders.wildcardQuery(key, value.toString()));
+                Query likeQ = WildcardQuery.of(w -> w.field(key).value(value.toString()))._toQuery();
+                return BoolQuery.of(b -> b.mustNot(likeQ))._toQuery();
             case "PREFIX":
-                return QueryBuilders.prefixQuery(key, value.toString());
+                return PrefixQuery.of(p -> p.field(key).value(value.toString()))._toQuery();
             case "UNPREFIX":
-                return QueryBuilders.boolQuery().mustNot(QueryBuilders.prefixQuery(key, value.toString()));
+                Query prefixQ = PrefixQuery.of(p -> p.field(key).value(value.toString()))._toQuery();
+                return BoolQuery.of(b -> b.mustNot(prefixQ))._toQuery();
             case "REGEXP":
-                return QueryBuilders.regexpQuery(key, value.toString());
+                return RegexpQuery.of(r -> r.field(key).value(value.toString()))._toQuery();
             case "UNREGEXP":
-                return QueryBuilders.boolQuery().mustNot(QueryBuilders.regexpQuery(key, value.toString()));
+                Query regexpQ = RegexpQuery.of(r -> r.field(key).value(value.toString()))._toQuery();
+                return BoolQuery.of(b -> b.mustNot(regexpQ))._toQuery();
             case "FUZZY":
-                return QueryBuilders.fuzzyQuery(key, value.toString());
+                return FuzzyQuery.of(f -> f.field(key).value(FieldValue.of(value.toString())))._toQuery();
             case "UNFUZZY":
-                return QueryBuilders.boolQuery().mustNot(QueryBuilders.fuzzyQuery(key, value.toString()));
+                Query fuzzyQ = FuzzyQuery.of(f -> f.field(key).value(FieldValue.of(value.toString())))._toQuery();
+                return BoolQuery.of(b -> b.mustNot(fuzzyQ))._toQuery();
             default:
                 throw new IllegalArgumentException("predicate not supported in has step: " + predicate);
         }
     }
 
-    private static QueryBuilder getTypeFilter(HasContainer has) {
-        BiPredicate<?, ?> biPredicate = has.getBiPredicate();
-        if (biPredicate instanceof Compare) {
-            QueryBuilder query = QueryBuilders.typeQuery(has.getValue().toString());
-            if (biPredicate.equals(Compare.eq)) return query;
-            return QueryBuilders.boolQuery().mustNot(query);
-        } else if (biPredicate instanceof Contains) {
-            Collection values = (Collection) has.getValue();
-            BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-            boolean within = biPredicate.equals(Contains.within);
-            values.forEach(label -> {
-                TypeQueryBuilder typeQueryBuilder = QueryBuilders.typeQuery(label.toString());
-                if (within) boolQueryBuilder.should(typeQueryBuilder);
-                else boolQueryBuilder.mustNot(typeQueryBuilder);
-            });
-            return boolQueryBuilder;
-        } else throw new IllegalArgumentException("predicate not supported by unipop: " + biPredicate.toString());
-    }
-
-    private static QueryBuilder getIdsFilter(Object value) {
-        IdsQueryBuilder idsQueryBuilder = QueryBuilders.idsQuery();
+    private static Query getIdsFilter(Object value) {
+        List<String> idList = new ArrayList<>();
         if (value instanceof Iterable) {
             for (Object id : (Iterable) value)
-                idsQueryBuilder.addIds(id.toString());
-        } else idsQueryBuilder.addIds(value.toString());
-        return idsQueryBuilder;
+                idList.add(id.toString());
+        } else idList.add(value.toString());
+        return IdsQuery.of(i -> i.values(idList))._toQuery();
     }
 
-    private static QueryBuilder getCompareFilter(String key, Object value, String predicateString) {
+    private static Query getCompareFilter(String key, Object value, String predicateString) {
         switch (predicateString) {
             case ("eq"):
-                return QueryBuilders.termQuery(key, value);
+                return TermQuery.of(t -> t.field(key).value(FieldValue.of(value)))._toQuery();
             case ("neq"):
-                return QueryBuilders.boolQuery().mustNot(QueryBuilders.termQuery(key, value));
+                Query termQ = TermQuery.of(t -> t.field(key).value(FieldValue.of(value)))._toQuery();
+                return BoolQuery.of(b -> b.mustNot(termQ))._toQuery();
             case ("gt"):
-                return QueryBuilders.rangeQuery(key).gt(value);
+                return RangeQuery.of(r -> r.untyped(u -> u.field(key).gt(JsonData.of(value))))._toQuery();
             case ("gte"):
-                return QueryBuilders.rangeQuery(key).gte(value);
+                return RangeQuery.of(r -> r.untyped(u -> u.field(key).gte(JsonData.of(value))))._toQuery();
             case ("lt"):
-                return QueryBuilders.rangeQuery(key).lt(value);
+                return RangeQuery.of(r -> r.untyped(u -> u.field(key).lt(JsonData.of(value))))._toQuery();
             case ("lte"):
-                return QueryBuilders.rangeQuery(key).lte(value);
+                return RangeQuery.of(r -> r.untyped(u -> u.field(key).lte(JsonData.of(value))))._toQuery();
             case ("inside"):
                 List items = (List) value;
                 Object firstItem = items.get(0);
                 Object secondItem = items.get(1);
-                return QueryBuilders.rangeQuery(key).from(firstItem).to(secondItem);
+                return RangeQuery.of(r -> r.untyped(u -> u.field(key).from(JsonData.of(firstItem)).to(JsonData.of(secondItem))))._toQuery();
             default:
                 throw new IllegalArgumentException("predicate not supported in has step: " + predicateString);
         }
     }
 
-    private static QueryBuilder getContainsFilter(String key, Object value, BiPredicate<?, ?> biPredicate) {
-        if (biPredicate == Contains.without) return QueryBuilders.boolQuery().mustNot(QueryBuilders.existsQuery(key));
+    private static Query getContainsFilter(String key, Object value, BiPredicate<?, ?> biPredicate) {
+        if (biPredicate == Contains.without)
+            return BoolQuery.of(b -> b.mustNot(ExistsQuery.of(e -> e.field(key))._toQuery()))._toQuery();
         else if (biPredicate == Contains.within) {
-            if (value == null) return QueryBuilders.existsQuery(key);
-            else if (value instanceof Collection<?>)
-                return QueryBuilders.termsQuery(key, (Collection<?>) value);
-            else if (value.getClass().isArray())
-                return QueryBuilders.termsQuery(key, (Object[]) value);
-            else return QueryBuilders.termsQuery(key, value);
+            if (value == null) return ExistsQuery.of(e -> e.field(key))._toQuery();
+            else if (value instanceof Collection<?>) {
+                List<FieldValue> fieldValues = ((Collection<?>) value).stream()
+                        .map(FieldValue::of)
+                        .collect(Collectors.toList());
+                return TermsQuery.of(t -> t.field(key).terms(tt -> tt.value(fieldValues)))._toQuery();
+            } else if (value.getClass().isArray()) {
+                Object[] arr = (Object[]) value;
+                List<FieldValue> fieldValues = new ArrayList<>();
+                for (Object v : arr) fieldValues.add(FieldValue.of(v));
+                return TermsQuery.of(t -> t.field(key).terms(tt -> tt.value(fieldValues)))._toQuery();
+            } else {
+                List<FieldValue> fieldValues = List.of(FieldValue.of(value));
+                return TermsQuery.of(t -> t.field(key).terms(tt -> tt.value(fieldValues)))._toQuery();
+            }
         } else throw new IllegalArgumentException("predicate not supported by unipop: " + biPredicate.toString());
     }
 
-//    private static QueryBuilder getGeoFilter(String key, Object value, Geo biPredicate) {
+//    private static Query getGeoFilter(String key, Object value, Geo biPredicate) {
 //        try {
 //            String geoJson = value.toString();
 //            XContentParser parser = JsonXContent.jsonXContent.createParser(geoJson);

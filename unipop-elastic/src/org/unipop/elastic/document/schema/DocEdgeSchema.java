@@ -1,14 +1,15 @@
 package org.unipop.elastic.document.schema;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.unipop.elastic.common.ElasticClient;
+import org.unipop.elastic.common.FilterHelper;
 import org.unipop.elastic.document.DocumentEdgeSchema;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
@@ -75,14 +76,12 @@ public class DocEdgeSchema extends AbstractDocSchema<Edge> implements DocumentEd
     }
 
     @Override
-    public QueryBuilder getSearch(SearchVertexQuery query) {
+    public Query getSearch(SearchVertexQuery query) {
         PredicatesHolder edgePredicates = this.toPredicates(query.getPredicates());
         PredicatesHolder vertexPredicates = this.getVertexPredicates(query.getVertices(), query.getDirection());
         PredicatesHolder predicatesHolder = PredicatesHolderFactory.and(edgePredicates, vertexPredicates);
         if (predicatesHolder.isAborted()) return null;
-        QueryBuilder queryBuilder = createQueryBuilder(predicatesHolder);
-        return queryBuilder;
-//        return createSearch(query, queryBuilder);
+        return FilterHelper.createFilterBuilder(predicatesHolder);
     }
 
     protected PredicatesHolder getVertexPredicates(List<Vertex> vertices, Direction direction) {
@@ -100,9 +99,7 @@ public class DocEdgeSchema extends AbstractDocSchema<Edge> implements DocumentEd
     @Override
     public String toString() {
         return "DocEdgeSchema{" +
-                "index='" + null + '\'' +
-                ", type='" + type + '\'' +
+                "index='" + index + '\'' +
                 '}';
     }
-
 }

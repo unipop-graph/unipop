@@ -15,10 +15,9 @@ import java.util.Set;
 public class InnerEdgeSchema extends DocEdgeSchema {
     private final VertexSchema childVertexSchema;
 
-    public InnerEdgeSchema(VertexSchema parentVertexSchema, Direction parentDirection, IndexPropertySchema index, String type, JSONObject edgeJson, ElasticClient client, UniGraph graph) throws JSONException {
+    public InnerEdgeSchema(VertexSchema parentVertexSchema, Direction parentDirection, IndexPropertySchema index, JSONObject edgeJson, ElasticClient client, UniGraph graph) throws JSONException {
         super(edgeJson, client, graph);
         this.index = index;
-        this.type = type;
 
         this.childVertexSchema = createVertexSchema("vertex");
         this.outVertexSchema = parentDirection.equals(Direction.OUT) ? parentVertexSchema : childVertexSchema;
