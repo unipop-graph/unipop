@@ -84,8 +84,13 @@ public class IndexPropertySchema implements ParentSchemaProperty {
 
     public String getIndex(Map<String, Object> fields) {
         String index = schema.toProperties(fields).values().iterator().next().toString();
-        if (!createdIndices.contains(index))
+        if (!createdIndices.contains(index)) {
             validations.forEach(v -> v.validate(index));
+            // Cache so each index is validated against ES once per provider, not on every write.
+            // Without this the createdIndices guard was dead and every document write paid a
+            // synchronous indices().exists() round-trip — pathologically slow for edge-heavy tests.
+            createdIndices.add(index);
+        }
         return index;
     }
 
