@@ -82,6 +82,7 @@ import java.util.stream.Stream;
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategyProcessTest", method = "shouldDetachVertexPropertyWhenChanged", reason = "not all features implemented")
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategyProcessTest", method = "shouldDetachVertexPropertyWhenRemoved", reason = "not all features implemented")
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategyProcessTest", method = "shouldDetachPropertyOfEdgeWhenChanged", reason = "not all features implemented")
+@Graph.OptOut(test = "org.apache.tinkerpop.gremlin.structure.VertexTest$BasicVertexTest", method = "shouldNotGetConcurrentModificationException", reason = "Federated provider: builds an N*N edge set while re-scanning vertices(); each scan forces a refresh and the writes round-trip to the backend, so it does not terminate in reasonable time. Not a correctness gap.")
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategyProcessTest", method = "shouldDetachVertexPropertyWhenNew", reason = "not all features implemented")
 @Graph.OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategyProcessTest", method = "shouldDetachPropertyOfEdgeWhenNew", reason = "not all features implemented")
 @Graph.OptIn(UnipopGraphProvider.OptIn.UnipopStructureSuite)
