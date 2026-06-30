@@ -27,6 +27,15 @@
             <artifactId>jakarta.json-api</artifactId>
             <version>2.1.3</version>
         </dependency>
+        <!-- elasticsearch-java declares jackson-databind as optional, so it is not pulled
+             transitively. JacksonJsonpMapper (used by both ElasticClient and the test harness)
+             needs it at runtime, otherwise the ES client init throws
+             NoClassDefFoundError: com/fasterxml/jackson/databind/ObjectMapper. -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.18.2</version>
+        </dependency>
         <dependency>
             <groupId>com.github.unipop-graph</groupId>
             <artifactId>unipop-core</artifactId>
