@@ -11,6 +11,7 @@ import org.unipop.schema.property.PropertySchema;
 import org.unipop.util.PropertySchemaFactory;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -25,7 +26,7 @@ public class IndexPropertySchema implements ParentSchemaProperty {
     public IndexPropertySchema(PropertySchema schema, String defaultIndex) {
         this.schema = schema;
         this.defaultIndex = defaultIndex;
-        createdIndices = new HashSet<>();
+        createdIndices = ConcurrentHashMap.newKeySet();
         validations = new ArrayList<>();
     }
 
@@ -84,12 +85,14 @@ public class IndexPropertySchema implements ParentSchemaProperty {
 
     public String getIndex(Map<String, Object> fields) {
         String index = schema.toProperties(fields).values().iterator().next().toString();
-        if (!createdIndices.contains(index)) {
+        // add() is the atomic gate: it returns true only for the first caller, so each index is
+        // validated against ES exactly once per provider rather than on every write. Without this
+        // caching the createdIndices guard was dead and every document write paid a synchronous
+        // indices().exists() round-trip — pathologically slow for edge-heavy workloads.
+        // createdIndices is a ConcurrentHashMap key-set so concurrent writers don't race the
+        // check-then-act (validateIndex swallows its own IOException, so add-before-validate is safe).
+        if (createdIndices.add(index)) {
             validations.forEach(v -> v.validate(index));
-            // Cache so each index is validated against ES once per provider, not on every write.
-            // Without this the createdIndices guard was dead and every document write paid a
-            // synchronous indices().exists() round-trip — pathologically slow for edge-heavy tests.
-            createdIndices.add(index);
         }
         return index;
     }
