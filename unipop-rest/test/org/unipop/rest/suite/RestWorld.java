@@ -25,13 +25,17 @@ public class RestWorld implements World {
                     provider.getBaseConfiguration("g", this.getClass(), "feature", graphData);
             final Configuration configuration = new MapConfiguration(baseConf);
             final Graph graph = provider.openTestGraph(configuration);
+            // Assign BEFORE loading so afterEachScenario always closes this graph — even when a
+            // scenario throws during loadGraphData (common for the partial REST provider). Otherwise
+            // the graph's per-JVM ControllerManager DirectoryWatcher thread leaks on every failed
+            // scenario, exhausting native threads ("unable to create native thread" OOM) across the run.
+            this.currentGraph = graph;
 
             // ES is shared per-JVM; clear indices left by a prior scenario before loading.
             EmbeddedElasticsearchServer.deleteAllIndices();
             if (graphData != null) {
                 provider.loadGraphData(graph, loadGraphWith(graphData), this.getClass(), "feature");
             }
-            this.currentGraph = graph;
             return graph.traversal();
         } catch (final Exception ex) {
             throw new IllegalStateException("Could not build/load Rest graph for " + graphData, ex);
