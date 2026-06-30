@@ -99,7 +99,7 @@ public class DocEdgeSchema extends AbstractDocSchema<Edge> implements DocumentEd
     @Override
     public String toString() {
         return "DocEdgeSchema{" +
-                "index='" + null + '\'' +
+                "index='" + index + '\'' +
                 '}';
     }
 }
