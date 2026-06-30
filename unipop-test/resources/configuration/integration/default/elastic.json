@@ -1,0 +1,44 @@
+{
+  "class": "org.unipop.elastic.ElasticSourceProvider",
+  "addresses": "http://localhost:9200",
+  "vertices": [
+    {
+      "index": "@label",
+      "id": "@_id",
+      "label": "@label",
+      "properties": {
+        "gremlin.partitionGraphStrategy.partition": "@partition",
+        "name_age": ["name", "age"],
+        "age": "@age",
+        "name": "@name"
+      },
+      "dynamicProperties": true
+    }
+  ],
+  "edges": [
+    {
+      "index": "@label",
+      "id": "@_id",
+      "label": "@label",
+      "properties": {
+        "gremlin.partitionGraphStrategy.partition": "@partition",
+        "weight": "@weight"
+      },
+      "dynamicProperties": {
+        "excludeFields": ["outId", "inId", "outLabel", "inLabel"]
+      },
+      "outVertex": {
+        "ref": true,
+        "id": "@outId",
+        "label": "@outLabel",
+        "properties": {}
+      },
+      "inVertex": {
+        "ref": true,
+        "id": "@inId",
+        "label": "@inLabel",
+        "properties": {}
+      }
+    }
+  ]
+}

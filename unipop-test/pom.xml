@@ -93,8 +93,13 @@
     </dependencies>
     <build>
         <testResources>
+            <!-- Cucumber ObjectFactory SPI -->
             <testResource>
                 <directory>test-resources</directory>
+            </testResource>
+            <!-- Provider config JSONs (/configuration/**) the graph providers resolve at test time -->
+            <testResource>
+                <directory>resources</directory>
             </testResource>
         </testResources>
         <directory>${basedir}/target</directory>

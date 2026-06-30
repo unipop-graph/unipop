@@ -28,16 +28,14 @@ public class IntegrationGraphProvider extends UnipopGraphProvider {
         baseConfiguration.put("bulk.graph", 10);
         baseConfiguration.put("bulk.multiplier", 10);
 
-        String configurationFile = getSchemaConfiguration(loadGraphWith);
-        if(configurationFile != null) {
-            URL jdbcUrl = this.getClass().getResource("/configuration/jdbc/" + configurationFile);
-            URL elasticUrl = this.getClass().getResource("/configuration/elastic/" + configurationFile);
-            baseConfiguration.put("providers", jdbcUrl.getFile() + ";" + elasticUrl.getFile());
-        }
-        else {
-            URL defaultSchema = this.getClass().getResource("/configuration/basic.json");
-            baseConfiguration.put("providers", defaultSchema.getFile());
-        }
+        // The migrated ConfigurationControllerManager treats "providers" as a single FOLDER and
+        // walks it (Files.walk) for provider JSONs — the pre-migration semicolon-joined file list
+        // is no longer supported. Federation is therefore expressed as one folder holding both the
+        // jdbc and elastic provider configs (integration/modern/{jdbc,elastic}.json); a default
+        // folder holds the elastic-only basic config.
+        String schemaFolder = getSchemaConfiguration(loadGraphWith);
+        URL providersFolder = this.getClass().getResource(schemaFolder);
+        baseConfiguration.put("providers", providersFolder.getFile());
 
         return baseConfiguration;
     }
@@ -46,12 +44,14 @@ public class IntegrationGraphProvider extends UnipopGraphProvider {
         if (loadGraphWith != null) {
             switch (loadGraphWith) {
                 case MODERN:
-                    return "modern.json";
+                    // Folder federating both backends: integration/modern/{jdbc,elastic}.json
+                    return "/configuration/integration/modern";
 //                case CREW: return CrewConfiguration;
 //                case GRATEFUL: return GratefulConfiguration;
             }
         }
-        return null;
+        // Default (non-MODERN) graph data: elastic-only basic config folder.
+        return "/configuration/integration/default";
     }
 
     @Override

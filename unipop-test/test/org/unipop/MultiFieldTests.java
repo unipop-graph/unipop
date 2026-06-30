@@ -27,7 +27,18 @@ import static org.junit.Assert.assertTrue;
  */
 public class MultiFieldTests extends AbstractGremlinTest {
     public MultiFieldTests() throws Exception {
-        GraphManager.setGraphProvider(new ElasticGraphProvider());
+        // The shared elastic ElasticGraphProvider resolves its schema from the directory-watched
+        // /configuration/<conf>/modern layout used by unipop-elastic's own suites. MultiFieldTests
+        // instead needs unipop-test's own config folder, which declares the `name_age`
+        // MultiFieldPropertySchema these tests assert on. providers must be a *folder*
+        // (ConfigurationControllerManager walks it for provider JSONs), so point at the isolated
+        // /configuration/multifield directory holding a single elastic provider config.
+        GraphManager.setGraphProvider(new ElasticGraphProvider() {
+            @Override
+            public String getSchemaConfiguration(LoadGraphWith.GraphData loadGraphWith) {
+                return "/configuration/multifield";
+            }
+        });
     }
 
     @LoadGraphWith(LoadGraphWith.GraphData.MODERN)

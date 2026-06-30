@@ -1,0 +1,73 @@
+{
+  "class": "org.unipop.jdbc.JdbcSourceProvider",
+  "driver": "org.postgresql.Driver",
+  "address": ["jdbc:postgresql://localhost:54329/postgres"],
+  "user": "postgres",
+  "sqlDialect": "POSTGRES",
+  "vertices": [
+    {
+      "table": "person",
+      "id": "@id",
+      "label": "person",
+      "properties": {
+        "name": "@name",
+        "age": "@age"
+      },
+      "dynamicProperties": false
+    },
+    {
+      "table": "software",
+      "id": "@id",
+      "label": "software",
+      "properties": {
+        "name": "@name",
+        "lang": "@lang"
+      },
+      "dynamicProperties": false
+    }
+  ],
+  "edges": [
+    {
+      "table": "knows",
+      "id": "@id",
+      "label": "knows",
+      "properties": {
+        "weight": "@weight"
+      },
+      "dynamicProperties": false,
+      "outVertex": {
+        "ref": "true",
+        "id": "@outid",
+        "label": "@outlabel",
+        "properties": {}
+      },
+      "inVertex": {
+        "ref": "true",
+        "id": "@inid",
+        "label": "@inlabel",
+        "properties": {}
+      }
+    },
+    {
+      "table": "created",
+      "id": "@id",
+      "label": "created",
+      "properties": {
+        "weight": "@weight"
+      },
+      "dynamicProperties": false,
+      "outVertex": {
+        "ref": "true",
+        "id": "@outid",
+        "label": "@outlabel",
+        "properties": {}
+      },
+      "inVertex": {
+        "ref": "true",
+        "id": "@inid",
+        "label": "@inlabel",
+        "properties": {}
+      }
+    }
+  ]
+}
