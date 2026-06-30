@@ -11,6 +11,7 @@ import org.unipop.schema.property.PropertySchema;
 import org.unipop.util.PropertySchemaFactory;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -25,7 +26,7 @@ public class IndexPropertySchema implements ParentSchemaProperty {
     public IndexPropertySchema(PropertySchema schema, String defaultIndex) {
         this.schema = schema;
         this.defaultIndex = defaultIndex;
-        createdIndices = new HashSet<>();
+        createdIndices = ConcurrentHashMap.newKeySet();
         validations = new ArrayList<>();
     }
 
@@ -38,7 +39,7 @@ public class IndexPropertySchema implements ParentSchemaProperty {
         if (predicatesHolder.getClause().equals(PredicatesHolder.Clause.Abort))
             return null;
         Set<Object> values = schema.getValues(predicatesHolder);
-        Set<String> indices = values.size() > 0 ?
+        Set<String> indices = values != null && !values.isEmpty() ?
                 values.stream().map(Object::toString).collect(Collectors.toSet()) :
                 Collections.singleton(defaultIndex);
         return PredicatesHolderFactory
@@ -78,14 +79,21 @@ public class IndexPropertySchema implements ParentSchemaProperty {
 
     private Set<String> predicatesToIndices(PredicatesHolder predicatesHolder) {
         Set<Object> values = schema.getValues(predicatesHolder);
-        return values.size() > 0 ? values.stream().map(Object::toString).collect(Collectors.toSet())
+        return values != null && !values.isEmpty() ? values.stream().map(Object::toString).collect(Collectors.toSet())
                 : Collections.singleton(defaultIndex);
     }
 
     public String getIndex(Map<String, Object> fields) {
         String index = schema.toProperties(fields).values().iterator().next().toString();
-        if (!createdIndices.contains(index))
+        // add() is the atomic gate: it returns true only for the first caller, so each index is
+        // validated against ES exactly once per provider rather than on every write. Without this
+        // caching the createdIndices guard was dead and every document write paid a synchronous
+        // indices().exists() round-trip — pathologically slow for edge-heavy workloads.
+        // createdIndices is a ConcurrentHashMap key-set so concurrent writers don't race the
+        // check-then-act (validateIndex swallows its own IOException, so add-before-validate is safe).
+        if (createdIndices.add(index)) {
             validations.forEach(v -> v.validate(index));
+        }
         return index;
     }
 
