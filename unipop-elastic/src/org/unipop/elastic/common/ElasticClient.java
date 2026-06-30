@@ -151,7 +151,7 @@ public class ElasticClient {
 
         @Override
         public int hashCode() {
-            return element.id().hashCode();
+            return 31 * element.id().hashCode() + opHash;
         }
     }
 }
