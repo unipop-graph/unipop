@@ -45,9 +45,8 @@
     <modules>
         <module>unipop-core</module>
         <module>unipop-jdbc</module>
-        <!-- Deferred to the Elasticsearch (ES 8 + Java API Client + Testcontainers) follow-up:
-             ES 5.3.1 + Lucene 6 cannot run on Java 17. unipop-test spans both backends.
         <module>unipop-elastic</module>
+        <!-- Deferred to later #143 phases:
         <module>unipop-rest</module>
         <module>unipop-test</module>
         -->
