@@ -11,9 +11,9 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 
-.idea/workspace.xml
-.idea/tasks.xml
-.idea/libraries/
+# JetBrains IDE files (project-local, should not be tracked)
+.idea/
+*.iml
 data/
 out/
 target/
@@ -21,7 +21,6 @@ target/
 build/
 
 */test.sqlite*
-.idea/dictionaries/
 
 # Stray artifact from the TinkerPop structure IO tests (shouldReadWrite*ToFileWithHelpers):
 # a "file:/..." URI is resolved into a literal directory named "file:" at the module root.
