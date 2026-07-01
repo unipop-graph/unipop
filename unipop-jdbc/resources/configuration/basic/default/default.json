@@ -17,7 +17,14 @@
         "lang": "@lang",
         "oid": "@oid",
         "test": "@data",
-        "communityIndex": "@communityindex"
+        "communityIndex": "@communityindex",
+        "double": "@dval",
+        "float": "@fval",
+        "int": "@ival",
+        "long": "@lval",
+        "birthday": "@birthday",
+        "k": "@k",
+        "_partition": "@_partition"
       },
       "dynamicProperties": false
     }
@@ -31,7 +38,11 @@
         "year": "@year",
         "weight": "@weight",
         "data": "@data",
-        "location": "@location"
+        "location": "@location",
+        "acl": "@acl",
+        "time": "@time",
+        "_partition": "@_partition",
+        "created": "@created"
       },
       "dynamicProperties": false,
       "outVertex": {

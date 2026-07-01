@@ -3,6 +3,7 @@ package org.unipop.process.repeat;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.step.Barrier;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.UnionStep;
@@ -43,7 +44,23 @@ public class UniGraphRepeatStepStrategy extends AbstractTraversalStrategy<Traver
         UniGraph uniGraph = (UniGraph) graph;
 
         TraversalHelper.getStepsOfClass(RepeatStep.class, traversal).forEach(repeatStep -> {
-            if (TraversalHelper.hasStepOfClass(UnionStep.class, (Traversal.Admin) repeatStep.getGlobalChildren().get(0))) {
+            // A bare emit()/until()/times() with no repeat(..) body has an empty global-children
+            // list. Leave it to the native RepeatStep, which validates and throws the expected
+            // "The repeat()-traversal was not defined" error (indexing get(0) here would instead
+            // throw an opaque IndexOutOfBoundsException).
+            if (repeatStep.getGlobalChildren().isEmpty()) {
+                return;
+            }
+            Traversal.Admin<?, ?> repeatBody = (Traversal.Admin) repeatStep.getGlobalChildren().get(0);
+            if (TraversalHelper.hasStepOfClass(UnionStep.class, repeatBody)) {
+                return;
+            }
+            // UniGraphRepeatStep pull-feeds traversers into the body one loop at a time, which breaks
+            // any global Barrier step in the body (order/limit/range/tail/aggregate/barrier): those
+            // need the whole per-iteration input at once, so their state leaks across loops and the
+            // step silently drops results. Leave repeats with a barrier body to the native
+            // RepeatStep, which re-evaluates the body cleanly each iteration.
+            if (TraversalHelper.hasStepOfAssignableClass(Barrier.class, repeatBody)) {
                 return;
             }
             // UniGraphRepeatStep does not manage the nested-loop stack, so nested repeats

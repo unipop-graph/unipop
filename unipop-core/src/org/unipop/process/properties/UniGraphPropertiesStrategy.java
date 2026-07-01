@@ -9,8 +9,10 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTrav
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.ValueTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.MathStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.*;
+import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.AggregateStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.SideEffectStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.TreeSideEffectStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
@@ -155,32 +157,24 @@ public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<Traver
 
         TraversalHelper.getStepsOfClass(PathStep.class, traversal).forEach(pathStep -> {
             List<PropertyFetcher> propertyFetchers = getAllPropertyFetchersOf(pathStep, traversal);
-            pathStep.getLocalChildren().forEach(t -> {
-                if (t instanceof ValueTraversal) {
-                    String propertyKey = ((ValueTraversal) t).getPropertyKey();
-                    propertyFetchers.forEach(propertyFetcher -> handlePropertiesSteps(new String[]{propertyKey}, propertyFetcher));
-                }
-            });
+            pathStep.getLocalChildren().forEach(t -> registerByTraversalKeys((Traversal.Admin<?, ?>) t, propertyFetchers));
+        });
+
+        // cyclicPath()/simplePath() are PathFilterStep in TinkerPop 3.8; a by(..) modulator needs
+        // the projected keys materialized on the path elements, same as path()/tree().
+        TraversalHelper.getStepsOfClass(PathFilterStep.class, traversal).forEach(pathFilterStep -> {
+            List<PropertyFetcher> propertyFetchers = getAllPropertyFetchersOf(pathFilterStep, traversal);
+            pathFilterStep.getLocalChildren().forEach(t -> registerByTraversalKeys((Traversal.Admin<?, ?>) t, propertyFetchers));
         });
 
         TraversalHelper.getStepsOfClass(TreeStep.class, traversal).forEach(treeStep -> {
             List<PropertyFetcher> propertyFetchers = getAllPropertyFetchersOf(treeStep, traversal);
-            treeStep.getLocalChildren().forEach(t -> {
-                if (t instanceof ValueTraversal) {
-                    String propertyKey = ((ValueTraversal) t).getPropertyKey();
-                    propertyFetchers.forEach(propertyFetcher -> handlePropertiesSteps(new String[]{propertyKey}, propertyFetcher));
-                }
-            });
+            treeStep.getLocalChildren().forEach(t -> registerByTraversalKeys((Traversal.Admin<?, ?>) t, propertyFetchers));
         });
 
         TraversalHelper.getStepsOfClass(TreeSideEffectStep.class, traversal).forEach(treeStep -> {
             List<PropertyFetcher> propertyFetchers = getAllPropertyFetchersOf(treeStep, traversal);
-            treeStep.getLocalChildren().forEach(t -> {
-                if (t instanceof ValueTraversal) {
-                    String propertyKey = ((ValueTraversal) t).getPropertyKey();
-                    propertyFetchers.forEach(propertyFetcher -> handlePropertiesSteps(new String[]{propertyKey}, propertyFetcher));
-                }
-            });
+            treeStep.getLocalChildren().forEach(t -> registerByTraversalKeys((Traversal.Admin<?, ?>) t, propertyFetchers));
         });
 
         TraversalHelper.getStepsOfAssignableClass(MapStep.class, traversal).forEach(mapStep -> {
@@ -254,9 +248,9 @@ public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<Traver
         });
 
         TraversalHelper.getStepsOfAssignableClass(SelectOneStep.class, traversal).forEach(selectOneStep -> {
+            Set<String> scopeKeys = selectOneStep.getScopeKeys();
             List<PropertyFetcher> allPropertyFetchersOf = getAllPropertyFetchersOf(selectOneStep, traversal);
             allPropertyFetchersOf.forEach(propertyFetcher -> {
-                Set<String> scopeKeys = selectOneStep.getScopeKeys();
                 Set<String> labels = ((Step) propertyFetcher).getLabels();
                 Optional<String> first = labels.stream().filter(scopeKeys::contains).findFirst();
                 // TODO: fetch only relevant properties
@@ -264,6 +258,12 @@ public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<Traver
                     propertyFetcher.fetchAllKeys();
                 }
             });
+            // A select() inside a nested traversal (e.g. map(select("a").values(..)), by(select(..)))
+            // references a step labeled in an ancestor traversal; that labeled step is the property
+            // fetcher, but it lives outside this traversal so the search above cannot reach it. Walk
+            // up the parent chain and prefetch on any ancestor fetcher carrying a matching label,
+            // otherwise the selected element materializes with no properties.
+            fetchAllKeysForLabelsInAncestors(scopeKeys, traversal);
         });
 
         TraversalHelper.getStepsOfAssignableClass(SelectStep.class, traversal).forEach(selectStep -> {
@@ -277,8 +277,28 @@ public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<Traver
             allPropertyFetchersOf.forEach(propertyFetcher -> {
                 allPropertyFetchersOf.forEach(PropertyFetcher::fetchAllKeys);
             });
+            fetchAllKeysForLabelsInAncestors(selectStep.getScopeKeys(), traversal);
         });
 
+
+        // math("a + b").by("age"): the scope variables (a, b) name labeled steps whose projected
+        // property (age) must be materialized. Register each by-modulator's keys on the fetchers
+        // carrying those labels (in this traversal or an enclosing one).
+        // aggregate("a").by("name") nested in local()/etc.: the projected property comes from the
+        // element feeding the enclosing step (e.g. the V() before local()), which lives in an outer
+        // traversal. Register the by-modulator keys on those feeding fetchers.
+        TraversalHelper.getStepsOfAssignableClass(AggregateStep.class, traversal).forEach(agg -> {
+            List<PropertyFetcher> fetchers = new ArrayList<>(getAllPropertyFetchersOf(agg, traversal));
+            fetchers.addAll(getFeedingFetchers(traversal));
+            agg.getLocalChildren().forEach(by -> registerByTraversalKeys((Traversal.Admin<?, ?>) by, fetchers));
+        });
+
+        TraversalHelper.getStepsOfAssignableClass(MathStep.class, traversal).forEach(mathStep -> {
+            Set<String> scopeKeys = mathStep.getScopeKeys();
+            List<PropertyFetcher> labeledFetchers = getLabeledFetchers(scopeKeys, traversal);
+            if (!labeledFetchers.isEmpty())
+                mathStep.getLocalChildren().forEach(by -> registerByTraversalKeys((Traversal.Admin<?, ?>) by, labeledFetchers));
+        });
 
         TraversalHelper.getStepsOfAssignableClass(LambdaMapStep.class, traversal).forEach(lambdaMapStep -> {
             List<PropertyFetcher> allPropertyFetchersOf = getAllPropertyFetchersOf(lambdaMapStep, traversal);
@@ -347,6 +367,86 @@ public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<Traver
         }
     }
 
+
+    /**
+     * Walk up the enclosing traversals and, for any {@link PropertyFetcher} step whose label
+     * matches one of {@code scopeKeys}, request all of its keys. Used so a {@code select(label)}
+     * nested inside a child traversal (map/by/local/...) still causes the ancestor step that
+     * produced the labeled element to materialize its properties.
+     */
+    /**
+     * Register the property keys a path/tree {@code by(..)} modulator reads on the given fetchers
+     * (the steps that produced the path/tree elements). Handles both the plain {@code by("name")}
+     * ({@link ValueTraversal}) form and a general {@code by(<traversal>)} such as
+     * {@code by(values("name").toUpper())}, whose {@link PropertiesStep}s would otherwise be missed,
+     * leaving the path elements without the properties the modulator needs.
+     */
+    private void registerByTraversalKeys(Traversal.Admin<?, ?> byTraversal, List<PropertyFetcher> propertyFetchers) {
+        if (byTraversal instanceof ValueTraversal) {
+            String propertyKey = ((ValueTraversal) byTraversal).getPropertyKey();
+            propertyFetchers.forEach(pf -> handlePropertiesSteps(new String[]{propertyKey}, pf));
+            return;
+        }
+        TraversalHelper.getStepsOfAssignableClassRecursively(PropertiesStep.class, byTraversal).forEach(ps ->
+                propertyFetchers.forEach(pf -> handlePropertiesSteps(((PropertiesStep) ps).getPropertyKeys(), pf)));
+        TraversalHelper.getStepsOfAssignableClassRecursively(PropertyMapStep.class, byTraversal).forEach(pms ->
+                propertyFetchers.forEach(pf -> handlePropertiesSteps(((PropertyMapStep) pms).getPropertyKeys(), pf)));
+    }
+
+    /**
+     * Collect the {@link PropertyFetcher} steps — in {@code traversal} or any enclosing traversal —
+     * whose step label matches one of {@code labels}. Used to resolve the value sources named by a
+     * step's scope keys (e.g. math()/where() variables) so their projected properties get fetched.
+     */
+    /**
+     * Collect, for each enclosing traversal, the {@link PropertyFetcher} that feeds the step this
+     * traversal is nested under (e.g. the step before a {@code local(..)}). Lets a nested step's
+     * by-modulator prefetch properties on the element it will actually receive.
+     */
+    private List<PropertyFetcher> getFeedingFetchers(Traversal.Admin<?, ?> traversal) {
+        List<PropertyFetcher> result = new ArrayList<>();
+        Traversal.Admin<?, ?> t = traversal;
+        while (t != null) {
+            TraversalParent parent = t.getParent();
+            if (parent == null || parent.asStep() instanceof EmptyStep) break;
+            Step<?, ?> enclosing = parent.asStep();
+            result.addAll(getAllPropertyFetchersOf(enclosing, enclosing.getTraversal()));
+            t = enclosing.getTraversal();
+        }
+        return result;
+    }
+
+    private List<PropertyFetcher> getLabeledFetchers(Set<String> labels, Traversal.Admin<?, ?> traversal) {
+        List<PropertyFetcher> result = new ArrayList<>();
+        if (labels == null || labels.isEmpty()) return result;
+        Traversal.Admin<?, ?> t = traversal;
+        while (t != null) {
+            TraversalHelper.getStepsOfAssignableClassRecursively(PropertyFetcher.class, t).forEach(pf -> {
+                if (((Step) pf).getLabels().stream().anyMatch(labels::contains))
+                    result.add((PropertyFetcher) pf);
+            });
+            TraversalParent parent = t.getParent();
+            if (parent == null || parent.asStep() instanceof EmptyStep) break;
+            t = parent.asStep().getTraversal();
+        }
+        return result;
+    }
+
+    private void fetchAllKeysForLabelsInAncestors(Set<String> scopeKeys, Traversal.Admin<?, ?> traversal) {
+        if (scopeKeys == null || scopeKeys.isEmpty()) return;
+        TraversalParent parent = traversal.getParent();
+        while (parent != null && !(parent.asStep() instanceof EmptyStep)) {
+            Traversal.Admin<?, ?> ancestor = parent.asStep().getTraversal();
+            if (ancestor == null) break;
+            TraversalHelper.getStepsOfAssignableClassRecursively(PropertyFetcher.class, ancestor).forEach(pf -> {
+                Set<String> labels = ((Step) pf).getLabels();
+                if (labels.stream().anyMatch(scopeKeys::contains)) {
+                    ((PropertyFetcher) pf).fetchAllKeys();
+                }
+            });
+            parent = ancestor.getParent();
+        }
+    }
 
     private List<PropertyFetcher> getAllPropertyFetchersOf(Step step, Traversal.Admin<?, ?> traversal) {
         List<PropertyFetcher> propertyFetchers = new ArrayList<>();
