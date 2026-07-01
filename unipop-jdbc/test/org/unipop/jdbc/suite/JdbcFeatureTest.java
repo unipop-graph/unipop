@@ -31,7 +31,12 @@ import org.junit.runner.RunWith;
                 "and not @AllowSetPropertyValues " +
                 "and not @AllowMapPropertyValues " +
                 "and not @AllowUUIDPropertyValues " +
-                "and not @AllowDateTimePropertyValues",
+                "and not @AllowDateTimePropertyValues " +
+                // TinkerGraph-specific call() service registry (search / degree.centrality) that a
+                // federation provider does not implement; and io().read() of on-disk graph files
+                // (not provisioned to this harness and not a federation capability).
+                "and not @TinkerServiceRegistry " +
+                "and not @StepRead",
         glue = { "org.apache.tinkerpop.gremlin.features" },
         objectFactory = JdbcFeatureTest.JdbcGuiceFactory.class,
         features = { "classpath:/org/apache/tinkerpop/gremlin/test/features" },

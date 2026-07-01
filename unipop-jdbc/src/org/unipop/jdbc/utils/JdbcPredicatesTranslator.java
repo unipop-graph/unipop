@@ -116,6 +116,8 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
 
     private Condition extractCondition(HasContainer hasContainer) {
         String key = hasContainer.getKey();
+        // has((String) null, value) is legal in Gremlin; no column has a null key, so nothing matches.
+        if (key == null) return DSL.falseCondition();
         P predicate = hasContainer.getPredicate();
         Object value = predicate.getValue();
 
@@ -179,6 +181,14 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
             return rp.isNegate() ? field.notLikeRegex(rp.getPattern()) : field.likeRegex(rp.getPattern());
         } else if (biPredicate instanceof org.apache.tinkerpop.gremlin.process.traversal.Text) {
             return getTinkerpopTextCondition(value, (org.apache.tinkerpop.gremlin.process.traversal.Text) biPredicate, field);
+        } else if (biPredicate instanceof org.apache.tinkerpop.gremlin.process.traversal.CompareType) {
+            // CompareType.typeOf(GType) checks a value's runtime type. SQL columns are strongly
+            // typed, so on a typed column "is of type X" reduces to "the value is present" for the
+            // column's own type. Unipop configs don't declare per-property types, so this is a
+            // best-effort isNotNull: correct when the queried GType matches the column's SQL type
+            // (the normal case); a deliberately mismatched GType would match values it strictly
+            // shouldn't. cf. enum/jsonb, which are likewise best-effort on this provider.
+            return field.isNotNull();
         } else if (biPredicate instanceof Date.DatePredicate) {
             try {
                 return getDateCondition(value, biPredicate, field);

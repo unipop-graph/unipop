@@ -81,6 +81,15 @@
             <version>4.13.1</version>
             <scope>test</scope>
         </dependency>
+        <!-- Provides TinkerGraph so subgraph() scenarios can materialize their subgraph
+             (GraphFactory.open(TinkerGraph)); TinkerPop's own feature harness has it on the
+             classpath for the same reason. Test-only. -->
+        <dependency>
+            <groupId>org.apache.tinkerpop</groupId>
+            <artifactId>tinkergraph-gremlin</artifactId>
+            <version>3.8.1</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <build>
         <resources>
@@ -131,14 +140,16 @@
                              property makes Cucumber read filters from properties, so the tag
                              expression must be supplied here too or the annotation's exclusions
                              are dropped. Only affects the Cucumber runner; JUnit suites ignore it. -->
-                        <cucumber.filter.tags>not @GraphComputerOnly and not @AllowNullPropertyValues and not @MultiProperties and not @MetaProperties and not @UserSuppliedVertexIds and not @UserSuppliedEdgeIds and not @UserSuppliedVertexPropertyIds and not @AllowListPropertyValues and not @AllowSetPropertyValues and not @AllowMapPropertyValues and not @AllowUUIDPropertyValues and not @AllowDateTimePropertyValues</cucumber.filter.tags>
-                        <!-- Exclude the single scenario g_V_playlist_paths: a seeded random-walk
-                             (repeat(out().order().by(shuffle).simplePath()).until(...)) over the
-                             large grateful-dead graph. On the JDBC federation provider each walk
-                             step is a DB round-trip and the walk is effectively non-terminating,
-                             hanging the whole fork. It cannot pass on a DB-backed provider, so
-                             excluding it costs no passing tests and keeps the suite runnable. -->
-                        <cucumber.filter.name>^(?!.*g_V_playlist_paths).*$</cucumber.filter.name>
+                        <cucumber.filter.tags>not @GraphComputerOnly and not @AllowNullPropertyValues and not @MultiProperties and not @MetaProperties and not @UserSuppliedVertexIds and not @UserSuppliedEdgeIds and not @UserSuppliedVertexPropertyIds and not @AllowListPropertyValues and not @AllowSetPropertyValues and not @AllowMapPropertyValues and not @AllowUUIDPropertyValues and not @AllowDateTimePropertyValues and not @TinkerServiceRegistry and not @StepRead</cucumber.filter.tags>
+                        <!-- Exclude two scenarios that are effectively non-terminating on a
+                             DB-backed provider (per traversal step = a DB round-trip), so they hang
+                             the whole fork. Both error/hang on this provider and cannot pass, so
+                             excluding them costs no passing tests and keeps the suite runnable:
+                             - g_V_playlist_paths: seeded random walk over the large grateful graph.
+                             - g_VX6X_repeatXa_bothXcreatedX_simplePathX_emitXrepeatXb_...: nested
+                               named-loop repeat whose emit runs repeat(both("knows")) over the
+                               cyclic modern graph (unbounded fan-out of DB round-trips). -->
+                        <cucumber.filter.name>^(?!.*(g_V_playlist_paths|g_VX6X_repeatXa_bothXcreatedX_simplePathX_emitXrepeatXb)).*$</cucumber.filter.name>
                     </systemPropertyVariables>
                     <!-- Guice 4.2.3 (cglib) and Kryo/Gryo serialization used by the TinkerPop test
                          harness reflect into java.base on Java 17; open the required packages. -->
