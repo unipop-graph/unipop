@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeOtherVertexSt
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.unipop.structure.UniGraph;
 
 /**
@@ -14,7 +15,12 @@ import org.unipop.structure.UniGraph;
 public class EdgeStepsStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy {
     @Override
     public void apply(Traversal.Admin<?, ?> traversal) {
-        UniGraph uniGraph = ((UniGraph) traversal.getGraph().get());
+        // getGraph() is empty for graph-less child traversals under TinkerPop 3.8 recursive strategy application.
+        Graph graph = traversal.getGraph().orElse(null);
+        if (!(graph instanceof UniGraph)) {
+            return;
+        }
+        UniGraph uniGraph = (UniGraph) graph;
 
         TraversalHelper.getStepsOfClass(EdgeOtherVertexStep.class, traversal).forEach(edgeOtherVertexStep -> {
             UniGraphEdgeOtherVertexStep uniGraphEdgeOtherVertexStep = new UniGraphEdgeOtherVertexStep(traversal, uniGraph, uniGraph.getControllerManager());

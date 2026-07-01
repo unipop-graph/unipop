@@ -3,6 +3,7 @@ package org.unipop.structure;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.*;
 
+import java.util.Collections;
 import java.util.Iterator;
 
 public class UniVertexProperty<V> implements VertexProperty<V> {
@@ -64,7 +65,13 @@ public class UniVertexProperty<V> implements VertexProperty<V> {
 
     @Override
     public <U> Iterator<Property<U>> properties(String... propertyKeys) {
-        throw VertexProperty.Exceptions.multiPropertiesNotSupported();
+        // VertexProperty.properties() returns this vertex-property's meta-properties.
+        // Unipop does not support meta-properties (UniFeatures.supportsMetaProperties() == false),
+        // so there are none to return. Per the TinkerPop contract (cf. ReferenceVertexProperty),
+        // a graph without meta-properties returns an empty iterator here rather than throwing —
+        // the feature harness detaches every result vertex via this method, so throwing would
+        // abort otherwise-valid scenarios.
+        return Collections.emptyIterator();
     }
 
     @Override

@@ -30,7 +30,8 @@ public class UniGraphUnionStepStrategy extends AbstractTraversalStrategy<Travers
 
     @Override
     public void apply(Traversal.Admin<?, ?> traversal) {
-        Graph graph = traversal.getGraph().get();
+        // getGraph() is empty for graph-less child traversals under TinkerPop 3.8 recursive strategy application.
+        Graph graph = traversal.getGraph().orElse(null);
         if (!(graph instanceof UniGraph)) {
             return;
         }
