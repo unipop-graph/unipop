@@ -216,12 +216,63 @@ Postgres exposed several issues H2 had masked, now fixed:
 
 **Results (Java 17, embedded Postgres):** feature suite at **H2 parity (~963 pass / 1913)**,
 structure suite clean of DB errors (**~508 pass, 31 fail = H2**). Both suites run with no hang.
+(Subsequently raised to **1682 pass / 1912** — see *Follow-on: JDBC test pass-rate improvements* below.)
 
 **Known residual:** ~13 feature scenarios hit `varchar = integer` on the test edges table's
 `year` VARCHAR column queried numerically — the same type-impedance class in a non-id column. A
 general fix needs accurate per-property type declarations in the configs (the test configs leave
 properties untyped, so text-vs-numeric columns can't be distinguished generically); these are in
 already-failing crew-graph scenarios and do not affect H2 parity.
+
+---
+
+# Follow-on: JDBC test pass-rate improvements
+
+Four root-cause fixes (not migration defects — pre-existing provider behaviour on TinkerPop 3.8)
+raised the **feature suite from 964 → 1682 passing / 1912** and cut structure-suite errors from
+182 → 16 (passing held at 509). No regressions; the full `unipop-jdbc` module builds green and the
+suite completes with no hang (~2.5 min). All changes are in `unipop-core` (shared runtime) except
+the predicate-translator and pom items.
+
+1. **Meta-property read threw instead of returning empty (biggest cluster, +~250).**
+   `UniVertexProperty.properties(String...)` returned this vertex-property's *meta-properties* by
+   throwing `VertexProperty.Exceptions.multiPropertiesNotSupported()`. TinkerPop's contract (cf.
+   `ReferenceVertexProperty`) is that a graph without meta-properties
+   (`UniFeatures.supportsMetaProperties() == false`) returns an **empty iterator**. The Gherkin
+   harness detaches *every* result vertex through this method (`StepDefinition.detachVertexProperty`
+   → `DetachedVertexProperty`), so the throw aborted ~250 otherwise-valid scenarios. → return
+   `Collections.emptyIterator()`.
+
+2. **Provider strategies aborted the whole strategy pass on graph-less child traversals (+~460).**
+   Six `ProviderOptimizationStrategy` implementations
+   (`UniGraph{Vertex,Graph,Repeat,Union,Coalesce}StepStrategy`, `EdgeStepsStrategy`) called
+   `traversal.getGraph().get()`. TinkerPop 3.8 applies provider strategies **recursively to child
+   traversals** (`TraversalHelper.applyTraversalRecursively`), and child traversals have no graph
+   bound → `Optional.get()` threw `NoSuchElementException: No value present`, which aborted the
+   entire `applyStrategies` pass and corrupted compilation for *every* scenario using nested
+   traversals (`where`/`and`/`or`/`match`/`select(...).by`/`repeat`/`union`/`local`). → guard with
+   `getGraph().orElse(null)` + the existing `instanceof UniGraph` check (the root application already
+   optimizes nested steps via its manual child-walk, so bailing on the recursive child pass is safe).
+
+3. **TinkerPop native `TextP` predicates were unmapped (+~10).** `JdbcPredicatesTranslator` handled
+   only Unipop's own `Text.TextPredicate`; TinkerPop's `TextP.containing/startingWith/endingWith`
+   (+ negations, class `o.a.t.g.process.traversal.Text`), `TextP.regex/notRegex`
+   (`Text.RegexPredicate`), and `P.not(...)` (`NotP.NotPBiPredicate`) fell through to
+   `IllegalArgumentException("can't create condition")`. → mapped to jOOQ
+   `contains/startsWith/endsWith` (parameter-bound, LIKE-escaped), `likeRegex/notLikeRegex`, and
+   translate-then-`.not()` for the negation wrapper. The fallback message now names the offending
+   predicate class for future diagnosis.
+
+4. **One pathological scenario excluded to keep the suite runnable.** `g_V_playlist_paths`
+   (`integrated/Paths.feature`) is a *seeded random walk*
+   (`repeat(out().order().by(shuffle).simplePath()).until(reach a specific artist)`) over the large
+   grateful-dead graph. On a DB-backed federation provider each walk step is a round-trip and the
+   walk is effectively non-terminating, hanging the whole fork (it only completes in-memory on
+   TinkerGraph). Once fix #2 let it *compile*, it began to hang. It cannot pass on this provider, so
+   it is excluded by name via `cucumber.filter.name` in the jdbc surefire config — costing zero
+   passing tests. Because supplying `cucumber.filter.name` makes Cucumber read filters from
+   properties (dropping the annotation's tag exclusions), the `@CucumberOptions.tags` capability
+   expression is mirrored into `cucumber.filter.tags` in the same `<systemPropertyVariables>`.
 
 # Provider property-schema types (jdbc)
 

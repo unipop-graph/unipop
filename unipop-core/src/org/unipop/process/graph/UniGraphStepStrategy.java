@@ -15,7 +15,9 @@ public class UniGraphStepStrategy extends AbstractTraversalStrategy<TraversalStr
     public void apply(Traversal.Admin<?, ?> traversal) {
         if(TraversalHelper.onGraphComputer(traversal)) return;
 
-        Graph graph = traversal.getGraph().get();
+        // Child/nested traversals have no graph bound; TinkerPop 3.8 applies provider strategies
+        // recursively to them, so getGraph() may be empty — bail rather than throw NoSuchElement.
+        Graph graph = traversal.getGraph().orElse(null);
         if(!(graph instanceof UniGraph)) {
             return;
         }

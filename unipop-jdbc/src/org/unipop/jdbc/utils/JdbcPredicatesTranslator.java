@@ -158,6 +158,12 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
     }
 
     private Condition predicateToQuery(Field<Object> field, Object value, BiPredicate<?, ?> biPredicate) {
+        if (biPredicate instanceof org.apache.tinkerpop.gremlin.process.traversal.NotP.NotPBiPredicate) {
+            // P.not(inner) — translate the wrapped predicate and negate the resulting SQL condition.
+            BiPredicate<?, ?> inner =
+                    ((org.apache.tinkerpop.gremlin.process.traversal.NotP.NotPBiPredicate<?, ?>) biPredicate).getOriginal();
+            return predicateToQuery(field, value, inner).not();
+        }
         if (biPredicate instanceof Compare) {
             return getCompareCondition(value, biPredicate, field);
         } else if (biPredicate instanceof Contains) {
@@ -166,6 +172,13 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
         }
         else if (biPredicate instanceof Text.TextPredicate) {
             return getTextCondition(value, biPredicate, field);
+        } else if (biPredicate instanceof org.apache.tinkerpop.gremlin.process.traversal.Text.RegexPredicate) {
+            // TinkerPop TextP.regex(...) / notRegex(...) — render as POSTGRES regex match (~ / !~).
+            org.apache.tinkerpop.gremlin.process.traversal.Text.RegexPredicate rp =
+                    (org.apache.tinkerpop.gremlin.process.traversal.Text.RegexPredicate) biPredicate;
+            return rp.isNegate() ? field.notLikeRegex(rp.getPattern()) : field.likeRegex(rp.getPattern());
+        } else if (biPredicate instanceof org.apache.tinkerpop.gremlin.process.traversal.Text) {
+            return getTinkerpopTextCondition(value, (org.apache.tinkerpop.gremlin.process.traversal.Text) biPredicate, field);
         } else if (biPredicate instanceof Date.DatePredicate) {
             try {
                 return getDateCondition(value, biPredicate, field);
@@ -173,7 +186,36 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
                 throw new IllegalArgumentException("cant convert to date");
             }
         }
-        throw new IllegalArgumentException("can't create condition");
+        throw new IllegalArgumentException("can't create condition for predicate "
+                + (biPredicate == null ? "null" : biPredicate.getClass().getName() + " (" + biPredicate + ")"));
+    }
+
+    /**
+     * Map TinkerPop's native {@link org.apache.tinkerpop.gremlin.process.traversal.Text} predicates
+     * (produced by {@code TextP.containing/startingWith/endingWith} and their negations) to SQL.
+     * Unipop's own {@link Text.TextPredicate} uses LIKE wildcards; TinkerPop's {@code TextP} take
+     * literal substrings, so jOOQ's {@code contains}/{@code startsWith}/{@code endsWith} are used —
+     * they bind the value as a parameter and escape LIKE metacharacters, avoiding injection and
+     * false matches on {@code %}/{@code _} inside the search string.
+     */
+    private Condition getTinkerpopTextCondition(Object value, org.apache.tinkerpop.gremlin.process.traversal.Text predicate, Field<Object> field) {
+        String search = value == null ? "" : value.toString();
+        switch (predicate) {
+            case startingWith:
+                return field.startsWith(search);
+            case notStartingWith:
+                return field.startsWith(search).not();
+            case endingWith:
+                return field.endsWith(search);
+            case notEndingWith:
+                return field.endsWith(search).not();
+            case containing:
+                return field.contains(search);
+            case notContaining:
+                return field.contains(search).not();
+            default:
+                throw new IllegalArgumentException("text predicate not supported in has step: " + predicate);
+        }
     }
 
     private Condition getDateCondition(Object value, BiPredicate<?, ?> biPredicate, Field<Object> field) throws ParseException {
