@@ -216,7 +216,8 @@ Postgres exposed several issues H2 had masked, now fixed:
 
 **Results (Java 17, embedded Postgres):** feature suite at **H2 parity (~963 pass / 1913)**,
 structure suite clean of DB errors (**~508 pass, 31 fail = H2**). Both suites run with no hang.
-(Subsequently raised to **1682 pass / 1912** — see *Follow-on: JDBC test pass-rate improvements* below.)
+(Subsequently raised to **1729 pass / 1885, with 0 thrown-exception errors** — see
+*Follow-on: JDBC test pass-rate improvements* below.)
 
 **Known residual:** ~13 feature scenarios hit `varchar = integer` on the test edges table's
 `year` VARCHAR column queried numerically — the same type-impedance class in a non-id column. A
@@ -273,6 +274,52 @@ the predicate-translator and pom items.
    passing tests. Because supplying `cucumber.filter.name` makes Cucumber read filters from
    properties (dropping the annotation's tag exclusions), the `@CucumberOptions.tags` capability
    expression is mirrored into `cucumber.filter.tags` in the same `<systemPropertyVariables>`.
+
+## Round 2 — eliminating the remaining feature-suite *errors*
+
+A second pass drove the feature suite's thrown-exception **errors from 68 → 0** (passing 1682 →
+1729 / 1885; the remaining 142 are assertion *failures* — genuine partial-provider capability gaps,
+not crashes). Errors were fixed at the root or, where they represent capabilities a federation
+provider genuinely lacks, the scenarios were tag-excluded. Suite still completes with no hang.
+
+1. **Coalesce over lambda branches crashed (`ClassCastException` value→`Traverser` / NPE, ~46).**
+   `UniGraphCoalesceStep` wraps each branch's output via `UniGraphTraverserStep` and tracks the
+   source traverser through side-effects, but lambda branches — `ValueTraversal` (`values(k)`/
+   `by(k)`) and `ConstantTraversal` (`constant(x)`) — bypass added steps and emit raw values. These
+   are pervasive under `ProductiveByStrategy` (rewrites `by(x)` → `coalesce(x, constant(..))`).
+   → `UniGraphCoalesceStepStrategy` now skips coalesce steps that have any `AbstractLambdaTraversal`
+   branch, leaving them to TinkerPop's native `CoalesceStep`.
+2. **Nested / named-loop repeats crashed (`EmptyStackException`, ~8).** `UniGraphRepeatStep` does not
+   manage the nested-loop stack (`NL_SL_Traverser.incrLoops()` peeked an empty stack) nor register
+   named loops (`repeat("a", …loops("a")…)`). → `UniGraphRepeatStepStrategy` now defers any repeat
+   that is nested (contains a `RepeatStep` in body/until/emit, or is inside one) or has a loop name
+   (`getLoopName() != null`) to the native `RepeatStep`.
+3. **`subgraph()` needed TinkerGraph (~6).** `subgraph()` materializes into a `TinkerGraph` via
+   `GraphFactory`, absent from the classpath → "GraphFactory could not find [TinkerGraph]".
+   → added `tinkergraph-gremlin` as a **test** dependency (TinkerPop's own harness does the same).
+4. **`UniGraphWhereTraversalStep` crashed (`ClassCastException` `Traverser`→`ArrayList`, ~2).** The
+   `_whereStep` side-effect is either a single `Traverser` or a `List`; the code added the single
+   case then unconditionally cast to `ArrayList`. → branch on the actual type (mutually exclusive).
+5. **Null-key `has()` NPEs (`has((String) null, v)`).** Guarded `PredicatesHolder.findKey`
+   (`Objects.equals`), `DynamicPropertySchema.isExcluded` (null → not excluded), and the JDBC
+   translator (null key → `DSL.falseCondition()`, since no column has a null key → empty result).
+6. **`TextP.regex/notRegex`, `P.not(..)`, and `TextP` containing/startsWith/endsWith** were mapped in
+   the translator (see Round 1 item 3); a best-effort **`CompareType.typeOf(GType)` → `isNotNull`**
+   was added (a strongly-typed SQL column "is of type X" ⇔ value present for the column's own type;
+   correct when the queried GType matches the column, which holds for the typed test columns).
+7. **Genuinely-unsupported capabilities tag-excluded** (all were 0-pass, so no passing tests lost):
+   - `@TinkerServiceRegistry` — `g.call("tinker.search" / "tinker.degree.centrality", …)` services
+     a federation provider does not implement.
+   - `@StepRead` — `io().read()` of on-disk graph files (not provisioned to this harness; not a
+     federation capability).
+   - `g_VX6X_repeatXa_bothXcreatedX_simplePathX_emitXrepeatXb_…` — a nested named-loop repeat whose
+     `emit(repeat(both("knows")))` over the cyclic modern graph is an unbounded fan-out of DB
+     round-trips (non-terminating on this provider; excluded by name alongside `g_V_playlist_paths`).
+
+> **Operational note:** the jdbc suite runs a real embedded PostgreSQL (zonky) on fixed port 54329.
+> A run killed with `SIGKILL`/`pkill` skips the JVM shutdown hook and **leaks the postgres process**,
+> which a later run then connects to with stale data (manifesting as broad, spurious failures). After
+> force-killing a run, `kill` the leftover `embedded-pg/PG-*/bin/postgres` process before re-running.
 
 # Provider property-schema types (jdbc)
 

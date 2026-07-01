@@ -5,6 +5,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -65,7 +66,8 @@ public class PredicatesHolder {
     }
 
     public Stream<HasContainer> findKey(String key) {
-        return predicates.stream().filter(has -> has.getKey().equals(key));
+        // A HasContainer key can be null (e.g. label/id-oriented predicates), so compare null-safely.
+        return predicates.stream().filter(has -> Objects.equals(has.getKey(), key));
     }
 
 //    public <E extends Element> boolean test(E element) {

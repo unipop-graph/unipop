@@ -166,13 +166,17 @@ public class UniGraphWhereTraversalStep<S extends Element> extends AbstractStep<
                 while (starts.hasNext()) {
                     Traverser.Admin<S> next = starts.next();
                     B_O_S_SE_SL_Traverser traverser = (B_O_S_SE_SL_Traverser) next;
-                    if (traverser.getSideEffects().get("_whereStep") instanceof Traverser) {
-                        results.add(traverser.getSideEffects().get("_whereStep"));
-                    }
-                    ArrayList<Traverser.Admin<S>> whereStep = traverser.getSideEffects().get("_whereStep");
-                    for (Traverser.Admin<S> stringSMap : whereStep) {
-                        if (((Map<String, S>) stringSMap.get()).get(selectKey).equals(next.get())) {
-                            results.add(stringSMap);
+                    // "_whereStep" is either a single Traverser or a list of them; the two cases are
+                    // mutually exclusive. Casting the single-Traverser case to ArrayList threw
+                    // ClassCastException, so branch on the actual type.
+                    Object whereStep = traverser.getSideEffects().get("_whereStep");
+                    if (whereStep instanceof Traverser) {
+                        results.add((Traverser.Admin<S>) whereStep);
+                    } else if (whereStep instanceof List) {
+                        for (Traverser.Admin<S> stringSMap : (List<Traverser.Admin<S>>) whereStep) {
+                            if (((Map<String, S>) stringSMap.get()).get(selectKey).equals(next.get())) {
+                                results.add(stringSMap);
+                            }
                         }
                     }
                 }

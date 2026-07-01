@@ -68,6 +68,7 @@ public class DynamicPropertySchema implements PropertySchema {
 
     /** A property key is dynamically excluded if named exactly or owned by a prefix namespace. */
     protected boolean isExcluded(String propertyKey) {
+        if (propertyKey == null) return false;
         if (excludeProperties.contains(propertyKey)) return true;
         int dot = propertyKey.indexOf('.');
         return dot > 0 && excludePropertyPrefixes.contains(propertyKey.substring(0, dot));
