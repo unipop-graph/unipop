@@ -84,6 +84,11 @@ public class UniVertex extends UniElement implements Vertex {
     public <V> VertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value, final Object... keyValues) {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         if (keyValues != null && keyValues.length > 0) throw VertexProperty.Exceptions.metaPropertiesNotSupported();
+        // A null value means removal; delegate before the single-cardinality local clear below, which
+        // would otherwise drop the key from the in-memory map and hide it from the removal (leaving
+        // the persisted column set).
+        if (value == null)
+            return this.property(key, value);
         if (cardinality.equals(VertexProperty.Cardinality.single))
             properties.remove(key);
         return this.property(key, value);
@@ -129,6 +134,13 @@ public class UniVertex extends UniElement implements Vertex {
 
     @Override
     public <V> VertexProperty<V> property(String key, V value) {
+        if (value == null) {
+            // TinkerPop semantics: property(key, null) removes the property; the mutating step
+            // still emits the element. Remove any existing values for this key (persisting NULL).
+            if (this.properties.containsKey(key))
+                new ArrayList<>(this.properties.get(key)).forEach(Property::remove);
+            return VertexProperty.<V>empty();
+        }
 
         UniVertexProperty vertexProperty = (UniVertexProperty) addPropertyLocal(key, value);
         PropertyQuery<UniVertex> propertyQuery = new PropertyQuery<UniVertex>(this, vertexProperty, PropertyQuery.Action.Add, null);

@@ -159,7 +159,36 @@ public class RowController implements SimpleController {
     @Override
     public <E extends Element> void property(PropertyQuery<E> uniQuery) {
         Set<? extends JdbcSchema<E>> schemas = this.getSchemas(uniQuery.getElement().getClass());
-        this.update(schemas, uniQuery.getElement());
+        if (uniQuery.getAction() == PropertyQuery.Action.Remove) {
+            // A plain update rebuilds the SET clause from the element's remaining properties, so a
+            // removed key's column would silently keep its old value. Explicitly null the column
+            // instead (covers properties().drop(), property(k,null), and mergeE/mergeV onMatch drops).
+            this.removeProperty(schemas, uniQuery.getElement(), uniQuery.getProperty());
+        } else {
+            this.update(schemas, uniQuery.getElement());
+        }
+    }
+
+    private <E extends Element> void removeProperty(Set<? extends JdbcSchema<E>> schemas, E element, Property property) {
+        if (property == null) return;
+        for (JdbcSchema<E> schema : schemas) {
+            String column = schema.getFieldByPropertyKey(property.key());
+            String idField = schema.getFieldByPropertyKey(T.id.getAccessor());
+            if (column == null || idField == null) continue;
+            JdbcSchema.Row row = schema.toRow(element);
+            if (row == null) continue;
+
+            Map<Field<?>, Object> fieldMap = Maps.newHashMap();
+            fieldMap.put(field(column), null);
+            Update step = DSL.update(table(schema.getTable()))
+                    .set(fieldMap).where(field(idField).eq(row.getId()));
+
+            bulk.add(step);
+            if (bulk.size() >= 1000) {
+                contextManager.batch(bulk);
+                bulk.clear();
+            }
+        }
     }
 
     @Override

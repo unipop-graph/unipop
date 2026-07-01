@@ -107,6 +107,25 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
                         "test VARCHAR(100)," +
                         "communityIndex int," +
                         "data VARCHAR(100)," +
+                        // Typed columns for the TinkerPop 3.7+ GType/asNumber data-type feature
+                        // scenarios (Data - DOUBLE/FLOAT/INT/LONG etc.): addV("data").property("<t>", v)
+                        // on the empty graph must round-trip the value at its exact Java type, so each
+                        // maps to the matching SQL type (DOUBLE PRECISION->Double, REAL->Float,
+                        // INTEGER->Integer, BIGINT->Long). Column names are non-keyword (dval/fval/
+                        // ival/lval) since jOOQ renders identifiers unquoted; the property key -> column
+                        // mapping lives in default.json.
+                        "dval DOUBLE PRECISION," +
+                        "fval REAL," +
+                        "ival INTEGER," +
+                        "lval BIGINT," +
+                        // birthday: stored as text, read back and parsed by asDate()/dateDiff().
+                        // k: generic key used by the has(k, within(..)) unicode scenario.
+                        "birthday VARCHAR(100)," +
+                        "k VARCHAR(100)," +
+                        // PartitionStrategy scenarios tag elements with a "_partition" property and
+                        // filter reads by it (has("_partition", within(...))). The predicate translator
+                        // keys off the property name, so the column is named "_partition" to match.
+                        "_partition VARCHAR(100)," +
                         "lang VARCHAR(100))");
 
         this.jdbcConnection.createStatement().execute(
@@ -122,6 +141,9 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
                         "time VARCHAR(100)," +
                         "location VARCHAR(100)," +
                         "data VARCHAR(100)," +
+                        "_partition VARCHAR(100)," +
+                        // mergeE onCreate/onMatch scenarios tag edges with a "created" property.
+                        "created VARCHAR(100)," +
                         "weight DOUBLE PRECISION)");
         //endregion
 
