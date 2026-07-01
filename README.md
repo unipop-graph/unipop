@@ -1,7 +1,8 @@
 _**`This project is in active development. A stable version will be released soon.`**_
 
 # <img src="https://raw.githubusercontent.com/rmagen/unipop/master/docs/images/unipop-logo.png" width=70 style="vertical-align:middle;"> <span style="vertical-align:middle;">Unipop</span>
-[![Build Status](https://travis-ci.org/unipop-graph/unipop.svg?branch=master)](https://travis-ci.org/unipop-graph/unipop)
+
+**Requires Java 17+** · Built on [Apache TinkerPop](http://tinkerpop.apache.org/) **3.8.1**
 
 > Analyze data from **multiple sources** using the [power of
 **graphs**](https://academy.datastax.com/resources/getting-started-graph-databases).
@@ -48,6 +49,46 @@ Unipop utilizes this to implement different performance optimizations.
 - **DSL support**
 - **Testing Framework**
 
+
+## Modules
+
+Unipop is a Maven multi-module project (Java 17, Apache TinkerPop 3.8.1):
+
+| Module | Description |
+|--------|-------------|
+| `unipop-core` | Federation engine: the `UniGraph` implementation, query translation, and TinkerPop traversal strategies. |
+| `unipop-jdbc` | JDBC / SQL source provider (verified against **PostgreSQL**). |
+| `unipop-elastic` | Elasticsearch source provider (**Elasticsearch 8.x**, via the Elasticsearch Java API Client). |
+| `unipop-rest` | HTTP / templated-REST source provider (built on the Elasticsearch provider). |
+| `unipop-test` | Cross-backend integration tests. |
+
+## Building & Testing
+
+Requires **JDK 17** and **Maven 3.9+**.
+
+```bash
+# JDK 17 must be the active JDK (e.g. Homebrew keg-only openjdk@17):
+export JAVA_HOME=/opt/homebrew/opt/openjdk@17
+
+# Build all modules (skip tests for a fast build):
+mvn clean install -DskipTests
+
+# Run a module's test suite:
+mvn -pl unipop-jdbc test        # JDBC/PostgreSQL
+mvn -pl unipop-elastic test     # Elasticsearch
+```
+
+The test suites run against real backends, provisioned automatically — no manual
+setup or Docker image pulls required beyond a running Docker daemon for Elasticsearch:
+
+- **JDBC** uses an embedded PostgreSQL (`io.zonky.test:embedded-postgres`, no Docker).
+- **Elasticsearch / REST** use [Testcontainers](https://testcontainers.com/) (Docker required).
+
+TinkerPop process compliance is exercised via the shared Gherkin/Cucumber `.feature`
+suites (`*FeatureTest`); structure compliance via the `*StructureSuite` classes. As a
+partial federation provider, Unipop does not implement every TinkerPop capability, so
+the suites run with `testFailureIgnore=true` and report a partial pass rate rather than
+failing the build. See [`MIGRATION_NOTES.md`](MIGRATION_NOTES.md) for details.
 
 ## Getting started
 *TBD*
