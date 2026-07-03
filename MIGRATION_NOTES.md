@@ -345,7 +345,7 @@ load — update configs when upgrading.
 Any string value in a provider config JSON may reference an environment variable:
 
 - `${VAR}` — replaced with the value of environment variable `VAR`.
-- `${VAR:-default}` — uses `default` when `VAR` is unset or empty-absent.
+- `${VAR:-default}` — uses `default` when `VAR` is not set (a var set to an empty string counts as set, yielding `""`).
 
 Resolution happens once when the config is loaded (`ConfigurationControllerManager`),
 before the provider connects. A `${VAR}` with no default that is not set fails startup
