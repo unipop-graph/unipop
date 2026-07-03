@@ -12,6 +12,7 @@ import org.json.JSONObject;
 import org.unipop.jdbc.schemas.jdbc.JdbcSchema;
 import org.unipop.jdbc.schemas.property.EnumColumnSchema;
 import org.unipop.jdbc.schemas.property.JsonbColumnSchema;
+import org.unipop.jdbc.schemas.property.UuidColumnSchema;
 import org.unipop.jdbc.utils.ContextManager;
 import org.unipop.jdbc.utils.JdbcPredicatesTranslator;
 import org.unipop.query.predicates.PredicateQuery;
@@ -96,7 +97,11 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
                 .filter(s -> s instanceof EnumColumnSchema)
                 .map(s -> ((EnumColumnSchema) s).getEnumColumn())
                 .collect(Collectors.toSet());
-        Condition conditions = new JdbcPredicatesTranslator(idFields, enumColumns, jsonbColumns).translate(predicatesHolder);
+        Set<String> uuidColumns = getPropertySchemas().stream()
+                .filter(s -> s instanceof UuidColumnSchema)
+                .map(s -> ((UuidColumnSchema) s).getUuidColumn())
+                .collect(Collectors.toSet());
+        Condition conditions = new JdbcPredicatesTranslator(idFields, enumColumns, jsonbColumns, uuidColumns).translate(predicatesHolder);
         int finalLimit = query.getLimit() < 0 ? Integer.MAX_VALUE : query.getLimit();
 
         SelectConditionStep<Record> where = createSqlQuery(query.getPropertyKeys())

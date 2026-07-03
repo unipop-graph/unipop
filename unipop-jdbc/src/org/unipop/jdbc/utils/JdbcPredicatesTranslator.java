@@ -34,6 +34,7 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
     private final Set<String> idFields;
     private final Set<String> enumColumns;
     private final Set<String> jsonbColumns;
+    private final Set<String> uuidColumns;
 
     public JdbcPredicatesTranslator() {
         this(Collections.emptySet(), Collections.emptySet(), Collections.emptySet());
@@ -48,9 +49,14 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
     }
 
     public JdbcPredicatesTranslator(Set<String> idFields, Set<String> enumColumns, Set<String> jsonbColumns) {
+        this(idFields, enumColumns, jsonbColumns, Collections.emptySet());
+    }
+
+    public JdbcPredicatesTranslator(Set<String> idFields, Set<String> enumColumns, Set<String> jsonbColumns, Set<String> uuidColumns) {
         this.idFields = idFields == null ? Collections.emptySet() : idFields;
         this.enumColumns = enumColumns == null ? Collections.emptySet() : enumColumns;
         this.jsonbColumns = jsonbColumns == null ? Collections.emptySet() : jsonbColumns;
+        this.uuidColumns = uuidColumns == null ? Collections.emptySet() : uuidColumns;
     }
 
     /** A dotted key whose first segment is a JSONB column, e.g. {@code data.address.city}. */
@@ -76,7 +82,7 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
             }
             return DSL.field(sql.toString(), Object.class, qps);
         }
-        return enumColumns.contains(key)
+        return (enumColumns.contains(key) || uuidColumns.contains(key))
                 ? DSL.field("{0}::text", Object.class, DSL.field(DSL.name(key)))
                 : field(key);
     }
@@ -130,7 +136,7 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
         else if (predicate instanceof ExistsP) {
             return field.isNotNull();
         } else {
-            if (idFields.contains(key) || isJsonbKey(key)) value = stringifyValue(value);
+            if (idFields.contains(key) || isJsonbKey(key) || uuidColumns.contains(key)) value = stringifyValue(value);
             return predicateToQuery(field, value, biPredicate);
         }
     }
