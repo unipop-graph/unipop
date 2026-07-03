@@ -339,3 +339,26 @@ vertex/edge's `properties`, contributed through `SourceProvider.providerBuilders
 A stale `"enums"` key is now silently ignored: the column falls back to a plain text column, so an
 enum comparison fails at **query time** with a `PSQLException` (enum vs varchar) rather than at config
 load — update configs when upgrading.
+
+## Environment variables in provider configs
+
+Any string value in a provider config JSON may reference an environment variable:
+
+- `${VAR}` — replaced with the value of environment variable `VAR`.
+- `${VAR:-default}` — uses `default` when `VAR` is unset or empty-absent.
+
+Resolution happens once when the config is loaded (`ConfigurationControllerManager`),
+before the provider connects. A `${VAR}` with no default that is not set fails startup
+with an `IllegalStateException` naming the variable and the config file. Text that is not
+a well-formed `${...}` placeholder is left as-is.
+
+Example (`unipop-jdbc` PostgreSQL provider):
+
+```json
+{
+  "class": "org.unipop.jdbc.JdbcSourceProvider",
+  "address": ["jdbc:postgresql://${DB_HOST:-localhost}:5432/graph"],
+  "user": "${DB_USER:-postgres}",
+  "password": "${DB_PASSWORD}"
+}
+```
