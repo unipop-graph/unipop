@@ -98,6 +98,7 @@ public class JdbcTimestamptzTest {
         g.addV("thing").property(T.id, "5").property("name", "e").property("at", T1).next();
         g.V("5").property("at", T3).next();
         Object read = g.V("5").values("at").next();
+        assertTrue(read instanceof OffsetDateTime);
         // Normalize to UTC for comparison (JDBC driver may return with session timezone)
         OffsetDateTime readUTC = ((OffsetDateTime) read).withOffsetSameInstant(ZoneOffset.UTC);
         assertEquals(T3, readUTC);

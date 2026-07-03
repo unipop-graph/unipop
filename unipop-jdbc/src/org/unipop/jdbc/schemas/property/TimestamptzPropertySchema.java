@@ -48,7 +48,11 @@ public class TimestamptzPropertySchema extends FieldPropertySchema implements Ti
             try {
                 return OffsetDateTime.parse(s);
             } catch (DateTimeParseException e) {
-                return LocalDateTime.parse(s).atOffset(ZoneOffset.UTC);
+                try {
+                    return LocalDateTime.parse(s).atOffset(ZoneOffset.UTC);
+                } catch (DateTimeParseException e2) {
+                    throw new IllegalArgumentException("Cannot coerce String to timestamptz: " + s, e2);
+                }
             }
         }
         throw new IllegalArgumentException("Cannot coerce " + value.getClass().getName() + " to timestamptz: " + value);

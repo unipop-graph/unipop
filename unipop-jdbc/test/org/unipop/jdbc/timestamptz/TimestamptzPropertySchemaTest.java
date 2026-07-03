@@ -68,7 +68,7 @@ public class TimestamptzPropertySchemaTest {
         TimestamptzPropertySchema.toOffsetDateTime(1596326400000L);
     }
 
-    @Test(expected = RuntimeException.class) public void coerceNonParseableStringThrows() {
+    @Test(expected = IllegalArgumentException.class) public void coerceNonParseableStringThrows() {
         TimestamptzPropertySchema.toOffsetDateTime("not-a-date");
     }
 
