@@ -130,6 +130,7 @@
                         <include>**/JdbcJsonbTest.java</include>
                         <include>**/JdbcMultiJsonbTest.java</include>
                         <include>**/EnumPropertySchemaTest.java</include>
+                        <include>**/UuidPropertySchemaTest.java</include>
                     </includes>
                     <environmentVariables>
                         <conf>basic</conf>
