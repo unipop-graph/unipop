@@ -2,6 +2,7 @@ package org.unipop.jdbc.uuid;
 
 import org.apache.commons.configuration2.BaseConfiguration;
 import org.apache.commons.configuration2.Configuration;
+import org.apache.tinkerpop.gremlin.process.traversal.AnonymousTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -88,5 +89,22 @@ public class JdbcUuidTest {
         assertEquals(U2, g.V("3").values("ref").next());
         assertEquals(0L, (long) g.V().has("ref", U1).count().next());
         assertEquals(1L, (long) g.V().has("ref", U2).count().next());
+    }
+
+    /**
+     * Regression for the reported deployment bug: a traversal source built the standard TinkerPop
+     * way ({@code traversal().withEmbedded(graph)}, as gremlin-server does) must also push the uuid
+     * predicate down to SQL. Before the fix, UniGraph did not register its provider strategies in
+     * {@code TraversalStrategies.GlobalCache}, so a withEmbedded source lacked them, evaluated
+     * has() in memory, and compared the coerced java.util.UUID value against the String predicate
+     * (never matching) -> 0.
+     */
+    @Test
+    public void withEmbeddedTraversalSourcePushesDownUuidStringFilter() {
+        g.addV("thing").property(T.id, "4").property("name", "d").property("ref", U2).next();
+        Graph graph = g.getGraph();
+        GraphTraversalSource gStd = AnonymousTraversalSource.traversal().withEmbedded(graph);
+        assertEquals(1L, (long) gStd.V().has("ref", U2.toString()).count().next());
+        assertEquals(1L, (long) gStd.V().has("ref", U2).count().next());
     }
 }
