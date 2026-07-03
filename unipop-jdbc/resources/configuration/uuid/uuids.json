@@ -1,0 +1,20 @@
+{
+  "class": "org.unipop.jdbc.JdbcSourceProvider",
+  "driver": "org.postgresql.Driver",
+  "address": ["jdbc:postgresql://localhost:54329/postgres"],
+  "user": "postgres",
+  "sqlDialect": "POSTGRES",
+  "vertices": [
+    {
+      "table": "uuids",
+      "id": "@id",
+      "label": "@label",
+      "properties": {
+        "name": "@name",
+        "ref": { "type": "uuid" }
+      },
+      "dynamicProperties": false
+    }
+  ],
+  "edges": []
+}
