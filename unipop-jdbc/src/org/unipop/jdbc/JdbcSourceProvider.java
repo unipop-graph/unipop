@@ -10,6 +10,7 @@ import org.unipop.jdbc.schemas.RowVertexSchema;
 import org.unipop.jdbc.schemas.jdbc.JdbcSchema;
 import org.unipop.jdbc.schemas.property.EnumPropertySchema;
 import org.unipop.jdbc.schemas.property.JsonbPropertySchema;
+import org.unipop.jdbc.schemas.property.TimestamptzPropertySchema;
 import org.unipop.jdbc.schemas.property.UuidPropertySchema;
 import org.unipop.jdbc.utils.ContextManager;
 import org.unipop.jdbc.utils.JdbcPredicatesTranslator;
@@ -60,7 +61,7 @@ public class JdbcSourceProvider implements SourceProvider {
     @Override
     public List<PropertySchema.PropertySchemaBuilder> providerBuilders() {
         return Arrays.asList(new JsonbPropertySchema.Builder(), new EnumPropertySchema.Builder(),
-                new UuidPropertySchema.Builder());
+                new UuidPropertySchema.Builder(), new TimestamptzPropertySchema.Builder());
     }
 
     @Override

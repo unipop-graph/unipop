@@ -132,6 +132,8 @@
                         <include>**/EnumPropertySchemaTest.java</include>
                         <include>**/UuidPropertySchemaTest.java</include>
                         <include>**/JdbcUuidTest.java</include>
+                        <include>**/TimestamptzPropertySchemaTest.java</include>
+                        <include>**/JdbcTimestamptzTest.java</include>
                     </includes>
                     <environmentVariables>
                         <conf>basic</conf>

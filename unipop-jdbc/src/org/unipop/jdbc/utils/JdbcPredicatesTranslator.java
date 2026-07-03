@@ -12,6 +12,7 @@ import org.jooq.Field;
 import org.jooq.QueryPart;
 import org.jooq.impl.DSL;
 import org.unipop.common.util.PredicatesTranslator;
+import org.unipop.jdbc.schemas.property.TimestamptzPropertySchema;
 import org.unipop.process.predicate.Date;
 import org.unipop.process.predicate.ExistsP;
 import org.unipop.process.predicate.Text;
@@ -35,6 +36,7 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
     private final Set<String> enumColumns;
     private final Set<String> jsonbColumns;
     private final Set<String> uuidColumns;
+    private final Set<String> timestamptzColumns;
 
     public JdbcPredicatesTranslator() {
         this(Collections.emptySet(), Collections.emptySet(), Collections.emptySet());
@@ -53,10 +55,15 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
     }
 
     public JdbcPredicatesTranslator(Set<String> idFields, Set<String> enumColumns, Set<String> jsonbColumns, Set<String> uuidColumns) {
+        this(idFields, enumColumns, jsonbColumns, uuidColumns, Collections.emptySet());
+    }
+
+    public JdbcPredicatesTranslator(Set<String> idFields, Set<String> enumColumns, Set<String> jsonbColumns, Set<String> uuidColumns, Set<String> timestamptzColumns) {
         this.idFields = idFields == null ? Collections.emptySet() : idFields;
         this.enumColumns = enumColumns == null ? Collections.emptySet() : enumColumns;
         this.jsonbColumns = jsonbColumns == null ? Collections.emptySet() : jsonbColumns;
         this.uuidColumns = uuidColumns == null ? Collections.emptySet() : uuidColumns;
+        this.timestamptzColumns = timestamptzColumns == null ? Collections.emptySet() : timestamptzColumns;
     }
 
     /** A dotted key whose first segment is a JSONB column, e.g. {@code data.address.city}. */
@@ -102,6 +109,15 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
         return value == null ? null : value.toString();
     }
 
+    private static Object coerceTemporal(Object value) {
+        if (value instanceof Collection) {
+            return ((Collection<?>) value).stream()
+                    .map(v -> v == null ? null : TimestamptzPropertySchema.toOffsetDateTime(v))
+                    .collect(Collectors.toList());
+        }
+        return value == null ? null : TimestamptzPropertySchema.toOffsetDateTime(value);
+    }
+
     @Override
     public Condition translate(PredicatesHolder predicatesHolder) {
         Set<Condition> predicateFilters = predicatesHolder.getPredicates().stream()
@@ -137,6 +153,7 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
             return field.isNotNull();
         } else {
             if (idFields.contains(key) || isJsonbKey(key) || uuidColumns.contains(key)) value = stringifyValue(value);
+            else if (timestamptzColumns.contains(key)) value = coerceTemporal(value);
             return predicateToQuery(field, value, biPredicate);
         }
     }
