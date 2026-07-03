@@ -5,6 +5,7 @@ import org.json.JSONObject;
 import org.unipop.schema.property.PropertySchema;
 import org.unipop.structure.traversalfilter.TraversalFilter;
 import org.unipop.structure.UniGraph;
+import org.unipop.util.ConfigInterpolator;
 import org.unipop.util.DirectoryWatcher;
 import org.unipop.util.PropertySchemaFactory;
 
@@ -47,6 +48,7 @@ public class ConfigurationControllerManager implements ControllerManager {
             if (Files.isRegularFile(filePath)){
                 String providerJson = readFile(filePath.toAbsolutePath().toString());
                 JSONObject providerConfig = new JSONObject(providerJson);
+                ConfigInterpolator.interpolate(providerConfig, filePath.toString());
                 String providerClass = providerConfig.getString("class");
                 SourceProvider sourceProvider = null;
                 try {
