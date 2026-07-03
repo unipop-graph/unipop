@@ -143,7 +143,17 @@ public class UniGraph implements Graph {
 
     private void init(ControllerManager controllerManager, StrategyProvider strategyProvider) {
         this.strategies = strategyProvider.get();
-        //TraversalStrategies.GlobalCache.registerStrategies(UniGraph.class, strategies);
+        // Register the provider strategies under UniGraph in TinkerPop's GlobalCache so that a
+        // traversal source built the standard way — traversal().withEmbedded(graph) /
+        // new GraphTraversalSource(graph), which is how gremlin-server binds `g` — also gets them.
+        // Without this, only our traversal() override (below) carried the strategies, so a
+        // withEmbedded source ran with the default strategy set: has() predicates were never pushed
+        // to the source query (SELECT ... WHERE true) and were filtered in memory, where a typed
+        // value (uuid/timestamptz coerced to java.util.UUID/OffsetDateTime) never matches a String
+        // predicate. The provider strategies are stateless (they read the graph from the traversal
+        // at apply time), so a class-level registration is safe; traversal() still applies the
+        // per-instance/config strategies explicitly.
+        TraversalStrategies.GlobalCache.registerStrategies(UniGraph.class, strategies);
 
         this.controllerManager = controllerManager;
         this.queryControllers = controllerManager.getControllers(SearchQuery.SearchController.class);
