@@ -27,6 +27,8 @@ import org.unipop.query.mutation.AddVertexQuery;
 import org.unipop.query.mutation.PropertyQuery;
 import org.unipop.query.mutation.RemoveQuery;
 import org.unipop.query.predicates.PredicatesHolder;
+import org.unipop.query.predicates.PredicatesHolderFactory;
+import org.unipop.schema.element.VertexSchema;
 import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.query.search.SearchQuery;
 import org.unipop.query.search.SearchVertexQuery;
@@ -98,7 +100,9 @@ public class RowController implements SimpleController {
     public void fetchProperties(DeferredVertexQuery uniQuery) {
         SelectCollector<JdbcSchema<Vertex>, Select, Vertex> collector = new SelectCollector<>(
                 schema -> schema.getSearch(uniQuery,
-                        schema.toPredicates(uniQuery.getPredicates())),
+                        PredicatesHolderFactory.and(
+                                ((VertexSchema) schema).toPredicates(uniQuery.getVertices()),
+                                schema.toPredicates(uniQuery.getPredicates()))),
                 (schema, results) -> schema.parseResults(results, uniQuery)
         );
 
