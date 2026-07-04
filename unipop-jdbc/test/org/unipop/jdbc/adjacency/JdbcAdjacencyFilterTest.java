@@ -15,9 +15,12 @@ import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
+import java.util.List;
 import java.util.UUID;
+import org.unipop.jdbc.utils.TimingExecuterListener;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /** Vertex-property has() after out()/outV() must filter (push down), enabling PartitionStrategy. */
 public class JdbcAdjacencyFilterTest {
@@ -114,5 +117,49 @@ public class JdbcAdjacencyFilterTest {
         // g.V().bothE('E').otherV() also yields 6 traversers with each id twice (EdgeOtherVertexStep).
         assertEquals(6L, (long) g.V().bothE("E").otherV().has("org_id", U.toString()).count().next());
         assertEquals(0L, (long) g.V().bothE("E").otherV().has("org_id", OTHER.toString()).count().next());
+    }
+
+    /** Largest number of rows any executed query against the adjnodes table fetched. */
+    private static int maxAdjnodesFetch() {
+        return TimingExecuterListener.timing.entrySet().stream()
+                .filter(e -> e.getKey().toLowerCase().contains("adjnodes"))
+                .mapToInt(e -> e.getValue().getValue1())
+                .max().orElse(-1);
+    }
+
+    /**
+     * The deferred vertex fetch must be bounded to the produced neighbour ids, not scan the whole
+     * table (hydrate-only path) or the whole partition (pushed-predicate path). Proven by inserting
+     * same-partition non-neighbour "poison" rows and asserting the fetch reads only the neighbour.
+     * g.E("e1").inV() isolates adjnodes to a single query (the deferred fetch of b).
+     */
+    @Test
+    public void deferredFetchIsBoundedToProducedIds() throws Exception {
+        try (Connection c = DriverManager.getConnection(EmbeddedPostgresServer.URL, EmbeddedPostgresServer.USER, "");
+             Statement s = c.createStatement()) {
+            for (int i = 0; i < 30; i++) {
+                s.execute("INSERT INTO adjnodes VALUES ('p" + i + "','n','" + U + "')");
+            }
+        }
+        try {
+            // Hydrate-only path (no pushed predicate): before the fix this was WHERE true (full scan).
+            TimingExecuterListener.timing.clear();
+            List<Object> vals = g.E("e1").inV().values("org_id").toList();
+            assertEquals(1, vals.size());
+            assertEquals(U, vals.get(0));
+            assertTrue("hydrate-only deferred fetch scanned " + maxAdjnodesFetch()
+                    + " adjnodes rows; must be bounded to the produced id", maxAdjnodesFetch() <= 2);
+
+            // Pushed-predicate path: before the fix this was WHERE org_id = ? (partition scan).
+            TimingExecuterListener.timing.clear();
+            assertEquals(1L, (long) g.E("e1").inV().has("org_id", U.toString()).count().next());
+            assertTrue("pushed-predicate deferred fetch scanned " + maxAdjnodesFetch()
+                    + " adjnodes rows; must be bounded to the produced id", maxAdjnodesFetch() <= 2);
+        } finally {
+            try (Connection c = DriverManager.getConnection(EmbeddedPostgresServer.URL, EmbeddedPostgresServer.USER, "");
+                 Statement s = c.createStatement()) {
+                s.execute("DELETE FROM adjnodes WHERE id LIKE 'p%'");
+            }
+        }
     }
 }
