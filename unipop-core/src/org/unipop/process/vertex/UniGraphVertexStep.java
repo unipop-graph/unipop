@@ -40,6 +40,7 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
     private String[] edgeLabels = new String[0];
     private int limit;
     private PredicatesHolder predicates = PredicatesHolderFactory.empty();
+    private PredicatesHolder vertexPredicates = PredicatesHolderFactory.empty();
     private StepDescriptor stepDescriptor;
     private List<SearchVertexQuery.SearchVertexController> controllers;
     private List<DeferredVertexQuery.DeferredVertexController> deferredVertexControllers;
@@ -85,9 +86,10 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
         Iterator<Traverser.Admin<E>> traversersIterator = controllers.stream().<Iterator<Edge>>map(controller -> controller.search(vertexQuery))
                 .<Edge>flatMap(ConversionUtils::asStream)
                 .<Traverser.Admin<E>>flatMap(edge -> toTraversers(edge, idToTraverser)).iterator();
-        if (!this.returnsVertex || (propertyKeys != null && propertyKeys.size() == 0))
-            return traversersIterator;
-        return getTraversersWithProperties(traversersIterator);
+        boolean noProps = propertyKeys != null && propertyKeys.size() == 0;
+        if (this.returnsVertex && (this.vertexPredicates.notEmpty() || !noProps))
+            return getTraversersWithProperties(traversersIterator);
+        return traversersIterator;
     }
 
     private Iterator<Traverser.Admin<E>> getTraversersWithProperties(Iterator<Traverser.Admin<E>> traversers) {
@@ -98,10 +100,20 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
                 .filter(DeferredVertex::isDeferred)
                 .collect(Collectors.toList());
         if (deferredVertices.size() > 0) {
-            DeferredVertexQuery query = new DeferredVertexQuery(deferredVertices, propertyKeys, orders, this.stepDescriptor, traversal);
+            // When filtering with no requested properties (e.g. out().has(k,v).count()), pass null
+            // propertyKeys so the fetch still SELECTs the row (and applies the WHERE) rather than an
+            // empty projection.
+            Set<String> fetchKeys = (this.vertexPredicates.notEmpty() && propertyKeys != null && propertyKeys.isEmpty())
+                    ? null : propertyKeys;
+            DeferredVertexQuery query = new DeferredVertexQuery(deferredVertices, this.vertexPredicates, fetchKeys, orders, this.stepDescriptor, traversal);
             deferredVertexControllers.stream().forEach(controller -> controller.fetchProperties(query));
         }
-        return copyTraversers.iterator();
+        if (!this.vertexPredicates.notEmpty()) return copyTraversers.iterator();
+        // Vertex predicates were pushed: a produced vertex that did not match was not returned by the
+        // fetch, so it is still deferred -> drop those traversers.
+        return copyTraversers.stream()
+                .filter(t -> { E e = t.get(); return !(e instanceof DeferredVertex) || !((DeferredVertex) e).isDeferred(); })
+                .iterator();
     }
 
     private Stream<Traverser.Admin<E>> toTraversers(Edge edge, Map<Object, List<Traverser<Vertex>>> traversers) {
@@ -145,6 +157,10 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
     @Override
     public PredicatesHolder getPredicates() {
         return predicates;
+    }
+
+    public void setVertexPredicates(PredicatesHolder vertexPredicates) {
+        this.vertexPredicates = vertexPredicates == null ? PredicatesHolderFactory.empty() : vertexPredicates;
     }
 
     @Override
