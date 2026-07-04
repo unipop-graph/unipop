@@ -109,10 +109,17 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
             deferredVertexControllers.stream().forEach(controller -> controller.fetchProperties(query));
         }
         if (!this.vertexPredicates.notEmpty()) return copyTraversers.iterator();
-        // Vertex predicates were pushed: a produced vertex that did not match was not returned by the
-        // fetch, so it is still deferred -> drop those traversers.
+        // A vertex step emits one DeferredVertex object per incident edge, so a single id can appear as
+        // several instances; the filtered fetch dedups by id and un-defers only one instance per matched
+        // id. Keep every traverser whose vertex id matched (any produced instance now non-deferred), so
+        // duplicate-id traversers survive -- matching the un-filtered hydrate path -- dropping only
+        // unmatched ids.
+        Set<Object> matchedIds = copyTraversers.stream().map(Attachable::get)
+                .filter(e -> e instanceof DeferredVertex && !((DeferredVertex) e).isDeferred())
+                .map(e -> ((DeferredVertex) e).id())
+                .collect(Collectors.toSet());
         return copyTraversers.stream()
-                .filter(t -> { E e = t.get(); return !(e instanceof DeferredVertex) || !((DeferredVertex) e).isDeferred(); })
+                .filter(t -> { E e = t.get(); return !(e instanceof DeferredVertex) || matchedIds.contains(((DeferredVertex) e).id()); })
                 .iterator();
     }
 

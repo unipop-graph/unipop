@@ -65,8 +65,15 @@ public class UniGraphEdgeVertexStep extends UniPredicatesStep<Edge, Vertex> impl
             }
         }
         if (!this.vertexPredicates.notEmpty()) return vertices.iterator();
+        // See UniGraphVertexStep: one DeferredVertex per incident edge means a matched id may have
+        // several instances but the fetch un-defers only one. Keep every traverser whose vertex id
+        // matched, dropping only unmatched ids.
+        Set<Object> matchedIds = vertices.stream().map(Attachable::get)
+                .filter(x -> x instanceof DeferredVertex && !((DeferredVertex) x).isDeferred())
+                .map(x -> ((DeferredVertex) x).id())
+                .collect(Collectors.toSet());
         return vertices.stream()
-                .filter(t -> { Vertex x = t.get(); return !(x instanceof DeferredVertex) || !((DeferredVertex) x).isDeferred(); })
+                .filter(t -> { Vertex x = t.get(); return !(x instanceof DeferredVertex) || matchedIds.contains(((DeferredVertex) x).id()); })
                 .iterator();
     }
 

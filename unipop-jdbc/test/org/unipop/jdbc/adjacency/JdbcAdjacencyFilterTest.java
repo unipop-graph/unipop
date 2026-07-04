@@ -41,6 +41,7 @@ public class JdbcAdjacencyFilterTest {
             s.execute("INSERT INTO adjedges VALUES ('e1','E','a','n','b','n','" + U + "')");
             s.execute("INSERT INTO adjnodes VALUES ('c','n','" + U + "')");
             s.execute("INSERT INTO adjedges VALUES ('e2','E','b','n','c','n','" + U + "')");
+            s.execute("INSERT INTO adjedges VALUES ('e3','E','a','n','c','n','" + U + "')");
         }
         String dir = new File(JdbcAdjacencyFilterTest.class.getResource("/configuration/adjfilter/graph.json").toURI()).getParent();
         Configuration conf = new BaseConfiguration();
@@ -57,8 +58,8 @@ public class JdbcAdjacencyFilterTest {
 
     @Test
     public void hasAfterOutFiltersByString() {
-        assertEquals(1L, (long) g.V("a").out("E").has("org_id", U.toString()).count().next());
-        assertEquals(1L, (long) g.V("a").out("E").has("org_id", U).count().next());
+        assertEquals(2L, (long) g.V("a").out("E").has("org_id", U.toString()).count().next());
+        assertEquals(2L, (long) g.V("a").out("E").has("org_id", U).count().next());
         assertEquals(0L, (long) g.V("a").out("E").has("org_id", OTHER.toString()).count().next());
     }
 
@@ -66,7 +67,7 @@ public class JdbcAdjacencyFilterTest {
     public void partitionStrategyScopesOutHop() {
         GraphTraversalSource in = g.withStrategies(
                 PartitionStrategy.build().partitionKey("org_id").readPartitions(U.toString()).create());
-        assertEquals(1L, (long) in.V("a").out("E").count().next());
+        assertEquals(2L, (long) in.V("a").out("E").count().next());
         GraphTraversalSource out = g.withStrategies(
                 PartitionStrategy.build().partitionKey("org_id").readPartitions(OTHER.toString()).create());
         assertEquals(0L, (long) out.V("a").out("E").count().next());
@@ -74,7 +75,7 @@ public class JdbcAdjacencyFilterTest {
 
     @Test
     public void hasAfterOutVFiltersByString() {
-        assertEquals(2L, (long) g.E().outV().has("org_id", U.toString()).count().next());
+        assertEquals(3L, (long) g.E().outV().has("org_id", U.toString()).count().next());
         assertEquals(0L, (long) g.E().outV().has("org_id", OTHER.toString()).count().next());
     }
 
@@ -82,7 +83,7 @@ public class JdbcAdjacencyFilterTest {
     public void partitionStrategyScopesOutV() {
         GraphTraversalSource in = g.withStrategies(
                 PartitionStrategy.build().partitionKey("org_id").readPartitions(U.toString()).create());
-        assertEquals(2L, (long) in.E().outV().count().next());
+        assertEquals(3L, (long) in.E().outV().count().next());
         GraphTraversalSource out = g.withStrategies(
                 PartitionStrategy.build().partitionKey("org_id").readPartitions(OTHER.toString()).create());
         assertEquals(0L, (long) out.E().outV().count().next());
@@ -96,5 +97,22 @@ public class JdbcAdjacencyFilterTest {
         GraphTraversalSource out = g.withStrategies(
                 PartitionStrategy.build().partitionKey("org_id").readPartitions(OTHER.toString()).create());
         assertEquals(0L, (long) out.V("a").out("E").out("E").count().next());
+    }
+
+    @Test
+    public void hasAfterBothPreservesDuplicateIds() {
+        // both() reaches every vertex from multiple incident edges: with e1(a-b),e2(b-c),e3(a-c),
+        // g.V().both('E') yields [b,c, a,c, b,a] = 6 traversers (each id appears twice). The filtered
+        // fetch dedups by id and un-defers one instance per id; the drop must keep BOTH instances of
+        // each matching id, not collapse to the distinct-id count (3).
+        assertEquals(6L, (long) g.V().both("E").has("org_id", U.toString()).count().next());
+        assertEquals(0L, (long) g.V().both("E").has("org_id", OTHER.toString()).count().next());
+    }
+
+    @Test
+    public void hasAfterOtherVPreservesDuplicateIds() {
+        // g.V().bothE('E').otherV() also yields 6 traversers with each id twice (EdgeOtherVertexStep).
+        assertEquals(6L, (long) g.V().bothE("E").otherV().has("org_id", U.toString()).count().next());
+        assertEquals(0L, (long) g.V().bothE("E").otherV().has("org_id", OTHER.toString()).count().next());
     }
 }
