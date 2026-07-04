@@ -16,8 +16,11 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.unipop.jdbc.utils.TimingExecuterListener;
+
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -117,6 +120,38 @@ public class JdbcAdjacencyFilterTest {
         // g.V().bothE('E').otherV() also yields 6 traversers with each id twice (EdgeOtherVertexStep).
         assertEquals(6L, (long) g.V().bothE("E").otherV().has("org_id", U.toString()).count().next());
         assertEquals(0L, (long) g.V().bothE("E").otherV().has("org_id", OTHER.toString()).count().next());
+    }
+
+    @Test
+    public void coalesceWorksAsByModulator() {
+        // 1. project().by(coalesce(...)) — was ClassCastException; now first-branch-wins => 1
+        List<Map<String, Object>> proj = g.V().project("w")
+                .by(coalesce(constant(1), constant(2))).toList();
+        assertEquals(3, proj.size());
+        proj.forEach(m -> assertEquals(1, m.get("w")));
+
+        // 2. order().by(coalesce(...)) — was CCE; now no throw, all 3 vertices returned
+        assertEquals(3L, (long) g.V().order().by(coalesce(constant(1), constant(2))).count().next());
+
+        // 3+4. local()/union() KEEP ALL branch outputs — proves correct first-branch-wins
+        //      (the rejected interface-swap returned [1,2,1,2,1,2] here).
+        assertEquals(List.of(1, 1, 1), g.V().local(coalesce(constant(1), constant(2))).toList());
+        assertEquals(List.of(1, 1, 1), g.V().union(coalesce(constant(1), constant(2))).toList());
+
+        // 5. main-step coalesce (root) — unchanged, still handled by UniGraphCoalesceStep
+        assertEquals(List.of(1, 1, 1), g.V().coalesce(constant(1), constant(2)).toList());
+
+        // 6. child-branch push-down + fallback preserved through native coalesce:
+        //    b has an out edge (e2 b->c) -> out('E').id() wins => "c";
+        //    c has no out edge -> coalesce falls through to the constant => "noedge".
+        assertEquals("c", g.V("b").project("n")
+                .by(coalesce(out("E").id(), constant("noedge"))).next().get("n"));
+        assertEquals("noedge", g.V("c").project("n")
+                .by(coalesce(out("E").id(), constant("noedge"))).next().get("n"));
+
+        // 7. values()+constant modulator (the reported failing shape) — org_id present => value wins
+        assertEquals(U, g.V("a").project("w")
+                .by(coalesce(values("org_id"), constant(false))).next().get("w"));
     }
 
     /** Largest number of rows any executed query against the adjnodes table fetched. */

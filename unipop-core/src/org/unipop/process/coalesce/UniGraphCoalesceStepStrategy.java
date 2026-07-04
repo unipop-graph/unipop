@@ -34,6 +34,15 @@ public class UniGraphCoalesceStepStrategy extends AbstractTraversalStrategy<Trav
             boolean hasLambdaBranch = coalesceStep.getLocalChildren().stream()
                     .anyMatch(child -> child instanceof AbstractLambdaTraversal);
             if (hasLambdaBranch) return;
+            // The side-effect-smuggling origin-removal in UniGraphCoalesceStep only works when the
+            // step is a root step (its SIDE_EFFECTS requirement then forces a B_O_S_SE_SL_Traverser).
+            // In a child/modulator traversal (project/order/local/union .by/child) the parent supplies
+            // a bare B_O_Traverser whose getSideEffects() is the empty singleton, so the
+            // (B_O_S_SE_SL_Traverser) cast throws (CCE) and an interface-based read would silently
+            // break first-branch-wins. Native CoalesceStep is per-start and needs no side-effects, and
+            // branch push-down is preserved (branches remain local children optimized by the other
+            // provider strategies). Defer to it for non-root coalesce.
+            if (!traversal.isRoot()) return;
             UniGraphCoalesceStep uniGraphCoalesceStep = new UniGraphCoalesceStep(coalesceStep.getTraversal(), uniGraph, coalesceStep.getLocalChildren());
             TraversalHelper.replaceStep(coalesceStep, uniGraphCoalesceStep, traversal);
         });
