@@ -69,4 +69,20 @@ public class JdbcAdjacencyFilterTest {
                 PartitionStrategy.build().partitionKey("org_id").readPartitions(OTHER.toString()).create());
         assertEquals(0L, (long) out.V("a").out("E").count().next());
     }
+
+    @Test
+    public void hasAfterOutVFiltersByString() {
+        assertEquals(1L, (long) g.E().outV().has("org_id", U.toString()).count().next());
+        assertEquals(0L, (long) g.E().outV().has("org_id", OTHER.toString()).count().next());
+    }
+
+    @Test
+    public void partitionStrategyScopesOutV() {
+        GraphTraversalSource in = g.withStrategies(
+                PartitionStrategy.build().partitionKey("org_id").readPartitions(U.toString()).create());
+        assertEquals(1L, (long) in.E().outV().count().next());
+        GraphTraversalSource out = g.withStrategies(
+                PartitionStrategy.build().partitionKey("org_id").readPartitions(OTHER.toString()).create());
+        assertEquals(0L, (long) out.E().outV().count().next());
+    }
 }

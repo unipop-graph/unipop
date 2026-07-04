@@ -15,6 +15,8 @@ import org.unipop.process.UniPredicatesStep;
 import org.unipop.process.order.Orderable;
 import org.unipop.query.StepDescriptor;
 import org.unipop.query.controller.ControllerManager;
+import org.unipop.query.predicates.PredicatesHolder;
+import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.schema.reference.DeferredVertex;
 import org.unipop.structure.UniGraph;
@@ -26,6 +28,11 @@ public class UniGraphEdgeOtherVertexStep extends UniPredicatesStep<Edge, Vertex>
     private List<DeferredVertexQuery.DeferredVertexController> deferredVertexControllers;
     private StepDescriptor stepDescriptor;
     private List<Pair<String, Order>> orders;
+    private PredicatesHolder vertexPredicates = PredicatesHolderFactory.empty();
+
+    public void setVertexPredicates(PredicatesHolder vertexPredicates) {
+        this.vertexPredicates = vertexPredicates == null ? PredicatesHolderFactory.empty() : vertexPredicates;
+    }
 
     public UniGraphEdgeOtherVertexStep(Traversal.Admin traversal, UniGraph graph, ControllerManager controllerManager) {
         super(traversal, graph);
@@ -46,19 +53,24 @@ public class UniGraphEdgeOtherVertexStep extends UniPredicatesStep<Edge, Vertex>
             }
         });
 
-        if (propertyKeys == null || propertyKeys.size() > 0){
+        boolean fetch = this.vertexPredicates.notEmpty() || propertyKeys == null || propertyKeys.size() > 1;
+        if (fetch) {
             List<DeferredVertex> v = vertices.stream().map(Attachable::get)
                     .filter(vertex -> vertex instanceof DeferredVertex)
                     .map(vertex -> ((DeferredVertex) vertex))
                     .filter(DeferredVertex::isDeferred)
                     .collect(Collectors.toList());
             if (v.size() > 0) {
-                DeferredVertexQuery query = new DeferredVertexQuery(v, propertyKeys, orders, stepDescriptor, traversal);
+                Set<String> fetchKeys = (this.vertexPredicates.notEmpty() && propertyKeys != null && propertyKeys.isEmpty())
+                        ? null : propertyKeys;
+                DeferredVertexQuery query = new DeferredVertexQuery(v, this.vertexPredicates, fetchKeys, orders, this.stepDescriptor, traversal);
                 deferredVertexControllers.forEach(deferredVertexController -> deferredVertexController.fetchProperties(query));
             }
         }
-
-        return vertices.iterator();
+        if (!this.vertexPredicates.notEmpty()) return vertices.iterator();
+        return vertices.stream()
+                .filter(t -> { Vertex x = t.get(); return !(x instanceof DeferredVertex) || !((DeferredVertex) x).isDeferred(); })
+                .iterator();
     }
 
     @Override
