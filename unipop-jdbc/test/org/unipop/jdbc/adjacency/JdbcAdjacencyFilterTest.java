@@ -39,6 +39,8 @@ public class JdbcAdjacencyFilterTest {
                     "src_id varchar(100), src_label varchar(100), dst_id varchar(100), dst_label varchar(100), org_id uuid)");
             s.execute("INSERT INTO adjnodes VALUES ('a','n','" + U + "'), ('b','n','" + U + "')");
             s.execute("INSERT INTO adjedges VALUES ('e1','E','a','n','b','n','" + U + "')");
+            s.execute("INSERT INTO adjnodes VALUES ('c','n','" + U + "')");
+            s.execute("INSERT INTO adjedges VALUES ('e2','E','b','n','c','n','" + U + "')");
         }
         String dir = new File(JdbcAdjacencyFilterTest.class.getResource("/configuration/adjfilter/graph.json").toURI()).getParent();
         Configuration conf = new BaseConfiguration();
@@ -72,7 +74,7 @@ public class JdbcAdjacencyFilterTest {
 
     @Test
     public void hasAfterOutVFiltersByString() {
-        assertEquals(1L, (long) g.E().outV().has("org_id", U.toString()).count().next());
+        assertEquals(2L, (long) g.E().outV().has("org_id", U.toString()).count().next());
         assertEquals(0L, (long) g.E().outV().has("org_id", OTHER.toString()).count().next());
     }
 
@@ -80,9 +82,19 @@ public class JdbcAdjacencyFilterTest {
     public void partitionStrategyScopesOutV() {
         GraphTraversalSource in = g.withStrategies(
                 PartitionStrategy.build().partitionKey("org_id").readPartitions(U.toString()).create());
-        assertEquals(1L, (long) in.E().outV().count().next());
+        assertEquals(2L, (long) in.E().outV().count().next());
         GraphTraversalSource out = g.withStrategies(
                 PartitionStrategy.build().partitionKey("org_id").readPartitions(OTHER.toString()).create());
         assertEquals(0L, (long) out.E().outV().count().next());
+    }
+
+    @Test
+    public void partitionStrategyScopesMultiHop() {
+        GraphTraversalSource in = g.withStrategies(
+                PartitionStrategy.build().partitionKey("org_id").readPartitions(U.toString()).create());
+        assertEquals(1L, (long) in.V("a").out("E").out("E").count().next());   // a->b->c
+        GraphTraversalSource out = g.withStrategies(
+                PartitionStrategy.build().partitionKey("org_id").readPartitions(OTHER.toString()).create());
+        assertEquals(0L, (long) out.V("a").out("E").out("E").count().next());
     }
 }
