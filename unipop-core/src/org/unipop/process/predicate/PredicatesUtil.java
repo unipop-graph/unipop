@@ -77,4 +77,27 @@ public class PredicatesUtil {
         step.getLabels().forEach(originalStep::addLabel);
         return step.getLabels().size() > 0;
     }
+
+    /**
+     * Fold the has()-steps that immediately follow a vertex-producing step into a predicates holder,
+     * removing them from the traversal, so they can be pushed into the produced-vertex fetch. Unlike
+     * {@link #collectPredicates}, the result is returned (not added to the step as edge predicates),
+     * because these filter the produced VERTEX, not the adjacency edge query. Stops at the first
+     * non-HasContainerHolder step.
+     */
+    public static PredicatesHolder collectVertexPredicates(Step<?, ?> step, Traversal.Admin traversal) {
+        Set<PredicatesHolder> predicates = new HashSet<>();
+        Step<?, ?> nextStep = step.getNextStep();
+        while (nextStep instanceof HasContainerHolder) {
+            HasContainerHolder<?, ?> hasContainerHolder = (HasContainerHolder<?, ?>) nextStep;
+            hasContainerHolder.getHasContainers().stream().map(PredicatesHolderFactory::predicate).forEach(predicates::add);
+            Step<?, ?> toRemove = nextStep;
+            boolean hasLabels = !nextStep.getLabels().isEmpty();
+            nextStep.getLabels().forEach(step::addLabel);
+            nextStep = nextStep.getNextStep();
+            traversal.removeStep(toRemove);
+            if (hasLabels) break;
+        }
+        return PredicatesHolderFactory.and(predicates);
+    }
 }
