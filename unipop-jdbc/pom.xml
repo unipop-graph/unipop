@@ -134,6 +134,7 @@
                         <include>**/JdbcUuidTest.java</include>
                         <include>**/TimestamptzPropertySchemaTest.java</include>
                         <include>**/JdbcTimestamptzTest.java</include>
+                        <include>**/JdbcAdjacencyFilterTest.java</include>
                     </includes>
                     <environmentVariables>
                         <conf>basic</conf>

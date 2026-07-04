@@ -31,6 +31,7 @@ public class UniGraphVertexStepStrategy extends AbstractTraversalStrategy<Traver
                 UniGraphVertexStep uniGraphVertexStep = new UniGraphVertexStep<>(vertexStep, uniGraph, uniGraph.getControllerManager());
                 TraversalHelper.replaceStep(vertexStep, uniGraphVertexStep, traversal);
                 if (vertexStep.returnsEdge()) PredicatesUtil.collectPredicates(uniGraphVertexStep, traversal);
+                else uniGraphVertexStep.setVertexPredicates(PredicatesUtil.collectVertexPredicates(uniGraphVertexStep, traversal));
             }
             else{
                 TraversalHelper.getStepsOfAssignableClass(TraversalParent.class, traversal).forEach(traversalParent -> {
@@ -39,6 +40,7 @@ public class UniGraphVertexStepStrategy extends AbstractTraversalStrategy<Traver
                             UniGraphVertexStep uniGraphVertexStep = new UniGraphVertexStep<>(vertexStep, uniGraph, uniGraph.getControllerManager());
                             TraversalHelper.replaceStep(vertexStep, uniGraphVertexStep, child);
                             if (vertexStep.returnsEdge()) PredicatesUtil.collectPredicates(uniGraphVertexStep, child);
+                            else uniGraphVertexStep.setVertexPredicates(PredicatesUtil.collectVertexPredicates(uniGraphVertexStep, child));
                         }
                     });
                     traversalParent.getGlobalChildren().forEach(child -> {
@@ -46,6 +48,7 @@ public class UniGraphVertexStepStrategy extends AbstractTraversalStrategy<Traver
                             UniGraphVertexStep uniGraphVertexStep = new UniGraphVertexStep<>(vertexStep, uniGraph, uniGraph.getControllerManager());
                             TraversalHelper.replaceStep(vertexStep, uniGraphVertexStep, child);
                             if (vertexStep.returnsEdge()) PredicatesUtil.collectPredicates(uniGraphVertexStep, child);
+                            else uniGraphVertexStep.setVertexPredicates(PredicatesUtil.collectVertexPredicates(uniGraphVertexStep, child));
                         }
                         else if (TraversalHelper.hasStepOfAssignableClass(TraversalParent.class, child)){
                             TraversalHelper.getStepsOfAssignableClass(TraversalParent.class, child).forEach(traversalParent1 -> {
@@ -54,6 +57,7 @@ public class UniGraphVertexStepStrategy extends AbstractTraversalStrategy<Traver
                                         UniGraphVertexStep uniGraphVertexStep = new UniGraphVertexStep<>(vertexStep, uniGraph, uniGraph.getControllerManager());
                                         TraversalHelper.replaceStep(vertexStep, uniGraphVertexStep, child1);
                                         if (vertexStep.returnsEdge()) PredicatesUtil.collectPredicates(uniGraphVertexStep, child1);
+                                        else uniGraphVertexStep.setVertexPredicates(PredicatesUtil.collectVertexPredicates(uniGraphVertexStep, child1));
                                     }
                                 });
                                 traversalParent.getGlobalChildren().forEach(child1 -> {
@@ -61,6 +65,7 @@ public class UniGraphVertexStepStrategy extends AbstractTraversalStrategy<Traver
                                         UniGraphVertexStep uniGraphVertexStep = new UniGraphVertexStep<>(vertexStep, uniGraph, uniGraph.getControllerManager());
                                         TraversalHelper.replaceStep(vertexStep, uniGraphVertexStep, child1);
                                         if (vertexStep.returnsEdge()) PredicatesUtil.collectPredicates(uniGraphVertexStep, child1);
+                                        else uniGraphVertexStep.setVertexPredicates(PredicatesUtil.collectVertexPredicates(uniGraphVertexStep, child1));
                                     }
                                 });
                             });

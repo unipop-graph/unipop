@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.javatuples.Pair;
 import org.unipop.query.StepDescriptor;
 import org.unipop.query.controller.UniQueryController;
+import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.schema.reference.DeferredVertex;
 
@@ -16,7 +17,11 @@ public class DeferredVertexQuery extends SearchQuery<Vertex> {
     private List<DeferredVertex> vertices;
 
     public DeferredVertexQuery(List<DeferredVertex> vertices, Set<String> propertyKeys, List<Pair<String, Order>> orders, StepDescriptor stepDescriptor, Traversal traversal) {
-        super(Vertex.class, PredicatesHolderFactory.empty(), -1, propertyKeys, orders, stepDescriptor, traversal);
+        this(vertices, PredicatesHolderFactory.empty(), propertyKeys, orders, stepDescriptor, traversal);
+    }
+
+    public DeferredVertexQuery(List<DeferredVertex> vertices, PredicatesHolder predicates, Set<String> propertyKeys, List<Pair<String, Order>> orders, StepDescriptor stepDescriptor, Traversal traversal) {
+        super(Vertex.class, predicates, -1, propertyKeys, orders, stepDescriptor, traversal);
         this.vertices = vertices;
     }
 
