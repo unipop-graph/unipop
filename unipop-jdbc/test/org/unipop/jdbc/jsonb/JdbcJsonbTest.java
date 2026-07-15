@@ -62,6 +62,11 @@ public class JdbcJsonbTest {
         assertEquals(1L, (long) g.V().has("data.address.city", "NYC").count().next());
         // read-back
         assertEquals("active", g.V("1").values("data.status").next());
+        // whole JSONB object under bare column key
+        @SuppressWarnings("unchecked")
+        Map<String, Object> data = (Map<String, Object>) g.V("1").values("data").next();
+        assertEquals("active", data.get("status"));
+        assertEquals("NYC", ((Map<?, ?>) data.get("address")).get("city"));
         // negative
         assertEquals(0L, (long) g.V().has("data.status", "inactive").count().next());
     }
