@@ -17,8 +17,9 @@ import java.util.stream.Collectors;
 /**
  * A keyed property schema backing one PostgreSQL JSONB column. The property key is the column name
  * and the schema owns the {@code <column>.<path>} namespace: writes route those properties into the
- * column's JSON at the dotted path, reads expand the column's top-level keys back prefixed, and
- * queries on {@code <column>.<path>} pass through to the jdbc translator (which renders col->>'k').
+ * column's JSON at the dotted path, reads expose the full parsed JSON object under the bare column
+ * key and expand top-level keys as {@code <column>.<path>}, and queries on {@code <column>.<path>}
+ * pass through to the jdbc translator (which renders col->>'k').
  * Declare one per column: {@code "data": {"type": "jsonb"}}.
  */
 public class JsonbPropertySchema implements PropertySchema, JsonbColumnSchema {
@@ -54,7 +55,9 @@ public class JsonbPropertySchema implements PropertySchema, JsonbColumnSchema {
             Object parsed = MAPPER.readValue(raw.toString(), Object.class);
             if (!(parsed instanceof Map)) return Collections.emptyMap();
             Map<String, Object> props = new HashMap<>();
-            ((Map<String, Object>) parsed).forEach((k, v) -> {
+            Map<String, Object> whole = (Map<String, Object>) parsed;
+            props.put(column, whole);
+            whole.forEach((k, v) -> {
                 if (v != null) props.put(column + "." + k, v);
             });
             return props;

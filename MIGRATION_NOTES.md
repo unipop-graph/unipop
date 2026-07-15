@@ -331,7 +331,8 @@ vertex/edge's `properties`, contributed through `SourceProvider.providerBuilders
   metadata-only; optional `"field"` to alias the column). Backed by `EnumPropertySchema` (extends
   `FieldPropertySchema`); the query comparison renders `col::text = ?`.
 - **JSONB column** — `"<col>": {"type": "jsonb"}`. Schemaless catch-all addressed `<col>.<path>`
-  (any key, nested paths, text comparison). Backed by `JsonbPropertySchema`.
+  (any key, nested paths, text comparison); the bare `<col>` key is also readable as the full
+  JSON object (`Map`). Backed by `JsonbPropertySchema`.
 
 **Breaking change (enum):** the earlier element-level `"enums": {column: typeName}` object is
 **removed** and no longer parsed. Migrate each entry to a keyed declaration on that column, e.g.
