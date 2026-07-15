@@ -54,7 +54,9 @@ public class JsonbPropertySchema implements PropertySchema, JsonbColumnSchema {
             Object parsed = MAPPER.readValue(raw.toString(), Object.class);
             if (!(parsed instanceof Map)) return Collections.emptyMap();
             Map<String, Object> props = new HashMap<>();
-            ((Map<String, Object>) parsed).forEach((k, v) -> {
+            Map<String, Object> whole = (Map<String, Object>) parsed;
+            props.put(column, whole);
+            whole.forEach((k, v) -> {
                 if (v != null) props.put(column + "." + k, v);
             });
             return props;

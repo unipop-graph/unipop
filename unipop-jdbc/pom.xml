@@ -129,6 +129,7 @@
                         <include>**/JdbcEnumTest.java</include>
                         <include>**/JdbcJsonbTest.java</include>
                         <include>**/JdbcMultiJsonbTest.java</include>
+                        <include>**/JsonbPropertySchemaTest.java</include>
                         <include>**/EnumPropertySchemaTest.java</include>
                         <include>**/UuidPropertySchemaTest.java</include>
                         <include>**/JdbcUuidTest.java</include>
