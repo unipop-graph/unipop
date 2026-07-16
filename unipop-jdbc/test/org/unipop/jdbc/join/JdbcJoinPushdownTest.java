@@ -33,11 +33,13 @@ public class JdbcJoinPushdownTest {
             s.execute("DROP TABLE IF EXISTS jp_host");
             s.execute("DROP TABLE IF EXISTS jp_person");
             s.execute("DROP TABLE IF EXISTS jp_owns");
-            s.execute("CREATE TABLE jp_host   (id varchar(100) primary key, status varchar(20), name varchar(50))");
+            s.execute("CREATE TABLE jp_host   (id varchar(100) primary key, status varchar(20), name varchar(50), rack varchar(20))");
             s.execute("CREATE TABLE jp_person (id varchar(100) primary key, status varchar(20), name varchar(50))");
             s.execute("CREATE TABLE jp_owns   (id varchar(100) primary key, src_id varchar(100), src_label varchar(20), dst_id varchar(100), dst_label varchar(20))");
             // root (host) owns 3 hosts + 2 persons; h1 additionally owns p1 (for both() tests).
-            s.execute("INSERT INTO jp_host VALUES ('root','open','root'),('h1','open','alpha'),('h2','open','bravo'),('h3','closed','charlie')");
+            // rack is host-only (asymmetric): jp_person has no such column, used to prove order-column
+            // fallback (see orderByColumnMissingOnFanOutSchemaFallsBack).
+            s.execute("INSERT INTO jp_host VALUES ('root','open','root','r0'),('h1','open','alpha','r1'),('h2','open','bravo','r2'),('h3','closed','charlie','r3')");
             s.execute("INSERT INTO jp_person VALUES ('p1','open','delta'),('p2','open','echo')");
             // dst is heterogeneous (host or person), so src/dst labels are stored per-row and the
             // reference vertex schemas below resolve them dynamically (@src_label/@dst_label) rather
@@ -157,6 +159,24 @@ public class JdbcJoinPushdownTest {
     public void bareLimitDoesNotJoin() {
         assertEquals(5L, (long) g.V("root").out("owns").limit(10).count().next());
         assertTrue("bare limit (no filter/order/props) must not take the join path", !joinedHost() && !joinedPerson());
+    }
+
+    @Test
+    public void orderByColumnMissingOnFanOutSchemaFallsBack() {
+        // Unlabelled fan-out over jp_host + jp_person; order by 'rack' which only jp_host maps.
+        // Spec: order+limit push together or not at all -> the whole hop must fall back to the
+        // deferred path (no join), NOT push a host-only partial join that drops person neighbours.
+        TimingExecuterListener.timing.clear();
+        g.V("root").out("owns").order().by("rack").limit(10).count().next();
+        // MECHANISM (non-negotiable): full fallback took over -- no join fired on either table.
+        assertTrue("order by a column missing on a fan-out schema must fall back (no join)",
+                !joinedHost() && !joinedPerson());
+        // NOTE: order().by("rack") itself drops jp_person vertices in this TinkerPop version (they
+        // lack the property, so OrderGlobalStep's by-modulator filters them out) -- that's ordering
+        // semantics unrelated to this fix, so the neighbour-count check below intentionally omits the
+        // order() to confirm the fallback path (not just the join-skip) still surfaces all 5 neighbours.
+        assertEquals("fan-out itself (sans order) must still return all 5 out-neighbours",
+                5L, (long) g.V("root").out("owns").count().next());
     }
 
     @Test

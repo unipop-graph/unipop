@@ -113,6 +113,11 @@ public class RowEdgeSchema extends AbstractRowSchema<Edge> implements JdbcEdgeSc
 
     public static final String SRC_ALIAS = "__unipop_src";
 
+    /** Thrown by getJoinSearch when a requested target order column is absent on this vertex
+     *  schema. Per spec, order+limit must push together or not at all, so the controller must fall
+     *  back the whole invocation to the deferred path rather than join a partial set of schemas. */
+    public static final class OrderNotPushableException extends RuntimeException {}
+
     /**
      * Single-direction adjacency JOIN that hydrates + filters + bounds the target vertex.
      * directedDir is OUT or IN (never BOTH). Returns null to skip this (edge,vertex) pair:
@@ -146,7 +151,7 @@ public class RowEdgeSchema extends AbstractRowSchema<Edge> implements JdbcEdgeSc
         if (query.getTargetOrders() != null) {
             for (Pair<String, Order> o : query.getTargetOrders()) {
                 String col = vSchema.getFieldByPropertyKey(o.getValue0());
-                if (col == null) return null;
+                if (col == null) throw new OrderNotPushableException();
                 Field<Object> f = field(name("v", col));
                 sorts.add(o.getValue1().equals(Order.desc) ? f.desc() : f.asc());
             }
