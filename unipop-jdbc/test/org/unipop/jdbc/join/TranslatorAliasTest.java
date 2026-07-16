@@ -31,5 +31,6 @@ public class TranslatorAliasTest {
         Condition c = t.translate(PredicatesHolderFactory.predicate(new HasContainer("status", P.eq("open"))));
         String sql = DSL.using(SQLDialect.POSTGRES).renderInlined(c);
         assertTrue("expected unqualified column, got: " + sql, sql.contains("status") && !sql.contains("\"v\".\"status\""));
+        assertTrue("no-alias plain column must render UNquoted, got: " + sql, !sql.contains("\"status\""));
     }
 }

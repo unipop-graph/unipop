@@ -9,8 +9,11 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.ConnectiveP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.OrP;
 import org.jooq.Condition;
 import org.jooq.Field;
+import org.jooq.Name;
 import org.jooq.QueryPart;
 import org.jooq.impl.DSL;
+
+import static org.jooq.impl.DSL.field;
 import org.unipop.common.util.PredicatesTranslator;
 import org.unipop.jdbc.schemas.property.TimestamptzPropertySchema;
 import org.unipop.process.predicate.Date;
@@ -77,7 +80,7 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
     }
 
     /** Column name, qualified with {@link #alias} (e.g. {@code v.col}) when one is set. */
-    private org.jooq.Name col(String key) {
+    private Name col(String key) {
         return alias == null ? DSL.name(key) : DSL.name(alias, key);
     }
 
@@ -100,7 +103,7 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
         }
         return (enumColumns.contains(key) || uuidColumns.contains(key))
                 ? DSL.field("{0}::text", Object.class, DSL.field(col(key)))
-                : DSL.field(col(key));
+                : (alias == null ? field(key) : DSL.field(col(key)));
     }
 
     /**

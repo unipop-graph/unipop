@@ -136,7 +136,6 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
         return new JdbcPredicatesTranslator(idFields, enumColumns, jsonbColumns, uuidColumns, timestamptzColumns, alias);
     }
 
-
     private <E extends Element> SelectJoinStep<Record> createSqlQuery(Set<String> columnsToRetrieve) {
         if (columnsToRetrieve == null) {
             return DSL.select().from(this.getTable());
