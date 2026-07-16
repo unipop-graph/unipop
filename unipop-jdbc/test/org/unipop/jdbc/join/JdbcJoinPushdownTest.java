@@ -137,4 +137,25 @@ public class JdbcJoinPushdownTest {
         assertEquals(java.util.Arrays.asList("alpha","bravo"), names);
         assertTrue("host table joined", joinedHost());
     }
+
+    @Test
+    public void hasLabelNarrowsFanOutToOneTable() {
+        assertEquals(2L, (long) g.V("root").out("owns").hasLabel("host").has("status", "open").limit(10).count().next());
+        assertTrue("host table joined", joinedHost());
+        assertTrue("person table must NOT be joined when hasLabel('host') narrows", !joinedPerson());
+    }
+
+    @Test
+    public void noLabelFansOutOverAllVertexTables() {
+        // root owns open hosts h1,h2 (h3 closed) + open persons p1,p2 => 4.
+        assertEquals(4L, (long) g.V("root").out("owns").has("status", "open").limit(10).count().next());
+        assertTrue(joinedHost());
+        assertTrue(joinedPerson());
+    }
+
+    @Test
+    public void bareLimitDoesNotJoin() {
+        assertEquals(5L, (long) g.V("root").out("owns").limit(10).count().next());
+        assertTrue("bare limit (no filter/order/props) must not take the join path", !joinedHost() && !joinedPerson());
+    }
 }
