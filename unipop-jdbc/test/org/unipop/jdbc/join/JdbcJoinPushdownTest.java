@@ -158,4 +158,20 @@ public class JdbcJoinPushdownTest {
         assertEquals(5L, (long) g.V("root").out("owns").limit(10).count().next());
         assertTrue("bare limit (no filter/order/props) must not take the join path", !joinedHost() && !joinedPerson());
     }
+
+    @Test
+    public void killSwitchDisablesJoin() throws Exception {
+        String dir = new File(getClass().getResource("/configuration/joinpushdown/graph.json").toURI()).getParent();
+        Configuration conf = new BaseConfiguration();
+        conf.setProperty(Graph.GRAPH, UniGraph.class.getName());
+        conf.setProperty("graphName", "joinpushdown");
+        conf.setProperty("providers", dir);
+        conf.setProperty("jdbc.joinPushdown", false);
+        try (Graph off = UniGraph.open(conf)) {
+            GraphTraversalSource gOff = off.traversal();
+            TimingExecuterListener.timing.clear();
+            assertEquals(2L, (long) gOff.V("root").out("owns").hasLabel("host").has("status", "open").limit(10).count().next());
+            assertTrue("flag off => no join, deferred path only", !joinedHost() && !joinedPerson());
+        }
+    }
 }
