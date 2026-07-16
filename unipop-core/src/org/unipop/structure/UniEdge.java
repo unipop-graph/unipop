@@ -17,6 +17,7 @@ public class UniEdge extends UniElement implements Edge {
     protected Map<String, Property> properties;
     protected Vertex inVertex;
     protected Vertex outVertex;
+    private boolean adjacencyJoinDirected = false;
 
     public UniEdge(Map<String, Object> keyValues, Vertex outV, Vertex inV, ElementSchema schema, final UniGraph graph) {
         super(keyValues, schema, graph);
@@ -57,6 +58,12 @@ public class UniEdge extends UniElement implements Edge {
                 controller.property(propertyQuery));
         return vertexProperty;
     }
+
+    /** Marks an edge produced by the JDBC adjacency-join path: out = source (query) vertex,
+     *  in = hydrated target neighbour. The vertex step maps these by the source (out) only. */
+    public boolean isAdjacencyJoinDirected() { return adjacencyJoinDirected; }
+
+    public UniEdge asAdjacencyJoinDirected() { this.adjacencyJoinDirected = true; return this; }
 
     @Override
     public Iterator<Vertex> vertices(Direction direction) {

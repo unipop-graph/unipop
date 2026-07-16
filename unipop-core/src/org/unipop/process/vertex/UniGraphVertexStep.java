@@ -24,6 +24,7 @@ import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.query.search.SearchVertexQuery;
 import org.unipop.schema.reference.DeferredVertex;
+import org.unipop.structure.UniEdge;
 import org.unipop.structure.UniGraph;
 import org.unipop.structure.UniVertex;
 
@@ -81,7 +82,13 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
         if (!returnsVertex)
             vertexQuery = new SearchVertexQuery(Edge.class, vertices, direction, predicates, limit, propertyKeys, orders, stepDescriptor, traversal);
         else
-            vertexQuery = new SearchVertexQuery(Edge.class, vertices, direction, predicates, -1, propertyKeys, null, stepDescriptor, traversal);
+            vertexQuery = new SearchVertexQuery(Edge.class, vertices, direction, predicates,
+                    /*edgeLimit*/ -1, propertyKeys, /*edgeOrders*/ null,
+                    /*targetPredicates*/ vertexPredicates,
+                    /*targetOrders*/ orders,
+                    /*targetLimit*/ limit,
+                    /*hydrateTarget*/ true,
+                    stepDescriptor, traversal);
         logger.debug("Executing query: ", vertexQuery);
         Iterator<Traverser.Admin<E>> traversersIterator = controllers.stream().<Iterator<Edge>>map(controller -> controller.search(vertexQuery))
                 .<Edge>flatMap(ConversionUtils::asStream)
@@ -124,7 +131,9 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
     }
 
     private Stream<Traverser.Admin<E>> toTraversers(Edge edge, Map<Object, List<Traverser<Vertex>>> traversers) {
-        return ConversionUtils.asStream(edge.vertices(direction))
+        Direction mapDir = (edge instanceof UniEdge && ((UniEdge) edge).isAdjacencyJoinDirected())
+                ? Direction.OUT : direction;
+        return ConversionUtils.asStream(edge.vertices(mapDir))
                 .<Traverser.Admin<E>>flatMap(originalVertex -> {
                     List<Traverser<Vertex>> vertexTraversers = traversers.get(originalVertex.id());
                     if (vertexTraversers == null) return null;
@@ -137,6 +146,8 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
 
     private E getReturnElement(Edge edge, Vertex originalVertex) {
         if (!this.returnsVertex) return (E) edge;
+        if (edge instanceof UniEdge && ((UniEdge) edge).isAdjacencyJoinDirected())
+            return (E) edge.inVertex(); // convention: in = hydrated target neighbour
         return (E) UniVertex.vertexToVertex(originalVertex, edge, this.direction);
     }
 

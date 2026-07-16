@@ -1,0 +1,16 @@
+{
+  "class": "org.unipop.jdbc.JdbcSourceProvider",
+  "driver": "org.postgresql.Driver",
+  "address": ["jdbc:postgresql://localhost:54329/postgres"],
+  "user": "postgres",
+  "sqlDialect": "POSTGRES",
+  "vertices": [
+    { "table": "jp_host",   "id": "@id", "label": "host",   "properties": { "status": "@status", "name": "@name", "rack": "@rack" }, "dynamicProperties": false },
+    { "table": "jp_person", "id": "@id", "label": "person", "properties": { "status": "@status", "name": "@name" }, "dynamicProperties": false }
+  ],
+  "edges": [
+    { "table": "jp_owns", "id": "@id", "label": "owns", "properties": {}, "dynamicProperties": false,
+      "outVertex": { "ref": "true", "id": "@src_id", "label": "@src_label" },
+      "inVertex":  { "ref": "true", "id": "@dst_id", "label": "@dst_label" } }
+  ]
+}

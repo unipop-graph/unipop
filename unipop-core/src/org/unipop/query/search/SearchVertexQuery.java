@@ -10,6 +10,7 @@ import org.unipop.query.StepDescriptor;
 import org.unipop.query.VertexQuery;
 import org.unipop.query.controller.UniQueryController;
 import org.unipop.query.predicates.PredicatesHolder;
+import org.unipop.query.predicates.PredicatesHolderFactory;
 
 import java.util.Iterator;
 import java.util.List;
@@ -19,11 +20,46 @@ public class SearchVertexQuery extends SearchQuery<Edge> implements VertexQuery 
 
     private final List<Vertex> vertices;
     private final Direction direction;
+    private final PredicatesHolder targetPredicates;
+    private final List<Pair<String, Order>> targetOrders;
+    private final int targetLimit;
+    private final boolean hydrateTarget;
 
+    // Backward-compatible: edge-return / callers with no target intent.
     public SearchVertexQuery(Class<Edge> returnType, List<Vertex> vertices, Direction direction, PredicatesHolder predicates, int limit, Set<String> propertyKeys, List<Pair<String, Order>> orders, StepDescriptor stepDescriptor, Traversal traversal) {
+        this(returnType, vertices, direction, predicates, limit, propertyKeys, orders,
+                PredicatesHolderFactory.empty(), null, -1, false, stepDescriptor, traversal);
+    }
+
+    // Target-aware constructor with default stepDescriptor/traversal (for test compatibility)
+    public SearchVertexQuery(Class<Edge> returnType, List<Vertex> vertices, Direction direction, PredicatesHolder predicates, int limit, Set<String> propertyKeys, List<Pair<String, Order>> orders, PredicatesHolder targetPredicates, List<Pair<String, Order>> targetOrders, int targetLimit, boolean hydrateTarget) {
+        this(returnType, vertices, direction, predicates, limit, propertyKeys, orders, targetPredicates, targetOrders, targetLimit, hydrateTarget, null, null);
+    }
+
+    public SearchVertexQuery(Class<Edge> returnType, List<Vertex> vertices, Direction direction, PredicatesHolder predicates, int limit, Set<String> propertyKeys, List<Pair<String, Order>> orders, PredicatesHolder targetPredicates, List<Pair<String, Order>> targetOrders, int targetLimit, boolean hydrateTarget, StepDescriptor stepDescriptor, Traversal traversal) {
         super(returnType, predicates, limit, propertyKeys, orders, stepDescriptor, traversal);
         this.vertices = vertices;
         this.direction = direction;
+        this.targetPredicates = targetPredicates == null ? PredicatesHolderFactory.empty() : targetPredicates;
+        this.targetOrders = targetOrders;
+        this.targetLimit = targetLimit;
+        this.hydrateTarget = hydrateTarget;
+    }
+
+    public PredicatesHolder getTargetPredicates() {
+        return targetPredicates;
+    }
+
+    public List<Pair<String, Order>> getTargetOrders() {
+        return targetOrders;
+    }
+
+    public int getTargetLimit() {
+        return targetLimit;
+    }
+
+    public boolean isHydrateTarget() {
+        return hydrateTarget;
     }
 
     @Override

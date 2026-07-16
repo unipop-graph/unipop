@@ -14,10 +14,12 @@ import org.jooq.impl.DSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unipop.common.util.PredicatesTranslator;
+import org.javatuples.Pair;
 import org.unipop.jdbc.schemas.RowEdgeSchema;
 import org.unipop.jdbc.schemas.RowVertexSchema;
 import org.unipop.jdbc.schemas.jdbc.JdbcEdgeSchema;
 import org.unipop.jdbc.schemas.jdbc.JdbcSchema;
+import org.unipop.jdbc.schemas.jdbc.JdbcVertexSchema;
 import org.unipop.jdbc.utils.ContextManager;
 import org.unipop.jdbc.utils.TimingExecuterListener;
 import org.unipop.query.UniQuery;
@@ -122,6 +124,11 @@ public class RowController implements SimpleController {
 
     @Override
     public Iterator<Edge> search(SearchVertexQuery uniQuery) {
+        if (joinApplicable(uniQuery)) {
+            Iterator<Edge> joined = searchJoin(uniQuery);
+            if (joined != null) return joined;
+        }
+        // Fallback: existing id-only edge path (unchanged).
         SelectCollector<JdbcSchema<Edge>, Select, Edge> collector = new SelectCollector<>(
                 schema -> schema.getSearch(uniQuery,
                         ((JdbcEdgeSchema) schema).toPredicates(uniQuery.getVertices(), uniQuery.getDirection(), uniQuery.getPredicates())),
@@ -132,6 +139,64 @@ public class RowController implements SimpleController {
                 .filter(schema -> this.traversalFilter.filter(schema, uniQuery.getTraversal())).collect(collector);
 
         return this.search(uniQuery, selects, collector);
+    }
+
+    private boolean joinApplicable(SearchVertexQuery q) {
+        // ponytail: kill-switch for rollout, remove after bake-in
+        if (!graph.configuration().getBoolean("jdbc.joinPushdown", true)) return false;
+        if (!q.isHydrateTarget()) return false;
+        boolean propertiesRequested = q.getPropertyKeys() == null || !q.getPropertyKeys().isEmpty();
+        boolean hasOrder = q.getTargetOrders() != null && !q.getTargetOrders().isEmpty();
+        return q.getTargetPredicates().notEmpty() || hasOrder || propertiesRequested;
+    }
+
+    /**
+     * Join fan-out over (edge schema x surviving vertex schema x direction). BOTH runs as two
+     * directed joins (OUT and IN); each produced edge is flagged adjacencyJoinDirected so the vertex
+     * step maps it by its own source only (see UniGraphVertexStep), avoiding the double-count that
+     * would otherwise come from edge.vertices(BOTH) fanning into both endpoints. Returns null to fall back.
+     */
+    private Iterator<Edge> searchJoin(SearchVertexQuery uniQuery) {
+        List<Direction> dirs = uniQuery.getDirection().equals(Direction.BOTH)
+                ? Arrays.asList(Direction.OUT, Direction.IN)
+                : Collections.singletonList(uniQuery.getDirection());
+
+        // Keyed by (edgeSchema, vertexSchema, direction) -- BOTH runs the same (edgeSchema, vs) pair
+        // once per direction, so direction must be part of the key or one direction's select clobbers
+        // the other's map entry.
+        Map<Pair<Pair<RowEdgeSchema, JdbcSchema<Vertex>>, Direction>, Select> selects = new HashMap<>();
+        try {
+            for (JdbcSchema<Edge> es : edgeSchemas) {
+                // Exact-class check: InnerRowEdgeSchema (and any other RowEdgeSchema subclass) extends
+                // RowEdgeSchema but represents adjacency embedded in the vertex row, not a real joinable
+                // edge table -- an `instanceof` check here would wrongly let it through this join path.
+                if (es.getClass() != org.unipop.jdbc.schemas.RowEdgeSchema.class) return null; // inner/other edge schemas -> fall back
+                if (!this.traversalFilter.filter(es, uniQuery.getTraversal())) continue;
+                RowEdgeSchema edgeSchema = (RowEdgeSchema) es;
+                for (JdbcSchema<Vertex> vs : vertexSchemas) {
+                    for (Direction dir : dirs) {
+                        Select sel = edgeSchema.getJoinSearch(uniQuery, (JdbcVertexSchema) vs, dir);
+                        if (sel != null) selects.put(new Pair<>(new Pair<>(edgeSchema, vs), dir), sel);
+                    }
+                }
+            }
+        } catch (org.unipop.jdbc.schemas.RowEdgeSchema.OrderNotPushableException e) {
+            return null; // order column missing on a surviving schema -> full fallback (spec: order+limit push together or not at all)
+        }
+        if (selects.isEmpty()) return Collections.emptyIterator();
+
+        // NOTE: dedup is by edge id; join edges carry random ids on purpose (see RowEdgeSchema.fromJoinRow).
+        Set<Edge> out = new HashSet<>();
+        for (Map.Entry<Pair<Pair<RowEdgeSchema, JdbcSchema<Vertex>>, Direction>, Select> entry : selects.entrySet()) {
+            RowEdgeSchema edgeSchema = entry.getKey().getValue0().getValue0();
+            JdbcVertexSchema vs = (JdbcVertexSchema) entry.getKey().getValue0().getValue1();
+            Direction dir = entry.getKey().getValue1();
+            for (Map<String, Object> row : this.getContextManager().fetch(entry.getValue())) {
+                Edge edge = edgeSchema.fromJoinRow(row, vs, dir);
+                if (edge != null) out.add(edge);
+            }
+        }
+        return out.iterator();
     }
 
     @Override

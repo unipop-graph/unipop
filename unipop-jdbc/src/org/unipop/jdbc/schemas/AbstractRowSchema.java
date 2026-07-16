@@ -86,27 +86,7 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
             return null;
         }
 
-        // The id column is VARCHAR; tell the translator so it stringifies numeric Gremlin ids
-        // (PostgreSQL won't compare varchar = bigint the way H2 did).
-        String idField = getFieldByPropertyKey(T.id.getAccessor());
-        Set<String> idFields = idField == null ? Collections.emptySet() : Collections.singleton(idField);
-        Set<String> jsonbColumns = getPropertySchemas().stream()
-                .filter(s -> s instanceof JsonbColumnSchema)
-                .map(s -> ((JsonbColumnSchema) s).getJsonbColumn())
-                .collect(Collectors.toSet());
-        Set<String> enumColumns = getPropertySchemas().stream()
-                .filter(s -> s instanceof EnumColumnSchema)
-                .map(s -> ((EnumColumnSchema) s).getEnumColumn())
-                .collect(Collectors.toSet());
-        Set<String> uuidColumns = getPropertySchemas().stream()
-                .filter(s -> s instanceof UuidColumnSchema)
-                .map(s -> ((UuidColumnSchema) s).getUuidColumn())
-                .collect(Collectors.toSet());
-        Set<String> timestamptzColumns = getPropertySchemas().stream()
-                .filter(s -> s instanceof TimestamptzColumnSchema)
-                .map(s -> ((TimestamptzColumnSchema) s).getTimestamptzColumn())
-                .collect(Collectors.toSet());
-        Condition conditions = new JdbcPredicatesTranslator(idFields, enumColumns, jsonbColumns, uuidColumns, timestamptzColumns).translate(predicatesHolder);
+        Condition conditions = buildTranslator(null).translate(predicatesHolder);
         int finalLimit = query.getLimit() < 0 ? Integer.MAX_VALUE : query.getLimit();
 
         SelectConditionStep<Record> where = createSqlQuery(query.getPropertyKeys())
@@ -127,6 +107,34 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
 
     }
 
+    /**
+     * Builds a translator from this schema's own column sets (id/enum/jsonb/uuid/timestamptz),
+     * qualifying rendered columns with {@code alias} (e.g. {@code v.col}) when non-null — needed
+     * when this schema's table is joined against another that shares column names. The id column
+     * is VARCHAR; passing it as an id field tells the translator to stringify numeric Gremlin ids
+     * (PostgreSQL won't compare varchar = bigint the way H2 did).
+     */
+    protected JdbcPredicatesTranslator buildTranslator(String alias) {
+        String idField = getFieldByPropertyKey(T.id.getAccessor());
+        Set<String> idFields = idField == null ? Collections.emptySet() : Collections.singleton(idField);
+        Set<String> jsonbColumns = getPropertySchemas().stream()
+                .filter(s -> s instanceof JsonbColumnSchema)
+                .map(s -> ((JsonbColumnSchema) s).getJsonbColumn())
+                .collect(Collectors.toSet());
+        Set<String> enumColumns = getPropertySchemas().stream()
+                .filter(s -> s instanceof EnumColumnSchema)
+                .map(s -> ((EnumColumnSchema) s).getEnumColumn())
+                .collect(Collectors.toSet());
+        Set<String> uuidColumns = getPropertySchemas().stream()
+                .filter(s -> s instanceof UuidColumnSchema)
+                .map(s -> ((UuidColumnSchema) s).getUuidColumn())
+                .collect(Collectors.toSet());
+        Set<String> timestamptzColumns = getPropertySchemas().stream()
+                .filter(s -> s instanceof TimestamptzColumnSchema)
+                .map(s -> ((TimestamptzColumnSchema) s).getTimestamptzColumn())
+                .collect(Collectors.toSet());
+        return new JdbcPredicatesTranslator(idFields, enumColumns, jsonbColumns, uuidColumns, timestamptzColumns, alias);
+    }
 
     private <E extends Element> SelectJoinStep<Record> createSqlQuery(Set<String> columnsToRetrieve) {
         if (columnsToRetrieve == null) {

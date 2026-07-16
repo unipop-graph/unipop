@@ -9,8 +9,11 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.ConnectiveP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.OrP;
 import org.jooq.Condition;
 import org.jooq.Field;
+import org.jooq.Name;
 import org.jooq.QueryPart;
 import org.jooq.impl.DSL;
+
+import static org.jooq.impl.DSL.field;
 import org.unipop.common.util.PredicatesTranslator;
 import org.unipop.jdbc.schemas.property.TimestamptzPropertySchema;
 import org.unipop.process.predicate.Date;
@@ -24,8 +27,6 @@ import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
-import static org.jooq.impl.DSL.field;
-
 /**
  * @author Gur Ronen
  * @since 6/14/2016
@@ -37,6 +38,7 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
     private final Set<String> jsonbColumns;
     private final Set<String> uuidColumns;
     private final Set<String> timestamptzColumns;
+    private final String alias;
 
     public JdbcPredicatesTranslator() {
         this(Collections.emptySet(), Collections.emptySet(), Collections.emptySet());
@@ -59,17 +61,27 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
     }
 
     public JdbcPredicatesTranslator(Set<String> idFields, Set<String> enumColumns, Set<String> jsonbColumns, Set<String> uuidColumns, Set<String> timestamptzColumns) {
+        this(idFields, enumColumns, jsonbColumns, uuidColumns, timestamptzColumns, null);
+    }
+
+    public JdbcPredicatesTranslator(Set<String> idFields, Set<String> enumColumns, Set<String> jsonbColumns, Set<String> uuidColumns, Set<String> timestamptzColumns, String alias) {
         this.idFields = idFields == null ? Collections.emptySet() : idFields;
         this.enumColumns = enumColumns == null ? Collections.emptySet() : enumColumns;
         this.jsonbColumns = jsonbColumns == null ? Collections.emptySet() : jsonbColumns;
         this.uuidColumns = uuidColumns == null ? Collections.emptySet() : uuidColumns;
         this.timestamptzColumns = timestamptzColumns == null ? Collections.emptySet() : timestamptzColumns;
+        this.alias = alias;
     }
 
     /** A dotted key whose first segment is a JSONB column, e.g. {@code data.address.city}. */
     private boolean isJsonbKey(String key) {
         int dot = key.indexOf('.');
         return dot > 0 && jsonbColumns.contains(key.substring(0, dot));
+    }
+
+    /** Column name, qualified with {@link #alias} (e.g. {@code v.col}) when one is set. */
+    private Name col(String key) {
+        return alias == null ? DSL.name(key) : DSL.name(alias, key);
     }
 
     /**
@@ -81,7 +93,7 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
         if (isJsonbKey(key)) {
             String[] parts = key.split("\\.", -1);
             QueryPart[] qps = new QueryPart[parts.length];
-            qps[0] = DSL.field(DSL.name(parts[0]));
+            qps[0] = DSL.field(col(parts[0]));
             StringBuilder sql = new StringBuilder("{0}");
             for (int i = 1; i < parts.length; i++) {
                 qps[i] = DSL.val(parts[i]);
@@ -90,8 +102,8 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
             return DSL.field(sql.toString(), Object.class, qps);
         }
         return (enumColumns.contains(key) || uuidColumns.contains(key))
-                ? DSL.field("{0}::text", Object.class, DSL.field(DSL.name(key)))
-                : field(key);
+                ? DSL.field("{0}::text", Object.class, DSL.field(col(key)))
+                : (alias == null ? field(key) : DSL.field(col(key)));
     }
 
     /**
