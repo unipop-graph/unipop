@@ -180,6 +180,7 @@ public class RowController implements SimpleController {
         }
         if (selects.isEmpty()) return Collections.emptyIterator();
 
+        // NOTE: dedup is by edge id; join edges carry random ids on purpose (see RowEdgeSchema.fromJoinRow).
         Set<Edge> out = new HashSet<>();
         for (Map.Entry<Pair<Pair<RowEdgeSchema, JdbcSchema<Vertex>>, Direction>, Select> entry : selects.entrySet()) {
             RowEdgeSchema edgeSchema = entry.getKey().getValue0().getValue0();

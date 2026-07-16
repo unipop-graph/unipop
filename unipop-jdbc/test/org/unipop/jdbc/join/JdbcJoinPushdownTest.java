@@ -71,6 +71,12 @@ public class JdbcJoinPushdownTest {
                 .anyMatch(sql -> { String q = sql.toLowerCase(); return q.contains("join") && q.contains("jp_host"); });
     }
 
+    /** True if any executed query joined jp_person (i.e. the join path ran on the person table). */
+    private static boolean joinedPerson() {
+        return TimingExecuterListener.timing.keySet().stream()
+                .anyMatch(sql -> { String q = sql.toLowerCase(); return q.contains("join") && q.contains("jp_person"); });
+    }
+
     /**
      * True if any executed query is a deferred vertex-property fetch (the pre-join fallback hydration
      * path) against a vertex table. Excludes the id-only "select id from ... where id in (...)" shape
@@ -120,6 +126,7 @@ public class JdbcJoinPushdownTest {
         assertEquals(12L, (long) g.V().both("owns").count().next());
         // person neighbours only: root->p1, root->p2, h1->p1 => 3
         assertEquals(3L, (long) g.V().both("owns").hasLabel("person").count().next());
+        assertTrue("both() with target filter must use the join path", joinedPerson());
     }
 
     @Test

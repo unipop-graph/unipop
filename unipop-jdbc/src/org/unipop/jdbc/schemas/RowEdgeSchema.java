@@ -172,6 +172,10 @@ public class RowEdgeSchema extends AbstractRowSchema<Edge> implements JdbcEdgeSc
         Map<String, Object> shellProps = new HashMap<>();
         shellProps.put(T.id.getAccessor(), srcId);
         Vertex source = new UniVertex(shellProps, null, graph);
+        // ponytail: the empty props => random UniEdge id is load-bearing. both() returns the same
+        // physical edge twice (one OUT-directed copy, one IN-directed copy); searchJoin's HashSet
+        // dedups by id, so distinct random ids keep both copies alive. Projecting the real edge id
+        // here would collapse them and make both() under-count. Keep random ids (or dedup by identity).
         return new UniEdge(new HashMap<>(), source, target, this, graph).asAdjacencyJoinDirected();
     }
 
