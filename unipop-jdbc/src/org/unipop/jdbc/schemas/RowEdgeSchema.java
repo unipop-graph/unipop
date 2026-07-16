@@ -120,8 +120,11 @@ public class RowEdgeSchema extends AbstractRowSchema<Edge> implements JdbcEdgeSc
 
     /**
      * Single-direction adjacency JOIN that hydrates + filters + bounds the target vertex.
-     * directedDir is OUT or IN (never BOTH). Returns null to skip this (edge,vertex) pair:
-     * the edge or target predicates aborted, or an order column is missing.
+     * directedDir is OUT or IN (never BOTH). Returns null to skip this (edge,vertex) pair when the
+     * edge or target predicates aborted (that schema matches nothing — correct pruning). Throws
+     * {@link OrderNotPushableException} when a requested order column is absent on this vertex
+     * schema, so the controller falls back the whole invocation to the deferred path (order+limit
+     * push together or not at all).
      */
     public Select getJoinSearch(SearchVertexQuery query, JdbcVertexSchema vertexSchema, Direction directedDir) {
         VertexSchema srcSchema = directedDir.equals(Direction.OUT) ? outVertexSchema : inVertexSchema;
