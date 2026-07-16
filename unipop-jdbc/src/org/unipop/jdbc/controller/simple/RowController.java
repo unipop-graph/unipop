@@ -144,38 +144,47 @@ public class RowController implements SimpleController {
     private boolean joinApplicable(SearchVertexQuery q) {
         if (!graph.configuration().getBoolean("jdbc.joinPushdown", true)) return false;
         if (!q.isHydrateTarget()) return false;
-        // BOTH is out of scope here (single-direction join, see getJoinSearch's contract): a joined
-        // row already carries a complete edge (source-shell endpoint + hydrated target endpoint), so
-        // edge.vertices(BOTH) fans out over both ends on its own. Running this once per direction for
-        // BOTH would double-fetch every edge, and since the join doesn't project the real edge id
-        // (fromJoinRow has no id column to key off), the duplicates can't be deduped by id either.
-        // BOTH keeps the existing OR-combined fallback query, which already handles this correctly.
-        if (q.getDirection().equals(Direction.BOTH)) return false;
         boolean propertiesRequested = q.getPropertyKeys() == null || !q.getPropertyKeys().isEmpty();
         boolean hasOrder = q.getTargetOrders() != null && !q.getTargetOrders().isEmpty();
         return q.getTargetPredicates().notEmpty() || hasOrder || propertiesRequested;
     }
 
-    /** Join fan-out over (edge schema x surviving vertex schema), single-direction only (see joinApplicable). Returns null to fall back. */
+    /**
+     * Join fan-out over (edge schema x surviving vertex schema x direction). BOTH runs as two
+     * directed joins (OUT and IN); each produced edge is flagged adjacencyJoinDirected so the vertex
+     * step maps it by its own source only (see UniGraphVertexStep), avoiding the double-count that
+     * would otherwise come from edge.vertices(BOTH) fanning into both endpoints. Returns null to fall back.
+     */
     private Iterator<Edge> searchJoin(SearchVertexQuery uniQuery) {
-        Direction dir = uniQuery.getDirection();
+        List<Direction> dirs = uniQuery.getDirection().equals(Direction.BOTH)
+                ? Arrays.asList(Direction.OUT, Direction.IN)
+                : Collections.singletonList(uniQuery.getDirection());
 
-        Map<Pair<RowEdgeSchema, JdbcSchema<Vertex>>, Select> selects = new HashMap<>();
+        // Keyed by (edgeSchema, vertexSchema, direction) -- BOTH runs the same (edgeSchema, vs) pair
+        // once per direction, so direction must be part of the key or one direction's select clobbers
+        // the other's map entry.
+        Map<Pair<Pair<RowEdgeSchema, JdbcSchema<Vertex>>, Direction>, Select> selects = new HashMap<>();
         for (JdbcSchema<Edge> es : edgeSchemas) {
-            if (!(es instanceof RowEdgeSchema)) return null; // InnerRowEdgeSchema etc. -> fall back
+            // Exact-class check: InnerRowEdgeSchema (and any other RowEdgeSchema subclass) extends
+            // RowEdgeSchema but represents adjacency embedded in the vertex row, not a real joinable
+            // edge table -- an `instanceof` check here would wrongly let it through this join path.
+            if (es.getClass() != org.unipop.jdbc.schemas.RowEdgeSchema.class) return null; // inner/other edge schemas -> fall back
             if (!this.traversalFilter.filter(es, uniQuery.getTraversal())) continue;
             RowEdgeSchema edgeSchema = (RowEdgeSchema) es;
             for (JdbcSchema<Vertex> vs : vertexSchemas) {
-                Select sel = edgeSchema.getJoinSearch(uniQuery, (JdbcVertexSchema) vs, dir);
-                if (sel != null) selects.put(new Pair<>(edgeSchema, vs), sel);
+                for (Direction dir : dirs) {
+                    Select sel = edgeSchema.getJoinSearch(uniQuery, (JdbcVertexSchema) vs, dir);
+                    if (sel != null) selects.put(new Pair<>(new Pair<>(edgeSchema, vs), dir), sel);
+                }
             }
         }
         if (selects.isEmpty()) return Collections.emptyIterator();
 
         Set<Edge> out = new HashSet<>();
-        for (Map.Entry<Pair<RowEdgeSchema, JdbcSchema<Vertex>>, Select> entry : selects.entrySet()) {
-            RowEdgeSchema edgeSchema = entry.getKey().getValue0();
-            JdbcVertexSchema vs = (JdbcVertexSchema) entry.getKey().getValue1();
+        for (Map.Entry<Pair<Pair<RowEdgeSchema, JdbcSchema<Vertex>>, Direction>, Select> entry : selects.entrySet()) {
+            RowEdgeSchema edgeSchema = entry.getKey().getValue0().getValue0();
+            JdbcVertexSchema vs = (JdbcVertexSchema) entry.getKey().getValue0().getValue1();
+            Direction dir = entry.getKey().getValue1();
             for (Map<String, Object> row : this.getContextManager().fetch(entry.getValue())) {
                 Edge edge = edgeSchema.fromJoinRow(row, vs, dir);
                 if (edge != null) out.add(edge);

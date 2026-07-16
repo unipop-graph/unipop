@@ -10,7 +10,7 @@
   ],
   "edges": [
     { "table": "jp_owns", "id": "@id", "label": "owns", "properties": {}, "dynamicProperties": false,
-      "outVertex": { "ref": "true", "id": "@src_id", "label": "host" },
-      "inVertex":  { "ref": "true", "id": "@dst_id", "label": "host" } }
+      "outVertex": { "ref": "true", "id": "@src_id", "label": "@src_label" },
+      "inVertex":  { "ref": "true", "id": "@dst_id", "label": "@dst_label" } }
   ]
 }

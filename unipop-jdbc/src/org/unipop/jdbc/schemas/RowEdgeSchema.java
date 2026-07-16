@@ -155,25 +155,24 @@ public class RowEdgeSchema extends AbstractRowSchema<Edge> implements JdbcEdgeSc
         return sorts.isEmpty() ? where.limit(lim) : where.orderBy(sorts).limit(lim);
     }
 
-    /** Parse a join row into a UniEdge whose target endpoint is a hydrated vertex from vertexSchema. */
+    /**
+     * Parse a join row into a UniEdge under a uniform convention: out = source-shell (the query
+     * vertex, id only), in = hydrated target neighbour -- regardless of directedDir (which only
+     * chose src/target columns for getJoinSearch). The edge is flagged adjacencyJoinDirected so
+     * UniGraphVertexStep maps it by source (out) only, letting both() run as two directed joins
+     * without double-counting (see UniEdge.isAdjacencyJoinDirected).
+     */
     public Edge fromJoinRow(Map<String, Object> row, JdbcVertexSchema vertexSchema, Direction directedDir) {
         Vertex target = vertexSchema.createElement(row);
         if (target == null) return null;
         Object srcId = row.get(SRC_ALIAS);
-        Vertex source;
-        if (srcId == null) {
-            source = null;
-        } else {
-            // ponytail: must be a mutable map -- UniElement's ctor calls properties.remove(...) to
-            // pull out ~id/~label, which throws UnsupportedOperationException against
-            // Collections.singletonMap (its entrySet iterator refuses remove()).
-            Map<String, Object> sourceProps = new HashMap<>();
-            sourceProps.put(T.id.getAccessor(), srcId);
-            source = new UniVertex(sourceProps, null, graph);
-        }
-        Vertex outV = directedDir.equals(Direction.OUT) ? source : target;
-        Vertex inV = directedDir.equals(Direction.OUT) ? target : source;
-        return new UniEdge(Collections.emptyMap(), outV, inV, this, graph);
+        // ponytail: must be a mutable map -- UniElement's ctor calls properties.remove(...) to
+        // pull out ~id/~label, which throws UnsupportedOperationException against
+        // Collections.singletonMap (its entrySet iterator refuses remove()).
+        Map<String, Object> shellProps = new HashMap<>();
+        shellProps.put(T.id.getAccessor(), srcId);
+        Vertex source = new UniVertex(shellProps, null, graph);
+        return new UniEdge(new HashMap<>(), source, target, this, graph).asAdjacencyJoinDirected();
     }
 
     @Override
