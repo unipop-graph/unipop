@@ -14,10 +14,12 @@ import org.jooq.impl.DSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unipop.common.util.PredicatesTranslator;
+import org.javatuples.Pair;
 import org.unipop.jdbc.schemas.RowEdgeSchema;
 import org.unipop.jdbc.schemas.RowVertexSchema;
 import org.unipop.jdbc.schemas.jdbc.JdbcEdgeSchema;
 import org.unipop.jdbc.schemas.jdbc.JdbcSchema;
+import org.unipop.jdbc.schemas.jdbc.JdbcVertexSchema;
 import org.unipop.jdbc.utils.ContextManager;
 import org.unipop.jdbc.utils.TimingExecuterListener;
 import org.unipop.query.UniQuery;
@@ -122,6 +124,11 @@ public class RowController implements SimpleController {
 
     @Override
     public Iterator<Edge> search(SearchVertexQuery uniQuery) {
+        if (joinApplicable(uniQuery)) {
+            Iterator<Edge> joined = searchJoin(uniQuery);
+            if (joined != null) return joined;
+        }
+        // Fallback: existing id-only edge path (unchanged).
         SelectCollector<JdbcSchema<Edge>, Select, Edge> collector = new SelectCollector<>(
                 schema -> schema.getSearch(uniQuery,
                         ((JdbcEdgeSchema) schema).toPredicates(uniQuery.getVertices(), uniQuery.getDirection(), uniQuery.getPredicates())),
@@ -132,6 +139,49 @@ public class RowController implements SimpleController {
                 .filter(schema -> this.traversalFilter.filter(schema, uniQuery.getTraversal())).collect(collector);
 
         return this.search(uniQuery, selects, collector);
+    }
+
+    private boolean joinApplicable(SearchVertexQuery q) {
+        if (!graph.configuration().getBoolean("jdbc.joinPushdown", true)) return false;
+        if (!q.isHydrateTarget()) return false;
+        // BOTH is out of scope here (single-direction join, see getJoinSearch's contract): a joined
+        // row already carries a complete edge (source-shell endpoint + hydrated target endpoint), so
+        // edge.vertices(BOTH) fans out over both ends on its own. Running this once per direction for
+        // BOTH would double-fetch every edge, and since the join doesn't project the real edge id
+        // (fromJoinRow has no id column to key off), the duplicates can't be deduped by id either.
+        // BOTH keeps the existing OR-combined fallback query, which already handles this correctly.
+        if (q.getDirection().equals(Direction.BOTH)) return false;
+        boolean propertiesRequested = q.getPropertyKeys() == null || !q.getPropertyKeys().isEmpty();
+        boolean hasOrder = q.getTargetOrders() != null && !q.getTargetOrders().isEmpty();
+        return q.getTargetPredicates().notEmpty() || hasOrder || propertiesRequested;
+    }
+
+    /** Join fan-out over (edge schema x surviving vertex schema), single-direction only (see joinApplicable). Returns null to fall back. */
+    private Iterator<Edge> searchJoin(SearchVertexQuery uniQuery) {
+        Direction dir = uniQuery.getDirection();
+
+        Map<Pair<RowEdgeSchema, JdbcSchema<Vertex>>, Select> selects = new HashMap<>();
+        for (JdbcSchema<Edge> es : edgeSchemas) {
+            if (!(es instanceof RowEdgeSchema)) return null; // InnerRowEdgeSchema etc. -> fall back
+            if (!this.traversalFilter.filter(es, uniQuery.getTraversal())) continue;
+            RowEdgeSchema edgeSchema = (RowEdgeSchema) es;
+            for (JdbcSchema<Vertex> vs : vertexSchemas) {
+                Select sel = edgeSchema.getJoinSearch(uniQuery, (JdbcVertexSchema) vs, dir);
+                if (sel != null) selects.put(new Pair<>(edgeSchema, vs), sel);
+            }
+        }
+        if (selects.isEmpty()) return Collections.emptyIterator();
+
+        Set<Edge> out = new HashSet<>();
+        for (Map.Entry<Pair<RowEdgeSchema, JdbcSchema<Vertex>>, Select> entry : selects.entrySet()) {
+            RowEdgeSchema edgeSchema = entry.getKey().getValue0();
+            JdbcVertexSchema vs = (JdbcVertexSchema) entry.getKey().getValue1();
+            for (Map<String, Object> row : this.getContextManager().fetch(entry.getValue())) {
+                Edge edge = edgeSchema.fromJoinRow(row, vs, dir);
+                if (edge != null) out.add(edge);
+            }
+        }
+        return out.iterator();
     }
 
     @Override
