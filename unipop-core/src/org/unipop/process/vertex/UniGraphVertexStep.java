@@ -81,7 +81,13 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
         if (!returnsVertex)
             vertexQuery = new SearchVertexQuery(Edge.class, vertices, direction, predicates, limit, propertyKeys, orders, stepDescriptor, traversal);
         else
-            vertexQuery = new SearchVertexQuery(Edge.class, vertices, direction, predicates, -1, propertyKeys, null, stepDescriptor, traversal);
+            vertexQuery = new SearchVertexQuery(Edge.class, vertices, direction, predicates,
+                    /*edgeLimit*/ -1, propertyKeys, /*edgeOrders*/ null,
+                    /*targetPredicates*/ vertexPredicates,
+                    /*targetOrders*/ orders,
+                    /*targetLimit*/ limit,
+                    /*hydrateTarget*/ true,
+                    stepDescriptor, traversal);
         logger.debug("Executing query: ", vertexQuery);
         Iterator<Traverser.Admin<E>> traversersIterator = controllers.stream().<Iterator<Edge>>map(controller -> controller.search(vertexQuery))
                 .<Edge>flatMap(ConversionUtils::asStream)
