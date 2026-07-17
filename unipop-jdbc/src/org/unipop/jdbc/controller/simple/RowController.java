@@ -294,18 +294,24 @@ public class RowController implements SimpleController {
     }
 
     private <E extends Element, S extends JdbcSchema<E>> void fillChildren(List<MutableMetrics> children, Map<S, Select> schemas) {
-        List<org.javatuples.Pair<Long, Integer>> timing = TimingExecuterListener.timing.values().stream().collect(Collectors.toList());
+        // Each schema-child metric must be filled from ITS OWN query's timing, keyed by that query's
+        // SQL. TimingExecuterListener.timing is a static, never-cleared, unordered map accumulating
+        // every query ever run, so indexing into its values() (the old behaviour) assigned children
+        // arbitrary/stale timings that didn't add up to the parent (issue #108). children.get(i)
+        // corresponds to sqls.get(i) — both iterate the same `schemas` map in order.
         List<Map.Entry<S, Select>> sqls = schemas.entrySet().stream().collect(Collectors.toList());
-        for (int i = 0; i < sqls.size(); i++) {
-            org.javatuples.Pair<Long, Integer> timingCount = timing.get(i);
-            if (i < children.size()) {
-                MutableMetrics child = children.get(i);
-                if (timingCount != null) {
-                    child.setCount(TraversalMetrics.ELEMENT_COUNT_ID, timingCount.getValue1());
-                    child.setDuration(timingCount.getValue0(), TimeUnit.NANOSECONDS);
-                }
-            }
-            timing.remove(sqls.get(i).getValue().getSQL());
+        for (int i = 0; i < sqls.size() && i < children.size(); i++) {
+            // Key by the query rendered inlined under this context's dialect — the exact same form
+            // TimingExecuterListener records (ctx.dsl().renderInlined(ctx.query())). A detached
+            // Select.toString()/getSQL() renders with the default dialect (limit vs Postgres
+            // "fetch next", and formatted vs single-line) and never matches the recorded key.
+            org.javatuples.Pair<Long, Integer> timingCount =
+                    TimingExecuterListener.timing.get(this.getContextManager().renderInlined(sqls.get(i).getValue()));
+            MutableMetrics child = children.get(i);
+            // Always set a count/duration (default 0 when no timing was recorded) so the parent
+            // controller metric's sum over children can't NPE on an unset child.
+            child.setCount(TraversalMetrics.ELEMENT_COUNT_ID, timingCount != null ? timingCount.getValue1() : 0L);
+            child.setDuration(timingCount != null ? timingCount.getValue0() : 0L, TimeUnit.NANOSECONDS);
         }
     }
 
