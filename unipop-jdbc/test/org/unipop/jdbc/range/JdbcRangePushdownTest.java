@@ -123,6 +123,14 @@ public class JdbcRangePushdownTest {
     }
 
     @Test
+    public void labelOnRangeStepIsPreserved() {
+        // If replaceStep dropped the 'a' label, select('a') would fail/empty.
+        List<Object> names = g.V().hasLabel("host").order().by("name").limit(2).as("a")
+                .select("a").values("name").toList();
+        assertEquals(java.util.Arrays.asList("alpha", "bravo"), names);
+    }
+
+    @Test
     public void localRangeStaysNative() {
         // range(local,...) must NOT be replaced -> no UniGraphRangeStep for the local range
         GraphTraversal<?, ?> t = g.V().hasLabel("host").fold()

@@ -34,6 +34,7 @@ public class UniGraphRangeStepStrategy extends AbstractTraversalStrategy<Travers
             long high = range.getHighRange();
             source.setOffset(low > Integer.MAX_VALUE ? 0 : (int) low);
             UniGraphRangeStep<?> uni = new UniGraphRangeStep<>(traversal, low, high, source);
+            TraversalHelper.copyLabels(range, uni, false);   // replaceStep does not transfer labels
             TraversalHelper.replaceStep((Step) range, uni, traversal);
         }
     }
