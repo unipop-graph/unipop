@@ -104,4 +104,31 @@ public class JdbcRangePushdownTest {
         assertEquals(2L, n);                       // window size (5 distinct hosts -> range(1,3) = 2)
         assertTrue("dedup-intervening must not push OFFSET (fetches all, not 2)", maxFetch("jr_host") > 2);
     }
+
+    @Test
+    public void multiSchemaFanOutDoesNotPushOffset() {
+        // No hasLabel -> host(5)+person(3)=8 by name: alpha,bravo,charlie,delta,echo,foxtrot,golf,hotel
+        // range(2,4) -> charlie,delta
+        List<Object> names = g.V().order().by("name").range(2, 4).values("name").toList();
+        assertEquals(java.util.Arrays.asList("charlie", "delta"), names);
+        // offset NOT pushed: each schema fetch-reduces with LIMIT 4 (fetches up to 4, not 2)
+        assertTrue("multi-schema must not push OFFSET (in-memory residual)", maxFetch("jr_host") > 2);
+    }
+
+    @Test
+    public void orderlessSingleSchemaRangeReturnsWindowSize() {
+        // range(1,4) with no order() -> 3 elements (spec-correct arbitrary window)
+        long n = g.V().hasLabel("host").range(1, 4).count().next();
+        assertEquals(3L, n);
+    }
+
+    @Test
+    public void localRangeStaysNative() {
+        // range(local,...) must NOT be replaced -> no UniGraphRangeStep for the local range
+        GraphTraversal<?, ?> t = g.V().hasLabel("host").fold()
+                .range(org.apache.tinkerpop.gremlin.process.traversal.Scope.local, 0, 2);
+        t.hasNext();
+        assertTrue("local range must remain native",
+                !TraversalHelper.hasStepOfAssignableClass(UniGraphRangeStep.class, t.asAdmin()));
+    }
 }
