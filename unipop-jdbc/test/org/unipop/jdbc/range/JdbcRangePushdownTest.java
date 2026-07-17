@@ -70,4 +70,38 @@ public class JdbcRangePushdownTest {
         assertTrue("expected a UniGraphRangeStep in the compiled traversal",
                 TraversalHelper.hasStepOfAssignableClass(UniGraphRangeStep.class, t.asAdmin()));
     }
+
+    @Test
+    public void singleSchemaPushesOffset() {
+        // hosts by name: alpha,bravo,charlie,delta,echo ; range(2,4) -> charlie,delta
+        List<Object> names = g.V().hasLabel("host").order().by("name").range(2, 4).values("name").toList();
+        assertEquals(java.util.Arrays.asList("charlie", "delta"), names);
+        // OFFSET pushed -> only 2 rows fetched from jr_host (not 4)
+        assertEquals("expected OFFSET pushed: 2 rows fetched, not 4", 2, maxFetch("jr_host"));
+    }
+
+    @Test
+    public void skipPushesOffsetUnbounded() {
+        // skip(3) -> delta,echo ; OFFSET 3 no limit -> 2 rows fetched
+        List<Object> names = g.V().hasLabel("host").order().by("name").skip(3).values("name").toList();
+        assertEquals(java.util.Arrays.asList("delta", "echo"), names);
+        assertEquals(2, maxFetch("jr_host"));
+    }
+
+    @Test
+    public void pureLimitUnchanged() {
+        // limit(2) -> alpha,bravo ; offset=0 -> today's fetch-reduction (LIMIT 2), 2 rows
+        List<Object> names = g.V().hasLabel("host").order().by("name").limit(2).values("name").toList();
+        assertEquals(java.util.Arrays.asList("alpha", "bravo"), names);
+        assertEquals(2, maxFetch("jr_host"));
+    }
+
+    @Test
+    public void dedupBetweenSourceAndRangeDoesNotPushOffset() {
+        // dedup() between g.V() and range() must NOT push OFFSET (dedup isn't pushed to SQL, so
+        // OFFSET over raw rows would skip the wrong rows). Correct window size, and OFFSET not pushed.
+        long n = g.V().hasLabel("host").dedup().range(1, 3).count().next();
+        assertEquals(2L, n);                       // window size (5 distinct hosts -> range(1,3) = 2)
+        assertTrue("dedup-intervening must not push OFFSET (fetches all, not 2)", maxFetch("jr_host") > 2);
+    }
 }

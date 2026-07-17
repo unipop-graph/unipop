@@ -87,7 +87,9 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
         }
 
         Condition conditions = buildTranslator(null).translate(predicatesHolder);
-        int finalLimit = query.getLimit() < 0 ? Integer.MAX_VALUE : query.getLimit();
+        int high = query.getLimit() < 0 ? Integer.MAX_VALUE : query.getLimit();
+        int off = query.getPushedOffset();   // >0 only when the controller decided to push (single schema)
+        int count = (high == Integer.MAX_VALUE) ? Integer.MAX_VALUE : Math.max(0, high - off);
 
         SelectConditionStep<Record> where = createSqlQuery(query.getPropertyKeys())
                 .where(conditions);
@@ -100,10 +102,10 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
                             field(getFieldByPropertyKey(order.getValue0())).asc() :
                             field(getFieldByPropertyKey(order.getValue0())).desc()).collect(Collectors.toList());
             if (orderValues.size() > 0)
-                return where.orderBy(orderValues).limit(finalLimit);
+                return off > 0 ? where.orderBy(orderValues).limit(off, count) : where.orderBy(orderValues).limit(high);
         }
 
-        return where.limit(finalLimit);
+        return off > 0 ? where.limit(off, count) : where.limit(high);
 
     }
 

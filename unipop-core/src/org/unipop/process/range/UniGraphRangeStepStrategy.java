@@ -4,12 +4,10 @@ import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
-import org.apache.tinkerpop.gremlin.process.traversal.step.filter.DedupGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
-import org.unipop.process.Offsettable;
 import org.unipop.process.graph.UniGraphStep;
 import org.unipop.process.graph.UniGraphStepStrategy;
 import org.unipop.process.order.UniGraphOrderStrategy;
@@ -40,10 +38,13 @@ public class UniGraphRangeStepStrategy extends AbstractTraversalStrategy<Travers
         }
     }
 
-    /** Walk back past intervening OrderGlobalStep/DedupGlobalStep to a UniGraphStep, else null. */
+    /** Walk back past an intervening OrderGlobalStep (also pushed to SQL, so OFFSET-after-ORDER-BY
+     *  stays correct) to a UniGraphStep, else null. Does NOT skip DedupGlobalStep: dedup() is not
+     *  pushed to SQL, so folding OFFSET over raw pre-dedup rows would skip the wrong rows -- a
+     *  dedup() between the source and range must leave the native RangeGlobalStep in place. */
     private UniGraphStep<?, ?> sourceGraphStep(RangeGlobalStep<?> range) {
         Step<?, ?> prev = range.getPreviousStep();
-        while (prev instanceof OrderGlobalStep || prev instanceof DedupGlobalStep) {
+        while (prev instanceof OrderGlobalStep) {
             prev = prev.getPreviousStep();
         }
         return (prev instanceof UniGraphStep) ? (UniGraphStep<?, ?>) prev : null;

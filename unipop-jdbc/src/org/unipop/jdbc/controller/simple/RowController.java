@@ -94,6 +94,13 @@ public class RowController implements SimpleController {
         Map<JdbcSchema<E>, Select> selects = schemas.stream()
                 .filter(schema -> this.traversalFilter.filter(schema, uniQuery.getTraversal())).collect(collector);
 
+        // Offset push: only safe when exactly one schema survives (single table, total order in SQL).
+        // Otherwise pushedOffset stays 0 and UniGraphRangeStep applies the full range in memory.
+        if (uniQuery.getOffset() > 0 && selects.size() == 1) {
+            uniQuery.setPushedOffset(uniQuery.getOffset());
+            JdbcSchema<E> only = selects.keySet().iterator().next();
+            selects.put(only, only.getSearch(uniQuery, only.toPredicates(uniQuery.getPredicates())));  // rebuild with OFFSET
+        }
 
         return this.search(uniQuery, selects, collector);
     }
