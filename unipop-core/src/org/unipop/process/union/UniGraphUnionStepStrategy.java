@@ -45,7 +45,12 @@ public class UniGraphUnionStepStrategy extends AbstractTraversalStrategy<Travers
                         traversal.getParent() instanceof RepeatStep)
                     return;
             }
-            UniGraphUnionStep uniGraphUnionStep = new UniGraphUnionStep(traversal, uniGraph, traversals);
+            // Native g.union(...) builds UnionStep(isStart=true) — a root union self-seeds a starter
+            // traverser. That is exactly a top-level (root) traversal whose start step IS the union;
+            // a union that merely starts a child option traversal (e.g. under choose) still receives
+            // real parent input and must NOT self-seed.
+            boolean isStart = traversal.isRoot() && traversal.getStartStep() == unionStep;
+            UniGraphUnionStep uniGraphUnionStep = new UniGraphUnionStep(traversal, uniGraph, isStart, traversals);
             if (TraversalHelper.stepIndex(unionStep, traversal) != -1) {
                 TraversalHelper.replaceStep(unionStep, uniGraphUnionStep, traversal);
             } else {
