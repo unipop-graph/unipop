@@ -10,6 +10,7 @@ import org.javatuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unipop.process.order.Orderable;
+import org.unipop.process.Offsettable;
 import org.unipop.util.ConversionUtils;
 import org.unipop.process.predicate.ReceivesPredicatesHolder;
 import org.unipop.process.properties.PropertyFetcher;
@@ -23,13 +24,15 @@ import org.unipop.structure.UniGraph;
 import java.util.*;
 import java.util.stream.Stream;
 
-public class UniGraphStep<S,E extends Element> extends GraphStep<S,E> implements ReceivesPredicatesHolder<S, E>, PropertyFetcher, Orderable, Profiling{
+public class UniGraphStep<S,E extends Element> extends GraphStep<S,E> implements ReceivesPredicatesHolder<S, E>, PropertyFetcher, Orderable, Profiling, Offsettable{
     private static final Logger logger = LoggerFactory.getLogger(UniGraphStep.class);
     private StepDescriptor stepDescriptor;
     private List<SearchQuery.SearchController>  controllers;
     private PredicatesHolder predicates = PredicatesHolderFactory.empty();
     private Set<String> propertyKeys;
     private int limit;
+    private int offset = 0;
+    private SearchQuery<E> lastQuery;
     private List<Pair<String, Order>> orders;
 
     public UniGraphStep(GraphStep<S, E> originalStep, ControllerManager controllerManager) {
@@ -52,6 +55,10 @@ public class UniGraphStep<S,E extends Element> extends GraphStep<S,E> implements
         ).map(HasContainer::getKey).forEach(this::addPropertyKey);
 
         SearchQuery<E> searchQuery = new SearchQuery<>(returnClass, predicates, limit, propertyKeys, orders, stepDescriptor, traversal);
+        // Offset can only be pushed when a single controller resolves the query; otherwise results
+        // merge across providers and a per-controller OFFSET would drop rows from the global window.
+        searchQuery.setOffset(controllers.size() == 1 ? offset : 0);
+        this.lastQuery = searchQuery;
         logger.debug("Executing query: ", searchQuery);
         return controllers.stream().<Iterator<E>>map(controller -> controller.search(searchQuery)).flatMap(ConversionUtils::asStream).distinct().iterator();
     }
@@ -72,6 +79,11 @@ public class UniGraphStep<S,E extends Element> extends GraphStep<S,E> implements
         this.limit = limit;
     }
 
+    @Override
+    public void setOffset(int offset) { this.offset = offset; }
+
+    @Override
+    public int getPushedOffset() { return lastQuery == null ? 0 : lastQuery.getPushedOffset(); }
 
     @Override
     public void addPropertyKey(String key) {

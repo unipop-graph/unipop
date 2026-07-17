@@ -18,6 +18,8 @@ public class SearchQuery<E extends Element> extends PredicateQuery<E> {
     private final int limit;
     private Set<String> propertyKeys;
     private List<Pair<String, Order>> orders;
+    private int offset = 0;
+    private int pushedOffset = 0;
 
     public SearchQuery(Class<E> returnType, PredicatesHolder predicates, int limit, Set<String> propertyKeys, List<Pair<String, Order>> orders, StepDescriptor stepDescriptor, Traversal traversal) {
         super(predicates, stepDescriptor, traversal);
@@ -42,6 +44,11 @@ public class SearchQuery<E extends Element> extends PredicateQuery<E> {
     public List<Pair<String, Order>> getOrders() {
         return orders;
     }
+
+    public int getOffset() { return offset; }
+    public void setOffset(int offset) { this.offset = offset; }
+    public int getPushedOffset() { return pushedOffset; }
+    public void setPushedOffset(int pushedOffset) { this.pushedOffset = pushedOffset; }
 
     public interface SearchController extends UniQueryController {
         <E extends Element> Iterator<E> search(SearchQuery<E> uniQuery);
