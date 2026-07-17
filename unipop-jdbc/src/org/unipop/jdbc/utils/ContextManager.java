@@ -114,6 +114,17 @@ public class ContextManager {
         return withRetry("render", () -> context.render(query));
     }
 
+    /**
+     * Render a query as inlined SQL under this context's dialect — the same form
+     * TimingExecuterListener keys its map by ({@code ctx.dsl().renderInlined(ctx.query())}). A
+     * detached query renders with the DEFAULT dialect (e.g. {@code limit}); this renders with the
+     * configured dialect (e.g. Postgres {@code fetch next ... rows only}) so a caller can reconstruct
+     * the exact timing-map key.
+     */
+    public String renderInlined(Query query) {
+        return withRetry("renderInlined", () -> context.renderInlined(query));
+    }
+
     public void batch(List<Query> bulk) {
         withRetry("batch", () -> {
             context.batch(bulk).execute();
