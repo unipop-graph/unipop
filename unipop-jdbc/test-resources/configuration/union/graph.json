@@ -1,0 +1,15 @@
+{
+  "class": "org.unipop.jdbc.JdbcSourceProvider",
+  "driver": "org.postgresql.Driver",
+  "address": ["jdbc:postgresql://localhost:54329/postgres"],
+  "user": "postgres",
+  "sqlDialect": "POSTGRES",
+  "vertices": [
+    { "table": "u_node", "id": "@id", "label": "node", "properties": { "name": "@name" }, "dynamicProperties": false }
+  ],
+  "edges": [
+    { "table": "u_link", "id": "@id", "label": "link", "properties": {}, "dynamicProperties": false,
+      "outVertex": { "ref": "true", "id": "@src_id", "label": "node" },
+      "inVertex":  { "ref": "true", "id": "@dst_id", "label": "node" } }
+  ]
+}
