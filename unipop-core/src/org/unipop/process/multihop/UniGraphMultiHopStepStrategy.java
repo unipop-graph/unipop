@@ -7,13 +7,11 @@ import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.unipop.process.vertex.UniGraphVertexStep;
 import org.unipop.process.vertex.UniGraphVertexStepStrategy;
 import org.unipop.query.predicates.PredicatesHolder;
-import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.MultiHopQuery;
 import org.unipop.structure.UniGraph;
 
@@ -22,12 +20,11 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Folds two consecutive adjacency hops into a {@link UniGraphMultiHopStep}:
- * <ul>
- *   <li>{@code out/in} → {@code out/in} (vertex-final)</li>
- *   <li>{@code out/in} → {@code outE/inE} (edge-final)</li>
- * </ul>
- * BOTH and intermediate labels/filters are not folded (v1).
+ * Folds two consecutive <b>vertex-return</b> adjacency hops ({@code out}/{@code in}) into a
+ * {@link UniGraphMultiHopStep}. Edge-final chains ({@code out().outE()}) stay as two
+ * {@link UniGraphVertexStep}s — sequential single-hop joins are typically faster than an
+ * unbounded multi-edge join on open topologies.
+ * BOTH and intermediate labels/filters are not folded.
  */
 public class UniGraphMultiHopStepStrategy
         extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy>
@@ -57,8 +54,10 @@ public class UniGraphMultiHopStepStrategy
 
             // Hop1 must return vertices (mid of the chain)
             if (!hop1.returnsVertex()) continue;
-            // Hop2 may return vertex or edge
-            boolean hop2Vertex = hop2.returnsVertex();
+            // Only fold vertex-final chains (out/in → out/in).
+            // Edge-final (out → outE) multi-join is often slower than sequential single-hop
+            // joins on open topologies (unbounded e0⋈e1); leave as two UniGraphVertexSteps.
+            if (!hop2.returnsVertex()) continue;
             if (hop1.getDirection() == Direction.BOTH || hop2.getDirection() == Direction.BOTH) continue;
             if (hop1.getNextStep() != hop2) continue;
             if (!hop1.getLabels().isEmpty() || !hop2.getLabels().isEmpty()) continue;
@@ -71,15 +70,10 @@ public class UniGraphMultiHopStepStrategy
             hopSpecs.add(new MultiHopQuery.HopSpec(hop1.getDirection(), hop1.getPredicates()));
             hopSpecs.add(new MultiHopQuery.HopSpec(hop2.getDirection(), hop2.getPredicates()));
 
-            PredicatesHolder finalPreds = hop2Vertex
-                    ? hop2.getVertexPredicates()
-                    : PredicatesHolderFactory.empty();
-            // Edge-return: edge has() already collected into hop2.predicates
-            UniGraphMultiHopStep multi = hop2Vertex
-                    ? new UniGraphMultiHopStep<Vertex>(traversal, uniGraph, uniGraph.getControllerManager(),
-                    hopSpecs, finalPreds, true)
-                    : new UniGraphMultiHopStep<Edge>(traversal, uniGraph, uniGraph.getControllerManager(),
-                    hopSpecs, finalPreds, false);
+            PredicatesHolder finalPreds = hop2.getVertexPredicates();
+            UniGraphMultiHopStep multi = new UniGraphMultiHopStep<Vertex>(
+                    traversal, uniGraph, uniGraph.getControllerManager(),
+                    hopSpecs, finalPreds, true);
 
             if (hop2.getOrders() != null) multi.setOrders(hop2.getOrders());
             if (hop2.getLimit() >= 0) multi.setLimit(hop2.getLimit());

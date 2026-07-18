@@ -118,6 +118,12 @@ public class RowController implements SimpleController, SchemaContributor, Schem
         for (MultiHopQuery.HopSpec h : query.getHops()) {
             if (h.getDirection() == null || h.getDirection() == Direction.BOTH) return null;
         }
+        // Edge-final multi-join only when explicitly enabled and a limit is folded onto the step.
+        // Unbounded out().outE() multi-joins are slower than sequential hop joins in practice.
+        if (!query.isReturnsVertex()) {
+            if (!graph.configuration().getBoolean("jdbc.multiHopEdgeFinal", false)) return null;
+            if (query.getFinalLimit() < 0) return null;
+        }
 
         List<Hop> catalogHops = new ArrayList<>();
         for (int i = 0; i < query.getHops().size(); i++) {

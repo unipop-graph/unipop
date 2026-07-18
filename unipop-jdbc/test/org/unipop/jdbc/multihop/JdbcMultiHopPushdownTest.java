@@ -102,16 +102,11 @@ public class JdbcMultiHopPushdownTest {
     }
 
     @Test
-    public void twoHopOutThenOutE() {
-        // root → h1 → edge o6 (h1→p1)
+    public void twoHopOutThenOutECorrectAndSequentialByDefault() {
+        // Edge-final is not multi-joined by default (sequential is faster on open topologies).
+        TimingExecuterListener.timing.clear();
         assertEquals(1L, (long) g.V("root").out("owns").outE("owns").count().next());
-        assertTrue("expected multi-join for out().outE()", multiJoinedOwnsTwice());
-    }
-
-    @Test
-    public void twoHopOutThenOutEWithLimit() {
-        assertEquals(1L, (long) g.V("root").out("owns").outE("owns").limit(10).count().next());
-        assertTrue(multiJoinedOwnsTwice());
+        assertFalse("unbounded out().outE() must not multi-join by default", multiJoinedOwnsTwice());
     }
 
     private static boolean multiJoinedOwnsTwice() {
