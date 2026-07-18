@@ -21,6 +21,9 @@ import org.unipop.query.mutation.RemoveQuery;
 import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.query.search.SearchQuery;
 import org.unipop.query.search.SearchVertexQuery;
+import org.unipop.schema.catalog.SchemaCatalog;
+import org.unipop.schema.catalog.SchemaCatalogAware;
+import org.unipop.schema.catalog.SchemaContributor;
 import org.unipop.schema.element.ElementSchema;
 import org.unipop.schema.reference.DeferredVertex;
 import org.unipop.structure.UniEdge;
@@ -38,7 +41,7 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 
-public class DocumentController implements SimpleController {
+public class DocumentController implements SimpleController, SchemaContributor, SchemaCatalogAware {
     private static final Logger logger = LoggerFactory.getLogger(DocumentController.class);
 
     private final ElasticClient client;
@@ -50,6 +53,7 @@ public class DocumentController implements SimpleController {
     private Set<? extends DocumentEdgeSchema> edgeSchemas = new HashSet<>();
 
     private TraversalFilter traversalFilter;
+    private SchemaCatalog schemaCatalog;
 
     public DocumentController(Set<DocumentSchema> schemas, ElasticClient client, UniGraph graph, TraversalFilter traversalFilter) {
         this.client = client;
@@ -64,6 +68,24 @@ public class DocumentController implements SimpleController {
                 .map(schema -> ((DocumentEdgeSchema) schema)).collect(Collectors.toSet());
 
         logger.debug("Instantiated DocumentController: {}", this);
+    }
+
+    @Override
+    public Set<? extends ElementSchema> contributedSchemas() {
+        Set<ElementSchema> schemas = new HashSet<>();
+        if (vertexSchemas != null) schemas.addAll(vertexSchemas);
+        if (edgeSchemas != null) schemas.addAll(edgeSchemas);
+        return schemas;
+    }
+
+    @Override
+    public void setSchemaCatalog(SchemaCatalog catalog) {
+        this.schemaCatalog = catalog;
+    }
+
+    private <S extends ElementSchema> Collection<? extends S> pruneByLabels(Collection<? extends S> schemas, Set<String> labels) {
+        if (schemaCatalog == null || labels == null || labels.isEmpty() || schemas == null) return schemas;
+        return schemaCatalog.filterByLabels(schemas, labels);
     }
 
     private Set<DocumentSchema> collectSchemas(Set<? extends ElementSchema> schemas) {
@@ -92,8 +114,13 @@ public class DocumentController implements SimpleController {
 
     @Override
     public <E extends Element> Iterator<E> search(SearchQuery<E> uniQuery) {
-        Set<? extends DocumentSchema<E>> schemas = getSchemas(uniQuery.getReturnType())
-                .stream().filter(schema -> this.traversalFilter.filter(schema, uniQuery.getTraversal()))
+        Set<String> labels = SchemaCatalog.extractClosedLabels(uniQuery.getPredicates());
+        Set<? extends DocumentSchema<E>> allSchemas = getSchemas(uniQuery.getReturnType());
+        Collection<? extends DocumentSchema<E>> pruned = (schemaCatalog == null || labels.isEmpty())
+                ? allSchemas
+                : schemaCatalog.filterByLabels(allSchemas, labels);
+        Set<? extends DocumentSchema<E>> schemas = pruned.stream()
+                .filter(schema -> this.traversalFilter.filter(schema, uniQuery.getTraversal()))
                 .map(schema -> ((DocumentSchema<E>) schema))
                 .collect(Collectors.toSet());
         Map<DocumentSchema<E>, Query> searches = schemas.stream()
@@ -103,7 +130,14 @@ public class DocumentController implements SimpleController {
 
     @Override
     public Iterator<Edge> search(SearchVertexQuery uniQuery) {
-        Map<DocumentEdgeSchema, Query> schemas = edgeSchemas.stream()
+        Collection<? extends DocumentEdgeSchema> edgeCandidates = edgeSchemas;
+        if (schemaCatalog != null) {
+            Set<String> srcLabels = SchemaCatalog.labelsOf(uniQuery.getVertices());
+            Set<ElementSchema> byEndpoint = schemaCatalog.edgesFrom(srcLabels, uniQuery.getDirection());
+            edgeCandidates = edgeSchemas.stream().filter(byEndpoint::contains).collect(Collectors.toList());
+        }
+        edgeCandidates = pruneByLabels(edgeCandidates, SchemaCatalog.extractClosedLabels(uniQuery.getPredicates()));
+        Map<DocumentEdgeSchema, Query> schemas = edgeCandidates.stream()
                 .filter(schema -> this.traversalFilter.filter(schema, uniQuery.getTraversal()))
                 .collect(new SearchCollector<>((schema) -> schema.getSearch(uniQuery)));
         return search(uniQuery, schemas);
@@ -111,7 +145,9 @@ public class DocumentController implements SimpleController {
 
     @Override
     public void fetchProperties(DeferredVertexQuery uniQuery) {
-        Map<DocumentVertexSchema, Query> schemas = vertexSchemas.stream()
+        Set<String> labels = SchemaCatalog.labelsOf(uniQuery.getVertices());
+        labels.addAll(SchemaCatalog.extractClosedLabels(uniQuery.getPredicates()));
+        Map<DocumentVertexSchema, Query> schemas = pruneByLabels(vertexSchemas, labels).stream()
                 .filter(schema -> this.traversalFilter.filter(schema, uniQuery.getTraversal()))
                 .collect(new SearchCollector<>((schema) -> schema.getSearch(uniQuery)));
         Iterator<Vertex> search = search(uniQuery, schemas);

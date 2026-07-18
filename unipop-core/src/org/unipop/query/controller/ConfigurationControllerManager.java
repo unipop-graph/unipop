@@ -2,6 +2,9 @@ package org.unipop.query.controller;
 
 import org.apache.commons.configuration2.Configuration;
 import org.json.JSONObject;
+import org.unipop.schema.catalog.SchemaCatalog;
+import org.unipop.schema.catalog.SchemaCatalogAware;
+import org.unipop.schema.catalog.SchemaContributor;
 import org.unipop.schema.property.PropertySchema;
 import org.unipop.structure.traversalfilter.TraversalFilter;
 import org.unipop.structure.UniGraph;
@@ -15,6 +18,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -28,6 +32,7 @@ public class ConfigurationControllerManager implements ControllerManager {
     protected UniGraph graph;
     protected List<PropertySchema.PropertySchemaBuilder> thirdPartyPropertySchemas;
     protected TraversalFilter filter;
+    protected final SchemaCatalog schemaCatalog = new SchemaCatalog();
 
     public ConfigurationControllerManager(UniGraph graph, Configuration configuration, List<PropertySchema.PropertySchemaBuilder> thirdPartyPropertySchemas, TraversalFilter filter) throws Exception {
         path = Paths.get(configuration.getString("providers"));
@@ -38,6 +43,13 @@ public class ConfigurationControllerManager implements ControllerManager {
                 (newPath) -> loadControllers());
         loadControllers();
         this.watcher.start();
+    }
+
+    /**
+     * Internal schema catalog (type topology). Not a user-facing Graph API.
+     */
+    public SchemaCatalog getSchemaCatalog() {
+        return schemaCatalog;
     }
 
     private void loadControllers() throws IOException {
@@ -62,6 +74,25 @@ public class ConfigurationControllerManager implements ControllerManager {
                 }
             }
         });
+        rebuildSchemaCatalog();
+    }
+
+    private void rebuildSchemaCatalog() {
+        List<SchemaContributor> contributors = new ArrayList<>();
+        for (UniQueryController controller : controllers) {
+            if (controller instanceof SchemaContributor) {
+                contributors.add((SchemaContributor) controller);
+            }
+        }
+        schemaCatalog.rebuild(contributors);
+        for (UniQueryController controller : controllers) {
+            if (controller instanceof SchemaCatalogAware) {
+                ((SchemaCatalogAware) controller).setSchemaCatalog(schemaCatalog);
+            }
+        }
+        if (graph != null) {
+            graph.setSchemaCatalog(schemaCatalog);
+        }
     }
 
     private static String readFile(String filename) {

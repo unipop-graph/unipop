@@ -18,6 +18,12 @@
             <artifactId>gremlin-core</artifactId>
             <version>${tinkerpop.version}</version>
         </dependency>
+        <!-- Internal schema catalog (type topology for pushdown / join pruning). -->
+        <dependency>
+            <groupId>org.apache.tinkerpop</groupId>
+            <artifactId>tinkergraph-gremlin</artifactId>
+            <version>${tinkerpop.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>
             <artifactId>gremlin-groovy</artifactId>

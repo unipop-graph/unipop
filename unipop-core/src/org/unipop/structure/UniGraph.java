@@ -18,6 +18,7 @@ import org.unipop.query.mutation.AddVertexQuery;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
 import org.unipop.query.search.SearchQuery;
+import org.unipop.schema.catalog.SchemaCatalog;
 import org.unipop.schema.property.PropertySchema;
 import org.unipop.schema.property.type.*;
 import org.unipop.structure.traversalfilter.DefaultTraversalFilter;
@@ -101,6 +102,8 @@ public class UniGraph implements Graph {
     protected TraversalStrategies strategies;
     private ControllerManager controllerManager;
     private List<SearchQuery.SearchController> queryControllers;
+    /** Internal type-topology catalog; not part of the public Graph contract. */
+    private SchemaCatalog schemaCatalog;
 
     public UniGraph(Configuration configuration) throws Exception {
         configuration.setProperty(Graph.GRAPH, UniGraph.class.getName());
@@ -177,6 +180,18 @@ public class UniGraph implements Graph {
 
     public ControllerManager getControllerManager() {
         return controllerManager;
+    }
+
+    /**
+     * Internal schema catalog used by controllers/optimizers. Not a user-facing Graph API.
+     */
+    public SchemaCatalog getSchemaCatalog() {
+        return schemaCatalog;
+    }
+
+    /** Called by the controller manager after provider load/reload. */
+    public void setSchemaCatalog(SchemaCatalog schemaCatalog) {
+        this.schemaCatalog = schemaCatalog;
     }
 
     @Override

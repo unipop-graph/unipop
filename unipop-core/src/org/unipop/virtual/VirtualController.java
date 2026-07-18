@@ -17,6 +17,7 @@ import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.query.search.SearchQuery;
 import org.unipop.query.search.SearchVertexQuery;
+import org.unipop.schema.catalog.SchemaContributor;
 import org.unipop.schema.element.ElementSchema;
 import org.unipop.structure.UniEdge;
 import org.unipop.structure.UniGraph;
@@ -29,7 +30,7 @@ import java.util.stream.Stream;
 /**
  * Created by sbarzilay on 9/6/16.
  */
-public class VirtualController implements SimpleController {
+public class VirtualController implements SimpleController, SchemaContributor {
     private final UniGraph graph;
 
     private Set<? extends VirtualVertexSchema> vertexSchemas = new HashSet<>();
@@ -38,6 +39,11 @@ public class VirtualController implements SimpleController {
         this.graph = graph;
         vertexSchemas = schemas.stream().filter(schema -> schema instanceof VirtualVertexSchema)
                 .map(schema -> ((VirtualVertexSchema) schema)).collect(Collectors.toSet());
+    }
+
+    @Override
+    public Set<? extends ElementSchema> contributedSchemas() {
+        return vertexSchemas != null ? new HashSet<>(vertexSchemas) : Collections.emptySet();
     }
 
     @Override

@@ -13,6 +13,7 @@ import org.unipop.jdbc.schemas.property.JsonbPropertySchema;
 import org.unipop.jdbc.schemas.property.TimestamptzPropertySchema;
 import org.unipop.jdbc.schemas.property.UuidPropertySchema;
 import org.unipop.jdbc.utils.ContextManager;
+import org.unipop.jdbc.utils.EnumDomainLoader;
 import org.unipop.jdbc.utils.JdbcPredicatesTranslator;
 import org.unipop.query.controller.SourceProvider;
 import org.unipop.query.controller.UniQueryController;
@@ -54,6 +55,10 @@ public class JdbcSourceProvider implements SourceProvider {
 
         getList(configuration, "vertices").forEach(vertexJson -> schemas.add(createVertexSchema(vertexJson)));
         getList(configuration, "edges").forEach(edgeJson -> schemas.add(createEdgeSchema(edgeJson)));
+
+        // Fill EnumPropertySchema.knownValues() from pg_enum so the schema catalog can close
+        // label/property domains without config-side value lists. Runs before controllers/catalog.
+        EnumDomainLoader.hydrate(contextManager, schemas);
 
         return createControllers(schemas, traversalFilter);
     }

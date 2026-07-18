@@ -50,6 +50,15 @@ public interface PropertySchema {
     Set<Object> getValues(PredicatesHolder predicatesHolder);
 
     /**
+     * Closed domain of this property when known at config time (static value, include list,
+     * enum values, …). Empty means the domain is open / unknown — optimizers must not over-prune.
+     * Distinct from {@link #getValues(PredicatesHolder)}, which extracts values from a query predicate.
+     */
+    default Set<Object> knownValues() {
+        return Collections.emptySet();
+    }
+
+    /**
      * Converts a predicate to match the source field
      * @param predicatesHolder Predicates holder
      * @return A converted predicates holder

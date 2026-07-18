@@ -16,10 +16,13 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversal
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.javatuples.Pair;
 import org.unipop.process.edge.EdgeStepsStrategy;
+import org.unipop.process.multihop.UniGraphMultiHopStepStrategy;
 import org.unipop.process.predicate.ReceivesPredicatesHolder;
 import org.unipop.process.repeat.UniGraphRepeatStepStrategy;
 import org.unipop.process.graph.UniGraphStepStrategy;
 import org.unipop.process.vertex.UniGraphVertexStepStrategy;
+import org.unipop.schema.catalog.SchemaCatalog;
+import org.unipop.structure.UniGraph;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -31,7 +34,8 @@ import java.util.stream.Stream;
 public class UniGraphOrderStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy{
     @Override
     public Set<Class<? extends ProviderOptimizationStrategy>> applyPrior() {
-        return Sets.newHashSet(UniGraphStepStrategy.class, UniGraphVertexStepStrategy.class, UniGraphRepeatStepStrategy.class, EdgeStepsStrategy.class);
+        return Sets.newHashSet(UniGraphStepStrategy.class, UniGraphVertexStepStrategy.class,
+                UniGraphMultiHopStepStrategy.class, UniGraphRepeatStepStrategy.class, EdgeStepsStrategy.class);
     }
 
     @Override
@@ -46,6 +50,11 @@ public class UniGraphOrderStrategy extends AbstractTraversalStrategy<TraversalSt
                     .collect(Collectors.toList());
             Collection<Orderable> orderableStepOf = getOrderableStepOf(orderGlobalStep, traversal);
             if (orderableStepOf != null && orderableStepOf.size() == 1) {
+                // Skip folding order into the provider step when the schema catalog knows that no
+                // type can push all order keys — leave the native OrderGlobalStep for in-memory sort.
+                if (!catalogAllowsOrder(traversal, collect)) {
+                    return;
+                }
                 Orderable step = orderableStepOf.iterator().next();
                 step.setOrders(collect);
                 Step nextStep = orderGlobalStep.getNextStep();
@@ -58,6 +67,21 @@ public class UniGraphOrderStrategy extends AbstractTraversalStrategy<TraversalSt
                 }
             }
         });
+    }
+
+    /**
+     * When a {@link SchemaCatalog} is present on the graph, require that at least one type can
+     * push every order key. Missing catalog → allow (legacy behavior).
+     */
+    private static boolean catalogAllowsOrder(Traversal.Admin<?, ?> traversal,
+                                              List<Pair<String, Order>> orders) {
+        if (orders == null || orders.isEmpty()) return true;
+        Optional<org.apache.tinkerpop.gremlin.structure.Graph> opt = traversal.getGraph();
+        if (!opt.isPresent() || !(opt.get() instanceof UniGraph)) return true;
+        SchemaCatalog catalog = ((UniGraph) opt.get()).getSchemaCatalog();
+        if (catalog == null) return true;
+        List<String> keys = orders.stream().map(Pair::getValue0).filter(Objects::nonNull).collect(Collectors.toList());
+        return catalog.canPushOrderAnywhere(keys);
     }
 
     private Collection<Orderable> getOrderableStepOf(Step step, Traversal.Admin<?, ?> traversal) {
