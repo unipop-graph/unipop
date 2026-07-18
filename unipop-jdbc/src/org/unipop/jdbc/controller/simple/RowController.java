@@ -130,10 +130,16 @@ public class RowController implements SimpleController, SchemaContributor, Schem
         }
 
         Set<String> startLabels = SchemaCatalog.labelsOf(query.getStarts());
-        List<PathPlan> plans = schemaCatalog.findPaths(startLabels, catalogHops, 32);
+        // Low cap: many open-endpoint schemas explode plan count; sequential 2-hop is faster then.
+        int planCap = graph.configuration().getInt("jdbc.multiHopMaxPlans", 8);
+        List<PathPlan> plans = schemaCatalog.findPaths(startLabels, catalogHops, planCap);
         if (plans.isEmpty()) {
-            // Closed topology miss — nothing to return (not a fallback signal)
-            return Collections.emptyIterator();
+            // Not a hard miss when topology is open — fall back so sequential can still hit data.
+            return null;
+        }
+        // If we hit the cap, planning was truncated → sequential is safer/faster.
+        if (plans.size() >= planCap) {
+            return null;
         }
 
         // If any plan uses a non-joinable edge, fall back to sequential single hops.
@@ -146,20 +152,29 @@ public class RowController implements SimpleController, SchemaContributor, Schem
             }
         }
 
+        // Edge-final: plans only differ by mid/final vertex types; SQL joins e0⋈e1 and does not
+        // use those. Dedup by (e0, e1, dirs) so we run one query per edge-schema pair.
+        List<PathPlan> toRun = query.isReturnsVertex() ? plans : dedupeEdgeFinalPlans(plans);
+        if (!query.isReturnsVertex() && toRun.size() > planCap) {
+            return null;
+        }
+
         Set<Edge> out = new HashSet<>();
+        int ran = 0;
         try {
-            for (PathPlan plan : plans) {
+            for (PathPlan plan : toRun) {
                 Select sel = MultiHopJoinBuilder.buildTwoHop(query, plan);
                 if (sel == null) continue;
-                JdbcVertexSchema midVs = (JdbcVertexSchema) plan.getHops().get(0).getTargetVertexSchema();
+                ran++;
                 for (Map<String, Object> row : this.getContextManager().fetch(sel)) {
                     Edge edge;
                     if (query.isReturnsVertex()) {
+                        JdbcVertexSchema midVs = (JdbcVertexSchema) plan.getHops().get(0).getTargetVertexSchema();
                         JdbcVertexSchema finalVs = (JdbcVertexSchema) plan.getHops().get(1).getTargetVertexSchema();
                         edge = MultiHopJoinBuilder.fromTwoHopRow(row, midVs, finalVs, graph);
                     } else {
                         RowEdgeSchema e1 = (RowEdgeSchema) plan.getHops().get(1).getEdgeSchema();
-                        edge = MultiHopJoinBuilder.fromTwoHopEdgeRow(row, e1, midVs, graph);
+                        edge = MultiHopJoinBuilder.fromTwoHopEdgeRow(row, e1, graph);
                     }
                     if (edge != null) out.add(edge);
                 }
@@ -167,15 +182,22 @@ public class RowController implements SimpleController, SchemaContributor, Schem
         } catch (RowEdgeSchema.OrderNotPushableException e) {
             return null; // all-or-nothing order+limit
         }
-        // If every plan aborted (null select) and we produced nothing, fall back rather than
-        // claim empty — open schemas may still match via sequential path.
-        if (out.isEmpty() && !plans.isEmpty()) {
-            // Could be genuinely empty result; sequential fallback is still correct.
-            // Prefer returning empty when plans were joinable (selects ran).
-            // Heuristic: if we attempted at least one fetch, empty is authoritative.
-            return out.iterator();
-        }
+        if (ran == 0) return null; // no expressible plan → sequential fallback
         return out.iterator();
+    }
+
+    /** Collapse edge-final plans that share the same two edge schemas + directions. */
+    private static List<PathPlan> dedupeEdgeFinalPlans(List<PathPlan> plans) {
+        Map<String, PathPlan> unique = new LinkedHashMap<>();
+        for (PathPlan plan : plans) {
+            if (plan.size() != 2) continue;
+            PathHop h0 = plan.getHops().get(0);
+            PathHop h1 = plan.getHops().get(1);
+            String key = System.identityHashCode(h0.getEdgeSchema()) + "|" + h0.getDirection()
+                    + "|" + System.identityHashCode(h1.getEdgeSchema()) + "|" + h1.getDirection();
+            unique.putIfAbsent(key, plan);
+        }
+        return new ArrayList<>(unique.values());
     }
 
     @Override

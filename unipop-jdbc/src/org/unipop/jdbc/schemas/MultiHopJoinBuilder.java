@@ -48,6 +48,8 @@ public final class MultiHopJoinBuilder {
 
     public static final String MID_PREFIX = "__unipop_mid_";
     public static final String MID_PROP = "__unipop_mid";
+    /** Edge-final: mid vertex id taken from hop-0 edge target column (no mid-table join). */
+    public static final String MID_ID_ALIAS = "__unipop_mid_id";
     public static final String EDGE_PREFIX = "__unipop_e1_";
 
     private MultiHopJoinBuilder() {}
@@ -89,28 +91,26 @@ public final class MultiHopJoinBuilder {
     }
 
     /**
-     * Edge-final 2-hop join ({@code out().outE()} / {@code in().inE()}): no final vertex table join.
-     * Projects e1 columns (prefixed) + mid + start id. Order/limit apply to edge columns.
+     * Edge-final 2-hop join ({@code out().outE()}): join edge tables directly
+     * {@code e0.tgt = e1.src} — <b>no mid vertex table</b>. Avoids fan-out across every mid
+     * schema when endpoints are open (the regression that made multi-hop slower than sequential).
+     * Mid id for path is projected from {@code e0.tgt}.
      */
     private static Select buildTwoHopEdgeFinal(MultiHopQuery query, PathPlan plan) {
         Ctx ctx = ctx(query, plan, false);
         if (ctx == null) return null;
 
-        // Edge-level has() on hop2 already in c1; finalTargetPredicates unused for edge return.
         List<SelectFieldOrAsterisk> projection = new ArrayList<>();
-        // Edge row: id, label, props + endpoint id/label columns needed by fromFields
         for (String col : edgeRowColumns(ctx.e1)) {
             projection.add(field(name("e1", col)).as(EDGE_PREFIX + col));
         }
         projection.add(field(name("e0", ctx.e0SrcCol)).as(RowEdgeSchema.SRC_ALIAS));
-        for (String col : schemaColumns(ctx.midSchema)) {
-            projection.add(field(name("m", col)).as(MID_PREFIX + col));
-        }
+        // Mid is the hop-0 target id on e0 (same value as e1.src) — enough for path identity
+        projection.add(field(name("e0", ctx.e0TgtCol)).as(MID_ID_ALIAS));
 
         SelectConditionStep<Record> where = DSL.select(projection)
                 .from(ctx.te0)
-                .join(ctx.tm).on(field(name("e0", ctx.e0TgtCol)).eq(field(name("m", ctx.midId))))
-                .join(ctx.te1).on(field(name("e1", ctx.e1SrcCol)).eq(field(name("m", ctx.midId))))
+                .join(ctx.te1).on(field(name("e0", ctx.e0TgtCol)).eq(field(name("e1", ctx.e1SrcCol))))
                 .where(ctx.c0.and(ctx.c1));
 
         return orderLimitOnEdge(where, query, ctx.e1, "e1");
@@ -131,13 +131,17 @@ public final class MultiHopJoinBuilder {
         PathHop h1 = plan.getHops().get(1);
         if (h0.getEdgeSchema().getClass() != RowEdgeSchema.class
                 || h1.getEdgeSchema().getClass() != RowEdgeSchema.class) return null;
-        if (!(h0.getTargetVertexSchema() instanceof JdbcVertexSchema)) return null;
-        if (needFinalVertex && !(h1.getTargetVertexSchema() instanceof JdbcVertexSchema)) return null;
+        // Edge-final does not require a mid vertex schema (joins e0.tgt = e1.src directly).
+        if (needFinalVertex) {
+            if (!(h0.getTargetVertexSchema() instanceof JdbcVertexSchema)) return null;
+            if (!(h1.getTargetVertexSchema() instanceof JdbcVertexSchema)) return null;
+        }
 
         Ctx c = new Ctx();
         c.e0 = (RowEdgeSchema) h0.getEdgeSchema();
         c.e1 = (RowEdgeSchema) h1.getEdgeSchema();
-        c.mid = (JdbcVertexSchema) h0.getTargetVertexSchema();
+        c.mid = h0.getTargetVertexSchema() instanceof JdbcVertexSchema
+                ? (JdbcVertexSchema) h0.getTargetVertexSchema() : null;
         c.fin = needFinalVertex ? (JdbcVertexSchema) h1.getTargetVertexSchema() : null;
         Direction d0 = h0.getDirection();
         Direction d1 = h1.getDirection();
@@ -151,8 +155,10 @@ public final class MultiHopJoinBuilder {
         c.e0TgtCol = e0tgt.getFieldByPropertyKey(T.id.getAccessor());
         c.e1SrcCol = e1src.getFieldByPropertyKey(T.id.getAccessor());
         c.e1TgtCol = e1tgt.getFieldByPropertyKey(T.id.getAccessor());
-        c.midSchema = (AbstractRowSchema<?>) c.mid;
-        c.midId = c.midSchema.getFieldByPropertyKey(T.id.getAccessor());
+        if (c.mid != null) {
+            c.midSchema = (AbstractRowSchema<?>) c.mid;
+            c.midId = c.midSchema.getFieldByPropertyKey(T.id.getAccessor());
+        }
         if (c.fin != null) {
             c.finSchema = (AbstractRowSchema<?>) c.fin;
             c.finId = c.finSchema.getFieldByPropertyKey(T.id.getAccessor());
@@ -168,7 +174,7 @@ public final class MultiHopJoinBuilder {
         c.c0 = c.e0.buildTranslator("e0").translate(edge0Holder);
         c.c1 = c.e1.buildTranslator("e1").translate(edge1Holder);
         c.te0 = table(name(c.e0.getTable())).as("e0");
-        c.tm = table(name(c.mid.getTable())).as("m");
+        if (c.mid != null) c.tm = table(name(c.mid.getTable())).as("m");
         c.te1 = table(name(c.e1.getTable())).as("e1");
         return c;
     }
@@ -267,28 +273,26 @@ public final class MultiHopJoinBuilder {
     }
 
     /**
-     * Edge-final: real edge from e1 columns + mid stashed for path; also stores start id on
-     * {@link RowEdgeSchema#SRC_ALIAS} property for traverser remapping.
+     * Edge-final: real edge from e1 columns + mid shell (id only from {@link #MID_ID_ALIAS}) for path;
+     * start id on {@link RowEdgeSchema#SRC_ALIAS} for traverser remapping.
      */
-    public static Edge fromTwoHopEdgeRow(Map<String, Object> row, RowEdgeSchema edgeSchema,
-                                         JdbcVertexSchema midSchema, UniGraph graph) {
+    public static Edge fromTwoHopEdgeRow(Map<String, Object> row, RowEdgeSchema edgeSchema, UniGraph graph) {
         Map<String, Object> edgeFields = new HashMap<>();
-        Map<String, Object> midFields = new HashMap<>();
         for (Map.Entry<String, Object> e : row.entrySet()) {
             String k = e.getKey();
             if (k == null) continue;
-            if (k.startsWith(MID_PREFIX)) {
-                midFields.put(k.substring(MID_PREFIX.length()), e.getValue());
-            } else if (k.startsWith(EDGE_PREFIX)) {
+            if (k.startsWith(EDGE_PREFIX)) {
                 edgeFields.put(k.substring(EDGE_PREFIX.length()), e.getValue());
             }
         }
         java.util.Collection<Edge> edges = edgeSchema.fromFields(edgeFields);
         if (edges == null || edges.isEmpty()) return null;
         Edge edge = edges.iterator().next();
-        Vertex mid = midSchema.createElement(midFields);
-        if (mid != null && edge instanceof UniEdge) {
-            ((UniEdge) edge).property(MID_PROP, mid);
+        Object midId = row.get(MID_ID_ALIAS);
+        if (midId != null && edge instanceof UniEdge) {
+            Map<String, Object> midProps = new HashMap<>();
+            midProps.put(T.id.getAccessor(), midId);
+            ((UniEdge) edge).property(MID_PROP, new UniVertex(midProps, null, graph));
         }
         Object srcId = row.get(RowEdgeSchema.SRC_ALIAS);
         if (srcId != null && edge instanceof UniEdge) {
