@@ -2,8 +2,10 @@ package org.unipop.jdbc.union;
 
 import org.apache.commons.configuration2.BaseConfiguration;
 import org.apache.commons.configuration2.Configuration;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Column;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.junit.AfterClass;
@@ -12,6 +14,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.unipop.jdbc.suite.EmbeddedPostgresServer;
 import org.unipop.jdbc.utils.TimingExecuterListener;
+import org.unipop.process.union.UniGraphUnionStep;
 import org.unipop.structure.UniGraph;
 
 import java.io.File;
@@ -21,10 +24,16 @@ import java.sql.Statement;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class JdbcUnionTest {
 
     private static GraphTraversalSource g;
+    /** Separate graph over 150-vertex tables (each with one out-edge) so the union input exceeds
+     *  bulk.max (100) and sub-batches into two batches. Isolated from g so the small-graph tests
+     *  that use bare g.V() are unaffected. */
+    private static GraphTraversalSource bg;
 
     @BeforeClass
     public static void setUp() throws Exception {
@@ -38,17 +47,32 @@ public class JdbcUnionTest {
             s.execute("CREATE TABLE u_link (id varchar(100) primary key, src_id varchar(100), dst_id varchar(100))");
             s.execute("INSERT INTO u_node VALUES ('n1','a'),('n2','b'),('n3','c'),('n4','d')");
             s.execute("INSERT INTO u_link VALUES ('e1','n1','n2'),('e2','n1','n3'),('e3','n2','n4')");
+            // 150 nodes bn1..bn150, each with exactly ONE out-edge (bn_i -> bn_{(i mod 150)+1}).
+            s.execute("DROP TABLE IF EXISTS u_big_node");
+            s.execute("DROP TABLE IF EXISTS u_big_link");
+            s.execute("CREATE TABLE u_big_node (id varchar(100) primary key, name varchar(50))");
+            s.execute("CREATE TABLE u_big_link (id varchar(100) primary key, src_id varchar(100), dst_id varchar(100))");
+            s.execute("INSERT INTO u_big_node SELECT 'bn'||i, 'v'||i FROM generate_series(1,150) i");
+            s.execute("INSERT INTO u_big_link SELECT 'be'||i, 'bn'||i, 'bn'||((i%150)+1) FROM generate_series(1,150) i");
         }
-        String dir = new File(JdbcUnionTest.class.getResource("/configuration/union/graph.json").toURI()).getParent();
+        g = open("/configuration/union/graph.json", "union");
+        bg = open("/configuration/union_big/graph.json", "union_big");
+    }
+
+    private static GraphTraversalSource open(String resource, String name) throws Exception {
+        String dir = new File(JdbcUnionTest.class.getResource(resource).toURI()).getParent();
         Configuration conf = new BaseConfiguration();
         conf.setProperty(Graph.GRAPH, UniGraph.class.getName());
-        conf.setProperty("graphName", "union");
+        conf.setProperty("graphName", name);
         conf.setProperty("providers", dir);
-        g = UniGraph.open(conf).traversal();
+        return UniGraph.open(conf).traversal();
     }
 
     @AfterClass
-    public static void tearDown() throws Exception { if (g != null) g.close(); }
+    public static void tearDown() throws Exception {
+        if (g != null) g.close();
+        if (bg != null) bg.close();
+    }
 
     @Before
     public void clearTiming() { TimingExecuterListener.timing.clear(); }
@@ -146,5 +170,34 @@ public class JdbcUnionTest {
                 .order().toList();
         // n1(a) -> union(out.name) = b,c ; n2/n3/n4 -> constant z
         assertEquals(java.util.Arrays.asList("b", "c", "z", "z", "z"), r);
+    }
+
+    /** Returns true if the (strategy-compiled) traversal's union was batched into a UniGraphUnionStep,
+     *  false if the guard left it native. Applying strategies mutates t, so pass a throwaway traversal. */
+    private static boolean unionIsBatched(Traversal.Admin<?, ?> t) {
+        t.applyStrategies();
+        return !TraversalHelper.getStepsOfAssignableClass(UniGraphUnionStep.class, t).isEmpty();
+    }
+
+    @Test
+    public void unionGlobalStatefulBranchOverBulkMaxFallsBackToNative() {
+        // 150 inputs > bulk.max(100) => 2 batches (100 + 50). A batched union resets the branch — and
+        // its RangeGlobalStep(limit) counter — per batch, yielding limit(2) PER batch = 4 total (the bug).
+        // Native union feeds all 150 into one un-reset branch => global limit(2) = 2. The guard (limit is
+        // a Barrier in 3.8.1) must leave this union native.
+        assertFalse("branch with a global-stateful step (limit) must NOT be batched",
+                unionIsBatched(bg.V().union(__.out("biglink").limit(2)).asAdmin()));
+        assertEquals("global limit(2) over 150 inputs must be 2, not 2-per-100-batch",
+                Long.valueOf(2), bg.V().union(__.out("biglink").limit(2)).count().next());
+    }
+
+    @Test
+    public void unionPureAdjacencyOverBulkMaxStillBatches() {
+        // No global-stateful step => guard must NOT fire; the target adjacency shape still batches even
+        // over >bulk.max inputs. Each of 150 nodes has one out-edge: out=150, out.out=150 => 300 total.
+        assertTrue("pure-adjacency branches must still be batched (guard did not over-restrict)",
+                unionIsBatched(bg.V().union(__.out("biglink"), __.out("biglink").out("biglink")).asAdmin()));
+        assertEquals(Long.valueOf(300),
+                bg.V().union(__.out("biglink"), __.out("biglink").out("biglink")).count().next());
     }
 }
