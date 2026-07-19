@@ -43,6 +43,11 @@ public class UniGraphMultiHopStepStrategy
         if (!(graph instanceof UniGraph)) return;
         UniGraph uniGraph = (UniGraph) graph;
 
+        // Only fold when a backend can actually push the multi-hop join down (JDBC). Otherwise
+        // folding just reroutes ES/REST/virtual through the sequential path with no benefit and
+        // extra regression surface — leave the two vertex steps untouched.
+        if (uniGraph.getControllerManager().getControllers(MultiHopQuery.MultiHopController.class).isEmpty()) return;
+
         List<Step> steps = new ArrayList<>(traversal.getSteps());
         for (int i = 0; i < steps.size() - 1; i++) {
             Step a = steps.get(i);
@@ -73,7 +78,7 @@ public class UniGraphMultiHopStepStrategy
             PredicatesHolder finalPreds = hop2.getVertexPredicates();
             UniGraphMultiHopStep multi = new UniGraphMultiHopStep<Vertex>(
                     traversal, uniGraph, uniGraph.getControllerManager(),
-                    hopSpecs, finalPreds, true);
+                    hopSpecs, finalPreds);
 
             if (hop2.getOrders() != null) multi.setOrders(hop2.getOrders());
             if (hop2.getLimit() >= 0) multi.setLimit(hop2.getLimit());

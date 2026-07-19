@@ -41,9 +41,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Collapses two consecutive adjacency hops into one bulk query when a
+ * Collapses two consecutive {@code out}/{@code in} adjacency hops into one bulk query when a
  * {@link MultiHopQuery.MultiHopController} can answer; otherwise runs hops sequentially.
- * Final hop may return vertices ({@code out}/{@code in}) or edges ({@code outE}/{@code inE}).
  */
 public class UniGraphMultiHopStep<E extends Element> extends UniPredicatesStep<Vertex, E>
         implements ReceivesPredicatesHolder<Vertex, E>, Orderable, Profiling {
@@ -53,7 +52,6 @@ public class UniGraphMultiHopStep<E extends Element> extends UniPredicatesStep<V
     private static final String SRC_ALIAS = "__unipop_src";
 
     private final List<MultiHopQuery.HopSpec> hops;
-    private final boolean returnsVertex;
     private PredicatesHolder finalVertexPredicates = PredicatesHolderFactory.empty();
     private List<Pair<String, Order>> orders;
     private int limit = -1;
@@ -66,11 +64,9 @@ public class UniGraphMultiHopStep<E extends Element> extends UniPredicatesStep<V
                                 UniGraph graph,
                                 ControllerManager controllerManager,
                                 List<MultiHopQuery.HopSpec> hops,
-                                PredicatesHolder finalVertexPredicates,
-                                boolean returnsVertex) {
+                                PredicatesHolder finalVertexPredicates) {
         super(traversal, graph);
         this.hops = hops == null ? Collections.emptyList() : new ArrayList<>(hops);
-        this.returnsVertex = returnsVertex;
         this.finalVertexPredicates = finalVertexPredicates == null
                 ? PredicatesHolderFactory.empty() : finalVertexPredicates;
         this.multiHopControllers = controllerManager.getControllers(MultiHopQuery.MultiHopController.class);
@@ -91,7 +87,7 @@ public class UniGraphMultiHopStep<E extends Element> extends UniPredicatesStep<V
         }
 
         MultiHopQuery query = new MultiHopQuery(starts, hops, finalVertexPredicates, orders, limit,
-                propertyKeys, returnsVertex, stepDescriptor);
+                propertyKeys, stepDescriptor);
         logger.debug("MultiHop query: {}", query);
 
         Iterator<Edge> joined = null;
@@ -109,11 +105,9 @@ public class UniGraphMultiHopStep<E extends Element> extends UniPredicatesStep<V
             out = sequentialFallback(starts, idToTraverser);
         }
 
-        if (returnsVertex) {
-            boolean noProps = propertyKeys != null && propertyKeys.isEmpty();
-            if (finalVertexPredicates.notEmpty() || !noProps) {
-                return hydrateIfNeeded((Iterator) out);
-            }
+        boolean noProps = propertyKeys != null && propertyKeys.isEmpty();
+        if (finalVertexPredicates.notEmpty() || !noProps) {
+            return hydrateIfNeeded((Iterator) out);
         }
         return out;
     }
@@ -124,22 +118,13 @@ public class UniGraphMultiHopStep<E extends Element> extends UniPredicatesStep<V
         List<Traverser<Vertex>> starts = idToTraverser.get(startId);
         if (starts == null) return Stream.empty();
         Vertex mid = midOf(edge);
-        // Intermediate mid is always a Vertex; final may be Vertex or Edge — use raw split for mid.
         Step midStep = this;
-        if (returnsVertex) {
-            Vertex target = edge.inVertex();
-            return starts.stream().map(st -> {
-                Traverser.Admin t = st.asAdmin();
-                if (mid != null) t = t.split(mid, midStep);
-                return (Traverser.Admin<E>) t.split(target, this);
-            });
-        } else {
-            return starts.stream().map(st -> {
-                Traverser.Admin t = st.asAdmin();
-                if (mid != null) t = t.split(mid, midStep);
-                return (Traverser.Admin<E>) t.split(edge, this);
-            });
-        }
+        Vertex target = edge.inVertex();
+        return starts.stream().map(st -> {
+            Traverser.Admin t = st.asAdmin();
+            if (mid != null) t = t.split(mid, midStep);
+            return (Traverser.Admin<E>) t.split(target, this);
+        });
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -204,43 +189,13 @@ public class UniGraphMultiHopStep<E extends Element> extends UniPredicatesStep<V
         }
 
         List<Traverser.Admin<E>> results = new ArrayList<>();
-        if (returnsVertex) {
-            List<Edge> edges1 = hopEdges(mids, hop1, true);
-            for (Edge edge : edges1) {
-                for (Vertex[] st : endpoints(edge, hop1.getDirection())) {
-                    Vertex midShell = st[0];
-                    Vertex fin = st[1];
-                    if (fin == null) continue;
-                    List<Object[]> origins = midsById.get(midShell.id());
-                    if (origins == null) continue;
-                    for (Object[] row : origins) {
-                        Object originId = row[0];
-                        Vertex mid = (Vertex) row[1];
-                        List<Traverser<Vertex>> startsFor = idToTraverser.get(originId);
-                        if (startsFor == null) continue;
-                        for (Traverser<Vertex> st0 : startsFor) {
-                            results.add(pathSplit(st0.asAdmin(), mid, fin));
-                        }
-                    }
-                }
-            }
-        } else {
-            // Final hop returns edges from mids
-            SearchVertexQuery q = new SearchVertexQuery(Edge.class, mids, hop1.getDirection(),
-                    hop1.getEdgePredicates(), limit, propertyKeys, orders, stepDescriptor, traversal);
-            List<Edge> edges1 = vertexControllers.stream()
-                    .flatMap(c -> ConversionUtils.asStream(c.search(q)))
-                    .collect(Collectors.toList());
-            for (Edge edge : edges1) {
-                // source vertex of this edge is the mid
-                Vertex midShell = hop1.getDirection() == Direction.IN ? edge.inVertex() : edge.outVertex();
-                if (midShell == null) continue;
+        List<Edge> edges1 = hopEdges(mids, hop1, true);
+        for (Edge edge : edges1) {
+            for (Vertex[] st : endpoints(edge, hop1.getDirection())) {
+                Vertex midShell = st[0];
+                Vertex fin = st[1];
+                if (fin == null) continue;
                 List<Object[]> origins = midsById.get(midShell.id());
-                if (origins == null) {
-                    // both() not used; try other endpoint
-                    Vertex other = hop1.getDirection() == Direction.IN ? edge.outVertex() : edge.inVertex();
-                    if (other != null) origins = midsById.get(other.id());
-                }
                 if (origins == null) continue;
                 for (Object[] row : origins) {
                     Object originId = row[0];
@@ -248,7 +203,7 @@ public class UniGraphMultiHopStep<E extends Element> extends UniPredicatesStep<V
                     List<Traverser<Vertex>> startsFor = idToTraverser.get(originId);
                     if (startsFor == null) continue;
                     for (Traverser<Vertex> st0 : startsFor) {
-                        results.add(pathSplit(st0.asAdmin(), mid, edge));
+                        results.add(pathSplit(st0.asAdmin(), mid, fin));
                     }
                 }
             }
@@ -257,14 +212,6 @@ public class UniGraphMultiHopStep<E extends Element> extends UniPredicatesStep<V
     }
 
     private List<Edge> hopEdges(List<Vertex> vertices, MultiHopQuery.HopSpec hop, boolean last) {
-        if (!returnsVertex && last) {
-            // edge-return final hop
-            SearchVertexQuery q = new SearchVertexQuery(Edge.class, vertices, hop.getDirection(),
-                    hop.getEdgePredicates(), limit, propertyKeys, orders, stepDescriptor, traversal);
-            return vertexControllers.stream()
-                    .flatMap(c -> ConversionUtils.asStream(c.search(q)))
-                    .collect(Collectors.toList());
-        }
         PredicatesHolder targetPreds = last ? finalVertexPredicates : PredicatesHolderFactory.empty();
         List<Pair<String, Order>> hopOrders = last ? orders : null;
         int hopLimit = last ? limit : -1;
@@ -354,13 +301,9 @@ public class UniGraphMultiHopStep<E extends Element> extends UniPredicatesStep<V
         return Collections.singleton(TraverserRequirement.OBJECT);
     }
 
-    public boolean returnsVertex() {
-        return returnsVertex;
-    }
-
     @Override
     public String toString() {
         List<Direction> dirs = hops.stream().map(MultiHopQuery.HopSpec::getDirection).collect(Collectors.toList());
-        return StringFactory.stepString(this, dirs, returnsVertex ? "vertex" : "edge");
+        return StringFactory.stepString(this, dirs, "vertex");
     }
 }

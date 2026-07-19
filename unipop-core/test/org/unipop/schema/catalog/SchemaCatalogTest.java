@@ -125,6 +125,26 @@ public class SchemaCatalogTest {
     }
 
     @Test
+    public void joinTargetsIncludeSameSourceOpenLabelVtype() {
+        FakeVertex host = vertex("host", "status", "name");
+        FakeVertex person = vertex("person", "status", "name");
+        FakeVertex anything = openLabelVertex("status"); // open-label vtype, same source
+        FakeEdge owns = edge("owns",
+                new ReferenceVertexSchema(endpointJson("@src_id", "person"), null),
+                new ReferenceVertexSchema(endpointJson("@dst_id", "host"), null),
+                true);
+
+        SchemaCatalog catalog = catalogOf(host, person, anything, owns);
+
+        // OUT hop → closed endpoint "host"; the open-label vtype can also hold host-labeled rows,
+        // so it must survive pruning alongside the closed-linked host.
+        Set<ElementSchema> outTargets = catalog.joinTargets(owns, Direction.OUT, Collections.emptySet());
+        assertTrue("closed-linked host present", outTargets.contains(host));
+        assertTrue("same-source open-label vtype must not be pruned", outTargets.contains(anything));
+        assertFalse("person is the OUT source, not an OUT target", outTargets.contains(person));
+    }
+
+    @Test
     public void openEndpointFallsBackToSameSourceVertices() {
         FakeVertex host = vertex("host", "status");
         FakeVertex person = vertex("person", "status");

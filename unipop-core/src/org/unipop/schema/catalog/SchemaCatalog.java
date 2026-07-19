@@ -53,7 +53,7 @@ public final class SchemaCatalog {
     public static final String P_SOURCE_ID = "id";
     public static final String P_PROVIDER_CLASS = "providerClass";
 
-    private final Graph graph;
+    private volatile Graph graph;
 
     public SchemaCatalog() {
         this.graph = TinkerGraph.open();
@@ -66,19 +66,14 @@ public final class SchemaCatalog {
 
     /**
      * Replace catalog contents from controller contributions (load / hot-reload).
+     * Builds a fresh graph and atomically swaps it in, so concurrent readers on the
+     * request path always see a fully-built graph (never a half-cleared one) without
+     * locking. {@code synchronized} only serializes competing rebuilds.
      */
     public synchronized void rebuild(Collection<? extends SchemaContributor> contributors) {
-        clearGraph();
-        SchemaCatalogBuilder.build(graph, contributors);
-    }
-
-    private void clearGraph() {
-        List<Edge> edges = new ArrayList<>();
-        graph.edges().forEachRemaining(edges::add);
-        edges.forEach(Edge::remove);
-        List<Vertex> vertices = new ArrayList<>();
-        graph.vertices().forEachRemaining(vertices::add);
-        vertices.forEach(Vertex::remove);
+        Graph fresh = TinkerGraph.open();
+        SchemaCatalogBuilder.build(fresh, contributors);
+        this.graph = fresh;
     }
 
     /**
@@ -143,10 +138,13 @@ public final class SchemaCatalog {
                 ElementSchema schema = schemaOf(vtype);
                 if (schema != null) candidates.add(schema);
             }
-            // No resolved links (closed labels that matched no vtype) → empty is correct.
-            // If flags say closed but we never linked (builder couldn't), fall back to same-source.
             if (!anyLink) {
+                // Closed flags but the builder linked nothing → safe fallback to all same-source.
                 candidates.addAll(sameSourceVertexSchemas(etype));
+            } else {
+                // Open-label vtypes are never linked (they match any label) yet can still hold the
+                // endpoint's labels — include same-source open-label vtypes so they aren't pruned.
+                candidates.addAll(sameSourceOpenLabelVertexSchemas(etype));
             }
         }
 
@@ -477,11 +475,28 @@ public final class SchemaCatalog {
         return out;
     }
 
+    /** Same-source vtypes whose label domain is open (accept any label). */
+    private Set<ElementSchema> sameSourceOpenLabelVertexSchemas(Vertex etype) {
+        Vertex source = sourceOf(etype);
+        Set<ElementSchema> out = new HashSet<>();
+        if (source == null) return out;
+        source.edges(Direction.IN, E_BOUND_TO).forEachRemaining(e -> {
+            Vertex type = e.outVertex();
+            if (V_VTYPE.equals(type.label()) && bool(type, P_LABEL_OPEN)) {
+                ElementSchema schema = schemaOf(type);
+                if (schema != null) out.add(schema);
+            }
+        });
+        return out;
+    }
+
     private Vertex sourceOf(Vertex typeVertex) {
         Iterator<Edge> it = typeVertex.edges(Direction.OUT, E_BOUND_TO);
         return it.hasNext() ? it.next().inVertex() : null;
     }
 
+    // ponytail: O(types) scan + a fresh traversal per call, fine while the catalog is type-sized.
+    // Memoize schema->vertex in a per-rebuild map if a large-schema profile ever shows it hurts.
     private Vertex findTypeVertex(String kind, ElementSchema schema) {
         if (schema == null) return null;
         for (Vertex v : graph.traversal().V().hasLabel(kind).toList()) {

@@ -54,13 +54,6 @@ public class EnumPropertySchema extends FieldPropertySchema implements EnumColum
     }
 
     /**
-     * Known enum members (config and/or catalog introspection). Empty when still unknown.
-     */
-    public Set<Object> getEnumValues() {
-        return values;
-    }
-
-    /**
      * Fill domain from Postgres introspection. No-op when config (or a prior hydrate) already
      * provided members — config always wins.
      */

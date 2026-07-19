@@ -118,12 +118,6 @@ public class RowController implements SimpleController, SchemaContributor, Schem
         for (MultiHopQuery.HopSpec h : query.getHops()) {
             if (h.getDirection() == null || h.getDirection() == Direction.BOTH) return null;
         }
-        // Edge-final multi-join only when explicitly enabled and a limit is folded onto the step.
-        // Unbounded out().outE() multi-joins are slower than sequential hop joins in practice.
-        if (!query.isReturnsVertex()) {
-            if (!graph.configuration().getBoolean("jdbc.multiHopEdgeFinal", false)) return null;
-            if (query.getFinalLimit() < 0) return null;
-        }
 
         List<Hop> catalogHops = new ArrayList<>();
         for (int i = 0; i < query.getHops().size(); i++) {
@@ -158,30 +152,21 @@ public class RowController implements SimpleController, SchemaContributor, Schem
             }
         }
 
-        // Edge-final: plans only differ by mid/final vertex types; SQL joins e0⋈e1 and does not
-        // use those. Dedup by (e0, e1, dirs) so we run one query per edge-schema pair.
-        List<PathPlan> toRun = query.isReturnsVertex() ? plans : dedupeEdgeFinalPlans(plans);
-        if (!query.isReturnsVertex() && toRun.size() > planCap) {
-            return null;
-        }
-
-        Set<Edge> out = new HashSet<>();
+        // Random per-carrier edge ids (see fromTwoHopRow) already keep distinct fan-out paths apart,
+        // so a List preserves multiset cardinality; a join over unique PKs emits no duplicate rows.
+        List<Edge> out = new ArrayList<>();
         int ran = 0;
         try {
-            for (PathPlan plan : toRun) {
+            for (PathPlan plan : plans) {
                 Select sel = MultiHopJoinBuilder.buildTwoHop(query, plan);
-                if (sel == null) continue;
+                // A plan we can't express as SQL (e.g. a cross-provider vertex target) must not be
+                // silently dropped — that returns a partial result. Fall back to sequential wholesale.
+                if (sel == null) return null;
                 ran++;
                 for (Map<String, Object> row : this.getContextManager().fetch(sel)) {
-                    Edge edge;
-                    if (query.isReturnsVertex()) {
-                        JdbcVertexSchema midVs = (JdbcVertexSchema) plan.getHops().get(0).getTargetVertexSchema();
-                        JdbcVertexSchema finalVs = (JdbcVertexSchema) plan.getHops().get(1).getTargetVertexSchema();
-                        edge = MultiHopJoinBuilder.fromTwoHopRow(row, midVs, finalVs, graph);
-                    } else {
-                        RowEdgeSchema e1 = (RowEdgeSchema) plan.getHops().get(1).getEdgeSchema();
-                        edge = MultiHopJoinBuilder.fromTwoHopEdgeRow(row, e1, graph);
-                    }
+                    JdbcVertexSchema midVs = (JdbcVertexSchema) plan.getHops().get(0).getTargetVertexSchema();
+                    JdbcVertexSchema finalVs = (JdbcVertexSchema) plan.getHops().get(1).getTargetVertexSchema();
+                    Edge edge = MultiHopJoinBuilder.fromTwoHopRow(row, midVs, finalVs, graph);
                     if (edge != null) out.add(edge);
                 }
             }
@@ -190,20 +175,6 @@ public class RowController implements SimpleController, SchemaContributor, Schem
         }
         if (ran == 0) return null; // no expressible plan → sequential fallback
         return out.iterator();
-    }
-
-    /** Collapse edge-final plans that share the same two edge schemas + directions. */
-    private static List<PathPlan> dedupeEdgeFinalPlans(List<PathPlan> plans) {
-        Map<String, PathPlan> unique = new LinkedHashMap<>();
-        for (PathPlan plan : plans) {
-            if (plan.size() != 2) continue;
-            PathHop h0 = plan.getHops().get(0);
-            PathHop h1 = plan.getHops().get(1);
-            String key = System.identityHashCode(h0.getEdgeSchema()) + "|" + h0.getDirection()
-                    + "|" + System.identityHashCode(h1.getEdgeSchema()) + "|" + h1.getDirection();
-            unique.putIfAbsent(key, plan);
-        }
-        return new ArrayList<>(unique.values());
     }
 
     @Override

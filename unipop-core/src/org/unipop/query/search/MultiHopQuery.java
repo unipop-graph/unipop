@@ -18,14 +18,9 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Multi-hop adjacency query: collapse a 2-hop chain into one backend request when possible.
- * <ul>
- *   <li>{@code returnsVertex=true}: final hop is {@code out}/{@code in} — carriers are
- *       adjacencyJoinDirected edges (shell source = start, hydrated in = final vertex).</li>
- *   <li>{@code returnsVertex=false}: final hop is {@code outE}/{@code inE} — carriers are real
- *       final edges with mid stashed for path reconstruction.</li>
- * </ul>
- * Controllers return {@code null} to signal sequential fallback.
+ * Multi-hop adjacency query: collapse a 2-hop {@code out}/{@code in} chain into one backend
+ * request when possible. Carriers are adjacencyJoinDirected edges (shell source = start,
+ * hydrated in = final vertex). Controllers return {@code null} to signal sequential fallback.
  */
 public class MultiHopQuery extends UniQuery {
 
@@ -53,8 +48,6 @@ public class MultiHopQuery extends UniQuery {
     private final List<Pair<String, Order>> finalOrders;
     private final int finalLimit;
     private final Set<String> propertyKeys;
-    /** true = final is vertex (out/in); false = final is edge (outE/inE). */
-    private final boolean returnsVertex;
 
     public MultiHopQuery(List<Vertex> starts,
                          List<HopSpec> hops,
@@ -62,17 +55,6 @@ public class MultiHopQuery extends UniQuery {
                          List<Pair<String, Order>> finalOrders,
                          int finalLimit,
                          Set<String> propertyKeys,
-                         StepDescriptor stepDescriptor) {
-        this(starts, hops, finalTargetPredicates, finalOrders, finalLimit, propertyKeys, true, stepDescriptor);
-    }
-
-    public MultiHopQuery(List<Vertex> starts,
-                         List<HopSpec> hops,
-                         PredicatesHolder finalTargetPredicates,
-                         List<Pair<String, Order>> finalOrders,
-                         int finalLimit,
-                         Set<String> propertyKeys,
-                         boolean returnsVertex,
                          StepDescriptor stepDescriptor) {
         super(stepDescriptor);
         this.starts = starts == null ? Collections.emptyList() : starts;
@@ -81,7 +63,6 @@ public class MultiHopQuery extends UniQuery {
         this.finalOrders = finalOrders;
         this.finalLimit = finalLimit;
         this.propertyKeys = propertyKeys;
-        this.returnsVertex = returnsVertex;
     }
 
     public List<Vertex> getStarts() {
@@ -106,10 +87,6 @@ public class MultiHopQuery extends UniQuery {
 
     public Set<String> getPropertyKeys() {
         return propertyKeys;
-    }
-
-    public boolean isReturnsVertex() {
-        return returnsVertex;
     }
 
     /**
