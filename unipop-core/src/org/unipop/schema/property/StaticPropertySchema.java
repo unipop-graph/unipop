@@ -47,6 +47,11 @@ public class StaticPropertySchema implements PropertySchema {
     }
 
     @Override
+    public Set<Object> knownValues() {
+        return Collections.singleton(value);
+    }
+
+    @Override
     public PredicatesHolder toPredicates(PredicatesHolder predicatesHolder) {
         Set<PredicatesHolder> predicates = predicatesHolder.findKey(this.key).map(has -> {
             if (has != null && !test(has.getPredicate())) {

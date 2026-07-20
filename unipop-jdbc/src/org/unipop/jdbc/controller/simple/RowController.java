@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unipop.common.util.PredicatesTranslator;
 import org.javatuples.Pair;
+import org.unipop.jdbc.schemas.MultiHopJoinBuilder;
 import org.unipop.jdbc.schemas.RowEdgeSchema;
 import org.unipop.jdbc.schemas.RowVertexSchema;
 import org.unipop.jdbc.schemas.jdbc.JdbcEdgeSchema;
@@ -30,8 +31,15 @@ import org.unipop.query.mutation.PropertyQuery;
 import org.unipop.query.mutation.RemoveQuery;
 import org.unipop.query.predicates.PredicatesHolder;
 import org.unipop.query.predicates.PredicatesHolderFactory;
+import org.unipop.schema.catalog.Hop;
+import org.unipop.schema.catalog.PathHop;
+import org.unipop.schema.catalog.PathPlan;
+import org.unipop.schema.catalog.SchemaCatalog;
+import org.unipop.schema.catalog.SchemaCatalogAware;
+import org.unipop.schema.catalog.SchemaContributor;
 import org.unipop.schema.element.VertexSchema;
 import org.unipop.query.search.DeferredVertexQuery;
+import org.unipop.query.search.MultiHopQuery;
 import org.unipop.query.search.SearchQuery;
 import org.unipop.query.search.SearchVertexQuery;
 import org.unipop.schema.element.ElementSchema;
@@ -56,7 +64,8 @@ import static org.jooq.impl.DSL.table;
  * @author Gur Ronen
  * @since 6/12/2016
  */
-public class RowController implements SimpleController {
+public class RowController implements SimpleController, SchemaContributor, SchemaCatalogAware,
+        MultiHopQuery.MultiHopController {
     protected final static Logger logger = LoggerFactory.getLogger(RowController.class);
 
     private final ContextManager contextManager;
@@ -69,6 +78,7 @@ public class RowController implements SimpleController {
     private final PredicatesTranslator<Condition> predicatesTranslator;
 
     private TraversalFilter traversalFilter;
+    private SchemaCatalog schemaCatalog;
 
     public <E extends Element> RowController(UniGraph graph, ContextManager contextManager, Set<JdbcSchema> schemaSet, PredicatesTranslator<Condition> predicatesTranslator, TraversalFilter traversalFilter) {
         this.graph = graph;
@@ -82,6 +92,92 @@ public class RowController implements SimpleController {
     }
 
     @Override
+    public Set<? extends ElementSchema> contributedSchemas() {
+        Set<ElementSchema> schemas = new HashSet<>();
+        if (vertexSchemas != null) schemas.addAll(vertexSchemas);
+        if (edgeSchemas != null) schemas.addAll(edgeSchemas);
+        return schemas;
+    }
+
+    @Override
+    public boolean supportsJoin(ElementSchema schema) {
+        // Exact-class: InnerRowEdgeSchema extends RowEdgeSchema but is not joinable.
+        return schema != null && schema.getClass() == RowEdgeSchema.class;
+    }
+
+    @Override
+    public void setSchemaCatalog(SchemaCatalog catalog) {
+        this.schemaCatalog = catalog;
+    }
+
+    @Override
+    public Iterator<Edge> search(MultiHopQuery query) {
+        if (!graph.configuration().getBoolean("jdbc.multiHopPushdown", true)) return null;
+        if (schemaCatalog == null) return null;
+        if (query.getHops() == null || query.getHops().size() != 2) return null;
+        for (MultiHopQuery.HopSpec h : query.getHops()) {
+            if (h.getDirection() == null || h.getDirection() == Direction.BOTH) return null;
+        }
+
+        List<Hop> catalogHops = new ArrayList<>();
+        for (int i = 0; i < query.getHops().size(); i++) {
+            MultiHopQuery.HopSpec hs = query.getHops().get(i);
+            Set<String> edgeLabels = SchemaCatalog.extractClosedLabels(hs.getEdgePredicates());
+            Set<String> targetLabels = (i == query.getHops().size() - 1)
+                    ? SchemaCatalog.extractClosedLabels(query.getFinalTargetPredicates())
+                    : Collections.emptySet();
+            catalogHops.add(new Hop(hs.getDirection(), edgeLabels, targetLabels));
+        }
+
+        Set<String> startLabels = SchemaCatalog.labelsOf(query.getStarts());
+        // Low cap: many open-endpoint schemas explode plan count; sequential 2-hop is faster then.
+        int planCap = graph.configuration().getInt("jdbc.multiHopMaxPlans", 8);
+        List<PathPlan> plans = schemaCatalog.findPaths(startLabels, catalogHops, planCap);
+        if (plans.isEmpty()) {
+            // Not a hard miss when topology is open — fall back so sequential can still hit data.
+            return null;
+        }
+        // If we hit the cap, planning was truncated → sequential is safer/faster.
+        if (plans.size() >= planCap) {
+            return null;
+        }
+
+        // If any plan uses a non-joinable edge, fall back to sequential single hops.
+        for (PathPlan plan : plans) {
+            for (PathHop ph : plan.getHops()) {
+                if (!schemaCatalog.canJoin(ph.getEdgeSchema())
+                        || ph.getEdgeSchema().getClass() != RowEdgeSchema.class) {
+                    return null;
+                }
+            }
+        }
+
+        // Random per-carrier edge ids (see fromTwoHopRow) already keep distinct fan-out paths apart,
+        // so a List preserves multiset cardinality; a join over unique PKs emits no duplicate rows.
+        List<Edge> out = new ArrayList<>();
+        int ran = 0;
+        try {
+            for (PathPlan plan : plans) {
+                Select sel = MultiHopJoinBuilder.buildTwoHop(query, plan);
+                // A plan we can't express as SQL (e.g. a cross-provider vertex target) must not be
+                // silently dropped — that returns a partial result. Fall back to sequential wholesale.
+                if (sel == null) return null;
+                ran++;
+                for (Map<String, Object> row : this.getContextManager().fetch(sel)) {
+                    JdbcVertexSchema midVs = (JdbcVertexSchema) plan.getHops().get(0).getTargetVertexSchema();
+                    JdbcVertexSchema finalVs = (JdbcVertexSchema) plan.getHops().get(1).getTargetVertexSchema();
+                    Edge edge = MultiHopJoinBuilder.fromTwoHopRow(row, midVs, finalVs, graph);
+                    if (edge != null) out.add(edge);
+                }
+            }
+        } catch (RowEdgeSchema.OrderNotPushableException e) {
+            return null; // all-or-nothing order+limit
+        }
+        if (ran == 0) return null; // no expressible plan → sequential fallback
+        return out.iterator();
+    }
+
+    @Override
     public <E extends Element> Iterator<E> search(SearchQuery<E> uniQuery) {
 
         SelectCollector<JdbcSchema<E>, Select, E> collector = new SelectCollector<>(
@@ -89,7 +185,11 @@ public class RowController implements SimpleController {
                         schema.toPredicates(uniQuery.getPredicates())),
                 (schema, results) -> schema.parseResults(results, uniQuery)
         );
-        Set<? extends JdbcSchema<E>> schemas = this.getSchemas(uniQuery.getReturnType());
+        Set<String> labels = SchemaCatalog.extractClosedLabels(uniQuery.getPredicates());
+        Set<? extends JdbcSchema<E>> allSchemas = this.getSchemas(uniQuery.getReturnType());
+        Collection<? extends JdbcSchema<E>> schemas = (schemaCatalog == null || labels.isEmpty())
+                ? allSchemas
+                : schemaCatalog.filterByLabels(allSchemas, labels);
 
         Map<JdbcSchema<E>, Select> selects = schemas.stream()
                 .filter(schema -> this.traversalFilter.filter(schema, uniQuery.getTraversal())).collect(collector);
@@ -115,7 +215,12 @@ public class RowController implements SimpleController {
                 (schema, results) -> schema.parseResults(results, uniQuery)
         );
 
-        Map<JdbcSchema<Vertex>, Select> selects = vertexSchemas.stream()
+        Set<String> labels = SchemaCatalog.labelsOf(uniQuery.getVertices());
+        // Also honor has() predicates folded into the deferred query
+        labels.addAll(SchemaCatalog.extractClosedLabels(uniQuery.getPredicates()));
+        Collection<? extends RowVertexSchema> candidates = pruneByLabels(vertexSchemas, labels);
+
+        Map<JdbcSchema<Vertex>, Select> selects = candidates.stream()
                 .filter(schema -> this.traversalFilter.filter(schema, uniQuery.getTraversal())).collect(collector);
         Iterator<Vertex> searchIterator = this.search(uniQuery, selects, collector);
 
@@ -135,14 +240,24 @@ public class RowController implements SimpleController {
             Iterator<Edge> joined = searchJoin(uniQuery);
             if (joined != null) return joined;
         }
-        // Fallback: existing id-only edge path (unchanged).
+        // Fallback: existing id-only edge path (catalog prunes by source labels + edge labels).
         SelectCollector<JdbcSchema<Edge>, Select, Edge> collector = new SelectCollector<>(
                 schema -> schema.getSearch(uniQuery,
                         ((JdbcEdgeSchema) schema).toPredicates(uniQuery.getVertices(), uniQuery.getDirection(), uniQuery.getPredicates())),
                 (schema, results) -> schema.parseResults(results, uniQuery)
         );
 
-        Map<JdbcSchema<Edge>, Select> selects = edgeSchemas.stream()
+        Collection<? extends RowEdgeSchema> edgeCandidates = edgeSchemas;
+        if (schemaCatalog != null) {
+            Set<String> srcLabels = SchemaCatalog.labelsOf(uniQuery.getVertices());
+            Set<ElementSchema> byEndpoint = schemaCatalog.edgesFrom(srcLabels, uniQuery.getDirection());
+            edgeCandidates = edgeSchemas.stream()
+                    .filter(byEndpoint::contains)
+                    .collect(Collectors.toList());
+        }
+        edgeCandidates = pruneByLabels(edgeCandidates, SchemaCatalog.extractClosedLabels(uniQuery.getPredicates()));
+
+        Map<JdbcSchema<Edge>, Select> selects = edgeCandidates.stream()
                 .filter(schema -> this.traversalFilter.filter(schema, uniQuery.getTraversal())).collect(collector);
 
         return this.search(uniQuery, selects, collector);
@@ -158,15 +273,20 @@ public class RowController implements SimpleController {
     }
 
     /**
-     * Join fan-out over (edge schema x surviving vertex schema x direction). BOTH runs as two
+     * Join fan-out over (edge schema x candidate vertex schema x direction). BOTH runs as two
      * directed joins (OUT and IN); each produced edge is flagged adjacencyJoinDirected so the vertex
      * step maps it by its own source only (see UniGraphVertexStep), avoiding the double-count that
      * would otherwise come from edge.vertices(BOTH) fanning into both endpoints. Returns null to fall back.
+     * <p>
+     * When a {@link SchemaCatalog} is present, vertex candidates are pruned via type topology
+     * (closed labels / endpoint links). Open endpoints keep today's same-source full fan-out.
      */
     private Iterator<Edge> searchJoin(SearchVertexQuery uniQuery) {
         List<Direction> dirs = uniQuery.getDirection().equals(Direction.BOTH)
                 ? Arrays.asList(Direction.OUT, Direction.IN)
                 : Collections.singletonList(uniQuery.getDirection());
+
+        Set<String> targetLabels = SchemaCatalog.extractClosedLabels(uniQuery.getTargetPredicates());
 
         // Keyed by (edgeSchema, vertexSchema, direction) -- BOTH runs the same (edgeSchema, vs) pair
         // once per direction, so direction must be part of the key or one direction's select clobbers
@@ -179,10 +299,12 @@ public class RowController implements SimpleController {
                 // edge table -- an `instanceof` check here would wrongly let it through this join path.
                 if (es.getClass() != org.unipop.jdbc.schemas.RowEdgeSchema.class) return null; // inner/other edge schemas -> fall back
                 if (!this.traversalFilter.filter(es, uniQuery.getTraversal())) continue;
+                if (schemaCatalog != null && !schemaCatalog.canJoin(es)) continue;
                 RowEdgeSchema edgeSchema = (RowEdgeSchema) es;
-                for (JdbcSchema<Vertex> vs : vertexSchemas) {
-                    for (Direction dir : dirs) {
-                        Select sel = edgeSchema.getJoinSearch(uniQuery, (JdbcVertexSchema) vs, dir);
+                for (Direction dir : dirs) {
+                    for (JdbcVertexSchema vs : joinVertexCandidates(edgeSchema, dir, targetLabels)) {
+                        if (!this.traversalFilter.filter(vs, uniQuery.getTraversal())) continue;
+                        Select sel = edgeSchema.getJoinSearch(uniQuery, vs, dir);
                         if (sel != null) selects.put(new Pair<>(new Pair<>(edgeSchema, vs), dir), sel);
                     }
                 }
@@ -401,6 +523,32 @@ public class RowController implements SimpleController {
                                 .flatMap(m -> m.stream().map(es -> new HasContainer(es.getKey(), P.within(es.getValue()))))
                                 .collect(Collectors.toList()), Collections.emptyList()));
 
+    }
+
+    /**
+     * Vertex schemas to probe for a join in {@code dir}. Uses the schema catalog when present;
+     * otherwise the full controller vertex set (legacy cartesian fan-out).
+     */
+    private Collection<JdbcVertexSchema> joinVertexCandidates(RowEdgeSchema edgeSchema, Direction dir, Set<String> targetLabels) {
+        if (schemaCatalog == null) {
+            return vertexSchemas.stream().map(vs -> (JdbcVertexSchema) vs).collect(Collectors.toList());
+        }
+        Set<ElementSchema> targets = schemaCatalog.joinTargets(edgeSchema, dir, targetLabels);
+        List<JdbcVertexSchema> out = new ArrayList<>();
+        for (ElementSchema s : targets) {
+            if (s instanceof JdbcVertexSchema) out.add((JdbcVertexSchema) s);
+        }
+        return out;
+    }
+
+    /**
+     * Drop schemas whose closed label set cannot match {@code labels}. No catalog → no pruning.
+     */
+    private <S extends ElementSchema> Collection<? extends S> pruneByLabels(Collection<? extends S> schemas, Set<String> labels) {
+        if (schemaCatalog == null || labels == null || labels.isEmpty() || schemas == null) {
+            return schemas;
+        }
+        return schemaCatalog.filterByLabels(schemas, labels);
     }
 
     private <E extends Element> void extractRowSchemas(Set<JdbcSchema> schemas) {

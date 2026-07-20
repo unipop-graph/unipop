@@ -100,6 +100,15 @@ public class FieldPropertySchema implements PropertySchema {
         return value.isPresent() ? Collections.singleton(value.get()) : null;
     }
 
+    /**
+     * When config declares {@code include}, that set is a closed domain (used e.g. for label
+     * columns that only hold a fixed set of values).
+     */
+    @Override
+    public Set<Object> knownValues() {
+        return include != null ? Collections.unmodifiableSet(include) : Collections.emptySet();
+    }
+
     @Override
     public PredicatesHolder toPredicate(HasContainer has) {
         P predicate;

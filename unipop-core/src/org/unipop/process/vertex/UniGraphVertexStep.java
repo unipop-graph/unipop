@@ -181,6 +181,30 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
         this.vertexPredicates = vertexPredicates == null ? PredicatesHolderFactory.empty() : vertexPredicates;
     }
 
+    public PredicatesHolder getVertexPredicates() {
+        return vertexPredicates;
+    }
+
+    public Direction getDirection() {
+        return direction;
+    }
+
+    public boolean returnsVertex() {
+        return returnsVertex;
+    }
+
+    public String[] getEdgeLabels() {
+        return edgeLabels;
+    }
+
+    public int getLimit() {
+        return limit;
+    }
+
+    public List<Pair<String, Order>> getOrders() {
+        return orders;
+    }
+
     @Override
     public void setLimit(int limit) {
         this.limit = limit;

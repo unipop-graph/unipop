@@ -19,6 +19,9 @@ import org.unipop.query.mutation.RemoveQuery;
 import org.unipop.query.search.DeferredVertexQuery;
 import org.unipop.query.search.SearchQuery;
 import org.unipop.query.search.SearchVertexQuery;
+import org.unipop.schema.catalog.SchemaCatalog;
+import org.unipop.schema.catalog.SchemaCatalogAware;
+import org.unipop.schema.catalog.SchemaContributor;
 import org.unipop.schema.element.ElementSchema;
 import org.unipop.schema.reference.DeferredVertex;
 import org.unipop.structure.traversalfilter.TraversalFilter;
@@ -35,7 +38,7 @@ import java.util.stream.Collectors;
 /**
  * Created by sbarzilay on 24/11/16.
  */
-public class RestController implements SimpleController {
+public class RestController implements SimpleController, SchemaContributor, SchemaCatalogAware {
     private static final Logger logger = LoggerFactory.getLogger(RestController.class);
 
     private final UniGraph graph;
@@ -44,6 +47,7 @@ public class RestController implements SimpleController {
     private Set<? extends RestEdgeSchema> edgeSchemas = new HashSet<>();
 
     TraversalFilter traversalFilter;
+    private SchemaCatalog schemaCatalog;
 
     public RestController(UniGraph graph, Set<RestSchema> schemas, TraversalFilter traversalFilter) {
 
@@ -56,6 +60,24 @@ public class RestController implements SimpleController {
                 .map(schema -> ((RestEdgeSchema) schema)).collect(Collectors.toSet());
 
         logger.debug("Instantiated RestController: {}", this);
+    }
+
+    @Override
+    public Set<? extends ElementSchema> contributedSchemas() {
+        Set<ElementSchema> schemas = new HashSet<>();
+        if (vertexSchemas != null) schemas.addAll(vertexSchemas);
+        if (edgeSchemas != null) schemas.addAll(edgeSchemas);
+        return schemas;
+    }
+
+    @Override
+    public void setSchemaCatalog(SchemaCatalog catalog) {
+        this.schemaCatalog = catalog;
+    }
+
+    private <S extends ElementSchema> Collection<? extends S> pruneByLabels(Collection<? extends S> schemas, Set<String> labels) {
+        if (schemaCatalog == null || labels == null || labels.isEmpty() || schemas == null) return schemas;
+        return schemaCatalog.filterByLabels(schemas, labels);
     }
 
     private Set<RestSchema> collectSchemas(Set<? extends ElementSchema> schemas) {
@@ -77,7 +99,15 @@ public class RestController implements SimpleController {
                 new RestCollector<>(schema -> schema.getSearch(uniQuery),
                         (schema, result) -> schema.parseResults(result, uniQuery));
 
-        Map<RestEdgeSchema, BaseRequest> schemas = edgeSchemas.stream()
+        Collection<? extends RestEdgeSchema> edgeCandidates = edgeSchemas;
+        if (schemaCatalog != null) {
+            Set<String> srcLabels = SchemaCatalog.labelsOf(uniQuery.getVertices());
+            Set<ElementSchema> byEndpoint = schemaCatalog.edgesFrom(srcLabels, uniQuery.getDirection());
+            edgeCandidates = edgeSchemas.stream().filter(byEndpoint::contains).collect(Collectors.toList());
+        }
+        edgeCandidates = pruneByLabels(edgeCandidates, SchemaCatalog.extractClosedLabels(uniQuery.getPredicates()));
+
+        Map<RestEdgeSchema, BaseRequest> schemas = edgeCandidates.stream()
                 .filter(schema -> this.traversalFilter.filter(schema, uniQuery.getTraversal())).collect(collector);
 
         return search(uniQuery, schemas, collector);
@@ -88,7 +118,11 @@ public class RestController implements SimpleController {
         RestCollector<RestSchema<E>, BaseRequest, E> collector =
                 new RestCollector<>(schema -> schema.getSearch(uniQuery),
                         (schema, result) -> schema.parseResults(result, uniQuery));
-        Set<? extends RestSchema<E>> schemas = getSchemas(uniQuery.getReturnType());
+        Set<String> labels = SchemaCatalog.extractClosedLabels(uniQuery.getPredicates());
+        Set<? extends RestSchema<E>> allSchemas = getSchemas(uniQuery.getReturnType());
+        Collection<? extends RestSchema<E>> schemas = (schemaCatalog == null || labels.isEmpty())
+                ? allSchemas
+                : schemaCatalog.filterByLabels(allSchemas, labels);
         Map<RestSchema<E>, BaseRequest> collect = schemas.stream()
                 .filter(schema -> this.traversalFilter.filter(schema,uniQuery.getTraversal())).collect(collector);
         return search(uniQuery, collect, collector);
@@ -100,7 +134,9 @@ public class RestController implements SimpleController {
         RestCollector<RestVertexSchema, BaseRequest, Vertex> collector =
                 new RestCollector<>(schema -> schema.getSearch(uniQuery),
                         (schema, result) -> schema.parseResults(result, uniQuery));
-        Map<RestVertexSchema, BaseRequest> schemas = vertexSchemas.stream()
+        Set<String> labels = SchemaCatalog.labelsOf(uniQuery.getVertices());
+        labels.addAll(SchemaCatalog.extractClosedLabels(uniQuery.getPredicates()));
+        Map<RestVertexSchema, BaseRequest> schemas = pruneByLabels(vertexSchemas, labels).stream()
                 .filter(schema -> this.traversalFilter.filter(schema,uniQuery.getTraversal())).collect(collector);
         Iterator<Vertex> iterator = search(uniQuery, schemas, collector);
         Map<Object, DeferredVertex> vertexMap = uniQuery.getVertices().stream()

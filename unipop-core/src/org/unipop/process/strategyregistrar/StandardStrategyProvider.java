@@ -10,6 +10,7 @@ import org.unipop.process.properties.UniGraphPropertiesStrategy;
 import org.unipop.process.range.UniGraphRangeStepStrategy;
 import org.unipop.process.repeat.UniGraphRepeatStepStrategy;
 import org.unipop.process.graph.UniGraphStepStrategy;
+import org.unipop.process.multihop.UniGraphMultiHopStepStrategy;
 import org.unipop.process.union.UniGraphUnionStepStrategy;
 import org.unipop.process.vertex.UniGraphVertexStepStrategy;
 import org.unipop.process.where.UniGraphWhereStepStrategy;
@@ -21,6 +22,7 @@ public class StandardStrategyProvider implements StrategyProvider {
         traversalStrategies.addStrategies(
                 new UniGraphStepStrategy(),
                 new UniGraphVertexStepStrategy(),
+                new UniGraphMultiHopStepStrategy(),
                 new EdgeStepsStrategy(),
                 new UniGraphPropertiesStrategy(),
                 new UniGraphCoalesceStepStrategy(),

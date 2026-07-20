@@ -15,11 +15,15 @@ import org.unipop.schema.property.type.TextType;
 import org.unipop.util.PropertyTypeFactory;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 /**
  * Unit tests for {@link EnumPropertySchema.Builder} — no database needed. Locks in the config-claim
@@ -80,5 +84,36 @@ public class EnumPropertySchemaTest {
         assertNull(builder.build("status", new JSONObject().put("type", "jsonb"), null));
         assertNull(builder.build("status", new JSONObject().put("field", "status"), null));
         assertNull(builder.build("status", "@status", null));
+    }
+
+    @Test
+    public void valuesFormClosedKnownDomain() {
+        PropertySchema schema = builder.build("label",
+                new JSONObject()
+                        .put("type", "enum")
+                        .put("field", "label")
+                        .put("enumType", "element_label")
+                        .put("values", new org.json.JSONArray().put("person").put("software")),
+                null);
+        EnumPropertySchema enumSchema = (EnumPropertySchema) schema;
+        Set<Object> known = enumSchema.knownValues();
+        assertEquals(new HashSet<>(Arrays.asList("person", "software")), known);
+        assertFalse(known.isEmpty());
+    }
+
+    @Test
+    public void includeAcceptedAsValuesAlias() {
+        PropertySchema schema = builder.build("label",
+                new JSONObject()
+                        .put("type", "enum")
+                        .put("include", new org.json.JSONArray().put("host")),
+                null);
+        assertEquals(Collections.singleton("host"), ((EnumPropertySchema) schema).knownValues());
+    }
+
+    @Test
+    public void bareEnumHasEmptyKnownValues() {
+        PropertySchema schema = builder.build("status", new JSONObject().put("type", "enum"), null);
+        assertTrue(((EnumPropertySchema) schema).knownValues().isEmpty());
     }
 }

@@ -34,6 +34,16 @@ public class RestEdge extends AbstractRestSchema<Edge> implements RestEdgeSchema
         this.inVertexSchema = createVertexSchema("inVertex");
     }
 
+    @Override
+    public VertexSchema getOutVertexSchema() {
+        return outVertexSchema;
+    }
+
+    @Override
+    public VertexSchema getInVertexSchema() {
+        return inVertexSchema;
+    }
+
     protected VertexSchema createVertexSchema(String key) throws JSONException {
         JSONObject vertexConfiguration = this.json.optJSONObject(key);
         if (vertexConfiguration == null) return null;
