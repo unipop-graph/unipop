@@ -24,6 +24,7 @@ import org.unipop.jdbc.utils.ContextManager;
 import org.unipop.jdbc.utils.TimingExecuterListener;
 import org.unipop.query.UniQuery;
 import org.unipop.query.controller.SimpleController;
+import org.unipop.query.controller.SupportsUnboundedAdjacency;
 import org.unipop.query.mutation.AddEdgeQuery;
 import org.unipop.query.mutation.AddVertexQuery;
 import org.unipop.query.mutation.PropertyQuery;
@@ -56,7 +57,7 @@ import static org.jooq.impl.DSL.table;
  * @author Gur Ronen
  * @since 6/12/2016
  */
-public class RowController implements SimpleController {
+public class RowController implements SimpleController, SupportsUnboundedAdjacency {
     protected final static Logger logger = LoggerFactory.getLogger(RowController.class);
 
     private final ContextManager contextManager;
@@ -131,14 +132,26 @@ public class RowController implements SimpleController {
 
     @Override
     public Iterator<Edge> search(SearchVertexQuery uniQuery) {
+        // Flush pending buffered writes before reading. searchJoin() fetches directly (it does not
+        // route through the generic search() that flushes at line ~322), so without this an adjacency
+        // query that runs before any flushing read -- e.g. an unbounded-source start step, the first
+        // step in the traversal -- would read stale data (missing just-added vertices/edges).
+        if (!bulk.isEmpty()) {
+            contextManager.batch(bulk);
+            bulk.clear();
+        }
         if (joinApplicable(uniQuery)) {
             Iterator<Edge> joined = searchJoin(uniQuery);
             if (joined != null) return joined;
         }
-        // Fallback: existing id-only edge path (unchanged).
+        // Fallback: existing id-only edge path. For an unbounded source (allSources) there is no
+        // source-id bound -- use the edge-label predicates only, so the query matches all edges
+        // rather than aborting on the empty vertex list (which means "none", not "all").
         SelectCollector<JdbcSchema<Edge>, Select, Edge> collector = new SelectCollector<>(
                 schema -> schema.getSearch(uniQuery,
-                        ((JdbcEdgeSchema) schema).toPredicates(uniQuery.getVertices(), uniQuery.getDirection(), uniQuery.getPredicates())),
+                        uniQuery.isAllSources()
+                                ? schema.toPredicates(uniQuery.getPredicates())
+                                : ((JdbcEdgeSchema) schema).toPredicates(uniQuery.getVertices(), uniQuery.getDirection(), uniQuery.getPredicates())),
                 (schema, results) -> schema.parseResults(results, uniQuery)
         );
 
