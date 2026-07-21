@@ -136,7 +136,11 @@ public class RowEdgeSchema extends AbstractRowSchema<Edge> implements JdbcEdgeSc
 
         PredicatesHolder tgtHolder = vertexSchema.toPredicates(query.getTargetPredicates());
         if (tgtHolder.isAborted()) return null;
-        PredicatesHolder edgeHolder = this.toPredicates(query.getVertices(), directedDir, query.getPredicates());
+        // Unbounded source: no src-id bound, just the edge-label predicates (a single JOIN over the
+        // whole edge table filtered to the matching targets); otherwise bound by the source ids.
+        PredicatesHolder edgeHolder = query.isAllSources()
+                ? this.toPredicates(query.getPredicates())
+                : this.toPredicates(query.getVertices(), directedDir, query.getPredicates());
         if (edgeHolder.isAborted()) return null;
 
         Condition edgeCond = this.buildTranslator("e").translate(edgeHolder);

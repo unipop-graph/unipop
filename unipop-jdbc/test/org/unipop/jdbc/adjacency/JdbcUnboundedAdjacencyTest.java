@@ -79,6 +79,19 @@ public class JdbcUnboundedAdjacencyTest {
                 .anyMatch(sql -> sql.toLowerCase().contains("from " + table.toLowerCase()));
     }
 
+    /** A single query joined the target vertex table (the single-SQL-join push-down ran). */
+    private static boolean ranJoinOnHost() {
+        return TimingExecuterListener.timing.keySet().stream()
+                .anyMatch(sql -> { String q = sql.toLowerCase(); return q.contains("join") && q.contains("jp_host"); });
+    }
+
+    /** A separate, non-join, id-bounded fetch against a target vertex table (the two-query deferred path). */
+    private static boolean ranSeparateVertexFetch() {
+        return TimingExecuterListener.timing.keySet().stream()
+                .anyMatch(sql -> { String q = sql.toLowerCase().replaceAll("\\s+", " ");
+                    return !q.contains("join") && q.contains("from jp_host") && q.contains(" where ") && q.contains(" in ("); });
+    }
+
     // --- Correctness (results identical to native semantics) ---
 
     @Test
@@ -115,6 +128,21 @@ public class JdbcUnboundedAdjacencyTest {
         assertEquals(2L, (long) g.V().out("owns").hasLabel("host").has("status", "open").count().next());
         assertTrue("edge table must be scanned as the start (g.E())", ranAgainst("jp_owns"));
         assertFalse("person source table must NOT be scanned once g.V() is eliminated", ranAgainst("jp_person"));
+    }
+
+    @Test
+    public void multiHopChainsFromJoinStep() {
+        // The join step is the traversal START; its emitted neighbours must seed a following hop.
+        // root->{h1,h2,h3,p1,p2}, h1->p1 ; g.V().out('owns').out('owns') = p1 (from h1) = 1.
+        assertEquals(1L, (long) g.V().out("owns").out("owns").count().next());
+    }
+
+    @Test
+    public void singleJoinNotTwoQueries() {
+        // The unbounded out().has() must fold into ONE join query, not edge-scan + separate target fetch.
+        assertEquals(2L, (long) g.V().out("owns").hasLabel("host").has("status", "open").count().next());
+        assertTrue("expected a single join on jp_host", ranJoinOnHost());
+        assertFalse("join path must not run a separate deferred host fetch", ranSeparateVertexFetch());
     }
 
     // --- Guards: must fall back (keep source) when source identity is used ---
