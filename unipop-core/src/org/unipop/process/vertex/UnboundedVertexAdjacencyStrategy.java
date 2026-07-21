@@ -20,6 +20,9 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.unipop.process.edge.EdgeStepsStrategy;
 import org.unipop.process.graph.UniGraphStepStrategy;
+import org.unipop.process.predicate.PredicatesUtil;
+import org.unipop.query.controller.SupportsUnboundedAdjacency;
+import org.unipop.query.search.SearchVertexQuery;
 import org.unipop.structure.UniGraph;
 
 import java.util.Set;
@@ -65,6 +68,13 @@ public class UnboundedVertexAdjacencyStrategy extends AbstractTraversalStrategy<
                 || reqs.contains(TraverserRequirement.LABELED_PATH)
                 || reqs.contains(TraverserRequirement.SACK)) return;
 
+        // If a search controller can honour an unbounded-source SearchVertexQuery, fold the whole
+        // hop into a single edge-JOIN start step; otherwise use the backend-agnostic g.E().<adj>()
+        // rewrite (which reaches the same result via an edge scan + deferred target fetch).
+        boolean joinCapable = uniGraph.getControllerManager()
+                .getControllers(SearchVertexQuery.SearchVertexController.class).stream()
+                .anyMatch(c -> c instanceof SupportsUnboundedAdjacency);
+
         for (GraphStep gs : TraversalHelper.getStepsOfClass(GraphStep.class, traversal)) {
             if (!gs.isStartStep()) continue;
             if (!Vertex.class.isAssignableFrom(gs.getReturnClass())) continue;
@@ -76,7 +86,17 @@ public class UnboundedVertexAdjacencyStrategy extends AbstractTraversalStrategy<
             VertexStep<?> vs = (VertexStep<?>) next;
             if (!vs.returnsVertex()) continue;              // outE()/inE()/bothE() -> keep (v1: vertex hops only)
 
-            // out() neighbour is the edge's IN vertex; in() the OUT; both() -> both.
+            if (joinCapable) {
+                // Single edge-JOIN start step; collectVertexPredicates folds the trailing has() into
+                // its target predicates (edge labels come from the VertexStep in the step's ctor).
+                UniGraphUnboundedAdjacencyStep joinStep = new UniGraphUnboundedAdjacencyStep(vs, uniGraph, uniGraph.getControllerManager());
+                traversal.removeStep(gs);
+                TraversalHelper.replaceStep((Step) vs, (Step) joinStep, traversal);
+                joinStep.setVertexPredicates(PredicatesUtil.collectVertexPredicates(joinStep, traversal));
+                continue;
+            }
+
+            // Backend-agnostic rewrite: out() neighbour is the edge's IN vertex; in() the OUT; both() -> both.
             Direction hop = vs.getDirection();
             Direction edgeVertexDir = hop.equals(Direction.OUT) ? Direction.IN
                     : hop.equals(Direction.IN) ? Direction.OUT : Direction.BOTH;
