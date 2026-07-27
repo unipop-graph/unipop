@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 /**
  * Exercises a schemaless JSONB catch-all column on embedded PostgreSQL: store scalar + nested
@@ -48,6 +49,32 @@ public class JdbcJsonbTest {
     @AfterClass
     public static void tearDown() throws Exception {
         if (g != null) g.close();
+    }
+
+    /**
+     * A jsonb sub-key whose value is an empty array [] must not throw from a single-value accessor
+     * (project(...).by(key) / value(key)); it should behave like no-value, matching values(). A
+     * non-empty array still yields its first element. Regression for the unchecked get(0)
+     * (IndexOutOfBoundsException) on empty-array sub-keys.
+     */
+    @Test
+    public void emptyJsonbArraySubKeyIsNoValueNotIndexError() throws Exception {
+        try (Connection c = DriverManager.getConnection(EmbeddedPostgresServer.URL, EmbeddedPostgresServer.USER, "");
+             Statement s = c.createStatement()) {
+            s.execute("INSERT INTO docs (id, label, name, data) VALUES " +
+                    "('empty', 'doc', 'e', '{\"tags\": []}'::jsonb), " +
+                    "('full',  'doc', 'f', '{\"tags\": [\"a\", \"b\"]}'::jsonb)");
+        }
+
+        // empty array -> no value -> project omits the key (no exception)
+        Map<String, Object> emptyRow = g.V("empty").project("x").by("data.tags").next();
+        assertFalse("empty jsonb array sub-key must map to no entry", emptyRow.containsKey("x"));
+        // and values() likewise emits nothing
+        assertFalse(g.V("empty").values("data.tags").hasNext());
+
+        // non-empty array still returns element 0 (no regression)
+        Map<String, Object> fullRow = g.V("full").project("x").by("data.tags").next();
+        assertEquals("a", fullRow.get("x"));
     }
 
     @Test

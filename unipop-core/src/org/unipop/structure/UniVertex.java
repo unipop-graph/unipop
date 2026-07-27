@@ -151,9 +151,13 @@ public class UniVertex extends UniElement implements Vertex {
 
     @Override
     public <V> VertexProperty<V> property(final String key) {
-        if (this.properties.containsKey(key)) {
-            return (VertexProperty<V>) this.properties.get(key).get(0);
-        } else return VertexProperty.<V>empty();
+        // A key can map to an empty list: a jsonb sub-key whose value is an empty array [] expands
+        // to zero VertexProperty elements (see constructor). Treat that as no-value — matching
+        // values()/PropertiesStep — instead of an unchecked get(0) (IndexOutOfBoundsException).
+        List<VertexProperty> props = this.properties.get(key);
+        if (props != null && !props.isEmpty())
+            return (VertexProperty<V>) props.get(0);
+        return VertexProperty.<V>empty();
     }
 
     @Override
