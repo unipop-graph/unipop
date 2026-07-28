@@ -53,6 +53,9 @@ public class JdbcTimestamptzTest {
 
     @Before
     public void clean() throws Exception {
+        // the graph is transactional now, so a write left uncommitted by the previous test still holds
+        // locks on the table, and TRUNCATE on another connection would wait for them forever
+        if (g.getGraph().tx().isOpen()) g.getGraph().tx().rollback();
         try (Connection c = DriverManager.getConnection(EmbeddedPostgresServer.URL, EmbeddedPostgresServer.USER, "");
              Statement s = c.createStatement()) {
             s.execute("TRUNCATE TABLE tstz");

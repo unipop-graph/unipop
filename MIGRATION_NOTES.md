@@ -363,3 +363,138 @@ Example (`unipop-jdbc` PostgreSQL provider):
   "password": "${DB_PASSWORD}"
 }
 ```
+
+---
+
+# Transactions on the JDBC source (`supportsTransactions()` → `true`)
+
+A vertex `drop()` already cascaded to incident edges, but each delete auto-committed
+separately, so a failure part-way through left the graph half-deleted. The cascade is now
+atomic: one Gremlin request against the JDBC source is one PostgreSQL transaction.
+
+`g.V().hasId(...).drop().iterate()` removes the vertex **and every incident edge** inside a
+single transaction, committed on success and rolled back on throw.
+
+## Boundary
+
+Per-request and implicit. `supportsThreadedTransactions()` stays `false` — no Gremlin
+sessions, no client-side `g.tx().begin()`.
+
+Stock `gremlin-server` 3.8.1 drives it with no configuration: `TraversalOpProcessor`
+rolls back a stale transaction in `beforeProcessing` (:324), commits in
+`onTraversalSuccess` (:338) and rolls back in `onError` (:331) — all inside the one task
+submitted to the Gremlin executor (:308), so the same thread that iterates and serialises
+also commits. The `UnifiedChannelizer` path is equivalent (`SingleTaskSession.run()` pins
+`sessionThread`, `AbstractSession` closes the transaction at :554/:639).
+
+`strictTransactionManagement` does **not** need enabling. It is not consulted at all on the
+bytecode path, and on the unified path it only scopes *which* graphs get committed
+(`false` → all of them). It is not an on/off switch for transaction management.
+
+## Atomicity is not isolation
+
+The transaction makes the cascade all-or-nothing. It does **not** stop a concurrent writer
+from inserting a new edge pointing at a vertex being deleted:
+
+```
+us:   SELECT edges WHERE endpoint = X -> DELETE those edges -> DELETE X -> COMMIT
+them:                                       INSERT edge -> X, COMMIT
+```
+
+The new edge did not exist when we read, so there is no row to lock and no conflict to
+detect: our transaction commits correctly and the edge is left dangling. Closing this needs
+cooperation UniPop does not have — a foreign key (impossible here: endpoints are plain text
+with no FK, and a vertex source may be a read-only VIEW, which cannot be an FK target), or
+`SERIALIZABLE` on the *other* writer too, since PostgreSQL SSI only detects conflicts among
+transactions that are all `SERIALIZABLE`. The backstop remains an external orphan sweep.
+This is documented at the cascade site in `UniVertex.remove()`.
+
+## Behaviour change for embedded callers
+
+With the feature on, an embedded caller **must** close its transactions, exactly as with
+`Neo4jGraph`. Reads count too: `READ_WRITE_BEHAVIOR.AUTO` starts a transaction on a read or
+a write, so a read pins a connection until `commit()`/`rollback()`/`close()`. Code that used
+to rely on every statement auto-committing now needs an explicit commit, and a long-lived
+graph that never commits will hold a connection per thread. Over `gremlin-server` nothing
+changes: the server closes every request's transaction.
+
+## Single-source only
+
+`tx()` is honoured only when exactly one controller mutates and it is transactional; it
+otherwise still throws `transactionsNotSupported()`. A PostgreSQL transaction cannot span an
+Elasticsearch index, and two JDBC sources are two pools, hence two transactions — so a
+multi-source mutating delete fails fast rather than committing part of it and reporting
+success. `UniFeatures.supportsTransactions()` returns that same condition, so the flag and
+the behaviour cannot disagree.
+
+## New JDBC source settings
+
+| key | default | effect |
+|---|---|---|
+| `lockTimeoutMillis` | 30000 | cap on waiting for a row/table lock (`0` = wait forever, PostgreSQL's own default). PostgreSQL only |
+| `connectionWaitMillis` | 30000 | cap on waiting for a pooled connection |
+| `maxConnections` | unset (dbcp2 default) | pool size; only applied when specified |
+
+Holding a transaction means other sessions can now block on our uncommitted rows
+indefinitely — notably `insert .. on conflict do nothing` of a key we inserted but have not
+committed, which must wait to learn whether we commit. Neither `maxWaitMillis` (pool
+checkout) nor `withRetry` (reconnect, and suppressed inside a transaction) bounds a *lock*
+wait, so without `lockTimeoutMillis` that is an unbounded hang rather than an error. Note
+the cap is PostgreSQL-only syntax; other dialects have no lock-wait bound.
+
+Pool size deliberately keeps its default: every graph builds its own pool, so raising it
+here multiplies across graphs and exhausts the server's `max_connections` instead.
+
+## Buffer lifecycle
+
+`RowController`'s statement buffer is now owned by the transaction: flushed on commit
+(rolled back if that flush fails, so a partial write is never committed), discarded on
+rollback. It is thread-local, because a transaction pins one connection per thread and a
+shared buffer would flush one thread's statements onto another's connection.
+
+`RowController.close()` now exists and **discards** a non-empty buffer with a WARN naming
+the count, rather than dropping it silently as before. Discard rather than flush: at close
+there is nobody left to observe a failure, and TinkerPop's default `CLOSE_BEHAVIOR` is
+`ROLLBACK` anyway. `ContextManager.close()` also rolls back transactions left open on *other*
+threads — closing the pool returns the connection but does not end a transaction the server
+still has open, so its locks would otherwise outlive the graph.
+
+The buffer is no longer needed for correctness inside a transaction (a pinned connection is
+atomic regardless of batching); it survives purely as a round-trip optimisation.
+
+## Test suite
+
+`unipop-jdbc`: **2496 executed, 2431 passing (97.40%)**, 50 failures / 15 errors, ~1:50.
+Baseline before the change was 2475 executed, 2410 passing (97.37%), with the **same 50
+failures and 15 errors** — the failing set is unchanged, and ~32 `TransactionTest` cases that
+the feature flag activates now run and pass.
+
+Two pre-existing leaks had to be fixed first, both exposed rather than caused by the change:
+`JdbcWorld` built a `JdbcGraphProvider` per scenario without closing its `DriverManager`
+connection (1532 `too many clients` errors once reads began pinning connections), and
+`ContextManager.close()` only ended the calling thread's transaction.
+
+Newly opted out, all in `UniGraph` with reasons:
+
+- `IoTest.shouldReadWriteSelfLoopingEdges` and `IoGraphTest.shouldMigrate{Classic,Modern}Graph`
+  (per IO format) — these write to one graph and read into a **second graph opened at the same
+  time**, and `JdbcGraphProvider` maps every test graph onto one shared set of tables. The
+  second graph blocks on the first's uncommitted rows. These passed before this change; making
+  them pass again needs per-graph table isolation in the test provider, not a transaction fix.
+- `TransactionTest.shouldExecuteCompetingThreadsOnMultipleDbInstances` — multiple graph
+  instances are separate pools over the same tables, contending on each other's uncommitted
+  rows.
+- `TransactionTest.shouldCommit/RollbackPropertyAutoTransactionByDefault` — unrelated to
+  transactions: both set an arbitrary `name` property on an **edge**, and the test schema's edge
+  table has no such column with `dynamicProperties` disabled. The vertex halves pass.
+
+Parameterised opt-outs need `specific = "<parameter>"` per variant; `@Graph.OptOut` matches
+`method[specific]`, so a bare method name silently matches nothing.
+
+## Not included
+
+Batching the drop step, routing `remove()` through the buffer, and a set-based
+`DELETE .. WHERE out_ref IN (..) OR in_ref IN (..)` are all still open. The set-based cascade
+would shrink the race window above but does not close it, so it is an optimisation rather than
+a fix. `remove()` does now flush the buffer first, so a delete cannot overtake an earlier
+buffered insert within a transaction.

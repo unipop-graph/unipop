@@ -50,6 +50,7 @@ public class UniVertex extends UniElement implements Vertex {
 
     @Override
     public void removeProperty(Property property) {
+        graph.readWrite();
         List<VertexProperty> props = this.properties.get(property.key());
         props.remove(props.indexOf(property));
         if (props.size() == 0)
@@ -142,6 +143,7 @@ public class UniVertex extends UniElement implements Vertex {
             return VertexProperty.<V>empty();
         }
 
+        graph.readWrite();
         UniVertexProperty vertexProperty = (UniVertexProperty) addPropertyLocal(key, value);
         PropertyQuery<UniVertex> propertyQuery = new PropertyQuery<UniVertex>(this, vertexProperty, PropertyQuery.Action.Add, null);
         graph.getControllerManager().getControllers(PropertyQuery.PropertyController.class).forEach(controller ->
@@ -165,6 +167,7 @@ public class UniVertex extends UniElement implements Vertex {
         if (null == vertex) throw Graph.Exceptions.argumentCanNotBeNull("vertex");
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         ElementHelper.validateLabel(label);
+        graph.readWrite();
         Map<String, Object> stringObjectMap = ConversionUtils.asMap(keyValues);
         stringObjectMap.put(T.label.toString(), label);
         return graph.getControllerManager().getControllers(AddEdgeQuery.AddEdgeController.class).stream()
@@ -173,8 +176,26 @@ public class UniVertex extends UniElement implements Vertex {
                 .findFirst().get();
     }
 
+    /**
+     * Opened before the incident-edge read so the whole cascade — the SELECT and every DELETE it
+     * produces — runs on one connection inside one transaction, making it all-or-nothing.
+     *
+     * Atomic is not the same as isolated, and this does not close the following race:
+     *
+     *   us: SELECT edges WHERE endpoint = X  ->  DELETE those edges  ->  DELETE X  ->  COMMIT
+     *   them:                                        INSERT edge -> X, COMMIT
+     *
+     * A writer outside UniPop can insert an edge pointing at X after our SELECT. That edge did not
+     * exist when we read, so there is no row to lock and nothing to conflict with: our transaction
+     * commits correctly and completely, and the new edge is left dangling. Closing it needs
+     * cooperation we do not have — a foreign key (impossible here: endpoints are plain text with no
+     * FK, and a vertex source may be a VIEW, which cannot be an FK target) or SERIALIZABLE on the
+     * other writer too (Postgres SSI only detects conflicts between transactions that are all
+     * SERIALIZABLE). Until then the backstop is an external orphan sweep.
+     */
     @Override
     public void remove() {
+        graph.readWrite();
         edges(Direction.BOTH).forEachRemaining(Element::remove);
         super.remove();
     }

@@ -24,6 +24,7 @@ import org.unipop.jdbc.utils.ContextManager;
 import org.unipop.jdbc.utils.TimingExecuterListener;
 import org.unipop.query.UniQuery;
 import org.unipop.query.controller.SimpleController;
+import org.unipop.query.controller.TransactionalController;
 import org.unipop.query.mutation.AddEdgeQuery;
 import org.unipop.query.mutation.AddVertexQuery;
 import org.unipop.query.mutation.PropertyQuery;
@@ -56,7 +57,7 @@ import static org.jooq.impl.DSL.table;
  * @author Gur Ronen
  * @since 6/12/2016
  */
-public class RowController implements SimpleController {
+public class RowController implements SimpleController, TransactionalController {
     protected final static Logger logger = LoggerFactory.getLogger(RowController.class);
 
     private final ContextManager contextManager;
@@ -65,7 +66,12 @@ public class RowController implements SimpleController {
     protected Set<? extends RowVertexSchema> vertexSchemas;
     protected Set<? extends RowEdgeSchema> edgeSchemas;
 
-    protected List<Query> bulk;
+    /**
+     * Thread-local because a transaction pins one connection per thread: a buffer shared across threads
+     * would let one thread's un-sent statements be flushed onto another thread's connection, landing them
+     * in the wrong transaction.
+     */
+    private final ThreadLocal<List<Query>> bulk = ThreadLocal.withInitial(ArrayList::new);
     private final PredicatesTranslator<Condition> predicatesTranslator;
 
     private TraversalFilter traversalFilter;
@@ -76,14 +82,13 @@ public class RowController implements SimpleController {
 
         extractRowSchemas(schemaSet);
         this.predicatesTranslator = predicatesTranslator;
-        bulk = new ArrayList<>();
 
         this.traversalFilter = traversalFilter;
     }
 
     @Override
     public <E extends Element> Iterator<E> search(SearchQuery<E> uniQuery) {
-
+        graph.readWrite();
         SelectCollector<JdbcSchema<E>, Select, E> collector = new SelectCollector<>(
                 schema -> schema.getSearch(uniQuery,
                         schema.toPredicates(uniQuery.getPredicates())),
@@ -107,6 +112,7 @@ public class RowController implements SimpleController {
 
     @Override
     public void fetchProperties(DeferredVertexQuery uniQuery) {
+        graph.readWrite();
         SelectCollector<JdbcSchema<Vertex>, Select, Vertex> collector = new SelectCollector<>(
                 schema -> schema.getSearch(uniQuery,
                         PredicatesHolderFactory.and(
@@ -131,6 +137,7 @@ public class RowController implements SimpleController {
 
     @Override
     public Iterator<Edge> search(SearchVertexQuery uniQuery) {
+        graph.readWrite();
         if (joinApplicable(uniQuery)) {
             Iterator<Edge> joined = searchJoin(uniQuery);
             if (joined != null) return joined;
@@ -259,16 +266,15 @@ public class RowController implements SimpleController {
             Update step = DSL.update(table(schema.getTable()))
                     .set(fieldMap).where(field(idField).eq(row.getId()));
 
-            bulk.add(step);
-            if (bulk.size() >= 1000) {
-                contextManager.batch(bulk);
-                bulk.clear();
-            }
+            buffer(step);
         }
     }
 
     @Override
     public <E extends Element> void remove(RemoveQuery<E> uniQuery) {
+        // remove executes immediately while insert/update buffer, so without this a delete inside a
+        // transaction can overtake an earlier insert in the same traversal and be applied out of order
+        flush();
         uniQuery.getElements().forEach(el -> {
             Set<? extends JdbcSchema<E>> schemas = this.getSchemas(el.getClass());
 
@@ -282,6 +288,62 @@ public class RowController implements SimpleController {
                 logger.debug("removed element. element: {}, schema: {}, command: {}", el, schema, step);
             }
         });
+    }
+
+    @Override
+    public void begin() {
+        contextManager.beginTransaction();
+    }
+
+    /**
+     * Buffered statements have not been sent anywhere yet — they are jOOQ objects in a list — so a commit
+     * has to flush them first or they are simply lost, no matter which connection is pinned.
+     */
+    @Override
+    public void commit() {
+        try {
+            flush();
+        } catch (final RuntimeException e) {
+            // a statement that fails on the way out must not leave the ones before it committed
+            contextManager.rollbackTransaction();
+            throw e;
+        }
+        contextManager.commitTransaction();
+    }
+
+    @Override
+    public void rollback() {
+        // both halves are needed: the database undoes statements already flushed to the connection, and
+        // clearing drops the ones still buffered, which would otherwise flush into the next transaction
+        bulk.get().clear();
+        contextManager.rollbackTransaction();
+    }
+
+    /**
+     * Discards rather than flushes: close() means the session is going away, so nothing is left to observe
+     * a failure, and an open transaction would roll the flush back anyway — TinkerPop's default
+     * CLOSE_BEHAVIOR is ROLLBACK. Silently dropping them was the old behaviour; this at least says so.
+     */
+    public void close() {
+        List<Query> pending = bulk.get();
+        if (!pending.isEmpty()) {
+            logger.warn("discarding {} buffered statement(s) that were never flushed", pending.size());
+            pending.clear();
+        }
+    }
+
+    private void buffer(Query query) {
+        List<Query> pending = bulk.get();
+        pending.add(query);
+        // ponytail: fixed threshold, make it configurable when a workload actually needs a different one
+        if (pending.size() >= 1000) flush();
+    }
+
+    private void flush() {
+        List<Query> pending = bulk.get();
+        if (pending.isEmpty()) return;
+        contextManager.batch(pending);
+        pending.clear();
     }
 
     @SuppressWarnings("unchecked")
@@ -319,10 +381,7 @@ public class RowController implements SimpleController {
     protected <E extends Element, R> Iterator<R> search(UniQuery query, Map<JdbcSchema<E>, Select> selects,
                                                         SelectCollector<JdbcSchema<E>, Select, R> collector) {
 
-        if (bulk.size() != 0) {
-            contextManager.batch(bulk);
-            bulk.clear();
-        }
+        flush();
         MetricsRunner metrics = new MetricsRunner(this, query,
                 selects.keySet().stream().map(s -> ((ElementSchema) s)).collect(Collectors.toList()));
 
@@ -353,11 +412,7 @@ public class RowController implements SimpleController {
 //                logger.error("no rows changed on insertion. query: {}, element: {}", contextManager.render(query), element);
 //            }
 //            else {
-            bulk.add(query);
-            if (bulk.size() >= 1000) {
-                contextManager.batch(bulk);
-                bulk.clear();
-            }
+            buffer(query);
             return true;
 //            }
         }
@@ -379,11 +434,7 @@ public class RowController implements SimpleController {
 //            this.getContextManager().execute(step);
             logger.info("executed update statement with following parameters, step: {}, element: {}, schema: {}", this.getContextManager().render(step), element, schema);
 //            contextManager.execute("commit;");
-            bulk.add(step);
-            if (bulk.size() >= 1000) {
-                contextManager.batch(bulk);
-                bulk.clear();
-            }
+            buffer(step);
         }
     }
 

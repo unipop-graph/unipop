@@ -35,6 +35,7 @@ public class JdbcSourceProvider implements SourceProvider {
     private final Supplier<PredicatesTranslator<Condition>> predicatesTranslatorSupplier;
     private UniGraph graph;
     private ContextManager contextManager;
+    private RowController rowController;
 
     public JdbcSourceProvider() {
         this(JdbcPredicatesTranslator::new);
@@ -66,6 +67,9 @@ public class JdbcSourceProvider implements SourceProvider {
 
     @Override
     public void close() {
+        // the controller first: it owns the write buffer, and reports anything left in it rather than
+        // letting the statements vanish with the connection pool
+        if (this.rowController != null) this.rowController.close();
         this.contextManager.close();
     }
 
@@ -78,8 +82,8 @@ public class JdbcSourceProvider implements SourceProvider {
     }
 
     public Set<UniQueryController> createControllers(Set<JdbcSchema> schemas, TraversalFilter filter) {
-        RowController rowController = new RowController(this.graph, this.contextManager, schemas, this.predicatesTranslatorSupplier.get(), filter);
-        return Sets.newHashSet(rowController);
+        this.rowController = new RowController(this.graph, this.contextManager, schemas, this.predicatesTranslatorSupplier.get(), filter);
+        return Sets.newHashSet(this.rowController);
     }
 
     @Override
