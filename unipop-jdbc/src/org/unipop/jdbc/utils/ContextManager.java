@@ -98,14 +98,28 @@ public class ContextManager {
     /** Idempotent: a transaction is already open on this thread means we are already inside it. */
     public void beginTransaction() {
         if (isTransactionOpen()) return;
+        Connection connection = null;
         try {
-            Connection connection = ds.getConnection();
+            connection = ds.getConnection();
             connection.setAutoCommit(false);
-            txConnection.set(connection);
             pinnedConnections.add(connection);
+            txConnection.set(connection);
             // derive() keeps the dialect, render settings and timing listener, and swaps in this one connection
             txContext.set(DSL.using(jooqConfiguration.derive(connection)));
-        } catch (final SQLException e) {
+        } catch (final SQLException | RuntimeException e) {
+            // Failing anywhere after getConnection() must not strand it: at that point it is checked out of
+            // the pool but not yet reachable through either the thread-local or the pinned set, so nothing
+            // downstream would ever hand it back.
+            if (connection != null) {
+                pinnedConnections.remove(connection);
+                txConnection.remove();
+                txContext.remove();
+                try {
+                    connection.close();
+                } catch (final SQLException closeFailure) {
+                    logger.warn("could not return a half-opened transaction's connection to the pool", closeFailure);
+                }
+            }
             throw new IllegalStateException("could not open a transaction", e);
         }
     }

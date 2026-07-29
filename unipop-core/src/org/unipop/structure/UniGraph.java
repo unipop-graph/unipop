@@ -1,6 +1,8 @@
 package org.unipop.structure;
 
 import org.apache.commons.configuration2.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -129,6 +131,8 @@ import java.util.stream.Stream;
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
 public class UniGraph implements Graph {
 
+    private final static Logger logger = LoggerFactory.getLogger(UniGraph.class);
+
     //for testSuite
     public static UniGraph open(final Configuration configuration) throws Exception {
         return new UniGraph(configuration);
@@ -140,7 +144,19 @@ public class UniGraph implements Graph {
     private ControllerManager controllerManager;
     private List<SearchQuery.SearchController> queryControllers;
     private UniTransaction transaction;
+    /**
+     * Fixed for the lifetime of this graph. TinkerPop treats Graph.Features as a static capability
+     * descriptor — gremlin-server reads it once to build its handshake, and the test suites read it at
+     * class-init to resolve OptOuts — so it must not follow live configuration state.
+     */
     private boolean transactional;
+    /**
+     * Snapshot, replaced wholesale on a config reload rather than derived per use. Resolving it meant
+     * streaming the controller manager's live collection on every transaction open, i.e. on the
+     * request-serving path, while the directory-watcher thread can be clearing and rebuilding that same
+     * collection — a ConcurrentModificationException or a half-rebuilt view waiting to happen.
+     */
+    private volatile List<TransactionalController> transactionalControllers = Collections.emptyList();
 
     public UniGraph(Configuration configuration) throws Exception {
         configuration.setProperty(Graph.GRAPH, UniGraph.class.getName());
@@ -198,16 +214,28 @@ public class UniGraph implements Graph {
         this.controllerManager = controllerManager;
         this.queryControllers = controllerManager.getControllers(SearchQuery.SearchController.class);
         this.transaction = new UniTransaction(this);
-        controllersChanged();
+        this.transactionalControllers = resolveTransactionalControllers();
+        // decided once, here, and never revisited: see the field comment
+        this.transactional = transactionalControllers.size() == 1 && countMutating() == 1;
     }
 
     /**
-     * Recomputed rather than fixed at startup because ConfigurationControllerManager hot-reloads its
-     * providers when a config file changes, which replaces the controllers — and with them the
-     * connection pool a transaction would have been using.
+     * Refreshes the controller snapshot after ConfigurationControllerManager hot-reloads its providers,
+     * which replaces every controller and with it the connection pool a transaction would have used.
+     *
+     * The declared capability is deliberately *not* recomputed. If a reload changes it, anything that
+     * cached the old value — the server's handshake, a suite's OptOut resolution — would already be
+     * inconsistent, so the honest response is to say so loudly rather than silently flip a capability.
      */
     public void controllersChanged() {
-        this.transactional = controllerManager != null && computeTransactional();
+        if (controllerManager == null) return;
+        this.transactionalControllers = resolveTransactionalControllers();
+        boolean nowTransactional = transactionalControllers.size() == 1 && countMutating() == 1;
+        if (nowTransactional != transactional) {
+            logger.warn("provider reload changed whether this graph can support transactions ({} -> {}), " +
+                            "but Graph.Features are fixed per instance so it stays {}; restart to apply",
+                    transactional, nowTransactional, transactional);
+        }
     }
 
     /**
@@ -217,16 +245,19 @@ public class UniGraph implements Graph {
      * Elasticsearch index, and two JDBC sources are two connection pools, hence two transactions — so
      * we refuse rather than commit part of a delete and report success.
      */
-    private boolean computeTransactional() {
-        long mutating = controllerManager.getControllers().stream().filter(UniGraph::mutates).count();
-        return mutating == 1 && transactionalControllers().size() == 1;
+    private long countMutating() {
+        return controllerManager.getControllers().stream().filter(UniGraph::mutates).count();
     }
 
-    List<TransactionalController> transactionalControllers() {
+    private List<TransactionalController> resolveTransactionalControllers() {
         return controllerManager.getControllers().stream()
                 .filter(TransactionalController.class::isInstance)
                 .map(TransactionalController.class::cast)
-                .collect(Collectors.toList());
+                .collect(Collectors.collectingAndThen(Collectors.toList(), Collections::unmodifiableList));
+    }
+
+    List<TransactionalController> transactionalControllers() {
+        return transactionalControllers;
     }
 
     private static boolean mutates(UniQueryController controller) {
@@ -331,6 +362,7 @@ public class UniGraph implements Graph {
     }
 
     private <E extends Element, C extends Comparable> Iterator<E> query(Class<E> returnType, Object[] ids) {
+        readWrite();
         PredicatesHolder idPredicate = createIdPredicate(ids, returnType);
 
         SearchQuery<E> uniQuery = new SearchQuery<>(returnType, idPredicate, -1, null, null, null, null);

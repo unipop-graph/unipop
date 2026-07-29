@@ -97,6 +97,7 @@ public class UniVertex extends UniElement implements Vertex {
 
     @Override
     public Iterator<Edge> edges(Direction direction, String... edgeLabels) {
+        graph.readWrite();
         PredicatesHolder predicatesHolder = (edgeLabels.length == 0) ? PredicatesHolderFactory.empty() :
                 PredicatesHolderFactory.predicate(new HasContainer(T.label.getAccessor(), P.within(edgeLabels)));
 

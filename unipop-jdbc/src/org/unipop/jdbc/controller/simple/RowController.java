@@ -45,6 +45,7 @@ import org.unipop.structure.UniVertex;
 import org.unipop.util.MetricsRunner;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.*;
 import java.util.stream.Collector;
@@ -70,8 +71,14 @@ public class RowController implements SimpleController, TransactionalController 
      * Thread-local because a transaction pins one connection per thread: a buffer shared across threads
      * would let one thread's un-sent statements be flushed onto another thread's connection, landing them
      * in the wrong transaction.
+     *
+     * Every live buffer is also tracked, for the same reason ContextManager tracks its pinned connections:
+     * a ThreadLocal cannot be enumerated, so close() would otherwise see only the calling thread's buffer
+     * and statements stranded on any other thread would go unreported. The thread-local is released at the
+     * end of each transaction so a pooled server worker does not retain a buffer between requests.
      */
-    private final ThreadLocal<List<Query>> bulk = ThreadLocal.withInitial(ArrayList::new);
+    private final ThreadLocal<List<Query>> bulk = new ThreadLocal<>();
+    private final Set<List<Query>> liveBuffers = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final PredicatesTranslator<Condition> predicatesTranslator;
 
     private TraversalFilter traversalFilter;
@@ -88,7 +95,6 @@ public class RowController implements SimpleController, TransactionalController 
 
     @Override
     public <E extends Element> Iterator<E> search(SearchQuery<E> uniQuery) {
-        graph.readWrite();
         SelectCollector<JdbcSchema<E>, Select, E> collector = new SelectCollector<>(
                 schema -> schema.getSearch(uniQuery,
                         schema.toPredicates(uniQuery.getPredicates())),
@@ -112,7 +118,6 @@ public class RowController implements SimpleController, TransactionalController 
 
     @Override
     public void fetchProperties(DeferredVertexQuery uniQuery) {
-        graph.readWrite();
         SelectCollector<JdbcSchema<Vertex>, Select, Vertex> collector = new SelectCollector<>(
                 schema -> schema.getSearch(uniQuery,
                         PredicatesHolderFactory.and(
@@ -137,7 +142,6 @@ public class RowController implements SimpleController, TransactionalController 
 
     @Override
     public Iterator<Edge> search(SearchVertexQuery uniQuery) {
-        graph.readWrite();
         if (joinApplicable(uniQuery)) {
             Iterator<Edge> joined = searchJoin(uniQuery);
             if (joined != null) return joined;
@@ -306,16 +310,18 @@ public class RowController implements SimpleController, TransactionalController 
         } catch (final RuntimeException e) {
             // a statement that fails on the way out must not leave the ones before it committed
             contextManager.rollbackTransaction();
+            releaseBuffer();
             throw e;
         }
         contextManager.commitTransaction();
+        releaseBuffer();
     }
 
     @Override
     public void rollback() {
-        // both halves are needed: the database undoes statements already flushed to the connection, and
-        // clearing drops the ones still buffered, which would otherwise flush into the next transaction
-        bulk.get().clear();
+        // the database undoes statements already flushed to the connection; releasing drops the ones still
+        // buffered, which would otherwise flush into the next transaction on this thread
+        releaseBuffer();
         contextManager.rollbackTransaction();
     }
 
@@ -325,22 +331,50 @@ public class RowController implements SimpleController, TransactionalController 
      * CLOSE_BEHAVIOR is ROLLBACK. Silently dropping them was the old behaviour; this at least says so.
      */
     public void close() {
-        List<Query> pending = bulk.get();
-        if (!pending.isEmpty()) {
-            logger.warn("discarding {} buffered statement(s) that were never flushed", pending.size());
+        // Every thread's buffer, not just this one: a statement stranded on a worker that has since moved on
+        // is exactly what used to vanish silently. Touching other threads' lists is safe only because the
+        // graph is being torn down here, the same assumption ContextManager.close() makes for connections.
+        int stranded = 0;
+        for (final List<Query> pending : liveBuffers) {
+            stranded += pending.size();
             pending.clear();
         }
+        if (stranded > 0) {
+            logger.warn("discarding {} buffered statement(s) that were never flushed", stranded);
+        }
+        liveBuffers.clear();
+        bulk.remove();
+    }
+
+    /** Lazily created so it can be registered in liveBuffers on the way in. */
+    private List<Query> pending() {
+        List<Query> pending = bulk.get();
+        if (pending == null) {
+            pending = new ArrayList<>();
+            bulk.set(pending);
+            liveBuffers.add(pending);
+        }
+        return pending;
+    }
+
+    /** Ends this thread's association with a buffer, so a pooled worker does not hold one between requests. */
+    private void releaseBuffer() {
+        List<Query> pending = bulk.get();
+        if (pending == null) return;
+        pending.clear();
+        liveBuffers.remove(pending);
+        bulk.remove();
     }
 
     private void buffer(Query query) {
-        List<Query> pending = bulk.get();
+        List<Query> pending = pending();
         pending.add(query);
         // ponytail: fixed threshold, make it configurable when a workload actually needs a different one
         if (pending.size() >= 1000) flush();
     }
 
     private void flush() {
-        List<Query> pending = bulk.get();
+        List<Query> pending = pending();
         if (pending.isEmpty()) return;
         contextManager.batch(pending);
         pending.clear();
