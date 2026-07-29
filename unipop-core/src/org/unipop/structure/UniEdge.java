@@ -52,6 +52,7 @@ public class UniEdge extends UniElement implements Edge {
             if (existing.isPresent()) existing.remove();
             return Property.<V>empty();
         }
+        graph.readWrite();
         UniProperty<V> vertexProperty = (UniProperty<V>) addPropertyLocal(key, value);
         PropertyQuery<UniElement> propertyQuery = new PropertyQuery<>(this, vertexProperty, PropertyQuery.Action.Add, null);
         this.graph.getControllerManager().getControllers(PropertyQuery.PropertyController.class).forEach(controller ->

@@ -24,11 +24,13 @@ import java.util.Map;
 public class JdbcWorld implements World {
 
     private Graph currentGraph;
+    private JdbcGraphProvider currentProvider;
 
     @Override
     public GraphTraversalSource getGraphTraversalSource(final LoadGraphWith.GraphData graphData) {
         try {
             final JdbcGraphProvider provider = new JdbcGraphProvider();
+            this.currentProvider = provider;
             final Map<String, Object> baseConf =
                     provider.getBaseConfiguration("g", this.getClass(), "feature", graphData);
             final Configuration configuration = new MapConfiguration(baseConf);
@@ -56,6 +58,14 @@ public class JdbcWorld implements World {
             } catch (final Exception ignored) {
             }
             currentGraph = null;
+        }
+        // the provider holds a server connection of its own, separate from the graph's pool
+        if (currentProvider != null) {
+            try {
+                currentProvider.closeConnection();
+            } catch (final Exception ignored) {
+            }
+            currentProvider = null;
         }
     }
 

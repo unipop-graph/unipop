@@ -35,6 +35,7 @@ public class JdbcSourceProvider implements SourceProvider {
     private final Supplier<PredicatesTranslator<Condition>> predicatesTranslatorSupplier;
     private UniGraph graph;
     private ContextManager contextManager;
+    private RowController rowController;
 
     public JdbcSourceProvider() {
         this(JdbcPredicatesTranslator::new);
@@ -46,7 +47,14 @@ public class JdbcSourceProvider implements SourceProvider {
 
     @Override
     public Set<UniQueryController> init(UniGraph graph, JSONObject configuration, TraversalFilter traversalFilter) throws Exception {
-        this.contextManager = new ContextManager(configuration);
+        // Connection settings come from the client-side graph configuration, not from the provider file:
+        // a provider file describes the shape of a source, while how a client talks to it is the client's
+        // decision. Resolved here so ContextManager is handed values rather than a configuration to query.
+        org.apache.commons.configuration2.Configuration clientConfig = graph.configuration();
+        this.contextManager = new ContextManager(configuration,
+                clientConfig.getLong("jdbc.lockTimeoutMillis", ContextManager.DEFAULT_LOCK_TIMEOUT_MILLIS),
+                clientConfig.getLong("jdbc.connectionWaitMillis", ContextManager.DEFAULT_CONNECTION_WAIT_MILLIS),
+                clientConfig.getInt("jdbc.maxConnections", 0));
 
         this.graph = graph;
 
@@ -66,6 +74,9 @@ public class JdbcSourceProvider implements SourceProvider {
 
     @Override
     public void close() {
+        // the controller first: it owns the write buffer, and reports anything left in it rather than
+        // letting the statements vanish with the connection pool
+        if (this.rowController != null) this.rowController.close();
         this.contextManager.close();
     }
 
@@ -78,8 +89,8 @@ public class JdbcSourceProvider implements SourceProvider {
     }
 
     public Set<UniQueryController> createControllers(Set<JdbcSchema> schemas, TraversalFilter filter) {
-        RowController rowController = new RowController(this.graph, this.contextManager, schemas, this.predicatesTranslatorSupplier.get(), filter);
-        return Sets.newHashSet(rowController);
+        this.rowController = new RowController(this.graph, this.contextManager, schemas, this.predicatesTranslatorSupplier.get(), filter);
+        return Sets.newHashSet(this.rowController);
     }
 
     @Override

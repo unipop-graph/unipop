@@ -90,6 +90,7 @@ public abstract class UniElement implements Element {
     }
 
     public void removeProperty(Property property) {
+        graph.readWrite();
         getPropertiesMap().remove(property.key());
         PropertyQuery<UniElement> propertyQuery = new PropertyQuery<>(this, property, PropertyQuery.Action.Remove, null);
         this.graph.getControllerManager().getControllers(PropertyQuery.PropertyController.class).forEach(controller ->
@@ -100,6 +101,7 @@ public abstract class UniElement implements Element {
 
     @Override
     public void remove() {
+        graph.readWrite();
         RemoveQuery<UniElement> removeQuery = new RemoveQuery<>(Arrays.asList(this), null);
         this.graph.getControllerManager().getControllers(RemoveQuery.RemoveController.class).forEach(controller ->
                 controller.remove(removeQuery));

@@ -62,6 +62,8 @@ public class ConfigurationControllerManager implements ControllerManager {
                 }
             }
         });
+        // a reload can add or remove a transactional source, which changes whether tx() is honoured
+        graph.controllersChanged();
     }
 
     private static String readFile(String filename) {

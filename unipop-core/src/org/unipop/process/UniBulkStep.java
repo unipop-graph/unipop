@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 public abstract class UniBulkStep<S, E> extends AbstractStep<S, E> {
+    protected final UniGraph graph;
     protected final int maxBulk;
     protected int startBulk;
     protected int multiplier;
@@ -20,6 +21,7 @@ public abstract class UniBulkStep<S, E> extends AbstractStep<S, E> {
 
     public UniBulkStep(Traversal.Admin traversal, UniGraph graph) {
         super(traversal);
+        this.graph = graph;
         this.maxBulk = graph.configuration().getInt("bulk.max", 100);
         this.startBulk = graph.configuration().getInt("bulk.start", this.maxBulk);
         this.multiplier = graph.configuration().getInt("bulk.multiplier", 2);
@@ -38,6 +40,11 @@ public abstract class UniBulkStep<S, E> extends AbstractStep<S, E> {
     }
 
     private Iterator<Traverser.Admin<E>> process() {
+        // Reads open the transaction too — READ_WRITE_BEHAVIOR.AUTO starts one on a read or a write, and the
+        // server commits only when tx().isOpen(). Done here, at the one funnel every bulk step's work passes
+        // through, so that opening a transaction stays a structure-layer concern and a source provider never
+        // has to know about it.
+        graph.readWrite();
         BulkIterator<Traverser.Admin<S>> partitionedTraversers = new BulkIterator<>(maxBulk, startBulk, multiplier, starts);
 //        UnmodifiableIterator<List<Traverser.Admin<S>>> partitionedTraversers = Iterators.partition(starts, maxBulk);
         return ConversionUtils.asStream(partitionedTraversers)

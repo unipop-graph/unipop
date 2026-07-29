@@ -60,6 +60,12 @@ public class UniGraphStep<S,E extends Element> extends GraphStep<S,E> implements
         searchQuery.setOffset(controllers.size() == 1 ? offset : 0);
         this.lastQuery = searchQuery;
         logger.debug("Executing query: ", searchQuery);
+        // Reads open the transaction too: READ_WRITE_BEHAVIOR.AUTO starts one on a read or a write, and the
+        // server commits only when tx().isOpen(). This step is constructed with a ControllerManager rather
+        // than a graph, so the graph comes off the traversal — guarded, because child traversals have none.
+        Object boundGraph = this.getTraversal().getGraph().orElse(null);
+        if (boundGraph instanceof UniGraph) ((UniGraph) boundGraph).readWrite();
+
         return controllers.stream().<Iterator<E>>map(controller -> controller.search(searchQuery)).flatMap(ConversionUtils::asStream).distinct().iterator();
     }
 

@@ -9,6 +9,12 @@ public class UniFeatures implements Graph.Features {
     ElasticEdgeFeatures elasticEdgeFeatures = new ElasticEdgeFeatures();
     ElasticGraphFeatures elasticGraphFeatures = new ElasticGraphFeatures();
 
+    private final UniGraph graph;
+
+    public UniFeatures(UniGraph graph) {
+        this.graph = graph;
+    }
+
     @Override
     public String toString() {
         return StringFactory.featureString(this);
@@ -42,9 +48,13 @@ public class UniFeatures implements Graph.Features {
             return false;
         }
 
+        /**
+         * Reports the same condition that decides whether {@link UniGraph#tx()} works, so the flag and
+         * the behaviour can never disagree: true only for a single mutating source that is transactional.
+         */
         @Override
         public boolean supportsTransactions() {
-            return false;
+            return graph.isTransactional();
         }
 
         @Override

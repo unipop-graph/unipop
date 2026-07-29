@@ -9,6 +9,9 @@ import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -66,10 +69,53 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
         return "/configuration/basic/default";
     }
 
+    /**
+     * Graphs handed out by this provider, so their transactions can be closed before the tables are
+     * truncated. Tests that open a second graph themselves (IoTest's write-here-read-there round-trips)
+     * never clear it, and the harness's clear(Configuration) form passes a null graph, so this is the only
+     * place that still has a reference to them.
+     */
+    private final List<Graph> openedGraphs = Collections.synchronizedList(new ArrayList<>());
+
+    @Override
+    public Graph openTestGraph(final Configuration config) {
+        Graph graph = super.openTestGraph(config);
+        openedGraphs.add(graph);
+        return graph;
+    }
+
     @Override
     public void clear(Graph graph, Configuration configuration) throws Exception {
+        // Every test graph here is mapped onto the same tables, so an uncommitted write on any of them
+        // holds row locks that block the TRUNCATEs below for as long as the transaction stays open.
+        // GraphProvider#clear documents that clearing closes open transactions; this honours that.
+        rollbackOpenTransactions();
         super.clear(graph, configuration);
+        openedGraphs.remove(graph);
         truncateTables();
+    }
+
+    private void rollbackOpenTransactions() {
+        synchronized (openedGraphs) {
+            for (Graph opened : openedGraphs) {
+                try {
+                    if (opened.features().graph().supportsTransactions() && opened.tx().isOpen())
+                        opened.tx().rollback();
+                } catch (final Exception e) {
+                    // a graph already closed elsewhere has nothing left to roll back
+                }
+            }
+        }
+    }
+
+    /**
+     * Releases this provider's own connection. The Gherkin World builds a provider per scenario, so
+     * without this each scenario leaks one server connection and the suite eventually dies with
+     * "too many clients" — it only survived before because pgjdbc's cleaner reclaimed them faster than
+     * they accumulated.
+     */
+    public void closeConnection() throws SQLException {
+        if (!this.jdbcConnection.isClosed()) this.jdbcConnection.close();
     }
 
     private void createTables() throws SQLException {
@@ -239,6 +285,10 @@ public class JdbcGraphProvider extends UnipopGraphProvider {
     }
 
     public void truncateTables() throws SQLException {
+        // A test graph that was left with an open transaction and never cleared (IoTest opens a second
+        // graph over these same tables) would otherwise block these TRUNCATEs forever and hang the fork
+        // until surefire kills it 20 minutes later. Fail the test loudly instead of wedging the build.
+        this.jdbcConnection.createStatement().execute("SET lock_timeout = 15000");
         this.jdbcConnection.createStatement().execute("TRUNCATE TABLE vertices");
         this.jdbcConnection.createStatement().execute("TRUNCATE TABLE edges");
         this.jdbcConnection.createStatement().execute("TRUNCATE TABLE vertex_inner");
