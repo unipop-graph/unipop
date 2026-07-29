@@ -47,8 +47,14 @@ public class JdbcSourceProvider implements SourceProvider {
 
     @Override
     public Set<UniQueryController> init(UniGraph graph, JSONObject configuration, TraversalFilter traversalFilter) throws Exception {
-        // connection settings come from the client-side graph configuration, not from the provider file
-        this.contextManager = new ContextManager(configuration, graph.configuration());
+        // Connection settings come from the client-side graph configuration, not from the provider file:
+        // a provider file describes the shape of a source, while how a client talks to it is the client's
+        // decision. Resolved here so ContextManager is handed values rather than a configuration to query.
+        org.apache.commons.configuration2.Configuration clientConfig = graph.configuration();
+        this.contextManager = new ContextManager(configuration,
+                clientConfig.getLong("jdbc.lockTimeoutMillis", ContextManager.DEFAULT_LOCK_TIMEOUT_MILLIS),
+                clientConfig.getLong("jdbc.connectionWaitMillis", ContextManager.DEFAULT_CONNECTION_WAIT_MILLIS),
+                clientConfig.getInt("jdbc.maxConnections", 0));
 
         this.graph = graph;
 

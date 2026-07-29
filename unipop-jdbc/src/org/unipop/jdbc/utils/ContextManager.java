@@ -27,6 +27,11 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ContextManager {
     private final static Logger logger = LoggerFactory.getLogger(ContextManager.class);
+
+    public final static long DEFAULT_LOCK_TIMEOUT_MILLIS = 30_000L;
+    public final static long DEFAULT_CONNECTION_WAIT_MILLIS = 30_000L;
+    public final static int DEFAULT_BATCH_SIZE = 1000;
+
     private DSLContext context;
     private Configuration jooqConfiguration;
     private BasicDataSource ds;
@@ -47,42 +52,24 @@ public class ContextManager {
      */
     private final Set<Connection> pinnedConnections = java.util.Collections.newSetFromMap(new ConcurrentHashMap<>());
 
-    /**
-     * The client-side graph configuration — the properties handed to {@code UniGraph.open()} — which is the
-     * single home for these settings, read under a {@code jdbc.} prefix. Provider files describe the shape
-     * of a source (tables, columns, dialect); how the client wants to talk to it belongs with the client.
-     * May be null: the {@code UniGraph(ControllerManager, StrategyProvider)} constructor never sets one, in
-     * which case every setting takes its default.
-     */
-    private final org.apache.commons.configuration2.Configuration graphConfiguration;
+    /** Milliseconds a statement may wait for a lock before the server cancels it; 0 waits forever. */
+    private final long lockTimeoutMillis;
+    /** Milliseconds a caller may wait for a pooled connection before failing. */
+    private final long connectionWaitMillis;
+    /** Pool size, or 0 to leave the pooling library's own default in place. */
+    private final int maxConnections;
 
     public ContextManager(JSONObject conf) throws SQLException, IOException, ClassNotFoundException, NamingException {
-        this(conf, null);
+        this(conf, DEFAULT_LOCK_TIMEOUT_MILLIS, DEFAULT_CONNECTION_WAIT_MILLIS, 0);
     }
 
-    public ContextManager(JSONObject conf, org.apache.commons.configuration2.Configuration graphConfiguration)
+    public ContextManager(JSONObject conf, long lockTimeoutMillis, long connectionWaitMillis, int maxConnections)
             throws SQLException, IOException, ClassNotFoundException, NamingException {
         this.conf = conf;
-        this.graphConfiguration = graphConfiguration;
+        this.lockTimeoutMillis = lockTimeoutMillis;
+        this.connectionWaitMillis = connectionWaitMillis;
+        this.maxConnections = maxConnections;
         reloadContexts();
-    }
-
-    private long longSetting(final String key, final long fallback) {
-        return graphConfiguration == null ? fallback : graphConfiguration.getLong("jdbc." + key, fallback);
-    }
-
-    /**
-     * Exposed so every JDBC setting resolves through one lookup rather than each site inventing its own.
-     */
-    public int intSetting(final String key, final int fallback) {
-        Integer resolved = optionalIntSetting(key);
-        return resolved != null ? resolved : fallback;
-    }
-
-    /** Null when unset, so a pooling default can be left untouched rather than restated here. */
-    private Integer optionalIntSetting(final String key) {
-        if (graphConfiguration == null || !graphConfiguration.containsKey("jdbc." + key)) return null;
-        return graphConfiguration.getInt("jdbc." + key);
     }
 
     private void reloadContexts() throws IOException {
@@ -99,12 +86,11 @@ public class ContextManager {
         // A transaction pins a connection for its whole life, so the pool size is now the ceiling on
         // concurrent transactions rather than on concurrent statements. Left alone, exhaustion blocks
         // forever (BasicDataSource defaults maxWaitMillis to -1), turning an undersized pool into a hang
-        // instead of an error — so bound the wait. The size itself keeps its default: every graph builds
-        // its own pool, so raising it here multiplies across graphs and exhausts the server's
-        // max_connections instead. Tune per source when a workload genuinely needs it.
-        Integer maxConnections = optionalIntSetting("maxConnections");
-        if (maxConnections != null) ds.setMaxTotal(maxConnections);
-        ds.setMaxWaitMillis(longSetting("connectionWaitMillis", 30_000L));
+        // instead of an error — so the wait is always bounded. The size is only overridden when asked for,
+        // because every graph builds its own pool: raising it multiplies across graphs and runs the server
+        // out of max_connections instead.
+        if (maxConnections > 0) ds.setMaxTotal(maxConnections);
+        ds.setMaxWaitMillis(connectionWaitMillis);
         // maxWaitMillis bounds waiting for a *connection*, not waiting for a *row lock*. Holding a
         // transaction open means another writer can now block on our uncommitted rows indefinitely —
         // notably an "insert .. on conflict do nothing" of a key we inserted but have not committed, which
@@ -112,7 +98,7 @@ public class ContextManager {
         // error, so give lock waits a deadline. Postgres-only syntax, hence the dialect check.
         if (dialect == SQLDialect.POSTGRES) {
             ds.setConnectionInitSqls(java.util.Collections.singletonList(
-                    "SET lock_timeout = " + longSetting("lockTimeoutMillis", 30_000L)));
+                    "SET lock_timeout = " + lockTimeoutMillis));
         }
         Settings settings = new Settings();
         // jOOQ 3.12+ replaced RenderNameStyle.AS_IS with RenderNameCase + RenderQuotedNames.
