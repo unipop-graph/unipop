@@ -12,6 +12,7 @@ import org.unipop.process.repeat.UniGraphRepeatStepStrategy;
 import org.unipop.process.graph.UniGraphStepStrategy;
 import org.unipop.process.union.UniGraphUnionStepStrategy;
 import org.unipop.process.vertex.UniGraphVertexStepStrategy;
+import org.unipop.process.vertex.UnboundedVertexAdjacencyStrategy;
 import org.unipop.process.where.UniGraphWhereStepStrategy;
 
 public class StandardStrategyProvider implements StrategyProvider {
@@ -19,6 +20,7 @@ public class StandardStrategyProvider implements StrategyProvider {
     public TraversalStrategies get() {
         DefaultTraversalStrategies traversalStrategies = new DefaultTraversalStrategies();
         traversalStrategies.addStrategies(
+                new UnboundedVertexAdjacencyStrategy(),
                 new UniGraphStepStrategy(),
                 new UniGraphVertexStepStrategy(),
                 new EdgeStepsStrategy(),
