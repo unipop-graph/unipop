@@ -79,6 +79,13 @@ public class RowController implements SimpleController, TransactionalController 
      */
     private final ThreadLocal<List<Query>> bulk = new ThreadLocal<>();
     private final Set<List<Query>> liveBuffers = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+    /**
+     * How many statements accumulate before the buffer is sent as one jOOQ batch. Deliberately not under
+     * the {@code bulk.*} keys — those size traversal bulking, which is a different thing. Floored at 1,
+     * where every statement is sent as it is produced.
+     */
+    private final int batchSize;
     private final PredicatesTranslator<Condition> predicatesTranslator;
 
     private TraversalFilter traversalFilter;
@@ -89,6 +96,7 @@ public class RowController implements SimpleController, TransactionalController 
 
         extractRowSchemas(schemaSet);
         this.predicatesTranslator = predicatesTranslator;
+        this.batchSize = Math.max(1, graph.configuration().getInt("jdbc.batchSize", 1000));
 
         this.traversalFilter = traversalFilter;
     }
@@ -369,8 +377,7 @@ public class RowController implements SimpleController, TransactionalController 
     private void buffer(Query query) {
         List<Query> pending = pending();
         pending.add(query);
-        // ponytail: fixed threshold, make it configurable when a workload actually needs a different one
-        if (pending.size() >= 1000) flush();
+        if (pending.size() >= batchSize) flush();
     }
 
     private void flush() {

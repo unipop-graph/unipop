@@ -43,11 +43,10 @@ public class JdbcTransactionTest {
     public static void setUp() throws Exception {
         EmbeddedPostgresServer.ensureStarted();
         Class.forName("org.postgresql.Driver");
-        String dir = new File(JdbcTransactionTest.class.getResource("/configuration/transactions/graph.json").toURI()).getParent();
         Configuration conf = new BaseConfiguration();
         conf.setProperty(Graph.GRAPH, UniGraph.class.getName());
         conf.setProperty("graphName", "transactions");
-        conf.setProperty("providers", dir);
+        conf.setProperty("providers", providerDir());
         graph = UniGraph.open(conf);
         g = graph.traversal();
     }
@@ -166,6 +165,41 @@ public class JdbcTransactionTest {
             graph.tx().rollback();
         }
         assertEquals("nothing may be added", List.of("n1", "n2", "n3"), ids("SELECT id FROM t_node ORDER BY id"));
+    }
+
+    /**
+     * jdbc.batchSize governs when the buffer is flushed mid-transaction. At 1 every statement is sent as
+     * it is produced, so rows are already on the pinned connection before commit — visible to that
+     * transaction, still invisible to anyone else, and still undone by a rollback.
+     */
+    @Test
+    public void batchSizeOfOneFlushesEachStatementButStillHonoursRollback() throws Exception {
+        Configuration conf = new BaseConfiguration();
+        conf.setProperty(Graph.GRAPH, UniGraph.class.getName());
+        conf.setProperty("graphName", "transactions-batch1");
+        conf.setProperty("providers", providerDir());
+        conf.setProperty("jdbc.batchSize", 1);
+
+        UniGraph eager = UniGraph.open(conf);
+        try {
+            GraphTraversalSource eagerG = eager.traversal();
+            eagerG.addV("node").property(T.id, "b1").property("name", "eager").next();
+
+            // already sent, so the transaction itself sees it without an explicit flush
+            assertTrue(eagerG.V("b1").hasNext());
+            // but not committed, so nobody outside the transaction does
+            assertFalse(ids("SELECT id FROM t_node ORDER BY id").contains("b1"));
+
+            eager.tx().rollback();
+            assertFalse("a flushed statement must still be undone by rollback",
+                    ids("SELECT id FROM t_node ORDER BY id").contains("b1"));
+        } finally {
+            eager.close();
+        }
+    }
+
+    private static String providerDir() throws Exception {
+        return new File(JdbcTransactionTest.class.getResource("/configuration/transactions/graph.json").toURI()).getParent();
     }
 
     private static void exec(String... sql) throws Exception {

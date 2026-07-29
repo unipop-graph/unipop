@@ -435,6 +435,13 @@ the behaviour cannot disagree.
 | `connectionWaitMillis` | 30000 | cap on waiting for a pooled connection |
 | `maxConnections` | unset (dbcp2 default) | pool size; only applied when specified |
 
+Plus one on the graph configuration rather than the provider JSON, alongside the existing
+`jdbc.joinPushdown`:
+
+| key | default | effect |
+|---|---|---|
+| `jdbc.batchSize` | 1000 | statements buffered before being sent as one jOOQ batch; floored at 1, where each statement is sent as it is produced. Deliberately not under the `bulk.*` keys, which size traversal bulking |
+
 Holding a transaction means other sessions can now block on our uncommitted rows
 indefinitely — notably `insert .. on conflict do nothing` of a key we inserted but have not
 committed, which must wait to learn whether we commit. Neither `maxWaitMillis` (pool
