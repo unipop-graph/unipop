@@ -198,6 +198,49 @@ public class JdbcTransactionTest {
         }
     }
 
+    /**
+     * The connection settings are readable from the client-side properties under a jdbc. prefix, not only
+     * from the provider file. Asserted through behaviour rather than a getter: a 1ms lock timeout set on the
+     * graph configuration must make a statement blocked by another session's uncommitted row fail rather
+     * than wait, which is only true if the setting reached the pool.
+     */
+    @Test(timeout = 60_000)
+    public void connectionSettingsAreReadableFromTheGraphConfiguration() throws Exception {
+        Configuration conf = new BaseConfiguration();
+        conf.setProperty(Graph.GRAPH, UniGraph.class.getName());
+        conf.setProperty("graphName", "transactions-locktimeout");
+        conf.setProperty("providers", providerDir());
+        conf.setProperty("jdbc.lockTimeoutMillis", 1);
+
+        UniGraph impatient = UniGraph.open(conf);
+        try (Connection blocker = DriverManager.getConnection(EmbeddedPostgresServer.URL, EmbeddedPostgresServer.USER, "")) {
+            // hold a row lock on n1 without committing
+            blocker.setAutoCommit(false);
+            try (Statement s = blocker.createStatement()) {
+                s.execute("UPDATE t_node SET name = 'held' WHERE id = 'n1'");
+            }
+
+            try {
+                impatient.traversal().V("n1").property("name", "mine").next();
+                impatient.tx().commit();
+                fail("the row is locked by another session - a 1ms lock timeout must not wait for it");
+            } catch (Exception expected) {
+                assertTrue("expected a lock timeout, got: " + expected,
+                        rootCause(expected).toLowerCase().contains("lock timeout"));
+                impatient.tx().rollback();
+            }
+            blocker.rollback();
+        } finally {
+            impatient.close();
+        }
+    }
+
+    private static String rootCause(Throwable t) {
+        StringBuilder chain = new StringBuilder();
+        for (Throwable c = t; c != null; c = c.getCause()) chain.append(c).append(' ');
+        return chain.toString();
+    }
+
     private static String providerDir() throws Exception {
         return new File(JdbcTransactionTest.class.getResource("/configuration/transactions/graph.json").toURI()).getParent();
     }

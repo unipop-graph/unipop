@@ -81,9 +81,10 @@ public class RowController implements SimpleController, TransactionalController 
     private final Set<List<Query>> liveBuffers = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     /**
-     * How many statements accumulate before the buffer is sent as one jOOQ batch. Deliberately not under
-     * the {@code bulk.*} keys — those size traversal bulking, which is a different thing. Floored at 1,
-     * where every statement is sent as it is produced.
+     * How many statements accumulate before the buffer is sent as one jOOQ batch. Resolved through the
+     * ContextManager so it honours the same provider-JSON-over-graph-configuration precedence as the
+     * connection settings. Deliberately not under the {@code bulk.*} keys — those size traversal bulking,
+     * which is a different thing. Floored at 1, where every statement is sent as it is produced.
      */
     private final int batchSize;
     private final PredicatesTranslator<Condition> predicatesTranslator;
@@ -96,7 +97,7 @@ public class RowController implements SimpleController, TransactionalController 
 
         extractRowSchemas(schemaSet);
         this.predicatesTranslator = predicatesTranslator;
-        this.batchSize = Math.max(1, graph.configuration().getInt("jdbc.batchSize", 1000));
+        this.batchSize = Math.max(1, contextManager.intSetting("batchSize", 1000));
 
         this.traversalFilter = traversalFilter;
     }

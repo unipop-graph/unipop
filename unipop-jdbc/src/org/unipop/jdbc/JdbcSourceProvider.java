@@ -47,7 +47,8 @@ public class JdbcSourceProvider implements SourceProvider {
 
     @Override
     public Set<UniQueryController> init(UniGraph graph, JSONObject configuration, TraversalFilter traversalFilter) throws Exception {
-        this.contextManager = new ContextManager(configuration);
+        // connection settings come from the client-side graph configuration, not from the provider file
+        this.contextManager = new ContextManager(configuration, graph.configuration());
 
         this.graph = graph;
 

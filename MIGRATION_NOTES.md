@@ -427,20 +427,30 @@ multi-source mutating delete fails fast rather than committing part of it and re
 success. `UniFeatures.supportsTransactions()` returns that same condition, so the flag and
 the behaviour cannot disagree.
 
-## New JDBC source settings
+## New JDBC settings
 
 | key | default | effect |
 |---|---|---|
 | `lockTimeoutMillis` | 30000 | cap on waiting for a row/table lock (`0` = wait forever, PostgreSQL's own default). PostgreSQL only |
 | `connectionWaitMillis` | 30000 | cap on waiting for a pooled connection |
 | `maxConnections` | unset (dbcp2 default) | pool size; only applied when specified |
+| `batchSize` | 1000 | statements buffered before being sent as one jOOQ batch; floored at 1, where each statement is sent as it is produced |
 
-Plus one on the graph configuration rather than the provider JSON, alongside the existing
-`jdbc.joinPushdown`:
+All four live in the **client-side graph configuration** — the properties handed to
+`UniGraph.open()` — prefixed `jdbc.`, alongside the existing `jdbc.joinPushdown`. They are not read
+from the provider files: a provider file describes the *shape* of a source (tables, columns,
+dialect), whereas how a client wants to talk to it is the client's decision. Anything left unset
+takes the default above.
 
-| key | default | effect |
-|---|---|---|
-| `jdbc.batchSize` | 1000 | statements buffered before being sent as one jOOQ batch; floored at 1, where each statement is sent as it is produced. Deliberately not under the `bulk.*` keys, which size traversal bulking |
+```properties
+jdbc.lockTimeoutMillis=5000
+jdbc.connectionWaitMillis=10000
+jdbc.maxConnections=16
+jdbc.batchSize=500
+```
+
+`batchSize` is deliberately not exposed under the `bulk.*` keys — those size traversal bulking,
+which is a different concept.
 
 Holding a transaction means other sessions can now block on our uncommitted rows
 indefinitely — notably `insert .. on conflict do nothing` of a key we inserted but have not
