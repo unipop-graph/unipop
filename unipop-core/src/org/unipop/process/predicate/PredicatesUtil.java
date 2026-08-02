@@ -3,6 +3,7 @@ package org.unipop.process.predicate;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.DedupGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.NoOpBarrierStep;
 import org.unipop.query.predicates.PredicatesHolder;
@@ -57,6 +58,20 @@ public class PredicatesUtil {
 //                    return predicates;
 //                }
 //            }
+            else if(nextStep instanceof NoOpBarrierStep) {
+                // Transparent bulking barrier inserted by LazyBarrierStrategy -- skip past it (leave it
+                // in place; it only buffers) so a following range still folds. See collectVertexPredicates.
+            }
+            else if(nextStep instanceof DedupGlobalStep
+                    && ((DedupGlobalStep<?>) nextStep).getScopeKeys().isEmpty()      // not dedup('a','b')
+                    && ((DedupGlobalStep<?>) nextStep).getLocalChildren().isEmpty()) { // not dedup().by(x)
+                // Identity dedup only collapses the fan-out a vertex step produces (a shared edge between
+                // two seed vertices, or a self-loop, emits the same edge id more than once); it never
+                // drops below the distinct fetched set, so a following range's high bound is still a safe
+                // fetch cap. Skip past it -- do NOT removeStep, it still runs natively as the residual.
+                // by()/scope-key dedup collapses DISTINCT elements and CAN drop below the fetched count,
+                // so it must not push a limit (would under-fetch) -- those fall through to the break below.
+            }
             else if(nextStep instanceof RangeGlobalStep) {
                 RangeGlobalStep rangeGlobalStep = (RangeGlobalStep) nextStep;
                 int limit = rangeGlobalStep.getHighRange() > Integer.MAX_VALUE ? -1 : rangeGlobalStep.getHighRange().intValue();
