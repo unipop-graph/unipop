@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.bothE;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.out;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -121,5 +122,28 @@ public class JdbcEndpointScopeTest {
     public void edgeStepsFollowOnlyTheTenantsEdges() {
         assertEquals(Collections.singletonList("e1"), scoped(graph, T1).V("a").outE("E").id().toList());
         assertEquals(Arrays.asList("e2", "e3"), sorted(scoped(graph, T2).V("c").inE("E").id().toList()));
+    }
+
+    @Test
+    public void edgeEndpointLoadsTheEdgesTenantRow() {
+        // Unscoped, so only the endpoint fetch's scope keeps T1's same-id vertex out.
+        assertEquals(Collections.singletonList("c2"), graph.traversal().E("e2").inV().values("name").toList());
+        assertEquals(Collections.singletonList("a1"), graph.traversal().E("e1").outV().values("name").toList());
+        assertEquals(Arrays.asList("a2", "b2"), sorted(scoped(graph, T2).V("c").inE("E").outV().values("name").toList()));
+    }
+
+    @Test
+    public void edgeHopPathsFetchOnlyTheTenantsVertices() {
+        TimingExecuterListener.timing.clear();
+        GraphTraversalSource g1 = scoped(graph, T1);
+        assertEquals(Collections.singletonList("b1"), g1.V("a").bothE("E").otherV().values("name").toList());
+        assertEquals(1L, (long) g1.V("a").repeat(bothE("E").otherV().simplePath()).emit().path().count().next());
+        GraphTraversalSource g2 = scoped(graph, T2);
+        assertEquals(Arrays.asList("b2", "c2"),
+                sorted(g2.V("a").repeat(bothE("E").otherV().simplePath()).emit().values("name").toList()));
+        List<String> unscopedNodeReads = TimingExecuterListener.timing.keySet().stream().map(String::toLowerCase)
+                .filter(sql -> sql.contains("from es_nodes") && !sql.contains("tenant_id"))
+                .collect(Collectors.toList());
+        assertEquals(Collections.emptyList(), unscopedNodeReads);
     }
 }

@@ -16,6 +16,21 @@ public class DeferredVertex extends UniVertex {
 
     boolean deferred = true;
 
+    /**
+     * Property values this vertex is known to have before it is loaded, such as the tenant of the edge
+     * it was reached through when vertex ids repeat across tenants. A fetch loads only a row with these
+     * values.
+     */
+    private Map<String, Object> scope = Collections.emptyMap();
+
+    public Map<String, Object> getScope() {
+        return scope;
+    }
+
+    public void setScope(Map<String, Object> scope) {
+        this.scope = scope;
+    }
+
     public boolean isDeferred() {
         return deferred;
     }

@@ -25,6 +25,7 @@ import org.unipop.query.search.SearchVertexQuery;
 import org.unipop.schema.element.ElementSchema;
 import org.unipop.schema.element.VertexSchema;
 import org.unipop.schema.property.PropertySchema;
+import org.unipop.schema.reference.DeferredVertex;
 import org.unipop.schema.reference.ReferenceVertexSchema;
 import org.unipop.structure.UniEdge;
 import org.unipop.structure.UniGraph;
@@ -95,8 +96,22 @@ public class RowEdgeSchema extends AbstractRowSchema<Edge> implements JdbcEdgeSc
         if(outVertex == null) return null;
         Vertex inVertex = inVertexSchema.createElement(fields);
         if(inVertex == null) return null;
+        scopeEndpoints(edgeProperties, outVertex, inVertex);
         UniEdge uniEdge = new UniEdge(edgeProperties, outVertex, inVertex, this, graph);
         return Collections.singleton(uniEdge);
+    }
+
+    /** Both endpoints share the edge's endpointScope values, so a later fetch of either loads only that row. */
+    private void scopeEndpoints(Map<String, Object> edgeProperties, Vertex... endpoints) {
+        if (endpointScope.isEmpty()) return;
+        Map<String, Object> scope = new HashMap<>();
+        for (String key : endpointScope) {
+            Object value = edgeProperties.get(key);
+            if (value == null) return;
+            scope.put(key, value);
+        }
+        for (Vertex endpoint : endpoints)
+            if (endpoint instanceof DeferredVertex) ((DeferredVertex) endpoint).setScope(scope);
     }
 
     @Override
@@ -114,6 +129,7 @@ public class RowEdgeSchema extends AbstractRowSchema<Edge> implements JdbcEdgeSc
         fields.addAll(outFields);
         Set<String> inFields = inVertexSchema.toFields(propertyKeys);
         fields.addAll(inFields);
+        for (String key : endpointScope) fields.add(getFieldByPropertyKey(key));
         return fields;
     }
 
@@ -149,9 +165,17 @@ public class RowEdgeSchema extends AbstractRowSchema<Edge> implements JdbcEdgeSc
         return PredicatesHolderFactory.or(scoped);
     }
 
-    /** The vertex's value for each endpointScope key, or null when any is missing. */
+    /**
+     * The vertex's value for each endpointScope key, or null when any is missing. A vertex not yet
+     * loaded answers from the scope of the edge that reached it, so reading it costs no fetch.
+     */
     private List<Object> scopeValues(Vertex vertex) {
         List<Object> values = new ArrayList<>(endpointScope.size());
+        if (vertex instanceof DeferredVertex && ((DeferredVertex) vertex).isDeferred()
+                && ((DeferredVertex) vertex).getScope().keySet().containsAll(endpointScope)) {
+            for (String key : endpointScope) values.add(((DeferredVertex) vertex).getScope().get(key));
+            return values;
+        }
         for (String key : endpointScope) {
             VertexProperty<Object> property = vertex.property(key);
             if (!property.isPresent()) return null;

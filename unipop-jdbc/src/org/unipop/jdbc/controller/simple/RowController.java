@@ -130,7 +130,7 @@ public class RowController implements SimpleController, TransactionalController 
         SelectCollector<JdbcSchema<Vertex>, Select, Vertex> collector = new SelectCollector<>(
                 schema -> schema.getSearch(uniQuery,
                         PredicatesHolderFactory.and(
-                                ((VertexSchema) schema).toPredicates(uniQuery.getVertices()),
+                                scopedVertexPredicates(schema, uniQuery.getVertices()),
                                 schema.toPredicates(uniQuery.getPredicates()))),
                 (schema, results) -> schema.parseResults(results, uniQuery)
         );
@@ -139,14 +139,51 @@ public class RowController implements SimpleController, TransactionalController 
                 .filter(schema -> this.traversalFilter.filter(schema, uniQuery.getTraversal())).collect(collector);
         Iterator<Vertex> searchIterator = this.search(uniQuery, selects, collector);
 
-        Map<Object, DeferredVertex> vertexMap =
-                uniQuery.getVertices().stream().collect(Collectors.toMap(UniElement::id, Function.identity(), (a, b) -> a));
+        // A scoped vertex loads only the row of its own scope, and every instance of it loads, so no
+        // instance stays deferred and fetches itself again later. An unscoped id loads into its first
+        // instance, as before.
+        Map<Object, List<DeferredVertex>> vertexMap =
+                uniQuery.getVertices().stream().collect(Collectors.groupingBy(UniElement::id));
         searchIterator.forEachRemaining(newVertex -> {
-            DeferredVertex deferredVertex = vertexMap.get(newVertex.id());
-            if (deferredVertex != null) {
-                deferredVertex.loadProperties(newVertex);
+            List<DeferredVertex> instances = vertexMap.get(newVertex.id());
+            if (instances == null) return;
+            boolean loadedUnscoped = false;
+            for (DeferredVertex deferredVertex : instances) {
+                if (deferredVertex.getScope().isEmpty()) {
+                    if (!loadedUnscoped) deferredVertex.loadProperties(newVertex);
+                    loadedUnscoped = true;
+                } else if (inScope(newVertex, deferredVertex.getScope())) {
+                    deferredVertex.loadProperties(newVertex);
+                }
             }
         });
+    }
+
+    /** The vertices' id predicates, each scoped vertex further restricted to its scope's values. */
+    private PredicatesHolder scopedVertexPredicates(JdbcSchema<Vertex> schema, List<DeferredVertex> vertices) {
+        VertexSchema vertexSchema = (VertexSchema) schema;
+        Map<Map<String, Object>, List<DeferredVertex>> byScope =
+                vertices.stream().collect(Collectors.groupingBy(DeferredVertex::getScope));
+        Set<PredicatesHolder> predicates = new HashSet<>();
+        byScope.forEach((scope, scopeVertices) -> {
+            PredicatesHolder ids = vertexSchema.toPredicates(scopeVertices);
+            if (scope.isEmpty()) {
+                predicates.add(ids);
+                return;
+            }
+            HasContainer[] scopeHas = scope.entrySet().stream()
+                    .map(e -> new HasContainer(e.getKey(), P.eq(e.getValue()))).toArray(HasContainer[]::new);
+            predicates.add(PredicatesHolderFactory.and(ids, schema.toPredicates(PredicatesHolderFactory.and(scopeHas))));
+        });
+        return PredicatesHolderFactory.or(predicates);
+    }
+
+    private static boolean inScope(Vertex vertex, Map<String, Object> scope) {
+        for (Map.Entry<String, Object> entry : scope.entrySet()) {
+            VertexProperty<Object> property = vertex.property(entry.getKey());
+            if (!property.isPresent() || !Objects.equals(property.value(), entry.getValue())) return false;
+        }
+        return true;
     }
 
     @Override
