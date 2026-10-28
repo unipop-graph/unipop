@@ -1,0 +1,28 @@
+{
+  "class": "org.unipop.jdbc.JdbcSourceProvider",
+  "driver": "org.postgresql.Driver",
+  "address": ["jdbc:postgresql://localhost:54329/postgres"],
+  "user": "postgres",
+  "sqlDialect": "POSTGRES",
+  "vertices": [
+    {
+      "table": "es_nodes",
+      "id": "@id",
+      "label": "@label",
+      "properties": { "tenant": { "type": "uuid", "field": "@tenant_id" }, "name": "@name" },
+      "dynamicProperties": false
+    }
+  ],
+  "edges": [
+    {
+      "table": "es_edges",
+      "id": "@id",
+      "label": "@label",
+      "properties": { "tenant": { "type": "uuid", "field": "@tenant_id" } },
+      "dynamicProperties": false,
+      "endpointScope": ["tenant"],
+      "outVertex": { "ref": "true", "id": "@src_id", "label": "@src_label" },
+      "inVertex":  { "ref": "true", "id": "@dst_id", "label": "@dst_label" }
+    }
+  ]
+}
