@@ -3,14 +3,18 @@ package org.unipop.jdbc.schemas;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.javatuples.Pair;
 import org.jooq.*;
 import org.jooq.Record;
 import org.jooq.impl.DSL;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.unipop.jdbc.schemas.jdbc.JdbcEdgeSchema;
@@ -41,12 +45,34 @@ public class RowEdgeSchema extends AbstractRowSchema<Edge> implements JdbcEdgeSc
 {
     protected VertexSchema inVertexSchema;
     protected VertexSchema outVertexSchema;
+    /**
+     * Property keys ({@code "endpointScope": ["tenant"]}) an edge row shares with both of its
+     * endpoint vertices. Vertex ids are then unique only within a scope value -- two tenants may
+     * hold a vertex with the same id -- so an edge is adjacent to a vertex only when the id AND
+     * every scope property match. Without it an adjacency hop matches edges by endpoint id alone,
+     * which lets one tenant's edges connect another tenant's same-id vertices.
+     */
+    protected final List<String> endpointScope;
 
     public RowEdgeSchema(JSONObject configuration, UniGraph graph) {
         super(configuration, graph);
 
         this.inVertexSchema = createVertexSchema("inVertex");
         this.outVertexSchema = createVertexSchema("outVertex");
+        this.endpointScope = parseEndpointScope();
+    }
+
+    private List<String> parseEndpointScope() {
+        JSONArray keys = this.json.optJSONArray("endpointScope");
+        if (keys == null) return Collections.emptyList();
+        List<String> scope = new ArrayList<>();
+        for (int i = 0; i < keys.length(); i++) {
+            String key = keys.getString(i);
+            if (getFieldByPropertyKey(key) == null)
+                throw new IllegalArgumentException("endpointScope key '" + key + "' is not a property of edge table " + getTable());
+            scope.add(key);
+        }
+        return Collections.unmodifiableList(scope);
     }
 
     protected VertexSchema createVertexSchema(String key) throws JSONException {
@@ -104,6 +130,37 @@ public class RowEdgeSchema extends AbstractRowSchema<Edge> implements JdbcEdgeSc
     }
 
     protected PredicatesHolder getVertexPredicates(List<Vertex> vertices, Direction direction) {
+        if (endpointScope.isEmpty()) return getEndpointPredicates(vertices, direction);
+        // One (endpoint ids AND edge scope = vertex scope) branch per distinct scope value, so an
+        // edge only matches a vertex of its own scope. A vertex with no scope value matches no edge.
+        Map<List<Object>, List<Vertex>> byScope = new HashMap<>();
+        for (Vertex vertex : vertices) {
+            List<Object> scopeValues = scopeValues(vertex);
+            if (scopeValues != null) byScope.computeIfAbsent(scopeValues, k -> new ArrayList<>()).add(vertex);
+        }
+        Set<PredicatesHolder> scoped = new HashSet<>();
+        byScope.forEach((scopeValues, scopeVertices) -> {
+            List<HasContainer> scopeHas = new ArrayList<>();
+            for (int i = 0; i < endpointScope.size(); i++)
+                scopeHas.add(new HasContainer(endpointScope.get(i), P.eq(scopeValues.get(i))));
+            PredicatesHolder scopePredicates = this.toPredicates(PredicatesHolderFactory.and(scopeHas.toArray(new HasContainer[0])));
+            scoped.add(PredicatesHolderFactory.and(getEndpointPredicates(scopeVertices, direction), scopePredicates));
+        });
+        return PredicatesHolderFactory.or(scoped);
+    }
+
+    /** The vertex's value for each endpointScope key, or null when any is missing. */
+    private List<Object> scopeValues(Vertex vertex) {
+        List<Object> values = new ArrayList<>(endpointScope.size());
+        for (String key : endpointScope) {
+            VertexProperty<Object> property = vertex.property(key);
+            if (!property.isPresent()) return null;
+            values.add(property.value());
+        }
+        return values;
+    }
+
+    private PredicatesHolder getEndpointPredicates(List<Vertex> vertices, Direction direction) {
         PredicatesHolder outPredicates = this.outVertexSchema.toPredicates(vertices);
         PredicatesHolder inPredicates = this.inVertexSchema.toPredicates(vertices);
         if(direction.equals(Direction.OUT)) return outPredicates;
@@ -121,7 +178,9 @@ public class RowEdgeSchema extends AbstractRowSchema<Edge> implements JdbcEdgeSc
     /**
      * Single-direction adjacency JOIN that hydrates + filters + bounds the target vertex.
      * directedDir is OUT or IN (never BOTH). Returns null to skip this (edge,vertex) pair when the
-     * edge or target predicates aborted (that schema matches nothing — correct pruning). Throws
+     * edge or target predicates aborted, or the vertex schema lacks an endpointScope property (that
+     * schema matches nothing — correct pruning). The edge and the target must share every
+     * endpointScope value. Throws
      * {@link OrderNotPushableException} when a requested order column is absent on this vertex
      * schema, so the controller falls back the whole invocation to the deferred path (order+limit
      * push together or not at all).
@@ -146,8 +205,16 @@ public class RowEdgeSchema extends AbstractRowSchema<Edge> implements JdbcEdgeSc
         Table<Record> v = table(name(vertexSchema.getTable())).as("v");
         List<SelectFieldOrAsterisk> projection = Arrays.asList(v.asterisk(), field(name("e", srcCol)).as(SRC_ALIAS));
 
+        Condition on = field(name("e", endpointCol)).eq(field(name("v", vIdCol)));
+        for (String key : endpointScope) {
+            String vCol = vSchema.getFieldByPropertyKey(key);
+            // A target schema without the scope property cannot be matched to its own edges.
+            if (vCol == null) return null;
+            on = on.and(field(name("e", getFieldByPropertyKey(key))).eq(field(name("v", vCol))));
+        }
+
         SelectConditionStep<Record> where = DSL.select(projection)
-                .from(e).join(v).on(field(name("e", endpointCol)).eq(field(name("v", vIdCol))))
+                .from(e).join(v).on(on)
                 .where(edgeCond.and(tgtCond));
 
         List<SortField<Object>> sorts = new ArrayList<>();
