@@ -137,6 +137,7 @@
                         <include>**/JdbcTimestamptzTest.java</include>
                         <include>**/JdbcAdjacencyFilterTest.java</include>
                         <include>**/JdbcTransactionTest.java</include>
+                        <include>**/JdbcTypedColumnIndexTest.java</include>
                     </includes>
                     <environmentVariables>
                         <conf>basic</conf>

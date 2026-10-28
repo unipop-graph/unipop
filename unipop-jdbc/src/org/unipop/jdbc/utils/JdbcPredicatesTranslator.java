@@ -25,6 +25,7 @@ import org.unipop.util.MultiDateFormat;
 import java.text.ParseException;
 import java.util.*;
 import java.util.function.BiPredicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -33,8 +34,12 @@ import java.util.stream.Collectors;
  */
 public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition> {
 
+    /** How PostgreSQL renders a uuid as text, so the only spelling {@code col::text = ?} can match. */
+    private static final Pattern UUID_TEXT = Pattern.compile("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$");
+
     private final Set<String> idFields;
     private final Set<String> enumColumns;
+    private final Map<String, String> enumTypes;
     private final Set<String> jsonbColumns;
     private final Set<String> uuidColumns;
     private final Set<String> timestamptzColumns;
@@ -65,8 +70,17 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
     }
 
     public JdbcPredicatesTranslator(Set<String> idFields, Set<String> enumColumns, Set<String> jsonbColumns, Set<String> uuidColumns, Set<String> timestamptzColumns, String alias) {
+        this(idFields, enumColumns, Collections.emptyMap(), jsonbColumns, uuidColumns, timestamptzColumns, alias);
+    }
+
+    /**
+     * @param enumTypes PostgreSQL enum type name per enum column (from {@code "enumType"}); an enum
+     *                  column without one is compared as text only.
+     */
+    public JdbcPredicatesTranslator(Set<String> idFields, Set<String> enumColumns, Map<String, String> enumTypes, Set<String> jsonbColumns, Set<String> uuidColumns, Set<String> timestamptzColumns, String alias) {
         this.idFields = idFields == null ? Collections.emptySet() : idFields;
         this.enumColumns = enumColumns == null ? Collections.emptySet() : enumColumns;
+        this.enumTypes = enumTypes == null ? Collections.emptyMap() : enumTypes;
         this.jsonbColumns = jsonbColumns == null ? Collections.emptySet() : jsonbColumns;
         this.uuidColumns = uuidColumns == null ? Collections.emptySet() : uuidColumns;
         this.timestamptzColumns = timestamptzColumns == null ? Collections.emptySet() : timestamptzColumns;
@@ -84,10 +98,16 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
         return alias == null ? DSL.name(key) : DSL.name(alias, key);
     }
 
+    /** The plain column field: unquoted without an alias, {@code "alias"."col"} with one. */
+    private Field<Object> plainColumn(String key) {
+        return alias == null ? field(key) : DSL.field(col(key));
+    }
+
     /**
-     * The jOOQ field for a column. PostgreSQL enum columns are cast to text; JSONB catch-all keys
-     * render as path extraction (col->>'k' / col->'a'->>'b'), comparing the (String) value as text.
-     * Key segments are bound as parameters (no SQL injection).
+     * The jOOQ field for a column. PostgreSQL enum and uuid columns are cast to text (eq/within on
+     * them go through {@link #nativeEquality} instead, which keeps the column uncast); JSONB
+     * catch-all keys render as path extraction (col->>'k' / col->'a'->>'b'), comparing the (String)
+     * value as text. Key segments are bound as parameters (no SQL injection).
      */
     private Field<Object> columnField(String key) {
         if (isJsonbKey(key)) {
@@ -103,7 +123,46 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
         }
         return (enumColumns.contains(key) || uuidColumns.contains(key))
                 ? DSL.field("{0}::text", Object.class, DSL.field(col(key)))
-                : (alias == null ? field(key) : DSL.field(col(key)));
+                : plainColumn(key);
+    }
+
+    /**
+     * eq / within on a uuid or enum column, compared on the column's own type: {@code col::text = ?}
+     * hides the column from its btree index, so every such filter would scan the table. Casting the
+     * parameter instead must not turn a value that merely matched nothing into an error
+     * ({@code 'x'::uuid} and an unknown enum label both throw), so:
+     * <ul>
+     *   <li>uuid: only values spelled the way PostgreSQL prints a uuid are cast ({@code col = ?::uuid});
+     *       any other spelling never equalled {@code col::text}, so it keeps the text comparison.</li>
+     *   <li>enum: the label is looked up among the type's members, which yields null (no row) for an
+     *       unknown label. Needs the column's {@code "enumType"}.</li>
+     * </ul>
+     * Returns null, keeping the text comparison and its semantics, for any other operator (neq and
+     * without, which no btree serves; ordering, which compares enum labels alphabetically rather
+     * than in declaration order; text matching), a null value, or an enum column without
+     * {@code "enumType"}. Values stay bound parameters; the enum type name is validated as an
+     * identifier when the schema is built.
+     */
+    private Condition nativeEquality(String key, Object value, BiPredicate<?, ?> biPredicate) {
+        boolean uuid = uuidColumns.contains(key);
+        String enumType = enumTypes.get(key);
+        if (!uuid && (enumType == null || !enumColumns.contains(key))) return null;
+        Collection<?> raw;
+        if (biPredicate == Compare.eq) raw = Collections.singletonList(value);
+        else if (biPredicate == Contains.within && value instanceof Collection) raw = (Collection<?>) value;
+        else return null;
+        if (raw.isEmpty() || raw.contains(null)) return null;
+        List<String> values = raw.stream().map(Object::toString).collect(Collectors.toList());
+        if (uuid && !values.stream().allMatch(v -> UUID_TEXT.matcher(v).matches())) return null;
+
+        List<Field<Object>> typed = values.stream()
+                .map(v -> uuid
+                        ? DSL.field("{0}::uuid", Object.class, DSL.val(v))
+                        : DSL.field("(enum_range(null::{0}))[array_position(enum_range(null::{0})::text[], {1}::text)]",
+                                Object.class, DSL.unquotedName(enumType), DSL.val(v)))
+                .collect(Collectors.toList());
+        Field<Object> column = plainColumn(key);
+        return typed.size() == 1 ? column.eq(typed.get(0)) : column.in(typed);
     }
 
     /**
@@ -164,6 +223,8 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
         else if (predicate instanceof ExistsP) {
             return field.isNotNull();
         } else {
+            Condition nativeCondition = nativeEquality(key, value, biPredicate);
+            if (nativeCondition != null) return nativeCondition;
             if (idFields.contains(key) || isJsonbKey(key) || uuidColumns.contains(key)) value = stringifyValue(value);
             else if (timestamptzColumns.contains(key)) value = coerceTemporal(value);
             return predicateToQuery(field, value, biPredicate);
@@ -177,7 +238,8 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
             if (p instanceof ConnectiveP) return handleConnectiveP(key, (ConnectiveP) p);
             Object pValue = p.getValue();
             BiPredicate pBiPredicate = p.getBiPredicate();
-            return predicateToQuery(field, pValue, pBiPredicate);
+            Condition nativeCondition = nativeEquality(key, pValue, pBiPredicate);
+            return nativeCondition != null ? nativeCondition : predicateToQuery(field, pValue, pBiPredicate);
         }).collect(Collectors.toList());
         Condition condition = queries.get(0);
         if (predicate instanceof AndP){

@@ -12,9 +12,10 @@ import java.util.UUID;
 /**
  * A keyed property schema backing a PostgreSQL native uuid column. Extends {@link FieldPropertySchema}
  * for the column&lt;-&gt;property mapping; the column is reported via {@link UuidColumnSchema} so the
- * jdbc translator compares it as text (col::text = ?). Values are coerced to {@link UUID} on write
- * (so the native uuid column binds a uuid, not a varchar) and on read (so {@code values(col)} yields
- * a {@code java.util.UUID} regardless of how the driver returns the column). Declare:
+ * jdbc translator compares it natively for eq/within (col = ?::uuid) and as text otherwise. Values
+ * are coerced to {@link UUID} on write (so the native uuid column binds a uuid, not a varchar) and on
+ * read (so {@code values(col)} yields a {@code java.util.UUID} regardless of how the driver returns
+ * the column). Declare:
  * {@code "ref": {"type":"uuid"}}.
  */
 public class UuidPropertySchema extends FieldPropertySchema implements UuidColumnSchema {

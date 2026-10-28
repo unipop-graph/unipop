@@ -127,6 +127,10 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
                 .filter(s -> s instanceof EnumColumnSchema)
                 .map(s -> ((EnumColumnSchema) s).getEnumColumn())
                 .collect(Collectors.toSet());
+        Map<String, String> enumTypes = getPropertySchemas().stream()
+                .filter(s -> s instanceof EnumColumnSchema && ((EnumColumnSchema) s).getEnumType() != null)
+                .map(s -> (EnumColumnSchema) s)
+                .collect(Collectors.toMap(EnumColumnSchema::getEnumColumn, EnumColumnSchema::getEnumType, (a, b) -> a));
         Set<String> uuidColumns = getPropertySchemas().stream()
                 .filter(s -> s instanceof UuidColumnSchema)
                 .map(s -> ((UuidColumnSchema) s).getUuidColumn())
@@ -135,7 +139,7 @@ public abstract class AbstractRowSchema<E extends Element> extends AbstractEleme
                 .filter(s -> s instanceof TimestamptzColumnSchema)
                 .map(s -> ((TimestamptzColumnSchema) s).getTimestamptzColumn())
                 .collect(Collectors.toSet());
-        return new JdbcPredicatesTranslator(idFields, enumColumns, jsonbColumns, uuidColumns, timestamptzColumns, alias);
+        return new JdbcPredicatesTranslator(idFields, enumColumns, enumTypes, jsonbColumns, uuidColumns, timestamptzColumns, alias);
     }
 
     private <E extends Element> SelectJoinStep<Record> createSqlQuery(Set<String> columnsToRetrieve) {
