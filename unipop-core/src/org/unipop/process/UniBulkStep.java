@@ -1,11 +1,11 @@
 package org.unipop.process;
 
+import com.google.common.collect.Iterators;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
-import org.unipop.util.ConversionUtils;
 import org.unipop.structure.UniGraph;
 
 import java.util.Iterator;
@@ -47,9 +47,9 @@ public abstract class UniBulkStep<S, E> extends AbstractStep<S, E> {
         graph.readWrite();
         BulkIterator<Traverser.Admin<S>> partitionedTraversers = new BulkIterator<>(maxBulk, startBulk, multiplier, starts);
 //        UnmodifiableIterator<List<Traverser.Admin<S>>> partitionedTraversers = Iterators.partition(starts, maxBulk);
-        return ConversionUtils.asStream(partitionedTraversers)
-                .<Iterator<Traverser.Admin<E>>>map(this::process)
-                .<Traverser.Admin<E>>flatMap(ConversionUtils::asStream).iterator();
+        // Not Stream.flatMap(..).iterator(): that drains a batch's whole result before yielding its first
+        // element, so a repeat() runs to exhaustion and a downstream limit() can never stop it early.
+        return Iterators.concat(Iterators.transform(partitionedTraversers, this::process));
     }
 
     protected abstract Iterator<Traverser.Admin<E>> process(List<Traverser.Admin<S>> traversers);

@@ -139,6 +139,7 @@
                         <include>**/JdbcEndpointScopeTest.java</include>
                         <include>**/JdbcTransactionTest.java</include>
                         <include>**/JdbcTypedColumnIndexTest.java</include>
+                        <include>**/JdbcPathSearchTest.java</include>
                     </includes>
                     <environmentVariables>
                         <conf>basic</conf>
