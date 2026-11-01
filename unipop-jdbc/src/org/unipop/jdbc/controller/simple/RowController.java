@@ -194,25 +194,51 @@ public class RowController implements SimpleController, TransactionalController,
         // query that runs before any flushing read -- e.g. an unbounded-source start step, the first
         // step in the traversal -- would read stale data (missing just-added vertices/edges).
         flush();
-        if (joinApplicable(uniQuery)) {
+        boolean targetFilteredOnEdges = targetFilteredOnEdges(uniQuery);
+        if (!targetFilteredOnEdges && joinApplicable(uniQuery)) {
             Iterator<Edge> joined = searchJoin(uniQuery);
             if (joined != null) return joined;
         }
         // Fallback: existing id-only edge path. For an unbounded source (allSources) there is no
         // source-id bound -- use the edge-label predicates only, so the query matches all edges
         // rather than aborting on the empty vertex list (which means "none", not "all").
+        PredicatesHolder edgePredicates = targetFilteredOnEdges
+                ? PredicatesHolderFactory.and(uniQuery.getPredicates(), uniQuery.getTargetPredicates())
+                : uniQuery.getPredicates();
         SelectCollector<JdbcSchema<Edge>, Select, Edge> collector = new SelectCollector<>(
                 schema -> schema.getSearch(uniQuery,
                         uniQuery.isAllSources()
-                                ? schema.toPredicates(uniQuery.getPredicates())
-                                : ((JdbcEdgeSchema) schema).toPredicates(uniQuery.getVertices(), uniQuery.getDirection(), uniQuery.getPredicates())),
+                                ? schema.toPredicates(edgePredicates)
+                                : ((JdbcEdgeSchema) schema).toPredicates(uniQuery.getVertices(), uniQuery.getDirection(), edgePredicates)),
                 (schema, results) -> schema.parseResults(results, uniQuery)
         );
 
         Map<JdbcSchema<Edge>, Select> selects = edgeSchemas.stream()
                 .filter(schema -> this.traversalFilter.filter(schema, uniQuery.getTraversal())).collect(collector);
 
-        return this.search(uniQuery, selects, collector);
+        Iterator<Edge> edges = this.search(uniQuery, selects, collector);
+        if (!targetFilteredOnEdges) return edges;
+        List<Edge> filtered = new ArrayList<>();
+        edges.forEachRemaining(edge -> {
+            edge.vertices(Direction.BOTH).forEachRemaining(endpoint -> {
+                if (endpoint instanceof DeferredVertex) ((DeferredVertex) endpoint).setFilteredBySource();
+            });
+            filtered.add(edge);
+        });
+        return filtered.iterator();
+    }
+
+    /**
+     * Whether the target predicates can be tested on the edge rows instead of on the targets: they read
+     * only endpointScope keys, which an edge shares with both endpoints, and nothing else (properties,
+     * order, limit) needs the target row. An edge whose target row is missing then still matches.
+     */
+    private boolean targetFilteredOnEdges(SearchVertexQuery q) {
+        if (!q.isHydrateTarget() || !q.getTargetPredicates().notEmpty()) return false;
+        if (q.getPropertyKeys() == null || !q.getPropertyKeys().isEmpty()) return false;
+        if ((q.getTargetOrders() != null && !q.getTargetOrders().isEmpty()) || q.getTargetLimit() >= 0) return false;
+        return edgeSchemas.stream().filter(schema -> this.traversalFilter.filter(schema, q.getTraversal()))
+                .allMatch(schema -> schema.holdsForEndpoints(q.getTargetPredicates()));
     }
 
     private boolean joinApplicable(SearchVertexQuery q) {

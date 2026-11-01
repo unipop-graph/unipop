@@ -102,7 +102,7 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
     private Iterator<Traverser.Admin<E>> getTraversersWithProperties(Iterator<Traverser.Admin<E>> traversers) {
         List<Traverser.Admin<E>> copyTraversers = ConversionUtils.asStream(traversers).collect(Collectors.toList());
         List<DeferredVertex> deferredVertices = copyTraversers.stream().map(Attachable::get)
-                .filter(vertex -> vertex instanceof DeferredVertex)
+                .filter(vertex -> vertex instanceof DeferredVertex && !filteredBySource(vertex))
                 .map(vertex -> ((DeferredVertex) vertex))
                 .filter(DeferredVertex::isDeferred)
                 .collect(Collectors.toList());
@@ -126,8 +126,14 @@ public class UniGraphVertexStep<E extends Element> extends UniPredicatesStep<Ver
                 .map(e -> ((DeferredVertex) e).id())
                 .collect(Collectors.toSet());
         return copyTraversers.stream()
-                .filter(t -> { E e = t.get(); return !(e instanceof DeferredVertex) || matchedIds.contains(((DeferredVertex) e).id()); })
+                .filter(t -> { E e = t.get(); return !(e instanceof DeferredVertex) || filteredBySource(e) || matchedIds.contains(((DeferredVertex) e).id()); })
                 .iterator();
+    }
+
+    /** A vertex the source already filtered needs no load when the step reads none of its properties. */
+    private boolean filteredBySource(Element element) {
+        return propertyKeys != null && propertyKeys.isEmpty()
+                && element instanceof DeferredVertex && ((DeferredVertex) element).isFilteredBySource();
     }
 
     private Stream<Traverser.Admin<E>> toTraversers(Edge edge, Map<Object, List<Traverser<Vertex>>> traversers) {

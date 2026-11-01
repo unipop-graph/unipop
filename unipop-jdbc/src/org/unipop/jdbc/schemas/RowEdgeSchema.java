@@ -76,6 +76,18 @@ public class RowEdgeSchema extends AbstractRowSchema<Edge> implements JdbcEdgeSc
         return Collections.unmodifiableList(scope);
     }
 
+    /** Whether the predicates read only endpointScope keys, so testing them on an edge row tests both endpoints. */
+    public boolean holdsForEndpoints(PredicatesHolder predicates) {
+        return !endpointScope.isEmpty() && endpointScope.containsAll(keys(predicates));
+    }
+
+    private static Set<String> keys(PredicatesHolder predicates) {
+        Set<String> keys = new HashSet<>();
+        predicates.getPredicates().forEach(has -> keys.add(has.getKey()));
+        predicates.getChildren().forEach(child -> keys.addAll(keys(child)));
+        return keys;
+    }
+
     protected VertexSchema createVertexSchema(String key) throws JSONException {
         JSONObject vertexConfiguration = this.json.optJSONObject(key);
         if(vertexConfiguration == null) return null;
