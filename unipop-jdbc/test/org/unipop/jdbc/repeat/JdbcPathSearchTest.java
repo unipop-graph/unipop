@@ -67,4 +67,12 @@ public class JdbcPathSearchTest {
                 .emit().times(6).next();
         assertEquals(1, expanded.get());
     }
+
+    @Test
+    public void limitStopsWithoutPullingAnotherTraverser() {
+        AtomicInteger pulled = new AtomicInteger();
+        // A filter, unlike a side effect, keeps EarlyLimitStrategy from moving the limit ahead of it.
+        assertEquals(1, g.V("a").both().filter(t -> pulled.incrementAndGet() > 0).limit(1).toList().size());
+        assertEquals(1, pulled.get());
+    }
 }
