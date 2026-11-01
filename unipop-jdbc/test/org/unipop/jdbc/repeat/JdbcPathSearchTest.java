@@ -2,22 +2,30 @@ package org.unipop.jdbc.repeat;
 
 import org.apache.commons.configuration2.BaseConfiguration;
 import org.apache.commons.configuration2.Configuration;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.unipop.jdbc.suite.EmbeddedPostgresServer;
+import org.unipop.jdbc.utils.TimingExecuterListener;
 import org.unipop.structure.UniGraph;
 
 import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Path searches over {@code repeat(both().simplePath())}, the shape of a shortest-path query.
@@ -60,6 +68,26 @@ public class JdbcPathSearchTest {
         if (g != null) g.close();
     }
 
+    @Before
+    public void clearTiming() {
+        TimingExecuterListener.timing.clear();
+    }
+
+    /** Distinct statements that read ps_link; each hop batch has its own frontier, so its own SQL. */
+    private static long linkStatements() {
+        return TimingExecuterListener.timing.keySet().stream().filter(sql -> sql.contains("ps_link")).count();
+    }
+
+    private static boolean ranJoin() {
+        return TimingExecuterListener.timing.keySet().stream().anyMatch(sql -> sql.toLowerCase().contains(" join "));
+    }
+
+    private static List<Path> shortestPathToT() {
+        return g.V("a").repeat(__.both().simplePath())
+                .until(__.hasId("t").or().loops().is(P.gte(6)))
+                .hasId("t").path().by(__.id()).limit(1).toList();
+    }
+
     @Test
     public void repeatYieldsItsFirstResultWithoutRunningTheWholeRepeat() {
         AtomicInteger expanded = new AtomicInteger();
@@ -74,5 +102,33 @@ public class JdbcPathSearchTest {
         // A filter, unlike a side effect, keeps EarlyLimitStrategy from moving the limit ahead of it.
         assertEquals(1, g.V("a").both().filter(t -> pulled.incrementAndGet() > 0).limit(1).toList().size());
         assertEquals(1, pulled.get());
+    }
+
+    @Test
+    public void shortestPathHopsDoNotHydrateVertices() {
+        assertEquals(1, shortestPathToT().size());
+        assertFalse("hops that only feed ids must not join the vertex table", ranJoin());
+    }
+
+    @Test
+    public void shortestPathRunsOneStatementPerHop() {
+        List<Path> paths = shortestPathToT();
+        assertEquals(1, paths.size());
+        assertEquals(Arrays.asList("a", "b1", "c1", "t"), paths.get(0).objects());
+        assertEquals(3, linkStatements());
+    }
+
+    @Test
+    public void repeatOutputReturnedToTheCallerIsHydrated() {
+        assertEquals(3, g.V("a").repeat(__.both().simplePath()).times(1).toList().size());
+        assertTrue("vertices returned to the caller are fetched with their properties", ranJoin());
+    }
+
+    @Test
+    public void untilReadingAPropertyHydratesTheHop() {
+        List<Path> paths = g.V("a").repeat(__.both().simplePath()).until(__.has("name", "b2"))
+                .path().by(__.id()).limit(1).toList();
+        assertEquals(Arrays.asList("a", "b2"), paths.get(0).objects());
+        assertTrue("until(has(name)) reads the hop's properties", ranJoin());
     }
 }

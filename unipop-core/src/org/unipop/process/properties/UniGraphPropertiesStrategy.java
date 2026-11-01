@@ -6,9 +6,13 @@ import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.lambda.AbstractLambdaTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.lambda.LoopTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.lambda.TrueTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.ValueTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.MathStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.*;
@@ -20,7 +24,10 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
+import org.apache.tinkerpop.gremlin.structure.T;
+import org.unipop.process.range.UniGraphRangeStep;
 import org.unipop.process.repeat.UniGraphRepeatStep;
+import org.unipop.process.vertex.UniGraphVertexStep;
 import org.unipop.process.repeat.UniGraphRepeatStepStrategy;
 import org.unipop.process.edge.EdgeStepsStrategy;
 import org.unipop.process.edge.UniGraphEdgeOtherVertexStep;
@@ -118,7 +125,9 @@ public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<Traver
                         propertyFetcher.fetchAllKeys();
                     } else {
                         List<HasContainer> hasContainers = hasStep.getHasContainers();
-                        hasContainers.stream().map(HasContainer::getKey).forEach(propertyFetcher::addPropertyKey);
+                        // Every element carries its id, so hasId() needs nothing fetched.
+                        hasContainers.stream().map(HasContainer::getKey).filter(key -> !T.id.getAccessor().equals(key))
+                                .forEach(propertyFetcher::addPropertyKey);
                     }
                 });
             }
@@ -149,7 +158,8 @@ public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<Traver
             if (!(filterStep instanceof HasStep)
                     && !(filterStep instanceof WherePredicateStep)
                     && !(filterStep instanceof DedupGlobalStep)
-                    && !(filterStep instanceof RangeGlobalStep)) {
+                    && !(filterStep instanceof RangeGlobalStep)
+                    && !isUnmodulatedPathFilter(filterStep)) {
                 if (propertyFetchers != null)
                     propertyFetchers.forEach(PropertyFetcher::fetchAllKeys);
             }
@@ -314,12 +324,11 @@ public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<Traver
             }));
         });
 
-        TraversalHelper.getStepsOfAssignableClass(UniGraphRepeatStep.class, traversal).forEach(uniGraphRepeatStepTemp -> {
-            Traversal.Admin repeatTraversal = uniGraphRepeatStepTemp.getRepeatTraversal();
-            Optional<PropertyFetcher> lastStepOfAssignableClass = TraversalHelper.getLastStepOfAssignableClass(PropertyFetcher.class, repeatTraversal);
-            if (lastStepOfAssignableClass.isPresent()) {
-                lastStepOfAssignableClass.get().fetchAllKeys();
-            }
+        // A repeat body's last fetcher produces the repeat's output, so the repeat decides what it fetches.
+        TraversalHelper.getStepsOfAssignableClass(RepeatStep.class, traversal)
+                .forEach(repeatStep -> fetchAllKeysOfLastFetcher(repeatStep.getRepeatTraversal()));
+        TraversalHelper.getStepsOfAssignableClass(UniGraphRepeatStep.class, traversal).forEach(repeatStep -> {
+            if (!repeatOutputReadsOnlyIds(repeatStep)) fetchAllKeysOfLastFetcher(repeatStep.getRepeatTraversal());
         });
 
         TraversalHelper.getStepsOfAssignableClass(AddEdgeStep.class, traversal).forEach(addEdgeStep -> {
@@ -328,10 +337,7 @@ public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<Traver
                 allPropertyFetchersOf.forEach(PropertyFetcher::fetchAllKeys);
         });
 
-        Optional<PropertyFetcher> lastStepOfAssignableClass = TraversalHelper.getLastStepOfAssignableClass(PropertyFetcher.class, traversal);
-        if (lastStepOfAssignableClass.isPresent()) {
-            lastStepOfAssignableClass.get().fetchAllKeys();
-        }
+        if (!isRepeatBody(traversal)) fetchAllKeysOfLastFetcher(traversal);
 
         TraversalHelper.getStepsOfAssignableClass(UniGraphEdgeOtherVertexStep.class, traversal).forEach(uniGraphEdgeOtherVertexStep -> {
             Collection<PropertyFetcher> propertyFetcherStepsOf = getPropertyFetcherStepOf(uniGraphEdgeOtherVertexStep, traversal);
@@ -367,6 +373,60 @@ public class UniGraphPropertiesStrategy extends AbstractTraversalStrategy<Traver
         }
     }
 
+
+    private static void fetchAllKeysOfLastFetcher(Traversal.Admin<?, ?> traversal) {
+        if (traversal == null) return;
+        TraversalHelper.getLastStepOfAssignableClass(PropertyFetcher.class, traversal).ifPresent(PropertyFetcher::fetchAllKeys);
+    }
+
+    /** A UniGraphRepeatStep keeps the replaced RepeatStep as its body's parent, so this covers both. */
+    private static boolean isRepeatBody(Traversal.Admin<?, ?> traversal) {
+        TraversalParent parent = traversal.getParent();
+        return parent instanceof RepeatStep && ((RepeatStep<?>) parent).getRepeatTraversal() == traversal;
+    }
+
+    /**
+     * Whether only the ids of a repeat's elements are read, so its hops need not hydrate them: a body
+     * of plain hops (optionally simplePath()), until()/emit() that test only ids and loop counts, and
+     * downstream only id filters, ranges, a by()-projected path() or another hop.
+     */
+    private static boolean repeatOutputReadsOnlyIds(UniGraphRepeatStep<?> repeat) {
+        return repeat.getRepeatTraversal().getSteps().stream().allMatch(step -> step instanceof UniGraphVertexStep
+                        || step instanceof UniGraphRepeatStep.RepeatEndStep || isUnmodulatedPathFilter(step))
+                && readsOnlyIdsAndLoops(repeat.getUntilTraversal())
+                && readsOnlyIdsAndLoops(repeat.getEmitTraversal())
+                && downstreamReadsOnlyIds(repeat.getNextStep());
+    }
+
+    private static boolean readsOnlyIdsAndLoops(Traversal.Admin<?, ?> traversal) {
+        if (traversal == null || traversal instanceof LoopTraversal || traversal instanceof TrueTraversal) return true;
+        if (traversal instanceof AbstractLambdaTraversal) return false;
+        return traversal.getSteps().stream().allMatch(step -> isIdFilter(step)
+                || step instanceof LoopsStep || step instanceof IsStep
+                || (step instanceof ConnectiveStep && ((ConnectiveStep<?>) step).getLocalChildren().stream()
+                        .allMatch(UniGraphPropertiesStrategy::readsOnlyIdsAndLoops)));
+    }
+
+    private static boolean downstreamReadsOnlyIds(Step<?, ?> step) {
+        for (; !(step instanceof EmptyStep); step = step.getNextStep()) {
+            if (step instanceof UniGraphVertexStep) return true;
+            if (step instanceof PathStep) return !((PathStep<?>) step).getLocalChildren().isEmpty();
+            boolean passesElementsOn = step instanceof HasStep || step instanceof RangeGlobalStep
+                    || step instanceof UniGraphRangeStep || isUnmodulatedPathFilter(step);
+            if (!passesElementsOn) return false;
+        }
+        return false;
+    }
+
+    private static boolean isIdFilter(Step<?, ?> step) {
+        return step instanceof HasStep && ((HasStep<?>) step).getHasContainers().stream()
+                .allMatch(has -> T.id.getAccessor().equals(has.getKey()));
+    }
+
+    /** simplePath()/cyclicPath() compare elements, not their properties, unless a by() projects them. */
+    private static boolean isUnmodulatedPathFilter(Step<?, ?> step) {
+        return step instanceof PathFilterStep && ((PathFilterStep<?>) step).getLocalChildren().isEmpty();
+    }
 
     /**
      * Walk up the enclosing traversals and, for any {@link PropertyFetcher} step whose label
