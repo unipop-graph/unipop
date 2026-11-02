@@ -46,7 +46,6 @@ import org.unipop.structure.UniVertex;
 import org.unipop.util.MetricsRunner;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.*;
 import java.util.stream.Collector;
@@ -77,9 +76,12 @@ public class RowController implements SimpleController, TransactionalController,
      * a ThreadLocal cannot be enumerated, so close() would otherwise see only the calling thread's buffer
      * and statements stranded on any other thread would go unreported. The thread-local is released at the
      * end of each transaction so a pooled server worker does not retain a buffer between requests.
+     *
+     * The buffers are tracked by identity: a list's equals and hashCode read its contents, so a hashed set
+     * would compare one thread's buffer against another's while that thread is writing to it.
      */
     private final ThreadLocal<List<Query>> bulk = new ThreadLocal<>();
-    private final Set<List<Query>> liveBuffers = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final Set<List<Query>> liveBuffers = Collections.synchronizedSet(Collections.newSetFromMap(new IdentityHashMap<>()));
 
     /**
      * How many statements accumulate before the buffer is sent as one jOOQ batch, from
@@ -417,14 +419,16 @@ public class RowController implements SimpleController, TransactionalController,
         // is exactly what used to vanish silently. Touching other threads' lists is safe only because the
         // graph is being torn down here, the same assumption ContextManager.close() makes for connections.
         int stranded = 0;
-        for (final List<Query> pending : liveBuffers) {
-            stranded += pending.size();
-            pending.clear();
+        synchronized (liveBuffers) {
+            for (final List<Query> pending : liveBuffers) {
+                stranded += pending.size();
+                pending.clear();
+            }
+            liveBuffers.clear();
         }
         if (stranded > 0) {
             logger.warn("discarding {} buffered statement(s) that were never flushed", stranded);
         }
-        liveBuffers.clear();
         bulk.remove();
     }
 

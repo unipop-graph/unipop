@@ -20,6 +20,10 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -233,6 +237,35 @@ public class JdbcTransactionTest {
         } finally {
             impatient.close();
         }
+    }
+
+    /**
+     * Each thread buffers into and releases a list of its own while the others do the same. TinkerPop's
+     * TransactionTest#shouldExecuteWithCompetingThreads has the same shape; a writer that dies on an
+     * exception never finishes there, so it hangs instead of failing.
+     */
+    @Test(timeout = 120_000)
+    public void competingThreadsEachCommitTheirOwnWrites() throws Exception {
+        int threads = 16;
+        int perThread = 1000;
+        ExecutorService pool = Executors.newFixedThreadPool(threads);
+        try {
+            List<Future<?>> writers = new ArrayList<>();
+            for (int t = 0; t < threads; t++) {
+                String prefix = "c" + t + "-";
+                writers.add(pool.submit(() -> {
+                    for (int i = 0; i < perThread; i++) {
+                        graph.addVertex(T.label, "node", T.id, prefix + i, "name", "v");
+                        graph.tx().commit();
+                    }
+                    return null;
+                }));
+            }
+            for (Future<?> writer : writers) writer.get(60, TimeUnit.SECONDS);
+        } finally {
+            pool.shutdownNow();
+        }
+        assertEquals(List.of(String.valueOf(threads * perThread)), ids("SELECT count(*) FROM t_node WHERE id LIKE 'c%'"));
     }
 
     private static String rootCause(Throwable t) {
