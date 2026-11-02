@@ -16,7 +16,11 @@ import java.util.Set;
 
 /** Replaces a GLOBAL RangeGlobalStep that follows a UniGraphStep with a schema-aware
  *  UniGraphRangeStep, folding the range low-bound as an offset onto the UniGraphStep so the
- *  controller can push SQL OFFSET when the query resolves to a single schema. */
+ *  controller can push SQL OFFSET when the query resolves to a single schema. Also replaces any other
+ *  range of the root traversal, because RangeGlobalStep pulls one more traverser after its window
+ *  closes, which re-runs everything upstream of it (a whole repeat() for a limit(1) path search).
+ *  Ranges in child traversals stay native: inside a repeat they count per loop, and the union
+ *  strategy recognizes RangeGlobalStep as state it must not batch across. */
 public class UniGraphRangeStepStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy>
         implements TraversalStrategy.ProviderOptimizationStrategy {
 
@@ -29,10 +33,10 @@ public class UniGraphRangeStepStrategy extends AbstractTraversalStrategy<Travers
     public void apply(Traversal.Admin<?, ?> traversal) {
         for (RangeGlobalStep<?> range : TraversalHelper.getStepsOfAssignableClass(RangeGlobalStep.class, traversal)) {
             UniGraphStep<?, ?> source = sourceGraphStep(range);
-            if (source == null) continue;                 // not fed by a UniGraphStep -> leave native
+            if (source == null && !traversal.isRoot()) continue;
             long low = range.getLowRange();
             long high = range.getHighRange();
-            source.setOffset(low > Integer.MAX_VALUE ? 0 : (int) low);
+            if (source != null) source.setOffset(low > Integer.MAX_VALUE ? 0 : (int) low);
             UniGraphRangeStep<?> uni = new UniGraphRangeStep<>(traversal, low, high, source);
             TraversalHelper.copyLabels(range, uni, false);   // replaceStep does not transfer labels
             TraversalHelper.replaceStep((Step) range, uni, traversal);

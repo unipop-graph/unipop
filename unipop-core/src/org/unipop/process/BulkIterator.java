@@ -3,6 +3,7 @@ package org.unipop.process;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 /**
  * Created by sbarzilay on 7/6/16.
@@ -24,22 +25,20 @@ public class BulkIterator<S> implements Iterator<List<S>> {
 
     @Override
     public boolean hasNext() {
-        if (!original.hasNext())
-            return false;
-        else {
-            List<S> list = new ArrayList<>(bulk);
-            for (int i = 0; i < bulk; i++) {
-                if (original.hasNext())
-                    list.add(original.next());
-            }
-            bulk = Math.min(bulk * multiplier, maxBulk);
-            current = list;
-            return current.size() > 0;
-        }
+        if (current != null) return true;
+        if (!original.hasNext()) return false;
+        current = new ArrayList<>(bulk);
+        while (current.size() < bulk && original.hasNext())
+            current.add(original.next());
+        bulk = Math.min(bulk * multiplier, maxBulk);
+        return true;
     }
 
     @Override
     public List<S> next() {
-        return this.current;
+        if (!hasNext()) throw new NoSuchElementException();
+        List<S> batch = current;
+        current = null;
+        return batch;
     }
 }

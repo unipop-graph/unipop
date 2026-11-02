@@ -11,7 +11,8 @@ import org.unipop.process.Offsettable;
 import java.util.NoSuchElementException;
 
 /**
- * Schema-aware replacement for a global RangeGlobalStep that follows a UniGraph search step.
+ * Replacement for a global RangeGlobalStep that stops pulling once its window closes, schema-aware
+ * when it follows a UniGraph search step ({@code source}; null for any other root-traversal range).
  * Applies the RESIDUAL range: range(low - pushed, high - pushed), where `pushed` is how much of the
  * offset the provider already applied as SQL OFFSET (read from the source step lazily, once the first
  * upstream element arrives -- by then the source's search has run and set pushedOffset). When the
@@ -46,6 +47,9 @@ public final class UniGraphRangeStep<S> extends AbstractStep<S, S> {
     @Override
     protected Traverser.Admin<S> processNextStart() throws NoSuchElementException {
         while (true) {
+            if (resolved && effHigh != -1L && counter >= effHigh) {
+                throw FastNoSuchElementException.instance();      // window closed -> don't pull another
+            }
             // Pulling the first start triggers the upstream search, which sets pushedOffset.
             final Traverser.Admin<S> start = this.starts.next();  // throws FastNoSuchElement when drained
             if (!resolved) resolve();
