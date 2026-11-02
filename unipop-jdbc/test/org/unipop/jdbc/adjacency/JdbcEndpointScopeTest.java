@@ -2,6 +2,8 @@ package org.unipop.jdbc.adjacency;
 
 import org.apache.commons.configuration2.BaseConfiguration;
 import org.apache.commons.configuration2.Configuration;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.PartitionStrategy;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -18,11 +20,15 @@ import java.sql.DriverManager;
 import java.sql.Statement;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.both;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.bothE;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.hasId;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.id;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.out;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -116,6 +122,35 @@ public class JdbcEndpointScopeTest {
         assertHopsScoped(graphNoJoin);
         assertTrue("join push-down is off, so no query may join",
                 TimingExecuterListener.timing.keySet().stream().noneMatch(sql -> sql.toLowerCase().contains("join")));
+    }
+
+    private static List<List<Object>> pathIds(List<Path> paths) {
+        return paths.stream().map(Path::objects).collect(Collectors.toList());
+    }
+
+    @Test
+    public void scopedIdOnlyHopsReadOnlyEdges() {
+        TimingExecuterListener.timing.clear();
+        List<Path> paths = scoped(graph, T2).V("a").repeat(both("E").simplePath())
+                .until(hasId("c").or().loops().is(P.gte(3))).hasId("c").path().by(id()).limit(1).toList();
+        assertEquals(Collections.singletonList(Arrays.asList("a", "c")), pathIds(paths));
+        long nodeReads = TimingExecuterListener.timing.keySet().stream().filter(sql -> sql.contains("es_nodes")).count();
+        assertEquals("only the start vertex lookup reads es_nodes", 1, nodeReads);
+    }
+
+    private static List<List<Object>> hopsFromT2sA(UUID hopTenant) {
+        return pathIds(graph.traversal().V().has("tenant", T2.toString()).hasId("a")
+                .repeat(both("E").has("tenant", hopTenant.toString()).simplePath()).emit().times(2)
+                .path().by(id()).toList());
+    }
+
+    @Test
+    public void edgeTestedTenantFilterExcludesOtherTenantsVertices() {
+        // The hop's edges are T2's (its source is T2's a), so only the tenant filter tested on them keeps
+        // T1 hops empty.
+        assertEquals(Arrays.asList(Arrays.asList("a", "c"), Arrays.asList("a", "c", "b")),
+                hopsFromT2sA(T2).stream().sorted(Comparator.comparingInt(List::size)).collect(Collectors.toList()));
+        assertEquals(Collections.emptyList(), hopsFromT2sA(T1));
     }
 
     @Test

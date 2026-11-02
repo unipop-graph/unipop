@@ -31,6 +31,20 @@ public class DeferredVertex extends UniVertex {
         this.scope = scope;
     }
 
+    /**
+     * Set by a source that already applied the vertex step's vertex predicates to this vertex (on the row
+     * of the edge it was reached through), so the step need not load it to test them.
+     */
+    private boolean filteredBySource = false;
+
+    public boolean isFilteredBySource() {
+        return filteredBySource;
+    }
+
+    public void setFilteredBySource() {
+        this.filteredBySource = true;
+    }
+
     public boolean isDeferred() {
         return deferred;
     }
