@@ -135,7 +135,10 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
      *   <li>uuid: only values spelled the way PostgreSQL prints a uuid are cast ({@code col = ?::uuid});
      *       any other spelling never equalled {@code col::text}, so it keeps the text comparison.</li>
      *   <li>enum: the label is looked up among the type's members, which yields null (no row) for an
-     *       unknown label. Needs the column's {@code "enumType"}.</li>
+     *       unknown label. Needs the column's {@code "enumType"}. The lookup is a scalar subquery so
+     *       PostgreSQL resolves it once per statement: enum_range() is only stable, so a bare lookup is
+     *       re-run on every row whenever another index drives the scan and the comparison becomes a
+     *       filter.</li>
      * </ul>
      * Returns null, keeping the text comparison and its semantics, for any other operator (neq and
      * without, which no btree serves; ordering, which compares enum labels alphabetically rather
@@ -158,7 +161,7 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
         List<Field<Object>> typed = values.stream()
                 .map(v -> uuid
                         ? DSL.field("{0}::uuid", Object.class, DSL.val(v))
-                        : DSL.field("(enum_range(null::{0}))[array_position(enum_range(null::{0})::text[], {1}::text)]",
+                        : DSL.field("(select (enum_range(null::{0}))[array_position(enum_range(null::{0})::text[], {1}::text)])",
                                 Object.class, DSL.unquotedName(enumType), DSL.val(v)))
                 .collect(Collectors.toList());
         Field<Object> column = plainColumn(key);
