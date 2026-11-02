@@ -24,6 +24,9 @@ public class SearchVertexQuery extends SearchQuery<Edge> implements VertexQuery 
     private final List<Pair<String, Order>> targetOrders;
     private final int targetLimit;
     private final boolean hydrateTarget;
+    // When true the source side is unbounded ("all edges"): the edge query must NOT add a source-id
+    // bound (and must not abort on an empty vertex list) -- it means "match all sources", not "none".
+    private final boolean allSources;
 
     // Backward-compatible: edge-return / callers with no target intent.
     public SearchVertexQuery(Class<Edge> returnType, List<Vertex> vertices, Direction direction, PredicatesHolder predicates, int limit, Set<String> propertyKeys, List<Pair<String, Order>> orders, StepDescriptor stepDescriptor, Traversal traversal) {
@@ -37,6 +40,11 @@ public class SearchVertexQuery extends SearchQuery<Edge> implements VertexQuery 
     }
 
     public SearchVertexQuery(Class<Edge> returnType, List<Vertex> vertices, Direction direction, PredicatesHolder predicates, int limit, Set<String> propertyKeys, List<Pair<String, Order>> orders, PredicatesHolder targetPredicates, List<Pair<String, Order>> targetOrders, int targetLimit, boolean hydrateTarget, StepDescriptor stepDescriptor, Traversal traversal) {
+        this(returnType, vertices, direction, predicates, limit, propertyKeys, orders, targetPredicates, targetOrders, targetLimit, hydrateTarget, false, stepDescriptor, traversal);
+    }
+
+    // Full constructor including the unbounded-source flag.
+    public SearchVertexQuery(Class<Edge> returnType, List<Vertex> vertices, Direction direction, PredicatesHolder predicates, int limit, Set<String> propertyKeys, List<Pair<String, Order>> orders, PredicatesHolder targetPredicates, List<Pair<String, Order>> targetOrders, int targetLimit, boolean hydrateTarget, boolean allSources, StepDescriptor stepDescriptor, Traversal traversal) {
         super(returnType, predicates, limit, propertyKeys, orders, stepDescriptor, traversal);
         this.vertices = vertices;
         this.direction = direction;
@@ -44,6 +52,7 @@ public class SearchVertexQuery extends SearchQuery<Edge> implements VertexQuery 
         this.targetOrders = targetOrders;
         this.targetLimit = targetLimit;
         this.hydrateTarget = hydrateTarget;
+        this.allSources = allSources;
     }
 
     public PredicatesHolder getTargetPredicates() {
@@ -60,6 +69,10 @@ public class SearchVertexQuery extends SearchQuery<Edge> implements VertexQuery 
 
     public boolean isHydrateTarget() {
         return hydrateTarget;
+    }
+
+    public boolean isAllSources() {
+        return allSources;
     }
 
     @Override
