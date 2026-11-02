@@ -11,6 +11,7 @@ import org.junit.Test;
 import org.unipop.jdbc.suite.EmbeddedPostgresServer;
 import org.unipop.jdbc.utils.TimingExecuterListener;
 import org.unipop.structure.UniGraph;
+import org.apache.tinkerpop.gremlin.structure.T;
 
 import java.io.File;
 import java.sql.Connection;
@@ -177,6 +178,43 @@ public class JdbcJoinPushdownTest {
         // order() to confirm the fallback path (not just the join-skip) still surfaces all 5 neighbours.
         assertEquals("fan-out itself (sans order) must still return all 5 out-neighbours",
                 5L, (long) g.V("root").out("owns").count().next());
+    }
+
+    /** Largest row count any executed query against a table fetched. */
+    private static int maxFetch(String table) {
+        return TimingExecuterListener.timing.entrySet().stream()
+                .filter(e -> e.getKey().toLowerCase().contains(table))
+                .mapToInt(e -> e.getValue().getValue1()).max().orElse(-1);
+    }
+
+    @Test
+    public void multiSeedBothEDedupIsLoadBearing() {
+        // root & h1 share edge o1 (root->h1). bothE double-emits a shared edge (once per seed), so the
+        // raw count is 7 and dedup() genuinely collapses it to 6 distinct -- dedup is NOT redundant here.
+        assertEquals(7L, (long) g.V("root", "h1").bothE("owns").count().next());
+        assertEquals(6L, (long) g.V("root", "h1").bothE("owns").dedup().count().next());
+    }
+
+    @Test
+    public void multiSeedBothEDedupLimitPushesBoundedFetch() {
+        // Identity dedup() only collapses the shared-edge fan-out, never below the distinct fetched set,
+        // so limit(3)'s high bound is a safe SQL LIMIT: fetch bounds to 3 (not all 6), result still 3.
+        TimingExecuterListener.timing.clear();
+        long n = g.V("root", "h1").bothE("owns").dedup().limit(3).count().next();
+        assertEquals(3L, n);
+        assertTrue("dedup()+limit must push LIMIT into the edge fetch (<=3 rows, not 6), got " + maxFetch("jp_owns"),
+                maxFetch("jp_owns") <= 3);
+    }
+
+    @Test
+    public void multiSeedBothEDedupByDoesNotPushLimit() {
+        // dedup().by(label) collapses DISTINCT edges by value, which CAN drop below the fetched count,
+        // so pushing limit would under-fetch. The fold must refuse: fetch stays unbounded (all 6 rows).
+        TimingExecuterListener.timing.clear();
+        long n = g.V("root", "h1").bothE("owns").dedup().by(T.label).limit(1).count().next();
+        assertEquals(1L, n);   // all 6 incident edges share label 'owns'
+        assertTrue("dedup().by(...) must NOT push limit (fetch stays unbounded), got " + maxFetch("jp_owns"),
+                maxFetch("jp_owns") > 1);
     }
 
     @Test
