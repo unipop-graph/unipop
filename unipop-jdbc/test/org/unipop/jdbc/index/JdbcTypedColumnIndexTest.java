@@ -45,6 +45,7 @@ public class JdbcTypedColumnIndexTest {
     private static GraphTraversalSource g;
     private static UUID ref7;
     private static UUID ref8;
+    private static UUID ref1000;
 
     @BeforeClass
     public static void setUp() throws Exception {
@@ -67,6 +68,7 @@ public class JdbcTypedColumnIndexTest {
             s.execute("ANALYZE ti_things");
             ref7 = refOf(s, "7");
             ref8 = refOf(s, "8");
+            ref1000 = refOf(s, "1000");
         }
         String dir = new File(JdbcTypedColumnIndexTest.class.getResource("/configuration/typedindex/graph.json").toURI()).getParent();
         Configuration conf = new BaseConfiguration();
@@ -157,8 +159,8 @@ public class JdbcTypedColumnIndexTest {
 
     @Test
     public void enumEqualityResolvesTheLabelThroughTheEnumType() {
-        String rare = "(enum_range(null::ti_phase))[array_position(enum_range(null::ti_phase)::text[], 'rare'::text)]";
-        String common = "(enum_range(null::ti_phase))[array_position(enum_range(null::ti_phase)::text[], 'common'::text)]";
+        String rare = "(select (enum_range(null::ti_phase))[array_position(enum_range(null::ti_phase)::text[], 'rare'::text)])";
+        String common = "(select (enum_range(null::ti_phase))[array_position(enum_range(null::ti_phase)::text[], 'common'::text)])";
         assertEquals("phase = " + rare, render("phase", P.eq("rare")));
         assertEquals("phase in (" + rare + ", " + common + ")", render("phase", P.within("rare", "common")));
     }
@@ -206,6 +208,17 @@ public class JdbcTypedColumnIndexTest {
         TimingExecuterListener.timing.clear();
         assertEquals(rare, graphIds(() -> g.V().has("phase", P.within("rare", "unused")).id().toList()));
         assertIndexed(executedSql());
+    }
+
+    @Test
+    public void enumLabelIsResolvedOncePerStatementNotPerRow() throws Exception {
+        // The ref index drives this scan, so the phase comparison runs as a filter on every row it returns.
+        assertEquals(Collections.singletonList("1000"),
+                graphIds(() -> g.V().has("ref", P.within(ref7, ref1000)).has("phase", "rare").id().toList()));
+        String plan = explain(executedSql());
+        assertTrue(plan, plan.contains("Filter:"));
+        assertFalse("enum label resolved per row:\n" + plan, Arrays.stream(plan.split("\n"))
+                .anyMatch(line -> line.contains("Filter:") && line.contains("enum_range")));
     }
 
     @Test
