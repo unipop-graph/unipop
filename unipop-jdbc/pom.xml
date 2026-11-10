@@ -140,6 +140,7 @@
                         <include>**/JdbcTransactionTest.java</include>
                         <include>**/JdbcTypedColumnIndexTest.java</include>
                         <include>**/JdbcPathSearchTest.java</include>
+                        <include>**/JdbcRangeOrderTest.java</include>
                     </includes>
                     <environmentVariables>
                         <conf>basic</conf>

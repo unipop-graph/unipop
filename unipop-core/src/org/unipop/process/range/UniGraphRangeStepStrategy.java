@@ -43,13 +43,13 @@ public class UniGraphRangeStepStrategy extends AbstractTraversalStrategy<Travers
         }
     }
 
-    /** Walk back past an intervening OrderGlobalStep (also pushed to SQL, so OFFSET-after-ORDER-BY
-     *  stays correct) to a UniGraphStep, else null. Does NOT skip DedupGlobalStep: dedup() is not
+    /** Walk back past an intervening OrderGlobalStep that is wholly pushed to SQL (so
+     *  OFFSET-after-ORDER-BY stays correct; any other order keeps the range in memory) to a UniGraphStep, else null. Does NOT skip DedupGlobalStep: dedup() is not
      *  pushed to SQL, so folding OFFSET over raw pre-dedup rows would skip the wrong rows -- a
      *  dedup() between the source and range must leave the native RangeGlobalStep in place. */
     private UniGraphStep<?, ?> sourceGraphStep(RangeGlobalStep<?> range) {
         Step<?, ?> prev = range.getPreviousStep();
-        while (prev instanceof OrderGlobalStep) {
+        while (prev instanceof OrderGlobalStep && UniGraphOrderStrategy.pushesEveryComparator((OrderGlobalStep<?, ?>) prev)) {
             prev = prev.getPreviousStep();
         }
         return (prev instanceof UniGraphStep) ? (UniGraphStep<?, ?>) prev : null;
