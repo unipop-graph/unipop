@@ -49,7 +49,7 @@ public class UniGraphOrderStrategy extends AbstractTraversalStrategy<TraversalSt
                 Orderable step = orderableStepOf.iterator().next();
                 step.setOrders(collect);
                 Step nextStep = orderGlobalStep.getNextStep();
-                if (nextStep instanceof RangeGlobalStep){
+                if (nextStep instanceof RangeGlobalStep && pushesEveryComparator(orderGlobalStep)){
                     if (step instanceof ReceivesPredicatesHolder) {
                         RangeGlobalStep rangeGlobalStep = (RangeGlobalStep) nextStep;
                         int limit = rangeGlobalStep.getHighRange() > Integer.MAX_VALUE ? -1 : rangeGlobalStep.getHighRange().intValue();
@@ -58,6 +58,13 @@ public class UniGraphOrderStrategy extends AbstractTraversalStrategy<TraversalSt
                 }
             }
         });
+    }
+
+    /** True when every by() of the order reaches the backend. A limit or offset pushed past any other
+     *  order (by(T.id), by(traversal), shuffle) cuts the window before the in-memory sort. */
+    public static boolean pushesEveryComparator(OrderGlobalStep<?, ?> order) {
+        return order.getComparators().stream().allMatch(pair ->
+                pair.getValue0() instanceof ValueTraversal && pair.getValue1() instanceof Order && pair.getValue1() != Order.shuffle);
     }
 
     private Collection<Orderable> getOrderableStepOf(Step step, Traversal.Admin<?, ?> traversal) {

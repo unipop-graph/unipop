@@ -511,7 +511,9 @@ public class RowController implements SimpleController, TransactionalController,
         Set<R> collect = selects.values().stream()
                 .map(select -> this.getContextManager().fetch(select))
                 .flatMap(res -> collector.parse.apply(schemaIterator.next(), res).stream())
-                .collect(Collectors.toSet());
+                // Keeps the backend's row order: a caller that reads a prefix of a pushed LIMIT/OFFSET
+                // window must get the window's first rows, not a hash-ordered sample of it.
+                .collect(Collectors.toCollection(LinkedHashSet::new));
 
 
         metrics.stop((children) -> fillChildren(children, selects));
