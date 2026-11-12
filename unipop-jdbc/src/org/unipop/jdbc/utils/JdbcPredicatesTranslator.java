@@ -373,6 +373,7 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
 
     private Condition getCompareCondition(Object value, BiPredicate<?, ?> biPredicate, Field<Object> field) {
         String predicateString = biPredicate.toString();
+        if (value instanceof Collection && !"inside".equals(predicateString)) return comparedToCollection(biPredicate, field);
         switch (predicateString) {
             case ("eq"):
                 return field.eq(value);
@@ -394,6 +395,16 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
             default:
                 throw new IllegalArgumentException("predicate not supported in has step: " + biPredicate.toString());
         }
+    }
+
+    /**
+     * A column compared to a list or set: has("name", ["a", "b"]) is eq against the list itself, not within.
+     * jOOQ cannot bind a collection as a parameter, so rendering it would fail the whole query. As in
+     * TinkerPop, a present value is never eq or ordered against a collection, and always neq one; an absent
+     * value matches neither, also under not(), so it compares as SQL NULL.
+     */
+    private static Condition comparedToCollection(BiPredicate<?, ?> biPredicate, Field<Object> field) {
+        return DSL.condition(DSL.when(field.isNotNull(), DSL.inline(biPredicate == Compare.neq)));
     }
 
     private Condition getContainsCondition(Object value, BiPredicate<?, ?> biPredicate, Field<Object> field) {
