@@ -373,7 +373,7 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
 
     private Condition getCompareCondition(Object value, BiPredicate<?, ?> biPredicate, Field<Object> field) {
         String predicateString = biPredicate.toString();
-        if (value instanceof Collection && !"inside".equals(predicateString)) return comparedToCollection(biPredicate, field);
+        if (value instanceof Collection && !"inside".equals(predicateString)) return comparedToCollection(biPredicate == Compare.neq, field);
         switch (predicateString) {
             case ("eq"):
                 return field.eq(value);
@@ -403,8 +403,8 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
      * TinkerPop, a present value is never eq or ordered against a collection, and always neq one; an absent
      * value matches neither, also under not(), so it compares as SQL NULL.
      */
-    private static Condition comparedToCollection(BiPredicate<?, ?> biPredicate, Field<Object> field) {
-        return DSL.condition(DSL.when(field.isNotNull(), DSL.inline(biPredicate == Compare.neq)));
+    private static Condition comparedToCollection(boolean presentMatches, Field<Object> field) {
+        return DSL.condition(DSL.when(field.isNotNull(), DSL.inline(presentMatches)));
     }
 
     private Condition getContainsCondition(Object value, BiPredicate<?, ?> biPredicate, Field<Object> field) {
@@ -412,16 +412,29 @@ public class JdbcPredicatesTranslator implements PredicatesTranslator<Condition>
             if (value == null) {
                 return field.isNull();
             } else {
-                return field.notIn(value);
+                List<Object> scalars = withoutCollections((Collection<?>) value);
+                if (scalars.isEmpty() && !((Collection<?>) value).isEmpty()) return comparedToCollection(true, field);
+                return field.notIn(scalars);
             }
         } else if (biPredicate == Contains.within) {
             if (value == null) {
                 return field.isNotNull();
             } else {
-                return field.in(((Collection) value).toArray());
+                List<Object> scalars = withoutCollections((Collection<?>) value);
+                if (scalars.isEmpty() && !((Collection<?>) value).isEmpty()) return comparedToCollection(false, field);
+                return field.in(scalars.toArray());
             }
         }
         return null;
+    }
+
+    /**
+     * within/without items that are themselves lists or sets: within([["a"], ["b"]]) asks whether the value
+     * equals one of those lists, which a column value never does, and jOOQ cannot bind them. They are dropped;
+     * when nothing else is left, the value is compared as against a single collection.
+     */
+    private static List<Object> withoutCollections(Collection<?> values) {
+        return values.stream().filter(v -> !(v instanceof Collection)).collect(Collectors.toList());
     }
 
     private Condition getTextCondition(Object value, BiPredicate<?, ?> biPredicate, Field<Object> field) {
