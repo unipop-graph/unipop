@@ -25,8 +25,9 @@ import java.util.function.Function;
 import static org.junit.Assert.assertEquals;
 
 /**
- * A has() value that is a list compares the property to the list itself. jOOQ cannot bind a list as a
- * parameter, so these filters used to fail the query; they must instead match what TinkerGraph matches.
+ * A has() value that is a list, or a within/without item that is one, compares the property to that list.
+ * jOOQ cannot bind a list as a parameter, so these filters used to fail the query; they must instead match
+ * what TinkerGraph matches.
  */
 public class JdbcCollectionCompareTest {
 
@@ -69,6 +70,25 @@ public class JdbcCollectionCompareTest {
     private static void assertMatches(long expected, Function<GraphTraversalSource, Long> query) {
         assertEquals("TinkerGraph", expected, (long) query.apply(tinker));
         assertEquals("unipop", expected, (long) query.apply(g));
+    }
+
+    @Test
+    public void withinListsMatchesNothing() {
+        assertMatches(0, s -> s.V().has("name", P.within(Arrays.asList(Arrays.asList("a"), Arrays.asList("b")))).count().next());
+        assertMatches(2, s -> s.V().has("name", P.not(P.within(Arrays.asList(Arrays.asList("a"))))).count().next());
+        assertMatches(0, s -> s.V().has("ref", P.within(Arrays.asList(REFS))).count().next());
+    }
+
+    @Test
+    public void withinListsAndValuesMatchesTheValues() {
+        assertMatches(1, s -> s.V().has("name", P.within(Arrays.asList("a", Arrays.asList("b")))).count().next());
+    }
+
+    @Test
+    public void withoutListsMatchesEveryPresentValue() {
+        assertMatches(2, s -> s.V().has("name", P.without(Arrays.asList(Arrays.asList("a"), Arrays.asList("b")))).count().next());
+        assertMatches(0, s -> s.V().has("name", P.not(P.without(Arrays.asList(Arrays.asList("a"))))).count().next());
+        assertMatches(1, s -> s.V().has("name", P.without(Arrays.asList("a", Arrays.asList("b")))).count().next());
     }
 
     @Test
